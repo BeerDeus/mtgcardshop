@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Deck Deal — proxy local (aucune dépendance, Node ≥ 18).
 //   CARDTRADER_TOKEN=xxxxx node proxy.mjs          → http://localhost:8787
-//   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → accessible depuis le téléphone (clé obligatoire)
+//   HOST=0.0.0.0 ALLOWED_UIDS=<uid Firebase> node proxy.mjs  → accessible depuis le téléphone, réservé à ton compte Firebase
+//   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → variante : clé partagée à saisir dans Réglages
 // Le token reste côté serveur. Seules les routes utiles sont relayées ; l'achat (cart/purchase) est bloqué.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createPublicKey, verify as rsaVerify } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8787;
@@ -31,9 +32,18 @@ const STATIC = new Map([
   ['/icons/favicon-32.png', ['icons/favicon-32.png', 'image/png', YEAR]],
 ]);
 
+// Accès par compte Firebase : le navigateur envoie son jeton d'identité (X-Firebase-Token), le proxy en vérifie la signature Google
+// puis compare l'UID (ou l'email vérifié) à la liste autorisée. Rien à retaper, rien à partager.
+const csv = v => String(v || '').split(/[\s,;]+/).map(x => x.trim()).filter(Boolean);
+const FB_PROJECT = (process.env.FIREBASE_PROJECT_ID || 'm2s-mtg').trim();
+const ALLOWED_UIDS = new Set(csv(process.env.ALLOWED_UIDS));
+const ALLOWED_EMAILS = new Set(csv(process.env.ALLOWED_EMAILS).map(x => x.toLowerCase()));
+const AUTH_FB = ALLOWED_UIDS.size + ALLOWED_EMAILS.size > 0;
+const JWKS_URL = process.env.FIREBASE_JWKS_URL || 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'; // surchargeable pour les tests
+
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
-if (!LOOPBACK.has(HOST) && !APP_KEY) {
-  console.error('Refus de démarrer : HOST=' + HOST + ' expose ton token CardTrader. Définis APP_KEY=un-secret.');
+if (!LOOPBACK.has(HOST) && !APP_KEY && !AUTH_FB) {
+  console.error('Refus de démarrer : HOST=' + HOST + ' expose ton token CardTrader. Définis ALLOWED_UIDS=<ton uid Firebase> (recommandé) ou APP_KEY=un-secret.');
   process.exit(1);
 }
 
@@ -79,7 +89,7 @@ const json = (res, status, obj, extra = {}) => {
 const BAD = new Map(), BAD_MAX = 15, BAD_WIN = 10 * 60e3, BAD_LOCK = 5 * 60e3;
 const ipOf = req => String(req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress || '?';
 const isLocked = req => { const e = BAD.get(ipOf(req)); return !!e && e.until > Date.now(); };
-async function badKey(req, res) {
+async function badKey(req, res, error = 'bad_app_key', status = 401) {
   const k = ipOf(req), now = Date.now();
   if (BAD.size > 1000) for (const [kk, v] of BAD) if (now - v.first > BAD_WIN && v.until < now) BAD.delete(kk);
   let e = BAD.get(k);
@@ -88,7 +98,49 @@ async function badKey(req, res) {
   if (e.n >= BAD_MAX && req.headers['x-forwarded-for']) e.until = now + BAD_LOCK;
   BAD.set(k, e);
   await new Promise(r => setTimeout(r, Number(process.env.BAD_KEY_DELAY_MS ?? 400)));
-  return json(res, 401, { error: 'bad_app_key' });
+  return json(res, status, { error, message: error === 'forbidden' ? 'Ce compte n\'est pas autorisé sur ce serveur.' : error === 'bad_token' ? 'Jeton de connexion invalide.' : undefined });
+}
+
+/* ── Jeton Firebase (JWT RS256) : vérification sans dépendance ───────────────────────────────── */
+const authErr = (code, message) => Object.assign(new Error(message || code), { authCode: code });
+const jwk = { keys: new Map(), exp: 0, lastTry: 0 };
+async function loadKeys(force) {
+  const now = Date.now();
+  if (!force && jwk.keys.size && jwk.exp > now) return;
+  if (force && now - jwk.lastTry < 60e3 && jwk.keys.size) return;  // un jeton « inconnu » ne doit pas déclencher une avalanche de requêtes vers Google
+  jwk.lastTry = now;
+  let r;
+  try { r = await fetch(JWKS_URL, { signal: AbortSignal.timeout(8000), headers: { Accept: 'application/json' } }); } catch (e) { r = null; }
+  if (!r || !r.ok) { if (jwk.keys.size) return; throw authErr('unavailable', 'Clés Firebase injoignables'); } // à défaut, on garde les anciennes clés
+  const j = await r.json(), keys = new Map();
+  for (const k of (j && j.keys) || []) { try { if (k.kid && k.kty === 'RSA') keys.set(k.kid, createPublicKey({ key: k, format: 'jwk' })); } catch (e) { /* clé illisible : ignorée */ } }
+  if (!keys.size) { if (jwk.keys.size) return; throw authErr('unavailable', 'Aucune clé Firebase exploitable'); }
+  const m = /max-age=(\d+)/.exec(r.headers.get('cache-control') || '');
+  jwk.keys = keys; jwk.exp = now + Math.min(24 * 3600e3, Math.max(60e3, (m ? Number(m[1]) : 3600) * 1000));
+}
+const b64j = x => JSON.parse(Buffer.from(x, 'base64url').toString('utf8'));
+/** Retourne {uid, email, emailVerified} ou lève une erreur {authCode: expired | invalid | forbidden | unavailable}. */
+async function verifyIdToken(tok) {
+  const parts = String(tok || '').split('.');
+  if (parts.length !== 3 || tok.length > 4096) throw authErr('invalid');
+  let h, c;
+  try { h = b64j(parts[0]); c = b64j(parts[1]); } catch (e) { throw authErr('invalid'); }
+  if (!h || h.alg !== 'RS256' || typeof h.kid !== 'string') throw authErr('invalid');          // alg « none » ou HS256 : refusés d'office
+  await loadKeys(false);
+  let key = jwk.keys.get(h.kid);
+  if (!key) { await loadKeys(true); key = jwk.keys.get(h.kid); }
+  if (!key) throw authErr('invalid');
+  let okSig = false;
+  try { okSig = rsaVerify('RSA-SHA256', Buffer.from(parts[0] + '.' + parts[1]), key, Buffer.from(parts[2], 'base64url')); } catch (e) { okSig = false; }
+  if (!okSig) throw authErr('invalid');
+  const now = Math.floor(Date.now() / 1000), skew = 60;
+  if (!c || c.aud !== FB_PROJECT || c.iss !== 'https://securetoken.google.com/' + FB_PROJECT) throw authErr('invalid');
+  if (typeof c.sub !== 'string' || !c.sub || c.sub.length > 128) throw authErr('invalid');
+  if (!Number.isFinite(c.exp) || !Number.isFinite(c.iat) || c.iat > now + skew || (c.auth_time && c.auth_time > now + skew)) throw authErr('invalid');
+  if (c.exp <= now) throw authErr('expired');
+  const email = typeof c.email === 'string' ? c.email.toLowerCase() : '', emailVerified = c.email_verified === true;
+  if (!(ALLOWED_UIDS.has(c.sub) || (email && emailVerified && ALLOWED_EMAILS.has(email)))) throw authErr('forbidden');
+  return { uid: c.sub, email, emailVerified };
 }
 
 const safeEq = (a, b) => {
@@ -103,11 +155,28 @@ const readBody = (req, max = 256 * 1024) => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-async function api(req, res, url) {
-  if (APP_KEY) {
-    if (isLocked(req)) return json(res, 429, { error: 'too_many_attempts', message: 'Trop de clés invalides : réessaie dans quelques minutes.' }, { 'Retry-After': '300' });
-    if (!safeEq(String(req.headers['x-app-key'] || ''), APP_KEY)) return badKey(req, res);
+// Autorisation : compte Firebase autorisé OU clé APP_KEY (si l'une ou l'autre est configurée). Sans rien de configuré : ouvert (local uniquement).
+// Aucun identifiant fourni → 401 sans pénalité (pas de devinette possible) ; identifiant faux → délai + blocage par IP.
+async function authorize(req, res) {
+  if (!APP_KEY && !AUTH_FB) return true;
+  if (isLocked(req)) { json(res, 429, { error: 'too_many_attempts', message: 'Trop d\'essais invalides : réessaie dans quelques minutes.' }, { 'Retry-After': '300' }); return false; }
+  const key = String(req.headers['x-app-key'] || ''), tok = String(req.headers['x-firebase-token'] || '');
+  if (APP_KEY && key && safeEq(key, APP_KEY)) return true;
+  if (AUTH_FB && tok) {
+    try { await verifyIdToken(tok); return true; }
+    catch (e) {
+      const code = e && e.authCode;
+      if (code === 'expired') { json(res, 401, { error: 'token_expired', message: 'Session expirée : le navigateur va la renouveler.' }); return false; }
+      if (code === 'unavailable') { json(res, 503, { error: 'auth_unavailable', message: 'Vérification du compte impossible pour le moment.' }, { 'Retry-After': '5' }); return false; }
+      await badKey(req, res, code === 'forbidden' ? 'forbidden' : 'bad_token', code === 'forbidden' ? 403 : 401); return false;
+    }
   }
+  if (!key && !tok) { json(res, 401, { error: 'auth_required', message: AUTH_FB ? 'Connecte-toi pour utiliser le proxy.' : 'Clé du proxy requise.', login: AUTH_FB, key: !!APP_KEY }); return false; }
+  await badKey(req, res); return false;
+}
+
+async function api(req, res, url) {
+  if (!(await authorize(req, res))) return;
   if (!TOKEN) return json(res, 401, { error: 'no_token', message: 'CARDTRADER_TOKEN absent côté proxy.' });
 
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
@@ -148,7 +217,7 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, hasToken: !!TOKEN });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       if (!PAGE) return json(res, 404, { error: 'page_missing', message: 'Place deck-deal.html à côté de proxy.mjs.' });
@@ -178,7 +247,8 @@ process.on('uncaughtException', e => console.error('uncaughtException:', e));
 server.listen(PORT, HOST, () => {
   console.log(`Deck Deal → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(TOKEN ? 'Token CardTrader : OK' : '⚠ CARDTRADER_TOKEN manquant : mode démo uniquement');
-  if (APP_KEY) console.log('Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');
+  if (AUTH_FB) console.log(`Accès : compte Firebase « ${FB_PROJECT} » (${ALLOWED_UIDS.size} UID, ${ALLOWED_EMAILS.size} email${ALLOWED_EMAILS.size > 1 ? 's' : ''} vérifié${ALLOWED_EMAILS.size > 1 ? 's' : ''}).`);
+  if (APP_KEY) console.log(AUTH_FB ? 'APP_KEY encore acceptée en secours : supprime-la une fois la connexion par compte validée.' : 'Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');
   if (APP_KEY && APP_KEY.length < 12) console.warn('⚠ APP_KEY courte (' + APP_KEY.length + ' caractères) : prends 16 caractères ou plus.');
   if (!PAGE) console.log('⚠ deck-deal.html introuvable à côté du proxy.');
 });

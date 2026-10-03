@@ -7,9 +7,24 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | Variable | Rôle |
 |---|---|
 | `CARDTRADER_TOKEN` | Token API CardTrader (reste côté serveur) |
-| `APP_KEY` | Clé d'accès, obligatoire dès que `HOST` n'est pas local. À saisir dans Réglages › Clé du proxy |
-| `HOST` | `0.0.0.0` en hébergement |
+| `ALLOWED_UIDS` | Identifiants Firebase autorisés (séparés par des virgules). Recommandé : c'est l'accès par compte |
+| `ALLOWED_EMAILS` | Alternative à `ALLOWED_UIDS` : e-mails vérifiés autorisés. Moins sûr (un UID ne change jamais) |
+| `FIREBASE_PROJECT_ID` | Projet Firebase des comptes (défaut `m2s-mtg`) |
+| `APP_KEY` | Ancienne clé d'accès, facultative : sert de repli tant qu'elle est définie. À supprimer une fois la connexion par compte validée |
+| `HOST` | `0.0.0.0` en hébergement. Refusé si ni `APP_KEY` ni `ALLOWED_UIDS`/`ALLOWED_EMAILS` n'est défini |
 | `PORT` | Fourni par l'hébergeur (défaut 8787) |
+| `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
+
+### Accès par compte Firebase (remplace `APP_KEY`)
+
+Le navigateur envoie son jeton Firebase (`X-Firebase-Token`) ; le proxy vérifie la signature (clés publiques Google), l'audience, l'émetteur et l'expiration, puis compare l'UID à `ALLOWED_UIDS`.
+
+1. Déployer, ouvrir le site, se connecter (icône compte).
+2. Compte › « Accès au serveur » › copier ton identifiant (UID).
+3. Hostinger › variables d'environnement › `ALLOWED_UIDS=<ton uid>` › redéployer.
+4. Vérifier que la recherche marche une fois connecté, puis supprimer `APP_KEY` et redéployer.
+
+Sans jeton valide : 401 (`auth_required`, `bad_token`, `token_expired`) ; compte non autorisé : 403 (`forbidden`).
 
 ## Lancer en local
 
@@ -28,8 +43,8 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 | `UP_CONC` | 6 | Requêtes simultanées max vers CardTrader |
 
 - Clé invalide : délai de 400 ms, puis blocage 5 min de l'IP après 15 essais (nécessite `X-Forwarded-For`).
-- `APP_KEY` : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
-- Scryfall : 2 requêtes/s max sur `/cards/search`, pause automatique sur 429, résultats en cache 7 jours.
+- `APP_KEY` (si conservée) : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
+- Scryfall : 2 requêtes/s max ; les cartes sont cherchées par lots de 12 noms (une recherche `(!"A" or !"B" …)` au lieu d'une par carte, soit ~10 requêtes pour un deck de 100 cartes), repli carte par carte pour les noms approximatifs ; pause automatique sur 429 ; résultats en cache 7 jours.
 
 ## Installation (PWA)
 

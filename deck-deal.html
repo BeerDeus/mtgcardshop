@@ -436,6 +436,64 @@ button.sync:active{background:var(--surface-2)}
 .ib-x{flex:none;width:34px;height:34px;border:0;background:transparent;color:var(--ink-3);border-radius:10px;display:grid;place-items:center;padding:0}
 .ib-x .i{width:17px;height:17px}
 .installbox{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.uid-row{display:flex;align-items:center;gap:10px}
+.uid-row code{flex:1;min-width:0;overflow-wrap:anywhere;font-family:var(--font-mono,'JetBrains Mono',ui-monospace,monospace);font-size:12.5px;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink-2);user-select:all}
+.swap{font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft)}
+.swap b{color:var(--ink)}
+
+/* ── Liste : tri, filtres, retrait d'une carte, micro-animations ─────────────────────────────── */
+.pane{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pane[hidden]{display:none}
+.listbar{display:flex;align-items:center;gap:8px;min-width:0}
+.sortsel{position:relative;flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 28px 0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2);transition:transform .15s,border-color .2s}
+.sortsel:active{transform:scale(.97)}
+.sortsel span{color:var(--ink-3);font-weight:600}
+.sortsel select{appearance:none;-webkit-appearance:none;field-sizing:content;border:0;background:transparent;font-weight:650;font-size:12.5px;color:var(--ink);padding:0;max-width:132px;outline:none;cursor:pointer}
+.sortsel::after{content:"";position:absolute;right:12px;top:50%;width:6px;height:6px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.sortsel:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.fchips{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2);transition:transform .15s,background .2s,border-color .2s,color .2s}
+.fchip b{font-family:var(--font-mono);font-weight:600;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.fchip:active{transform:scale(.95)}
+.fchip[aria-checked="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.fchip[aria-checked="true"] b{color:inherit}
+.undobar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 4px 14px;border-radius:12px;background:var(--surface-2);font-size:13px;color:var(--ink-2)}
+.undobar[hidden]{display:none}
+.listempty{display:flex;align-items:center;gap:6px;justify-content:center;padding:18px 0}
+.listempty[hidden]{display:none}
+
+.rw{position:relative}
+.rw .row{width:100%}
+.rw[hidden]{display:none}
+.list.settled .row{animation:none}            /* l'entrée en cascade ne doit pas rejouer quand on réordonne */
+.rx{position:absolute;top:-7px;right:-4px;z-index:1;width:20px;height:20px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);display:grid;place-items:center;opacity:.7;transition:opacity .2s,transform .15s,color .2s,border-color .2s}
+.rx::after{content:"";position:absolute;inset:-12px}   /* zone tactile d'environ 44 px, pour un visuel discret */
+.rx svg{width:10px;height:10px;stroke-width:2.6}
+.rx:hover,.rx:focus-visible{opacity:1;color:var(--bad);border-color:currentColor}
+.rx:active{transform:scale(.85)}
+.rw:not(.scanned) .rx{display:none}
+
+/* offre : lien vers la fiche CardTrader */
+.offer-row{display:flex;gap:6px;align-items:stretch}
+.offer-row .offer{flex:1;width:auto;min-width:0}
+.o-ext{flex:none;width:44px;display:grid;place-items:center;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);color:var(--ink-3);transition:transform .15s,color .2s,border-color .2s}
+.o-ext:hover,.o-ext:focus-visible{color:var(--accent);border-color:var(--accent)}
+.o-ext:active{transform:scale(.92)}
+
+/* toast avec action (Annuler) */
+.toast{display:flex;align-items:center;gap:14px}
+.toast.on.act{pointer-events:auto}
+.toast-act{border:0;background:transparent;color:inherit;font-weight:800;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:8px 6px;margin:-8px -6px -8px 0;border-radius:8px}
+.toast-act:active{opacity:.7}
+
+/* retours visuels */
+@keyframes pricepop{0%{transform:scale(1)}35%{transform:scale(1.14);color:var(--accent)}100%{transform:scale(1)}}
+.row-price b.flash{display:inline-block;transform-origin:right center;animation:pricepop .6s cubic-bezier(.3,1.4,.5,1)}
+@keyframes popin{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.task.ok .task-ico,.task.warn .task-ico,.task.bad .task-ico{animation:popin .45s cubic-bezier(.3,1.5,.5,1)}
+.fchip,.sortsel,.seg-opt,.offer,.o-ext,.rx{-webkit-tap-highlight-color:transparent}
+.seg-opt:active{transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -451,6 +509,7 @@ button.sync:active{background:var(--surface-2)}
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></symbol>
     <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
     <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.4v.1"/></symbol>
   </defs>
@@ -583,7 +642,16 @@ button.sync:active{background:var(--surface-2)}
 
       <div class="toolbar"><div class="seg" id="segTab" role="radiogroup" aria-label="Affichage"></div></div>
 
-      <div class="list" id="list"></div>
+      <div class="pane" id="cardsPane">
+        <div class="listbar" id="listbar">
+          <label class="sortsel"><span>Trier</span>
+            <select id="optSort" aria-label="Trier la liste"><option value="deck">Ma liste</option><option value="price-desc">Plus chères</option><option value="price-asc">Moins chères</option><option value="name">A → Z</option></select></label>
+          <div class="fchips" id="fchips" role="radiogroup" aria-label="Filtrer"></div>
+        </div>
+        <div class="undobar" id="undoBar" hidden><span id="undoTxt"></span><button class="link-btn" id="undoAll" type="button">Tout remettre</button></div>
+        <div class="list" id="list"></div>
+        <p class="hint listempty" id="listEmpty" hidden>Aucune carte ne correspond. <button class="link-btn" id="listAll" type="button">Tout afficher</button></p>
+      </div>
       <div class="list" id="sellers" hidden></div>
       <div class="basics" id="basicsNote" hidden></div>
     </section>
@@ -612,7 +680,7 @@ const BASIC_NAMES = new Set(['plains', 'island', 'swamp', 'mountain', 'forest', 
   'snow covered plains', 'snow covered island', 'snow covered swamp', 'snow covered mountain', 'snow covered forest', 'snow covered wastes']);
 
 function normPart(s) {
-  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return String(s || '').replace(/æ/gi, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
     .replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 function normName(s) { return String(s || '').split('//').map(normPart).filter(Boolean).join(' // '); }
@@ -620,34 +688,68 @@ function frontName(s) { return normName(s).split(' // ')[0]; }
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
+/** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête, invalide) · { qty, name, key }. */
+function parseLine(raw) {
+  const line = String(raw == null ? '' : raw).trim();
+  if (!line) return undefined;
+  if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) return { ignored: true };
+  let qty = 1, name = line;
+  const m = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+  if (m) { qty = parseInt(m[1], 10); name = m[2]; }
+  name = name.replace(/\s+\*[A-Za-z]+\*\s*$/, '')
+    .replace(/\s+\([A-Za-z0-9]{2,8}\)(\s+[A-Za-z0-9★-]+)?\s*$/, '')
+    .trim();
+  if (!name || qty < 1 || qty > 999) return { ignored: true };
+  const key = normName(name);
+  return key ? { qty, name, key } : { ignored: true };
+}
+
 /** Lit une decklist (EDHREC, Moxfield, Archidekt, MTGO). Terrains de base séparés. */
 function parseDeck(text) {
   const cards = new Map();
   const basics = new Map();
   let lines = 0, ignored = 0;
-  for (let raw of String(text || '').split(/\r?\n/)) {
-    let line = raw.trim();
-    if (!line) continue;
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const p = parseLine(raw);
+    if (!p) continue;
     lines++;
-    if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) { ignored++; continue; }
-    let qty = 1, name = line;
-    const m = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
-    if (m) { qty = parseInt(m[1], 10); name = m[2]; }
-    name = name.replace(/\s+\*[A-Za-z]+\*\s*$/, '')
-      .replace(/\s+\([A-Za-z0-9]{2,8}\)(\s+[A-Za-z0-9★-]+)?\s*$/, '')
-      .trim();
-    if (!name || qty < 1 || qty > 999) { ignored++; continue; }
-    const key = normName(name);
-    if (!key) { ignored++; continue; }
-    const bucket = BASIC_NAMES.has(key) ? basics : cards;
-    const cur = bucket.get(key);
-    if (cur) cur.qty += qty; else bucket.set(key, { key, name, qty });
+    if (p.ignored) { ignored++; continue; }
+    const bucket = BASIC_NAMES.has(p.key) ? basics : cards;
+    const cur = bucket.get(p.key);
+    if (cur) cur.qty += p.qty; else bucket.set(p.key, { key: p.key, name: p.name, qty: p.qty });
   }
   const c = [...cards.values()], b = [...basics.values()];
   const copies = c.reduce((a, x) => a + x.qty, 0);
   const basicCopies = b.reduce((a, x) => a + x.qty, 0);
   return { cards: c, basics: b, lines, ignored, copies: copies + basicCopies, basicCopies };
 }
+
+/** Retire de la decklist toutes les lignes d'une carte. Retourne le nouveau texte et les lignes retirées (pour annuler). */
+function dropCard(text, key) {
+  const kept = [], removed = [];
+  String(text || '').split('\n').forEach((raw, i) => { const p = parseLine(raw); if (p && !p.ignored && p.key === key) removed.push({ i, raw }); else kept.push(raw); });
+  return { text: kept.join('\n'), removed };
+}
+/** Remet des lignes retirées par dropCard, à leur place d'origine (ou à la fin si la liste a rétréci). */
+function restoreLines(text, removed) {
+  const lines = String(text || '').split('\n');
+  for (const { i, raw } of removed.slice().sort((a, b) => a.i - b.i)) lines.splice(Math.min(i, lines.length), 0, raw);
+  return lines.join('\n');
+}
+
+/** Ordre d'affichage. items : { name, i (rang dans la liste), cost (centimes ou null) } ; sans prix → toujours en fin de liste. */
+function sortCards(items, mode) {
+  const byI = (a, b) => a.i - b.i, arr = items.slice();
+  if (mode === 'name') arr.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }) || byI(a, b));
+  else if (mode === 'price-desc' || mode === 'price-asc') {
+    const sg = mode === 'price-desc' ? -1 : 1;
+    arr.sort((a, b) => ((a.cost == null) - (b.cost == null)) || (a.cost != null && sg * (a.cost - b.cost)) || byI(a, b));
+  } else arr.sort(byI);
+  return arr;
+}
+
+/** Page d'une carte sur CardTrader (par identifiant de blueprint). */
+const ctCardUrl = bpId => 'https://www.cardtrader.com/cards/' + encodeURIComponent(bpId);
 
 /** Une offre passe-t-elle les critères (état, foil, hors vendeurs en vacances, etc.) ? */
 function passes(o, f) {
@@ -952,6 +1054,20 @@ function newDeckId() {
 /** Offres dans la langue demandée s'il y en a, sinon toutes (repli). Évite qu'une offre EN moins chère masque une offre FR. */
 function preferLang(list, lang) { const w = list.filter(o => o.lang === lang); return w.length ? w : list; }
 
+/**
+ * Remplace une ligne de panier devenue indisponible : offres de remplacement qui couvrent `need` exemplaires, au moindre coût.
+ * offers : offres déjà filtrées par l'appelant (critères, langue, mode, hors offres écartées).
+ * opts : {mode, prefer:Set<sellerId> (vendeurs déjà dans le panier : en Direct, le port est déjà payé), ship:centimes}
+ * Retourne [{offer, n}] ; la somme des n peut être inférieure à `need` si le stock manque.
+ */
+function replaceParts(offers, need, opts = {}) {
+  const mode = opts.mode === 'direct' ? 'direct' : 'zero', ship = mode === 'direct' ? (opts.ship || 0) : 0, prefer = opts.prefer || new Set();
+  const pool = offers.filter(o => o && o.qty > 0 && o.price > 0 && (mode !== 'zero' || o.hub));
+  const eff = o => o.price + (ship && !prefer.has(o.sellerId) ? ship / Math.max(1, Math.min(need, o.qty)) : 0);  // nouveau vendeur = un port de plus, réparti sur ses exemplaires
+  pool.sort((a, b) => (eff(a) - eff(b)) || byPrice(a, b));
+  return allocate(pool, need, null).parts;
+}
+
 /** Offres exploitables dans un mode : Zero = vendeurs « hub » seulement ; langue demandée prioritaire (sauf choix manuel `keepAll`). */
 function forMode(list, mode, lang, keepAll) {
   const l = mode === 'zero' ? list.filter(o => o.hub) : list;
@@ -987,7 +1103,7 @@ function recapOf(items) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
+  module.exports = { parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX };
 }
@@ -1079,7 +1195,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE
 
 /* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
 
-const CTX = { proxy: false, needsKey: false, token: '', appKey: '' };
+const CTX = { proxy: false, needsKey: false, needsLogin: false, token: '', appKey: '', idToken: null };
 
 const sleep = (ms, signal) => new Promise((res, rej) => {
   if (signal && signal.aborted) return rej(abortErr());
@@ -1153,11 +1269,16 @@ async function httpJson(lim, url, init, signal, retries = 4) {
       lim.pause(wait); if (scry) setScryUntil(Date.now() + wait); if (lim.onWait) lim.onWait(wait, 'rate');
       await sleep(wait, signal); a++; continue;
     }
-    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status, host });
+    if (r.status === 401 || r.status === 403) {
+      let reason = ''; try { const b = await r.json(); reason = (b && b.error) || ''; } catch (e) { /* corps absent */ }
+      throw netErr('auth', 'Accès refusé', { status: r.status, host, reason });   // reason : auth_required · forbidden · bad_token · token_expired · bad_app_key
+    }
     if (r.status === 404) throw netErr('404', 'Introuvable', { status: 404 });
     if (!r.ok) {
       if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); a++; continue; }
-      throw netErr('http', 'Erreur ' + r.status, { status: r.status, host });
+      let detail = '';
+      try { const b = await r.json(); const m = b && (b.error || b.message || b.errors); detail = m ? (typeof m === 'string' ? m : JSON.stringify(m)).slice(0, 160) : ''; } catch (e) { /* corps absent */ }
+      throw netErr('http', 'Erreur ' + r.status + (detail ? ' : ' + detail : ''), { status: r.status, host, detail });
     }
     lim.speedUp();
     return r.json();
@@ -1206,7 +1327,7 @@ const DAY = 86400000;
 /* ── Scryfall : toutes les impressions papier d'une carte ─────────────────────────────────── */
 const imgOf = c => (c.image_uris && c.image_uris.small) || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris && c.card_faces[0].image_uris.small) || null;
 
-async function scryPrints(name, signal) {
+async function scryPrints(name, signal, exactDone = false) { // exactDone : la recherche exacte a déjà eu lieu dans un lot réussi → inutile de la refaire
   const search = async n => {
     const q = '!"' + n.replace(/"/g, '') + '" game:paper';
     let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&include_extras=true&include_variations=true';
@@ -1223,7 +1344,7 @@ async function scryPrints(name, signal) {
     }
     return out;
   };
-  let prints = await search(name);
+  let prints = exactDone ? [] : await search(name);
   if (!prints.length) { // nom approximatif (virgule oubliée, accent…) : on demande à Scryfall le nom exact
     try {
       const j = await httpJson(limScry, 'https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name), { headers: { Accept: 'application/json' } }, signal);
@@ -1233,16 +1354,64 @@ async function scryPrints(name, signal) {
   return prints;
 }
 
+/** Plusieurs cartes en une seule recherche : (!"A" or !"B" …). Retourne Map(clé de deck → impressions) ; une carte
+ *  absente du résultat n'est pas dans la Map (l'appelant la cherche alors seule, avec repli sur le nom approchant). */
+const SCRY_JSON = { headers: { Accept: 'application/json' } };
+const SCRY_BATCH = { names: 12, chars: 800, pages: 14 };
+async function scryPrintsBatch(cards, signal) {
+  const q = '(' + cards.map(c => '!"' + c.name.replace(/"/g, '') + '"').join(' or ') + ') game:paper';
+  let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&include_extras=true&include_variations=true';
+  // nom de face (normalisé) → clés de deck concernées : « Fire // Ice », « Fire » ou « Ice » retombent tous sur la bonne carte
+  const byFace = new Map();
+  for (const c of cards) for (const f of new Set([c.key, frontName(c.key)])) { const a = byFace.get(f); if (a) a.push(c.key); else byFace.set(f, [c.key]); }
+  const keysOf = name => {
+    const out = new Set();
+    for (const f of [normName(name), ...String(name).split('//').map(normPart)]) for (const k of byFace.get(f) || []) out.add(k);
+    return out;
+  };
+  const got = new Map();
+  for (let pages = 1; url; pages++) {
+    if (pages > SCRY_BATCH.pages) throw netErr('batch', 'Lot trop volumineux'); // résultats tronqués : on se replie sur la recherche carte par carte
+    let j;
+    try { j = await httpJson(limScry, url, SCRY_JSON, signal); }
+    catch (e) { if (e.code === '404') break; throw e; }
+    for (const c of j.data || []) {
+      if (c.oversized || c.set_type === 'memorabilia') continue;
+      const pr = { id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name };
+      for (const k of keysOf(c.name)) { let a = got.get(k); if (!a) got.set(k, a = []); if (a.length < 600) a.push(pr); }
+    }
+    url = j.has_more ? j.next_page : null;
+  }
+  return got;
+}
+/** Découpe en lots : ≤ 12 noms et ≤ 800 caractères de requête (l'URL reste courte). */
+function scryChunks(cards) {
+  const out = []; let cur = [], len = 0;
+  for (const c of cards) {
+    const l = c.name.length + 8;
+    if (cur.length && (cur.length >= SCRY_BATCH.names || len + l > SCRY_BATCH.chars)) { out.push(cur); cur = []; len = 0; }
+    cur.push(c); len += l;
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
 /* ── CardTrader ───────────────────────────────────────────────────────────────────────────── */
-function ct(path, { method = 'GET', params, body, signal } = {}) {
+async function ct(path, { method = 'GET', params, body, signal } = {}) {
   if (!CTX.proxy && !CTX.token) throw netErr('notoken', 'Token CardTrader manquant');
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
   const url = CTX.proxy ? 'api/' + path + qs : 'https://api.cardtrader.com/api/v2/' + path + qs;
-  const headers = { Accept: 'application/json' };
-  if (CTX.proxy) { if (CTX.appKey) headers['x-app-key'] = CTX.appKey; }
-  else headers.Authorization = 'Bearer ' + CTX.token;
-  if (body) headers['Content-Type'] = 'application/json';
-  return httpJson(limCT, url, { method, headers, body: body ? JSON.stringify(body) : undefined }, signal);
+  const call = async force => {
+    const headers = { Accept: 'application/json' };
+    if (CTX.proxy) {
+      if (CTX.appKey) headers['x-app-key'] = CTX.appKey;
+      if (CTX.needsLogin && CTX.idToken) { const t = await CTX.idToken(force); if (t) headers['x-firebase-token'] = t; } // jeton Firebase : le proxy vérifie que c'est bien ton compte
+    } else headers.Authorization = 'Bearer ' + CTX.token;
+    if (body) headers['Content-Type'] = 'application/json';
+    return httpJson(limCT, url, { method, headers, body: body ? JSON.stringify(body) : undefined }, signal);
+  };
+  try { return await call(false); }
+  catch (e) { if (e.code === 'auth' && e.reason === 'token_expired' && CTX.idToken) return call(true); throw e; } // jeton périmé : on force son renouvellement, une seule fois
 }
 
 async function getExpansions(signal) {
@@ -1323,10 +1492,26 @@ async function runLive(cards, opts, hooks, signal) {
     })());
   };
   try {
-    await pool(cards, 3, async c => {
-      const ck = 'sc:' + c.key;
-      let pr = await Cache.get(ck, 7 * DAY);
-      if (!pr) { await scryGate(); pr = await scryPrints(c.name, signal); if (pr.length) await Cache.set(ck, pr); }
+    // 1) cache (7 jours) · 2) recherche groupée par lots · 3) carte par carte pour les absentes (nom approximatif, lot en échec)
+    await pool(cards, 6, async c => { const pr = await Cache.get('sc:' + c.key, 7 * DAY); if (pr) { printsOf[c.key] = pr; done++; } });
+    hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
+    const single = [];
+    for (const chunk of scryChunks(cards.filter(c => !printsOf[c.key]))) {
+      await scryGate();
+      let got = null;
+      if (chunk.length > 1) { // une carte seule : inutile de passer par un lot
+        try { got = await scryPrintsBatch(chunk, signal); }
+        catch (e) { if (e.name === 'AbortError' || e.code === 'network' || e.code === 'rate' || e.code === 'auth') throw e; }
+      }
+      for (const c of chunk) {
+        const pr = got && got.get(c.key);
+        if (pr && pr.length) { printsOf[c.key] = pr; done++; await Cache.set('sc:' + c.key, pr); } else single.push([c, !!got]);
+      }
+      hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
+    }
+    await pool(single, 3, async ([c, exactDone]) => {
+      await scryGate();
+      const pr = await scryPrints(c.name, signal, exactDone); if (pr.length) await Cache.set('sc:' + c.key, pr);
       printsOf[c.key] = pr; done++;
       hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
     });
@@ -1452,25 +1637,51 @@ async function cartClear(items, signal, onItem) {
   return { ok, failed };
 }
 
+/**
+ * Ajoute les offres au panier. Si une offre n'est plus disponible, essaie des offres de remplacement (part.alt(exclus, besoin) → [{offer,n}]).
+ * Retourne {ok, failed:[{name,reason}], replaced:[{name, from, n, to:[{offer,n}], missing}], gone:[productId]}.
+ * Garde-fou : si les remplacements échouent à leur tour avec le même message sur 2 lignes de suite, l'erreur n'est pas propre à l'offre
+ * (adresse, compte…) : on arrête d'en essayer d'autres et on la signale telle quelle.
+ */
 async function cartFill(parts, mode, address, signal, onItem, demo) {
-  const failed = []; let ok = 0;
+  const failed = [], replaced = [], gone = []; let ok = 0, streak = 0, noAlt = false;
+  const fatal = e => e.name === 'AbortError' || e.code === 'auth' || e.code === 'network' || e.code === 'notoken';
+  const add = async (offer, n) => {
+    if (demo) { await sleep(70, signal); if (hash32(String(offer.id)) % 23 === 0) throw netErr('gone', 'Plus disponible'); return; }
+    const body = { product_id: offer.productId, quantity: n, via_cardtrader_zero: mode === 'zero' };
+    if (address) { body.shipping_address = address; body.billing_address = address; }
+    await ct('cart/add', { method: 'POST', body, signal });
+  };
   for (let i = 0; i < parts.length; i++) {
-    const { offer, n, name } = parts[i];
-    try {
-      if (demo) { await sleep(70, signal); if (hash32(String(offer.id)) % 23 === 0) throw netErr('gone', 'Plus disponible'); }
-      else {
-        const body = { product_id: offer.productId, quantity: n, via_cardtrader_zero: mode === 'zero' };
-        if (address) { body.shipping_address = address; body.billing_address = address; }
-        await ct('cart/add', { method: 'POST', body, signal });
+    const part = parts[i], { offer, n, name } = part;
+    try { await add(offer, n); ok++; }
+    catch (e) {
+      if (fatal(e)) throw e;
+      let handled = false;
+      if (part.alt && !noAlt) {
+        const tried = new Set([offer.productId]), used = []; let need = n, lastMsg = null, altFailed = 0;
+        for (let round = 0; round < 4 && need > 0; round++) {
+          const cand = part.alt(tried, need); if (!cand.length) break;
+          for (const c of cand) {
+            tried.add(c.offer.productId);
+            try { await add(c.offer, c.n); used.push(c); need -= c.n; }
+            catch (e2) { if (fatal(e2)) throw e2; lastMsg = e2.message; altFailed++; break; }   // on recalcule avec ce qui reste
+          }
+        }
+        if (used.length) {
+          gone.push(offer.productId); handled = true;
+          replaced.push({ name, from: offer, n, to: used, missing: Math.max(0, need) });
+          if (need > 0) failed.push({ name, reason: `${need} exemplaire${need > 1 ? 's' : ''} sans remplacement disponible` });
+          else ok++;
+          streak = 0;
+        } else if (altFailed && lastMsg === e.message) { if (++streak >= 2) noAlt = true; }   // même erreur partout : probablement pas l'offre
+        else streak = 0;
       }
-      ok++;
-    } catch (e) {
-      if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e;
-      failed.push({ name, reason: e.message });
+      if (!handled) failed.push({ name, reason: e.message });
     }
     onItem(i + 1, parts.length);
   }
-  return { ok, failed };
+  return { ok, failed, replaced, gone };
 }
 
 
@@ -1648,15 +1859,22 @@ const S = {
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
-  enBusy: null, enCtrl: null,
+  enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [],
 };
 let runSeq = 0;
 
 function loadStore() { try { return JSON.parse(localStorage.getItem('deckdeal:v1') || '{}'); } catch (e) { return {}; } }
 function saveStore() {
   try {
-    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
+    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, haptic: S.haptic, sort: S.sort, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
   } catch (e) { /* stockage indisponible */ }
+}
+
+/* ── Retour haptique (Android/Chrome ; iOS ne l'expose pas) ──────────────────────────────────── */
+const HAP = { tap: 8, ok: [14, 50, 14], warn: [26, 60, 26], bad: [70, 50, 70] };
+function haptic(kind = 'tap') {
+  if (!S.haptic || reduceMotion()) return;
+  try { if (navigator.vibrate) navigator.vibrate(HAP[kind] || HAP.tap); } catch (e) { /* refusé : sans importance */ }
 }
 
 /* ── Utilitaires UI ───────────────────────────────────────────────────────────────────────── */
@@ -1678,9 +1896,16 @@ function tween(el, to) {
   el._raf = requestAnimationFrame(step);
 }
 let toastT;
-function toast(msg) {
-  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2700);
+/** act : { label, fn } → bouton dans le toast (ex. Annuler), affiché plus longtemps. */
+function toast(msg, act) {
+  const t = $('#toast'); t.textContent = msg; t.classList.toggle('act', !!act);
+  if (act) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-act'; b.textContent = act.label;
+    b.onclick = () => { t.classList.remove('on'); clearTimeout(toastT); act.fn(); };
+    t.appendChild(b);
+  }
+  t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), act ? 6500 : 2700);
 }
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('Copié'); return; } catch (e) { /* repli */ }
@@ -1702,6 +1927,7 @@ function mountSeg(root, options, value, onChange) {
     root.style.setProperty('--idx', i);
     $$('.seg-opt', root).forEach((b, k) => b.setAttribute('aria-checked', String(k === i)));
     root._v = options[i].v;
+    if (fire) haptic('tap');
     if (fire && onChange) onChange(options[i].v);
   };
   root.onclick = e => { const b = e.target.closest('.seg-opt'); if (b) set(b.dataset.v, true); };
@@ -1820,34 +2046,131 @@ function paintSearchTask() {
 }
 function setRate(rps, total) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s`; }
 
+/** Une ligne de la liste : le bouton de la carte + une petite croix (visible une fois la carte scannée). */
+function makeRow(c, i) {
+  const rw = document.createElement('div'); rw.className = 'rw'; rw.dataset.key = c.key;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.dataset.key = c.key; b.style.setProperty('--i', i);
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'rx'; x.dataset.key = c.key; x.title = 'Retirer de la liste';
+  x.setAttribute('aria-label', 'Retirer ' + c.name + ' de la liste'); x.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-close"/></svg>';
+  rw.append(b, x); return rw;
+}
 function buildList() {
-  const list = $('#list'); list.innerHTML = '';
-  S.deck.cards.forEach((c, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.dataset.key = c.key; b.style.setProperty('--i', i);
-    list.appendChild(b); updateRow(b, c, { s: 'loading' }, null);
-  });
+  const list = $('#list'); list.innerHTML = ''; list.classList.remove('settled'); clearTimeout(list._settle); list._order = null;
+  S.deck.cards.forEach((c, i) => { const rw = makeRow(c, i); list.appendChild(rw); updateRow($('.row', rw), c, { s: 'loading' }, null); });
+  list._settle = setTimeout(() => list.classList.add('settled'), 1700); // l'entrée en cascade ne doit pas rejouer quand on réordonne
   const bs = S.deck.basics;
   const note = $('#basicsNote');
   note.hidden = !bs.length;
   if (bs.length) note.textContent = 'Terrains de base non cherchés : ' + bs.map(b => `${b.qty} × ${b.name}`).join(', ') + '. Prends-les en lot chez un seul vendeur ou en boutique.';
+  applyView(true);
 }
 
+/* ── Liste : tri, filtres, retrait d'une carte ────────────────────────────────────────────────── */
+const FILTERS = [['all', 'Toutes'], ['none', 'Sans offre'], ['lang', 'Autre langue'], ['manual', 'Choix manuel']];
+function filterMatch(f, c, v) {
+  if (f === 'none') return v.s === 'none' || v.s === 'nohub' || v.s === 'notfound';
+  if (f === 'lang') return v.s === 'ok' && v.pick.parts.some(p => p.offer.lang && p.offer.lang !== S.opts.lang);
+  if (f === 'manual') return !!S.overrides[c.key];
+  return true;
+}
+/** Anime un changement d'ordre ou de contenu de la liste : chaque ligne glisse de son ancienne place à la nouvelle (FLIP). */
+function flip(mutate) {
+  const list = $('#list'), vh = window.innerHeight || 800, before = new Map(), still = reduceMotion();
+  if (!still) for (const el of $$('.rw', list)) if (!el.hidden) before.set(el, el.getBoundingClientRect().top);
+  mutate();
+  if (still || !list.offsetParent || !before.size) return;
+  const far = t => t < -120 || t > vh + 120;
+  for (const el of $$('.rw', list)) {
+    if (el.hidden) continue;
+    const t1 = el.getBoundingClientRect().top, t0 = before.get(el);
+    try {
+      if (t0 == null) { if (!far(t1)) el.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'ease-out' }); continue; }
+      const dy = t0 - t1; if (Math.abs(dy) < 2 || (far(t0) && far(t1))) continue;
+      el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    } catch (e) { /* animations indisponibles */ }
+  }
+}
+/** Met la liste à l'écran en accord avec l'état : cartes présentes, tri, filtre, puces de filtre. */
+function applyView(force) {
+  if (!S.run) return;
+  const list = $('#list');
+  const items = S.deck.cards.map((c, i) => { const v = cardView(c); return { c, i, v, name: c.name, cost: v.s === 'ok' ? v.pick.cost : null }; });
+  const counts = {}; for (const [k] of FILTERS) counts[k] = items.filter(x => filterMatch(k, x.c, x.v)).length;
+  if (S.filter !== 'all' && !counts[S.filter]) S.filter = 'all';
+  const fc = $('#fchips'), shownF = FILTERS.filter(([k]) => k === 'all' || counts[k] > 0);
+  const fsig = S.filter + '|' + shownF.map(([k]) => k + counts[k]).join(',');
+  if (fc._sig !== fsig) { fc._sig = fsig; fc.hidden = shownF.length < 2; fc.innerHTML = shownF.map(([k, t]) => `<button type="button" class="fchip" role="radio" aria-checked="${k === S.filter}" data-f="${k}">${t}<b>${counts[k]}</b></button>`).join(''); }
+  const sortSel = $('#optSort'); if (sortSel.value !== S.sort) sortSel.value = S.sort;
+  // Pendant la recherche, un tri par prix réordonnerait la liste à chaque résultat : on l'applique à la fin (ou dès que tu le demandes).
+  const running = S.run.status === 'running', mode = force || !running || S.sort === 'deck' || S.sort === 'name' ? S.sort : 'deck';
+  const shown = sortCards(items.filter(x => filterMatch(S.filter, x.c, x.v)), mode), shownKeys = new Set(shown.map(x => x.c.key));
+  const order = shown.concat(items.filter(x => !shownKeys.has(x.c.key)));
+  const sig = order.map(x => x.c.key + (shownKeys.has(x.c.key) ? '' : '~')).join('|');
+  $('#listEmpty').hidden = shown.length > 0 || !items.length;
+  if (list._order === sig && $$('.rw', list).length === items.length) return;
+  list._order = sig;
+  const have = new Map($$('.rw', list).map(el => [el.dataset.key, el])), want = new Set(items.map(x => x.c.key));
+  flip(() => {
+    for (const [k, el] of have) if (!want.has(k)) el.remove();
+    order.forEach((x, idx) => {
+      let el = have.get(x.c.key);
+      if (!el) { el = makeRow(x.c, x.i); updateRow($('.row', el), x.c, x.v, S.run.cards[x.c.key]); }
+      el.hidden = !shownKeys.has(x.c.key);
+      if (list.children[idx] !== el) list.insertBefore(el, list.children[idx] || null);
+    });
+  });
+}
+function paintUndo() {
+  const n = S.removed.length, bar = $('#undoBar'); bar.hidden = !n; if (!n) return;
+  $('#undoTxt').textContent = n === 1 ? `${S.removed[0].name} retirée de la liste` : `${n} cartes retirées de la liste`;
+  $('#undoAll').textContent = n === 1 ? 'Remettre' : 'Tout remettre';
+}
+/** Retire une carte de la liste (et donc du panier) : ses lignes sortent de la decklist, annulable. */
+function removeCard(key) {
+  const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return;
+  const ta = $('#deckText'), r = dropCard(ta.value, key); if (!r.removed.length) return;
+  haptic('tap');
+  S.removed.push({ key, name: c.name, qty: c.qty, removed: r.removed });
+  ta.value = r.text; S.isSample = false; refreshDeck(); paintUndo();
+  const rw = $$('.rw', $('#list')).find(el => el.dataset.key === key), go = () => scheduleRecompute(true);
+  if (rw && !reduceMotion()) { rw.style.pointerEvents = 'none'; try { rw.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(28px) scale(.97)' }], { duration: 190, easing: 'ease-in', fill: 'forwards' }).onfinish = go; } catch (e) { go(); } } else go();
+  toast(`${c.name}${c.qty > 1 ? ' × ' + c.qty : ''} retirée`, { label: 'Annuler', fn: () => undoRemove(false) });
+}
+/** Annule le dernier retrait, ou tous (dans l'ordre inverse, pour retrouver la liste d'origine). */
+function undoRemove(all) {
+  if (!S.removed.length) return;
+  const ta = $('#deckText'); let n = 0, last = null;
+  do { last = S.removed.pop(); ta.value = restoreLines(ta.value, last.removed); n++; } while (all && S.removed.length);
+  S.isSample = false; refreshDeck(); paintUndo(); haptic('tap'); scheduleRecompute(true);
+  toast(n > 1 ? `${n} cartes remises` : `${last.name} remise`);
+}
+
+/** Message + action pour un refus d'accès du proxy, selon la raison renvoyée (auth_required, forbidden, bad_token, bad_app_key…). */
+function authHint(e, svc = 'CardTrader') {
+  const r = e && e.reason;
+  if (r === 'auth_required' && CTX.needsLogin) return { msg: 'Connecte-toi pour utiliser ce serveur : il est réservé à ton compte.', action: 'account', label: 'Se connecter' };
+  if (r === 'forbidden') return { msg: 'Ce compte n\'est pas autorisé sur ce serveur. Dans Compte, copie ton identifiant et ajoute-le à ALLOWED_UIDS (Hostinger).', action: 'account', label: 'Compte' };
+  if (r === 'bad_token') return { msg: 'Connexion au compte invalide : déconnecte-toi puis reconnecte-toi.', action: 'account', label: 'Compte' };
+  if (r === 'token_expired') return { msg: 'Session expirée : relance la recherche.', action: null, label: null };
+  return { msg: svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', action: 'settings', label: 'Réglages' };
+}
 async function startRun() {
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
   if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
+  if (!S.demo && CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast('Connecte-toi pour lancer la recherche'); openAccount(); return; }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
   if (S.run && S.run.task) S.run.task.remove();
   if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
   saveStore();
   const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
-  S.run = run; S.overrides = {}; S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null;
+  S.run = run; S.overrides = {}; S.gone = new Set(); S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null; S.removed = []; S.filter = 'all'; paintUndo();
   run.frac = 0; run.step = '';
   watchSeen($('#progressCard'));
   run.task = floatTask(S.demo ? 'Recherche simulée' : 'Recherche des offres', { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
   S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
-  $('#segTab').setValue('cards'); $('#list').hidden = false; $('#sellers').hidden = true;
+  $('#segTab').setValue('cards'); $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true;
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
   $('#progTitle').textContent = S.demo ? 'Recherche simulée' : 'Recherche des offres';
   $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
@@ -1879,7 +2202,8 @@ async function startRun() {
       run.status = 'error';
       const svc = /scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader';
       const own = typeof location !== 'undefined' && e.host && e.host === location.host;
-      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: [svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', 'settings', 'Réglages'],
+      const ah = e.code === 'auth' ? authHint(e, svc) : null;
+      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: ah ? [ah.msg, ah.action, ah.label] : [],
         network: [CTX.proxy ? (/scryfall/.test(e.host || '') && !e.offline ? 'Scryfall ne répond plus (limite probable pour ton IP). Attends 2 minutes ou change de réseau, puis relance : les cartes déjà traitées sont en cache.' : e.offline ? 'Tu es hors ligne. Reconnecte-toi puis relance : les cartes déjà traitées sont en cache.' : own ? 'Le proxy ne répond plus (' + e.host + '). Relance : les cartes déjà traitées sont en cache.' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.') : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
         rate: [svc + ' limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
       run.error = { msg: m[0], action: m[1], label: m[2] };
@@ -1894,6 +2218,7 @@ async function startRun() {
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
       } else { $('#progTitle').textContent = run.status === 'cancelled' ? 'Recherche arrêtée' : 'Recherche interrompue'; }
       updateAlerts(); updateDock();
+      haptic(run.status === 'done' ? (S.deck.cards.some(c => /^(none|nohub|notfound)$/.test(cardView(c).s)) ? 'warn' : 'ok') : run.status === 'error' ? 'bad' : 'tap');
       const t = run.task;
       if (run.status === 'done') { const n = S.deck.cards.length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish('Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} avec offre`); }
       else if (run.status === 'cancelled') t.remove();
@@ -1914,7 +2239,7 @@ function recompute() {
   const demand = [], byZ = {}, byD = {}; S.fo = {};
   for (const c of S.deck.cards) {
     const st = S.run.cards[c.key]; if (!st || !st.fetched || st.notFound) continue;
-    const list = st.offers.filter(o => passes(o, S.opts)); S.fo[c.key] = list;
+    const list = st.offers.filter(o => passes(o, S.opts) && !S.gone.has(o.productId)); S.fo[c.key] = list;
     if (!list.length) continue;
     if (!S.cur || S.cur === 'EUR') S.cur = list[0].cur || 'EUR';
     // Langue demandée prioritaire dans chaque mode : une offre anglaise ne masque jamais une offre française (sauf choix manuel).
@@ -1923,7 +2248,7 @@ function recompute() {
     byZ[c.key] = forMode(list, 'zero', S.opts.lang, keep); byD[c.key] = forMode(list, 'direct', S.opts.lang, keep);
   }
   S.res = { zero: optimize(demand, byZ, { mode: 'zero', forced: S.overrides }), direct: optimize(demand, byD, { mode: 'direct', ship: S.opts.ship, forced: S.overrides }) };
-  updateHero(); updateRows(); updateAlerts(); updateDock();
+  updateHero(); updateRows(); applyView(false); updateAlerts(); updateDock();
   if (S.tab === 'sellers') renderSellers(false);
 }
 
@@ -1978,6 +2303,8 @@ function updateRow(el, c, v, st) {
   const pick = v.pick;
   const sig = v.s + '|' + (pick ? pick.parts.map(p => p.offer.id + ':' + p.n).join(',') : '') + '|' + (st && st.fellBack ? 1 : 0) + '|' + S.opts.lang + '|' + S.cur;
   if (el._sig === sig) return; el._sig = sig;
+  const rw = el.parentNode; if (rw && rw.classList && rw.classList.contains('rw')) rw.classList.toggle('scanned', v.s !== 'loading');
+  const prevCost = el._cost; el._cost = v.s === 'ok' ? pick.cost : null;
   const hue = hash32(c.key) % 360, letter = esc((c.name.trim()[0] || '?').toUpperCase());
   const top = pick && pick.parts[0] ? pick.parts[0].offer : null;
   const img = (top && top.img) || (st && st.img);
@@ -1997,7 +2324,7 @@ function updateRow(el, c, v, st) {
     if (pick.short > 0) tags.push(`<span class="tag warn">Il en manque ${pick.short}</span>`);
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
     const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
     const msg = v.s === 'notfound' ? 'Nom introuvable, vérifie l\'orthographe'
       : v.s === 'nohub' ? 'Aucune offre compatible Zero'
@@ -2130,14 +2457,15 @@ function openCardSheet(key) {
       }
       return;
     }
-    api.body.innerHTML = `<div class="offers">${list.map(o => `<button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
+    const link = o => S.run.live && o.bpId != null ? `<a class="o-ext" href="${esc(ctCardUrl(o.bpId))}" target="_blank" rel="noopener noreferrer" aria-label="Voir la carte sur CardTrader" title="Voir sur CardTrader"><svg class="i" aria-hidden="true"><use href="#i-ext"/></svg></a>` : '';
+    api.body.innerHTML = `<div class="offers">${list.map(o => `<div class="offer-row"><button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
       <span class="o-who">${esc(o.seller)}${o.country ? `<i>${esc(o.country)}</i>` : ''}</span><span class="o-price">${fmt(o.price, o.cur)}</span>
-      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>`).join('')}</div>
-      ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}`;
+      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>${link(o)}</div>`).join('')}</div>
+      ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}${S.run.live ? '<p class="hint">Touche ↗ pour voir la carte et ses vendeurs sur CardTrader.</p>' : ''}`;
     api.body.onclick = e => {
       const b = e.target.closest('.offer'); if (!b) return;
       const id = list.find(o => String(o.id) === b.dataset.id); if (!id) return;
-      S.overrides[key] = id.id; scheduleRecompute(true); api.close(); toast('Offre choisie');
+      S.overrides[key] = id.id; haptic('tap'); scheduleRecompute(true); api.close(); toast('Offre choisie');
     };
     if (S.overrides[key]) {
       api.setFoot('<button class="btn ghost" type="button" id="btnAuto">Revenir au choix automatique</button>');
@@ -2149,48 +2477,105 @@ function openCardSheet(key) {
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
 function cartParts() {
   const r = curRes(), out = [];
-  for (const c of S.deck.cards) { const p = r.picks[c.key]; if (p) for (const x of p.parts) out.push({ offer: x.offer, n: x.n, name: c.name }); }
+  for (const c of S.deck.cards) { const p = r.picks[c.key]; if (p) for (const x of p.parts) out.push({ offer: x.offer, n: x.n, name: c.name, key: c.key }); }
+  const sellers = new Set(out.map(o => o.offer.sellerId)), mode = S.opts.mode;
+  for (const pt of out) {
+    const same = new Set(out.filter(o => o.key === pt.key).map(o => o.offer.productId)); // les autres lignes de la même carte ne sont pas des remplaçantes
+    // Remplaçantes : mêmes critères et même langue prioritaire ; en Direct, un vendeur déjà au panier évite un port de plus.
+    pt.alt = (tried, need) => replaceParts(forMode((S.fo[pt.key] || []).filter(o => !tried.has(o.productId) && !same.has(o.productId) && !S.gone.has(o.productId)), mode, S.opts.lang, false), need, { mode, ship: S.opts.ship, prefer: sellers });
+  }
   return out;
 }
 function openCartSheet() {
   const r = curRes(), parts = cartParts(); if (!parts.length) return;
   const nItems = parts.reduce((a, p) => a + p.n, 0);
+  const addr = S.address && S.address.street ? S.address : null;
+  const addrBody = addr && { name: addr.name, street: addr.street, zip: addr.zip, city: addr.city, state_or_province: addr.state || undefined, country_code: (addr.country || 'FR').toUpperCase() };
+  const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
+  const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
   openSheet('Remplir le panier', 'CardTrader', api => {
-    const addr = S.address && S.address.street ? S.address : null;
-    api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
-      <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
-    $('#btnGo', api.foot).onclick = async () => {
-      api.setFoot('');
-      api.body.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span id="cartMsg">Ajout des articles…</span></div><div class="track cartbar"><div class="fill" id="cartFill"></div></div>';
+    const status = (msg, ok = 0) => `<div class="status" data-ok="${ok}"><span class="dot"></span><span>${msg}</span></div>`;
+    const begin = msg => { api.setFoot(''); api.body.innerHTML = status(`<span id="cartMsg">${esc(msg)}</span>`) + '<div class="track cartbar"><div class="fill" id="cartFill"></div></div>'; };
+    let task = null;
+    const prog = (label, i, n, short) => {
+      const f = $('#cartFill', api.body), m = $('#cartMsg', api.body);
+      if (f) f.style.width = (100 * i / n) + '%'; if (m) m.textContent = `${label}… ${i} / ${n}`;
+      if (task) task.set(i, n, `${short} ${i} / ${n}`);
+    };
+    const intro = () => {
+      api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
+        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Deck Deal), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
+        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Deck Deal essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
+      api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
+      $('#btnGo', api.foot).onclick = () => go(!S.demo && !!($('#cfClear', api.body) || {}).checked);
+    };
+
+    // Étape 1 : lecture du panier + confirmation (aucune tâche flottante tant que rien n'est parti).
+    async function go(clearFirst) {
       const ctrl = new AbortController();
-      // la fenêtre peut être fermée pendant l'ajout : il continue, et une pastille flottante prend le relais
-      const task = floatTask('Remplissage du panier', { total: parts.length, sub: `0 / ${parts.length}` }, () => !sheets.includes(api));
-      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); if (!shown && !sheets.includes(api)) toast(msg); };
+      if (clearFirst) {
+        begin('Lecture du panier…');
+        let cur;
+        try { cur = await cartRead(ctrl.signal); }
+        catch (e) { api.body.innerHTML = `<div class="fail"><b>Le panier CardTrader n'a pas pu être lu.</b><span>${esc(cartErrText(e))}</span></div>`; api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="cfRetry">Réessayer</button>'); $('#cfRetry', api.foot).onclick = () => go(true); return; }
+        if (cur.items.length) {
+          const qty = cur.items.reduce((a, i) => a + i.quantity, 0), tot = money(cur.subtotal);
+          api.body.innerHTML = status(`Ton panier CardTrader contient ${plural(qty, 'exemplaire')} (${plural(cur.items.length, 'ligne')}${tot ? ' · ' + tot : ''}). Ils seront retirés, puis tes ${plural(parts.length, 'offre')} seront ajoutées.`);
+          api.setFoot('<button class="btn ghost" type="button" id="cfBack">Annuler</button><button class="btn danger" type="button" id="cfSure">Vider puis remplir</button>');
+          $('#cfBack', api.foot).onclick = intro;
+          $('#cfSure', api.foot).onclick = () => run(cur.items, ctrl);
+          return;
+        }
+      }
+      run(null, ctrl);
+    }
+
+    // Étape 2 : vidage éventuel, puis ajout. La fenêtre peut être fermée : tout continue, la pastille flottante prend le relais.
+    async function run(clearItems, ctrl) {
+      task = floatTask('Remplissage du panier', { total: parts.length, sub: 'Démarrage…' }, () => !sheets.includes(api));
+      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); haptic(kind); if (!shown && !sheets.includes(api)) toast(msg); };
       try {
-        const res = await cartFill(parts, S.opts.mode, addr && { name: addr.name, street: addr.street, zip: addr.zip, city: addr.city, state_or_province: addr.state || undefined, country_code: (addr.country || 'FR').toUpperCase() },
-          ctrl.signal, (i, n) => { $('#cartFill', api.body).style.width = (100 * i / n) + '%'; $('#cartMsg', api.body).textContent = `Ajout des articles… ${i} / ${n}`; task.set(i, n, `${i} / ${n} offres`); }, S.demo);
-        if (res.failed.length) bye('Panier partiellement rempli', 'warn', `${res.ok} ajoutée${res.ok > 1 ? 's' : ''}, ${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}`);
-        else bye('Panier rempli', 'ok', `${res.ok} offre${res.ok > 1 ? 's' : ''} ajoutée${res.ok > 1 ? 's' : ''}${S.demo ? ' (simulation)' : ''}`);
-        let html = `<div class="status" data-ok="1"><span class="dot"></span><span>${res.ok} offre${res.ok > 1 ? 's' : ''} ajoutée${res.ok > 1 ? 's' : ''}${S.demo ? ' (simulation)' : ''}.</span></div>`;
+        if (clearItems) {
+          begin('Vidage du panier…'); task.label('Vidage du panier');
+          const cl = await cartClear(clearItems, ctrl.signal, (d, t) => prog('Vidage du panier', d, t, 'Vidage'));
+          const left = (await cartRead(ctrl.signal)).items.length;
+          if (left || cl.failed.length) {
+            const n = left || cl.failed.length;
+            api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être entièrement vidé (${plural(n, 'ligne')} restante${n > 1 ? 's' : ''}).</b><span>Rien n'a été ajouté.</span>${cl.failed.slice(0, 5).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
+            api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="cfForce">Remplir quand même</button>');
+            $('#cfForce', api.foot).onclick = () => run(null, new AbortController());
+            return bye('Panier non vidé', 'warn', plural(n, 'ligne') + ' restante' + (n > 1 ? 's' : ''));
+          }
+        }
+        begin('Ajout des articles…'); task.label('Remplissage du panier');
+        const res = await cartFill(parts, S.opts.mode, addrBody, ctrl.signal, (i, n) => prog('Ajout des articles', i, n, 'Ajout'), S.demo);
+        if (res.gone.length) { res.gone.forEach(id => S.gone.add(id)); scheduleRecompute(true); } // offres indisponibles : retirées de la recherche
+        const rep = res.replaced.length;
+        let html = status(`${plural(res.ok, 'offre')} ajoutée${res.ok > 1 ? 's' : ''}${rep ? ` dont ${rep} remplacée${rep > 1 ? 's' : ''}` : ''}${S.demo ? ' (simulation)' : ''}.`, 1);
+        if (rep) html += `<div class="swap"><b>${plural(rep, 'offre')} remplacée${rep > 1 ? 's' : ''} (plus disponible${rep > 1 ? 's' : ''})</b>${res.replaced.slice(0, 8).map(x => { const t = x.to.map(u => `${u.n > 1 ? u.n + ' × ' : ''}${esc(u.offer.seller)} · ${fmt(u.offer.price * u.n, u.offer.cur)}`).join(' + '); return `<span>${esc(x.name)} : ${esc(x.from.seller)} · ${fmt(x.from.price * x.n, x.from.cur)} → ${t}</span>`; }).join('')}</div>`;
         if (res.failed.length) html += `<div class="fail"><b>${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}</b>${res.failed.slice(0, 8).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
         if (!S.demo) {
           try {
-            const cart = await ct('cart', { signal: ctrl.signal }); const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
+            const cart = await ct('cart', { signal: ctrl.signal });
             const rows = [['Articles', money(cart.subtotal)], ['Frais CardTrader Zero', money(cart.ct_zero_fee_amount)], ['Port', money(cart.shipping_cost)]].filter(x => x[1]);
             if (rows.length) html += `<dl class="kv">${rows.map(x => `<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="hint">CardTrader confirme le total final à la caisse.</p>`;
           } catch (e) { html += '<p class="hint">Le panier est rempli, mais ses totaux n\'ont pas pu être lus.</p>'; }
         }
         api.body.innerHTML = html;
         api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
+        const det = `${plural(res.ok, 'offre')} ajoutée${res.ok > 1 ? 's' : ''}${rep ? `, ${rep} remplacée${rep > 1 ? 's' : ''}` : ''}${S.demo ? ' (simulation)' : ''}`;
+        if (res.failed.length) bye('Panier partiellement rempli', 'warn', `${det}, ${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}`);
+        else bye('Panier rempli', 'ok', det);
       } catch (e) {
-        bye('Panier non rempli', 'bad', e.message || 'Erreur');
-        api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(e.message || 'Erreur')}</span></div>`;
+        bye('Panier non rempli', 'bad', cartErrText(e));
+        api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(cartErrText(e))}</span></div>`;
         api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button>');
       }
-    };
+    }
+    intro();
   });
 }
+const cartErrText = e => e.code === 'auth' ? authHint(e).msg : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
 
 /* ── Réglages ─────────────────────────────────────────────────────────────────────────────── */
 function modeLabel() {
@@ -2211,7 +2596,7 @@ function openSettings() {
         <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
       <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Utilisé seulement sans proxy" value="${esc(S.token)}"><span class="hint">Avec le proxy local, le token reste dans son environnement et n'est pas nécessaire ici.</span></div>
-      <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}"></div>
+      <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? '<span class="hint">Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.</span>' : ''}</div>
       <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester la connexion</button>
       <div class="sec-title">Adresse de livraison (facultatif)</div>
       <div class="field-in"><label class="label" for="adName">Nom</label><input type="text" id="adName" autocomplete="name" value="${esc(a.name || '')}"></div>
@@ -2222,6 +2607,8 @@ function openSettings() {
       <div class="field-in"><label class="label" for="adCountry">Pays (2 lettres)</label><input type="text" id="adCountry" maxlength="2" autocomplete="country" value="${esc(a.country || 'FR')}"></div></div>
       <div class="sec-title">Affichage</div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
+      <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
+        <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
       <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>
       <div class="sec-title">Application</div>
       <div id="appBox" class="installbox"></div>
@@ -2246,6 +2633,7 @@ function openSettings() {
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b);
       if (S.demo) { st.dataset.ok = '0'; m.textContent = 'Démo active. Désactive-la pour chercher de vraies offres.'; }
+      else if (CTX.proxy && CTX.needsLogin) { const on = !!(typeof D !== 'undefined' && D.user); st.dataset.ok = on ? '1' : '0'; m.textContent = on ? 'Serveur détecté, réservé à ton compte : connecté, le token CardTrader reste côté serveur.' : 'Serveur réservé à ton compte : connecte-toi (icône en haut) pour lancer des recherches.'; }
       else if (CTX.proxy) { st.dataset.ok = '1'; m.textContent = 'Proxy local détecté. Le token reste côté proxy.'; }
       else if (S.token) { st.dataset.ok = '1'; m.textContent = 'Connexion directe avec ton token. Le navigateur peut la bloquer, le proxy est plus fiable.'; }
       else { st.dataset.ok = '0'; m.textContent = 'Aucun proxy détecté et aucun token saisi.'; }
@@ -2258,6 +2646,7 @@ function openSettings() {
     const addrIds = { name: 'adName', street: 'adStreet', zip: 'adZip', city: 'adCity', state: 'adState', country: 'adCountry' };
     Object.entries(addrIds).forEach(([k, id]) => { $('#' + id, b).oninput = e => { S.address = { ...S.address, [k]: e.target.value }; saveStore(); }; });
     mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
+    $('#setHaptic', b).onchange = e => { S.haptic = e.target.checked; saveStore(); haptic('ok'); };
     $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
     // Vider le panier CardTrader : lecture, confirmation en deux temps (jamais de confirm() natif), suppression ligne par ligne, vérification.
     const box = $('#cartBox', b); // la suppression continue même si la feuille est fermée : on ne laisse pas un panier à moitié vidé
@@ -2282,7 +2671,7 @@ function openSettings() {
       else if (st === 'error') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(d.msg)}</span></div><button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">Réessayer</button>`;
       const go = $('#btnCartClear', box) || $('#btnCartAgain', box); if (go) go.onclick = readCart;
     };
-    const cartErr = e => e.code === 'auth' ? 'Accès refusé : vérifie le token ou la clé du proxy.' : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
+    const cartErr = e => e.code === 'auth' ? authHint(e).msg : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
     async function readCart() {
       paintCart('reading');
       try { const c = await cartRead(); c.items.length ? paintCart('confirm', c) : paintCart('empty'); }
@@ -2291,7 +2680,7 @@ function openSettings() {
     async function doClear(items) {
       paintCart('clearing', { done: 0, total: items.length });
       const task = floatTask('Vidage du panier CardTrader', { total: items.length, sub: `0 / ${items.length} lignes` }, () => !sheets.includes(api));
-      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); if (!shown && (kind === 'ok' || !sheets.includes(api))) toast(msg); };
+      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); haptic(kind); if (!shown && (kind === 'ok' || !sheets.includes(api))) toast(msg); };
       try {
         const res = await cartClear(items, undefined, (d, t) => { paintCart('clearing', { done: d, total: t }); task.set(d, t, `${d} / ${t} lignes`); });
         const left = (await cartRead()).items.length; // vérification : on relit le panier
@@ -2305,7 +2694,7 @@ function openSettings() {
       const btn = e.target; btn.disabled = true; btn.textContent = 'Test…';
       const st = $('#connStatus', b), m = $('#connMsg', b);
       try { const j = await ct('info'); st.dataset.ok = '1'; m.textContent = 'Connexion réussie' + (j && j.name ? ' (app « ' + j.name + ' »)' : '') + '.'; }
-      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? 'Accès refusé : token ou clé invalide.' : 'CardTrader est injoignable depuis ce navigateur.'; }
+      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? authHint(err).msg : 'CardTrader est injoignable depuis ce navigateur.'; }
       btn.disabled = false; btn.textContent = 'Tester la connexion';
     };
   });
@@ -2329,7 +2718,7 @@ async function detectProxy() {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; S.proxy = true; if (S.demoPref == null) S.demo = false; }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; S.proxy = true; if (S.demoPref == null) S.demo = false; }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
@@ -2353,6 +2742,7 @@ function init() {
   if (saved.opts) Object.assign(S.opts, saved.opts);
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.address = saved.address || {}; S.theme = saved.theme || 'auto';
   S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null;
+  S.haptic = saved.haptic !== false; S.sort = ['deck', 'price-desc', 'price-asc', 'name'].includes(saved.sort) ? saved.sort : 'deck';
   S.demo = S.demoPref == null ? !S.token : S.demoPref;
   syncCTX(); applyTheme();
 
@@ -2361,14 +2751,14 @@ function init() {
   mountSeg($('#segFoil'), [{ v: 'no', label: 'Sans foil' }, { v: 'any', label: 'Peu importe' }, { v: 'yes', label: 'Foil' }], S.opts.foil, () => { readOpts(); saveStore(); });
   mountSeg($('#segMode'), [{ v: 'zero', label: 'CardTrader Zero' }, { v: 'direct', label: 'Direct vendeurs' }], S.opts.mode, () => { readOpts(); syncShip(); modeHint(); saveStore(); });
   mountSeg($('#segTab'), [{ v: 'cards', label: 'Cartes' }, { v: 'sellers', label: 'Vendeurs' }], 'cards', v => {
-    S.tab = v; $('#list').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true);
+    S.tab = v; $('#list').hidden = v !== 'cards'; $('#cardsPane').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true); else applyView(true);
   });
   ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { readOpts(); saveStore(); }));
   syncShip(); modeHint(); modeLabel();
 
   const ta = $('#deckText');
   ta.value = saved.draft || SAMPLE; S.isSample = !saved.draft;
-  ta.addEventListener('input', () => { S.isSample = false; refreshDeck(); });
+  ta.addEventListener('input', () => { S.isSample = false; if (S.removed.length) { S.removed = []; paintUndo(); } refreshDeck(); });
   $('#btnSample').onclick = () => { ta.value = SAMPLE; S.isSample = true; S.deckId = null; refreshDeck(); };
   $('#btnClear').onclick = () => { ta.value = ''; S.isSample = false; S.deckId = null; refreshDeck(); ta.focus(); };
   $('#btnPaste').onclick = async () => {
@@ -2384,16 +2774,26 @@ function init() {
   $('#btnCopy').onclick = () => { if (S.run) copyText(recapText()); };
   $('#btnCart').onclick = openCartSheet;
   $('#btnSettings').onclick = openSettings; $('#modeChip').onclick = openSettings;
-  $('#list').addEventListener('click', e => { const r = e.target.closest('.row'); if (r) openCardSheet(r.dataset.key); });
+  $('#list').addEventListener('click', e => {
+    const x = e.target.closest('.rx'); if (x) return removeCard(x.dataset.key);
+    const r = e.target.closest('.row'); if (r) { haptic('tap'); openCardSheet(r.dataset.key); }
+  });
+  $('#optSort').value = S.sort;
+  $('#optSort').addEventListener('change', e => { S.sort = e.target.value; saveStore(); haptic('tap'); applyView(true); });
+  $('#fchips').addEventListener('click', e => { const b = e.target.closest('.fchip'); if (!b) return; S.filter = b.dataset.f; haptic('tap'); applyView(true); });
+  $('#listAll').onclick = () => { S.filter = 'all'; applyView(true); };
+  $('#undoAll').onclick = () => undoRemove(true);
   $('#list').addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   $('#list').addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
   $('#alerts').addEventListener('click', e => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     if (b.dataset.act === 'settings') openSettings();
+    else if (b.dataset.act === 'account') openAccount();
     else if (b.dataset.act === 'en-all') findEnglishAll();
     else if (b.dataset.act === 'direct') { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); }
     else if (b.dataset.act === 'goto') {
-      if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#sellers').hidden = true; }
+      if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true; }
+      if (S.filter !== 'all') { S.filter = 'all'; applyView(true); }
       const row = $('.row.is-missing', $('#list')); if (row) { row.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); try { row.animate([{ background: 'var(--warn-soft)' }, { background: 'transparent' }], { duration: 1400 }); } catch (err) { /* ignore */ } }
     }
   });
@@ -2500,7 +2900,7 @@ function recordRun() {
 const dateShort = ts => new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 function updateHeroDelta() {
   const el = $('#heroDelta'), dl = S.runDelta;
-  const show = !!(dl && dl.mode === S.opts.mode && S.run && S.run.status === 'done' && !S.demo);
+  const show = !!(dl && dl.mode === S.opts.mode && S.run && S.run.status === 'done' && !S.demo && !S.removed.length); // liste modifiée : l'écart ne porte plus sur la même liste
   el.hidden = !show; if (!show) return;
   const flat = dl.diff === 0, down = dl.diff < 0;
   el.className = 'delta-line ' + (flat ? 'flat' : down ? 'down' : 'up');
@@ -2712,10 +3112,14 @@ function paintAccountIn(api) {
   const state = D.listErr ? D.listErr : D.pending ? 'Synchronisation…' : `Synchronisé · ${n} deck${n > 1 ? 's' : ''}`;
   b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || 'Compte')}</b><span id="acState">${esc(state)}</span></div></div>
     ${local ? `<div class="import-row"><span>${local} deck${local > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" id="acImport">Importer</button></div>` : ''}
-    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p>`;
+    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p>
+    ${CTX.proxy ? `<div class="sec-title">Accès au serveur</div>
+      ${CTX.needsLogin ? '<div class="status" data-ok="1"><span class="dot"></span><span>Le serveur est réservé aux comptes autorisés : plus de clé à saisir.</span></div>' : '<p class="hint">Pour réserver ce serveur à ton compte (et supprimer la clé APP_KEY), ajoute cet identifiant dans les variables d\'environnement Hostinger sous le nom <b>ALLOWED_UIDS</b>, puis redéploie.</p>'}
+      <div class="uid-row"><code id="acUid">${esc(u.uid)}</code><button class="btn ghost small" type="button" id="acCopyUid">Copier</button></div>` : ''}`;
   api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">Se déconnecter</button>');
   $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast('Déconnecté'); } catch (err) { e.target.disabled = false; toast('Déconnexion impossible'); } };
   const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
+  const cu = $('#acCopyUid', b); if (cu) cu.onclick = () => copyText(u.uid);
 }
 
 /** Envoie les decks de cet appareil dans le compte. Les copies locales ne sont retirées qu'une fois le serveur d'accord. */
@@ -2774,6 +3178,11 @@ function initDecks() {
   D.localList = localRead();
   try { D.hint = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null'); } catch (e) { D.hint = null; }
   if (D.hint && typeof D.hint.l !== 'string') D.hint = null;
+  // Jeton d'identité envoyé au proxy. On attend (6 s max) que la session enregistrée soit restaurée, sinon une recherche lancée dès l'ouverture passerait pour « non connecté ».
+  CTX.idToken = async force => {
+    for (let i = 0; i < 60 && !D.authReady; i++) await sleep(100);
+    try { return D.user ? await D.user.getIdToken(!!force) : ''; } catch (e) { return ''; }
+  };
   $('#btnAccount').onclick = openAccount;
   $('#decksSync').onclick = openAccount;
   $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast('Deck mis à jour'); } else openSaveSheet(); };
