@@ -996,26 +996,32 @@ class Limiter {
   rps() { const t = performance.now(); this.stamps = this.stamps.filter(s => t - s < 5000); return this.stamps.length / 5; }
 }
 const limCT = new Limiter({ rate: 6, conc: 5, max: 9 });
-const limScry = new Limiter({ rate: 7, conc: 3, max: 8 });
+const limScry = new Limiter({ rate: 5, conc: 2, max: 6 });
+
+const hostOf = u => { try { return new URL(u, typeof location !== 'undefined' ? location.href : 'http://x').host; } catch (e) { return ''; } };
+const NET_RETRIES = 3;
 
 async function httpJson(lim, url, init, signal, retries = 4) {
-  for (let a = 0; ; a++) {
+  for (let a = 0, n = 0; ;) {
     let r;
     try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal); }
     catch (e) {
       if (e.name === 'AbortError') throw e;
-      throw netErr('network', 'Connexion impossible', { cause: e });
+      // Coupure passagère (réseau mobile, IP partagée, 429 sans en-têtes CORS…) : on ralentit puis on retente.
+      lim.slow();
+      if (n < NET_RETRIES) { n++; await sleep(700 * n, signal); continue; }
+      throw netErr('network', 'Connexion impossible', { cause: e, host: hostOf(url) });
     }
     if (r.status === 429 || r.status === 503) {
       lim.slow();
-      if (a >= retries) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status });
-      await sleep(900 * (a + 1), signal); continue;
+      if (a >= retries) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status, host: hostOf(url) });
+      await sleep(900 * (a + 1), signal); a++; continue;
     }
-    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status });
+    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status, host: hostOf(url) });
     if (r.status === 404) throw netErr('404', 'Introuvable', { status: 404 });
     if (!r.ok) {
-      if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); continue; }
-      throw netErr('http', 'Erreur ' + r.status, { status: r.status });
+      if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); a++; continue; }
+      throw netErr('http', 'Erreur ' + r.status, { status: r.status, host: hostOf(url) });
     }
     lim.speedUp();
     return r.json();
@@ -1582,9 +1588,11 @@ async function startRun() {
     if (e.name === 'AbortError') { run.status = 'cancelled'; }
     else {
       run.status = 'error';
-      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: ['CardTrader refuse l\'accès. Vérifie le token ou la clé du proxy.', 'settings', 'Réglages'],
-        network: [CTX.proxy ? 'Impossible de joindre CardTrader ou Scryfall. Vérifie ta connexion.' : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
-        rate: ['CardTrader limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
+      const svc = /scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader';
+      const own = typeof location !== 'undefined' && e.host && e.host === location.host;
+      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: [svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', 'settings', 'Réglages'],
+        network: [CTX.proxy ? (own ? 'Le proxy ne répond plus (' + e.host + '). Relance : les cartes déjà traitées sont en cache.' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.') : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
+        rate: [svc + ' limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
       run.error = { msg: m[0], action: m[1], label: m[2] };
     }
   } finally {
