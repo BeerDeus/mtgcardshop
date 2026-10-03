@@ -383,6 +383,8 @@ button.sync:active{background:var(--surface-2)}
 .rchip.warn{background:var(--warn-soft);color:var(--warn)} .rchip.warn b{color:inherit}
 .rchip.bad{background:var(--bad-soft);color:var(--bad)} .rchip.bad b{color:inherit}
 .recap-crit{font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
+.cartbox{display:flex;flex-direction:column;gap:10px}
+.cart-actions{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1363,6 +1365,32 @@ async function runDemo(cards, opts, hooks, signal) {
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
+/** Contenu du panier CardTrader : lignes {productId, quantity, name} + sous-total. Aucun achat, lecture seule. */
+async function cartRead(signal) {
+  const cart = await ct('cart', { signal });
+  const items = [];
+  for (const sc of (cart && cart.subcarts) || []) for (const it of sc.cart_items || []) {
+    const pid = Number(it.product && it.product.id), q = Number(it.quantity);
+    if (Number.isFinite(pid) && pid > 0 && q > 0) items.push({ productId: pid, quantity: q, name: (it.product && it.product.name_en) || String(pid) });
+  }
+  return { items, subtotal: cart && cart.subtotal };
+}
+
+/** Vide le panier : l'API n'a pas de « tout supprimer », on retire chaque ligne (quantité exacte lue dans le panier). */
+async function cartClear(items, signal, onItem) {
+  const failed = []; let ok = 0;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    try { await ct('cart/remove', { method: 'POST', body: { product_id: it.productId, quantity: it.quantity }, signal }); ok++; }
+    catch (e) {
+      if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e;
+      failed.push({ name: it.name, reason: e.message });
+    }
+    if (onItem) onItem(i + 1, items.length);
+  }
+  return { ok, failed };
+}
+
 async function cartFill(parts, mode, address, signal, onItem, demo) {
   const failed = []; let ok = 0;
   for (let i = 0; i < parts.length; i++) {
@@ -2029,7 +2057,9 @@ function openSettings() {
       <div class="field-in"><label class="label" for="adCountry">Pays (2 lettres)</label><input type="text" id="adCountry" maxlength="2" autocomplete="country" value="${esc(a.country || 'FR')}"></div></div>
       <div class="sec-title">Affichage</div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
-      <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>`;
+      <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>
+      <div class="sec-title">Panier CardTrader</div>
+      <div id="cartBox" class="cartbox"></div>`;
     const b = api.body;
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b);
@@ -2047,6 +2077,45 @@ function openSettings() {
     Object.entries(addrIds).forEach(([k, id]) => { $('#' + id, b).oninput = e => { S.address = { ...S.address, [k]: e.target.value }; saveStore(); }; });
     mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
     $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
+    // Vider le panier CardTrader : lecture, confirmation en deux temps (jamais de confirm() natif), suppression ligne par ligne, vérification.
+    const box = $('#cartBox', b); // la suppression continue même si la feuille est fermée : on ne laisse pas un panier à moitié vidé
+    const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
+    const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
+    const paintCart = (st, d = {}) => {
+      if (!box.isConnected) return;
+      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Deck Deal. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
+      else if (st === 'reading') box.innerHTML = '<button class="btn ghost small" type="button" disabled style="align-self:flex-start">Lecture du panier…</button>';
+      else if (st === 'empty') box.innerHTML = '<div class="status" data-ok="1"><span class="dot"></span><span>Le panier CardTrader est déjà vide.</span></div>';
+      else if (st === 'confirm') {
+        const qty = d.items.reduce((a, i) => a + i.quantity, 0), tot = money(d.subtotal);
+        box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${plural(qty, 'exemplaire')} (${plural(d.items.length, 'ligne')}${tot ? ' · ' + tot : ''}) seront retirés du panier CardTrader.</span></div>
+          <div class="cart-actions"><button class="btn ghost small" type="button" id="btnCartCancel">Annuler</button><button class="btn ghost-danger small" type="button" id="btnCartConfirm">Vider ${plural(qty, 'exemplaire')}</button></div>`;
+        $('#btnCartCancel', box).onclick = () => paintCart('idle');
+        $('#btnCartConfirm', box).onclick = () => doClear(d.items);
+      }
+      else if (st === 'clearing') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>Suppression… ${d.done} / ${d.total}</span></div>`;
+      else if (st === 'done') box.innerHTML = `<div class="status" data-ok="${d.failed.length || d.left ? 0 : 1}"><span class="dot"></span><span>${d.left || d.failed.length ? `${plural(d.ok, 'ligne')} retirée${d.ok > 1 ? 's' : ''}, ${plural(d.left || d.failed.length, 'ligne')} restante${(d.left || d.failed.length) > 1 ? 's' : ''}.` : `Panier vidé (${plural(d.ok, 'ligne')} retirée${d.ok > 1 ? 's' : ''}).`}</span></div>`
+        + (d.failed.length ? `<div class="fail">${d.failed.slice(0, 6).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>` : '')
+        + '<button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">Revérifier</button>';
+      else if (st === 'error') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(d.msg)}</span></div><button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">Réessayer</button>`;
+      const go = $('#btnCartClear', box) || $('#btnCartAgain', box); if (go) go.onclick = readCart;
+    };
+    const cartErr = e => e.code === 'auth' ? 'Accès refusé : vérifie le token ou la clé du proxy.' : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
+    async function readCart() {
+      paintCart('reading');
+      try { const c = await cartRead(); c.items.length ? paintCart('confirm', c) : paintCart('empty'); }
+      catch (e) { paintCart('error', { msg: 'Lecture impossible : ' + cartErr(e) }); }
+    }
+    async function doClear(items) {
+      let done = 0; paintCart('clearing', { done, total: items.length });
+      try {
+        const res = await cartClear(items, undefined, (d, t) => paintCart('clearing', { done: d, total: t }));
+        const left = (await cartRead()).items.length; // vérification : on relit le panier
+        paintCart('done', { ok: res.ok, failed: res.failed, left });
+        if (!left && !res.failed.length) toast('Panier CardTrader vidé');
+      } catch (e) { paintCart('error', { msg: 'Suppression interrompue : ' + cartErr(e) }); }
+    }
+    paintCart('idle');
     $('#btnTest', b).onclick = async e => {
       const btn = e.target; btn.disabled = true; btn.textContent = 'Test…';
       const st = $('#connStatus', b), m = $('#connMsg', b);
