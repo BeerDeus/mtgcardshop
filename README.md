@@ -1,6 +1,6 @@
 # Deck Deal
 
-Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node ≥ 18).
+Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node ≥ 18) lancé via `start.cjs`.
 
 ## Variables d'environnement (jamais dans le dépôt)
 
@@ -17,5 +17,5 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 
 ## Hostinger (Business / Cloud)
 
-Node.js Web App › Import Git repository › framework « Other » › entry file `proxy.mjs`.
+Node.js Web App › Import Git repository › framework « Other » › entry file `start.cjs`.
 Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines autorisés.

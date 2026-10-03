@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Deck Deal : proxy CardTrader + page",
-  "scripts": { "start": "node proxy.mjs" },
+  "main": "start.cjs",
+  "scripts": { "start": "node start.cjs" },
   "engines": { "node": ">=18" }
 }
