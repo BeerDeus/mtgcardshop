@@ -1,0 +1,9 @@
+{
+  "name": "deck-deal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deck Deal : proxy CardTrader + page",
+  "scripts": { "start": "node proxy.mjs" },
+  "engines": { "node": ">=18" }
+}
