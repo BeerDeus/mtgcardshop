@@ -18,6 +18,19 @@ const APP_KEY = (process.env.APP_KEY || '').trim();
 const UPSTREAM = (process.env.CT_UPSTREAM || 'https://api.cardtrader.com/api/v2').replace(/\/+$/, '') + '/'; // surchargeable pour les tests
 const PAGE = ['deck-deal.html', 'dist/deck-deal.html'].map(f => join(here, f)).find(existsSync);
 
+// Fichiers PWA servis depuis ./pwa : correspondance EXACTE sur cette liste (aucun chemin n'est construit depuis l'URL → pas de traversée).
+const YEAR = 'public, max-age=604800', NOCACHE = 'no-cache';
+const STATIC = new Map([
+  ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json; charset=utf-8', NOCACHE]],
+  ['/sw.js', ['sw.js', 'text/javascript; charset=utf-8', NOCACHE]],
+  ['/icons/icon.svg', ['icons/icon.svg', 'image/svg+xml', YEAR]],
+  ['/icons/icon-192.png', ['icons/icon-192.png', 'image/png', YEAR]],
+  ['/icons/icon-512.png', ['icons/icon-512.png', 'image/png', YEAR]],
+  ['/icons/maskable-512.png', ['icons/maskable-512.png', 'image/png', YEAR]],
+  ['/icons/apple-touch-icon.png', ['icons/apple-touch-icon.png', 'image/png', YEAR]],
+  ['/icons/favicon-32.png', ['icons/favicon-32.png', 'image/png', YEAR]],
+]);
+
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
 if (!LOOPBACK.has(HOST) && !APP_KEY) {
   console.error('Refus de démarrer : HOST=' + HOST + ' expose ton token CardTrader. Définis APP_KEY=un-secret.');
@@ -134,7 +147,7 @@ async function api(req, res, url) {
 
 const server = http.createServer(async (req, res) => {
   try {
-    const url = new URL(req.url, 'http://x');
+    const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, hasToken: !!TOKEN });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -142,6 +155,14 @@ const server = http.createServer(async (req, res) => {
       const html = await readFile(PAGE);
       res.writeHead(200, { ...SEC, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
       return res.end(html);
+    }
+    const st = (req.method === 'GET' || req.method === 'HEAD') && STATIC.get(url.pathname);
+    if (st) {
+      const f = join(here, 'pwa', st[0]);
+      if (!existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
+      const data = await readFile(f);
+      res.writeHead(200, { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2], 'Content-Length': data.length });
+      return res.end(req.method === 'HEAD' ? undefined : data);
     }
     json(res, 404, { error: 'not_found' });
   } catch (e) {

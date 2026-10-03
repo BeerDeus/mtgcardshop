@@ -7,6 +7,14 @@
 <meta name="description" content="Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.">
 <meta name="theme-color" content="#f1f3f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Deck Deal">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Deck Deal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -385,6 +393,49 @@ button.sync:active{background:var(--surface-2)}
 .recap-crit{font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
 .cartbox{display:flex;flex-direction:column;gap:10px}
 .cart-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* pastilles de progression flottantes */
+.tasks{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);right:12px;z-index:70;width:min(310px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none;transition:top .32s cubic-bezier(.2,.8,.2,1)}
+.tasks.over{top:calc(env(safe-area-inset-top,0px) + 8px)}
+.task{pointer-events:auto;position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 10px 13px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);transform:translateX(calc(100% + 18px));opacity:0;transition:transform .4s cubic-bezier(.2,.9,.25,1),opacity .25s}
+.task.in{transform:none;opacity:1}
+.task.hide{display:none}
+.task-ico{width:28px;height:28px;flex:none}
+.task-ico svg{width:100%;height:100%;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.task .trk{stroke:var(--surface-2)}
+.task .arc{stroke:var(--accent);transform:rotate(-90deg);transform-origin:12px 12px;transition:stroke-dashoffset .35s ease}
+.task .chk,.task .bang{opacity:0;transition:opacity .2s}
+.task.ok .chk{opacity:1;stroke:var(--good)} .task.ok .arc{stroke:var(--good);stroke-dashoffset:0!important}
+.task.warn .bang{opacity:1;stroke:var(--warn)} .task.warn .arc{stroke:var(--warn);stroke-dashoffset:0!important}
+.task.bad .bang{opacity:1;stroke:var(--bad)} .task.bad .arc{stroke:var(--bad);stroke-dashoffset:0!important}
+.task.indet .arc{animation:taskspin 1.1s linear infinite}
+@keyframes taskspin{to{transform:rotate(270deg)}}
+.task-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.task-t{font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-s{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-s:empty{display:none}
+.task-x{flex:none;width:28px;height:28px;border:0;background:transparent;color:var(--ink-3);border-radius:9px;display:grid;place-items:center;padding:0}
+.task-x[hidden]{display:none}
+.task-x svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
+.task-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--surface-2)}
+.task-bar i{display:block;height:100%;width:0;background:var(--foil);background-size:220% 100%;transition:width .35s ease}
+.task.indet .task-bar i{width:38%;animation:taskslide 1.3s ease-in-out infinite alternate}
+@keyframes taskslide{from{transform:translateX(0)}to{transform:translateX(162%)}}
+.task.ok .task-bar i{background:var(--good);width:100%;animation:none;transform:none}
+.task.warn .task-bar i{background:var(--warn);width:100%;animation:none;transform:none}
+.task.bad .task-bar i{background:var(--bad);width:100%;animation:none;transform:none}
+@media (prefers-reduced-motion:reduce){.task,.tasks,.task .arc,.task-bar i{transition:none}.task.indet .arc,.task.indet .task-bar i{animation:none}}
+
+/* ── Installation (PWA) ── */
+.installbar{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.ib-ico{flex:none;width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center}
+.ib-ico .mark{display:block;width:15px;height:21px;animation:none}
+.ib-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ib-txt b{font-size:14.5px;letter-spacing:-.01em}
+.ib-txt span{font-size:12.5px;color:var(--ink-3);text-wrap:pretty}
+.ib-x{flex:none;width:34px;height:34px;border:0;background:transparent;color:var(--ink-3);border-radius:10px;display:grid;place-items:center;padding:0}
+.ib-x .i{width:17px;height:17px}
+.installbox{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 </style>
 </head>
 <body>
@@ -424,6 +475,15 @@ button.sync:active{background:var(--surface-2)}
         <h1>Ta decklist au meilleur prix, en français.</h1>
         <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
       </div>
+
+      <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
+        <aside class="installbar" id="installBar" aria-label="Installer l'application">
+          <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
+          <span class="ib-txt"><b>Installer Deck Deal</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
+          <button class="btn small" type="button" id="btnInstallBar">Installer</button>
+          <button class="ib-x" type="button" id="btnInstallX" aria-label="Plus tard"><svg class="i"><use href="#i-close"/></svg></button>
+        </aside>
+      </div></div>
 
       <section class="decks" id="decksSec" aria-label="Mes decks" hidden>
         <div class="decks-head"><h2>Mes decks</h2><button class="sync" id="decksSync" type="button" data-s="local"><i></i><span id="decksSyncTxt">Sur cet appareil</span></button></div>
@@ -542,6 +602,7 @@ button.sync:active{background:var(--surface-2)}
 
 <div class="sheet-root" id="sheetRoot"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
@@ -1413,6 +1474,70 @@ async function cartFill(parts, mode, address, signal, onItem, demo) {
 }
 
 
+/* ── tasks.js : pastilles de progression flottantes (haut à droite) ─────────────────────────────
+   Elles survivent à la fermeture des fenêtres : une tâche lancée depuis une feuille continue,
+   et son avancement reste visible. Une tâche « cachée » (feuille d'origine encore ouverte, ou
+   barre de progression déjà à l'écran) ne s'affiche pas et ne clignote pas à la fin. */
+const Tasks = (() => {
+  const R = 9.5, CIRC = 2 * Math.PI * R;
+  const host = () => (typeof document !== 'undefined' ? document.getElementById('tasks') : null);
+  const NOOP = { set() {}, show() {}, finish() {}, remove() {}, label() {}, isShown: () => false, done: true };
+
+  /** label : titre ; o : {total, sub, hidden}. Retourne une poignée {set, show, finish, remove, label, isShown}. */
+  function start(label, o = {}) {
+    const h = host(); if (!h) return NOOP;
+    const el = document.createElement('div');
+    el.className = 'task' + (o.hidden ? ' hide' : '') + (o.total ? '' : ' indet'); el.setAttribute('role', 'status');
+    el.innerHTML = `<span class="task-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="${R}"/><circle class="arc" cx="12" cy="12" r="${R}" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${(CIRC * 0.72).toFixed(2)}"/><path class="chk" d="M7.4 12.6l3 3 6.2-6.4"/><path class="bang" d="M12 7.2v5.6M12 16.3v.1"/></svg></span>
+      <span class="task-txt"><span class="task-t"></span><span class="task-s"></span></span>
+      <button class="task-x" type="button" aria-label="Fermer" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+      <span class="task-bar"><i></i></span>`;
+    const t = el.querySelector('.task-t'), s = el.querySelector('.task-s'), arc = el.querySelector('.arc'), bar = el.querySelector('.task-bar i'), x = el.querySelector('.task-x');
+    t.textContent = label; s.textContent = o.sub || '';
+    h.appendChild(el);
+    let timer = 0, gone = false;
+    const reveal = () => { void el.offsetWidth; requestAnimationFrame(() => el.classList.add('in')); };
+    const api = {
+      done: false,
+      set(done, total, sub) {
+        if (gone || api.done) return;
+        const f = total > 0 ? Math.max(0, Math.min(1, done / total)) : null;
+        el.classList.toggle('indet', f === null);
+        if (f !== null) { arc.style.strokeDashoffset = (CIRC * (1 - f)).toFixed(2); bar.style.width = (f * 100).toFixed(1) + '%'; }
+        s.textContent = sub != null ? sub : (total > 0 ? `${done} / ${total}` : '');
+      },
+      label(text) { t.textContent = text; },
+      isShown: () => !gone && !el.classList.contains('hide'),
+      show(flag) {
+        if (gone) return;
+        if (flag && el.classList.contains('hide')) { el.classList.remove('hide'); reveal(); }
+        else if (!flag && !el.classList.contains('hide')) { el.classList.remove('in'); el.classList.add('hide'); }
+      },
+      /** kind : 'ok' | 'warn' | 'bad'. Si la tâche est cachée, l'interface d'origine montre déjà le résultat : on retire sans bruit. */
+      finish(msg, kind = 'ok', detail = '') {
+        if (gone || api.done) return;
+        api.done = true;
+        if (el.classList.contains('hide')) return api.remove();
+        el.classList.remove('indet'); el.classList.add(kind); t.textContent = msg; s.textContent = detail; x.hidden = false;
+        el.onclick = api.remove; clearTimeout(timer); timer = setTimeout(api.remove, kind === 'ok' ? 4500 : 9000);
+      },
+      remove() {
+        if (gone) return; gone = true; clearTimeout(timer); api.done = true;
+        el.classList.remove('in'); setTimeout(() => el.remove(), 320);
+      },
+    };
+    if (!o.hidden) { el.classList.add('hide'); api.show(true); }
+    return api;
+  }
+
+  /** Sous une feuille ouverte, la pile passe tout en haut pour ne pas masquer son bouton de fermeture. */
+  function layout() {
+    const h = host(); if (h) h.classList.toggle('over', typeof sheets !== 'undefined' && sheets.length > 0);
+  }
+  return { start, layout };
+})();
+
+
 /* ── app.js : interface ─────────────────────────────────────────────────────────────────────── */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -1588,6 +1713,21 @@ function mountSeg(root, options, value, onChange) {
 
 /* ── Sheets ───────────────────────────────────────────────────────────────────────────────── */
 const sheets = [];
+
+/* ── Pastilles flottantes : une tâche longue reste visible quand son écran d'origine ne l'est plus ── */
+const floaters = new Set(), seen = new Map();
+const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(es => { for (const e of es) seen.set(e.target, e.isIntersecting); syncFloat(); }) : null;
+function watchSeen(el) { if (io && el && !seen.has(el)) { seen.set(el, true); io.observe(el); } }
+const isSeen = el => seen.get(el) !== false;
+/** rule() : true = la pastille doit s'afficher. Réévaluée à chaque ouverture/fermeture de feuille et changement de visibilité. */
+function floatTask(label, o, rule) {
+  const t = Tasks.start(label, { ...o, hidden: true });
+  const f = { t, sync() { if (t.done) floaters.delete(f); else t.show(!!rule()); } };
+  floaters.add(f); f.sync();
+  return t;
+}
+function syncFloat() { for (const f of [...floaters]) f.sync(); Tasks.layout(); }
+
 function openSheet(title, sub, build) {
   const wrap = document.createElement('div'); wrap.className = 'sheet-wrap';
   wrap.innerHTML = `<div class="sheet-backdrop" data-close></div>
@@ -1601,6 +1741,7 @@ function openSheet(title, sub, build) {
   const api = { body: $('.sheet-body', wrap), foot: $('.sheet-foot', wrap), wrap,
     close() {
       const i = sheets.indexOf(api); if (i < 0) return; sheets.splice(i, 1);
+      syncFloat();
       wrap.classList.remove('open');
       setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 440);
       if (!sheets.length) { const app = $('#app'); app.inert = false; app.removeAttribute('aria-hidden'); }
@@ -1608,7 +1749,7 @@ function openSheet(title, sub, build) {
     },
     setFoot(html) { api.foot.hidden = !html; api.foot.innerHTML = html || ''; } };
   wrap.addEventListener('click', e => { if (e.target.closest('[data-close]')) api.close(); });
-  $('#sheetRoot').appendChild(wrap); sheets.push(api);
+  $('#sheetRoot').appendChild(wrap); sheets.push(api); syncFloat();
   const app = $('#app'); app.inert = true; app.setAttribute('aria-hidden', 'true');
   build(api);
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('open'); const c = $('[data-close].icon-btn', wrap); if (c) c.focus({ preventScroll: true }); }));
@@ -1666,10 +1807,16 @@ function buildSteps() {
 function setStep(id, state, detail) {
   const li = $(`.step[data-id="${id}"]`); if (!li) return;
   li.dataset.state = state; $('.det', li).textContent = detail || '';
+  if (state === 'run' && S.run) { S.run.step = (li.children[1].textContent || '') + (detail ? ' · ' + detail : ''); paintSearchTask(); }
 }
 function setProgress(f) {
   f = Math.max(0, Math.min(1, f));
   $('#progFill').style.width = (f * 100).toFixed(1) + '%'; $('#progPct').textContent = Math.round(f * 100) + ' %';
+  if (S.run) { S.run.frac = f; paintSearchTask(); }
+}
+function paintSearchTask() {
+  const r = S.run, t = r && r.task; if (!t || t.done) return;
+  t.set(Math.round(r.frac * 100), 100, Math.round(r.frac * 100) + ' %' + (r.step ? ' · ' + r.step : ''));
 }
 function setRate(rps, total) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s`; }
 
@@ -1690,11 +1837,15 @@ async function startRun() {
   const cards = S.deck.cards; if (!cards.length) return;
   if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
+  if (S.run && S.run.task) S.run.task.remove();
   if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
   saveStore();
   const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
   S.run = run; S.overrides = {}; S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null;
+  run.frac = 0; run.step = '';
+  watchSeen($('#progressCard'));
+  run.task = floatTask(S.demo ? 'Recherche simulée' : 'Recherche des offres', { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
   S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
   $('#segTab').setValue('cards'); $('#list').hidden = false; $('#sellers').hidden = true;
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
@@ -1743,6 +1894,10 @@ async function startRun() {
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
       } else { $('#progTitle').textContent = run.status === 'cancelled' ? 'Recherche arrêtée' : 'Recherche interrompue'; }
       updateAlerts(); updateDock();
+      const t = run.task;
+      if (run.status === 'done') { const n = S.deck.cards.length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish('Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} avec offre`); }
+      else if (run.status === 'cancelled') t.remove();
+      else t.finish('Recherche interrompue', 'bad', run.error ? run.error.msg : '');
     }
   }
 }
@@ -1896,6 +2051,8 @@ async function findEnglishAll() {
   if (S.enCtrl) S.enCtrl.abort();
   const ctrl = S.enCtrl = new AbortController(), run = S.run;
   S.enBusy = { done: 0, total: cands.length }; updateAlerts();
+  watchSeen($('#alerts'));
+  const task = floatTask('Recherche en anglais', { total: cands.length, sub: `0 / ${cands.length}` }, () => sheets.length > 0 || !isSeen($('#alerts')));
   let failed = 0, aborted = false, i = 0;
   const worker = async () => {
     while (i < cands.length && !ctrl.signal.aborted) {
@@ -1904,15 +2061,17 @@ async function findEnglishAll() {
         const offers = S.demo ? (await sleep(140, ctrl.signal), makeDemoOffers(c, 'en')) : await searchOneEnglish(c, st, S.opts, ctrl.signal);
         st.offers = st.offers.concat(offers); st.fellBack = true;
       } catch (e) { if (e.name === 'AbortError') { aborted = true; return; } failed++; }
-      if (S.enBusy) { S.enBusy.done++; updateAlerts(); } scheduleRecompute();
+      if (S.enBusy) { S.enBusy.done++; updateAlerts(); task.set(S.enBusy.done, cands.length, `${S.enBusy.done} / ${cands.length}`); } scheduleRecompute();
     }
   };
   await Promise.all(Array.from({ length: Math.min(3, cands.length) }, worker));
   if (S.enCtrl === ctrl) S.enBusy = null;
-  if (aborted || S.run !== run) { updateAlerts(); return; }
+  if (aborted || S.run !== run) { task.remove(); updateAlerts(); return; }
   scheduleRecompute(true);
   const ok = cands.filter(c => cardView(c).s === 'ok').length;
-  toast(`${ok} / ${cands.length} carte${cands.length > 1 ? 's' : ''} trouvée${ok > 1 ? 's' : ''} en anglais${failed ? ` · ${failed} erreur${failed > 1 ? 's' : ''}` : ''}`);
+  const msg = `${ok} / ${cands.length} carte${cands.length > 1 ? 's' : ''} trouvée${ok > 1 ? 's' : ''} en anglais${failed ? ` · ${failed} erreur${failed > 1 ? 's' : ''}` : ''}`;
+  const shown = task.isShown(); task.finish('Recherche en anglais terminée', ok === cands.length ? 'ok' : 'warn', msg);
+  if (!shown) toast(msg);
 }
 
 /* ── Récapitulatif (en haut des résultats) ─────────────────────────────────────────────────── */
@@ -2005,9 +2164,14 @@ function openCartSheet() {
       api.setFoot('');
       api.body.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span id="cartMsg">Ajout des articles…</span></div><div class="track cartbar"><div class="fill" id="cartFill"></div></div>';
       const ctrl = new AbortController();
+      // la fenêtre peut être fermée pendant l'ajout : il continue, et une pastille flottante prend le relais
+      const task = floatTask('Remplissage du panier', { total: parts.length, sub: `0 / ${parts.length}` }, () => !sheets.includes(api));
+      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); if (!shown && !sheets.includes(api)) toast(msg); };
       try {
         const res = await cartFill(parts, S.opts.mode, addr && { name: addr.name, street: addr.street, zip: addr.zip, city: addr.city, state_or_province: addr.state || undefined, country_code: (addr.country || 'FR').toUpperCase() },
-          ctrl.signal, (i, n) => { $('#cartFill', api.body).style.width = (100 * i / n) + '%'; $('#cartMsg', api.body).textContent = `Ajout des articles… ${i} / ${n}`; }, S.demo);
+          ctrl.signal, (i, n) => { $('#cartFill', api.body).style.width = (100 * i / n) + '%'; $('#cartMsg', api.body).textContent = `Ajout des articles… ${i} / ${n}`; task.set(i, n, `${i} / ${n} offres`); }, S.demo);
+        if (res.failed.length) bye('Panier partiellement rempli', 'warn', `${res.ok} ajoutée${res.ok > 1 ? 's' : ''}, ${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}`);
+        else bye('Panier rempli', 'ok', `${res.ok} offre${res.ok > 1 ? 's' : ''} ajoutée${res.ok > 1 ? 's' : ''}${S.demo ? ' (simulation)' : ''}`);
         let html = `<div class="status" data-ok="1"><span class="dot"></span><span>${res.ok} offre${res.ok > 1 ? 's' : ''} ajoutée${res.ok > 1 ? 's' : ''}${S.demo ? ' (simulation)' : ''}.</span></div>`;
         if (res.failed.length) html += `<div class="fail"><b>${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}</b>${res.failed.slice(0, 8).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
         if (!S.demo) {
@@ -2020,6 +2184,7 @@ function openCartSheet() {
         api.body.innerHTML = html;
         api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
       } catch (e) {
+        bye('Panier non rempli', 'bad', e.message || 'Erreur');
         api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(e.message || 'Erreur')}</span></div>`;
         api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button>');
       }
@@ -2058,9 +2223,26 @@ function openSettings() {
       <div class="sec-title">Affichage</div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
       <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>
+      <div class="sec-title">Application</div>
+      <div id="appBox" class="installbox"></div>
       <div class="sec-title">Panier CardTrader</div>
       <div id="cartBox" class="cartbox"></div>`;
     const b = api.body;
+    // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
+    const appBox = $('#appBox', b);
+    const paintApp = () => {
+      if (!appBox.isConnected) { off(); return; }
+      const st = PWA.state();
+      const okRow = t => `<div class="status" data-ok="1"><span class="dot"></span><span>${t}</span></div>`;
+      appBox.innerHTML = st === 'standalone' ? okRow('Deck Deal est ouverte en application installée.')
+        : st === 'installed' ? okRow('Deck Deal est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
+        : st === 'ready' ? '<p class="hint">Installe Deck Deal comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Deck Deal</button>'
+        : st === 'ios' ? '<p class="hint">Sur iPhone et iPad, Apple ne permet pas l\'installation directe. Dans Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».</p>'
+        : st === 'insecure' ? '<p class="hint">L\'installation demande une adresse en https.</p>'
+        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Deck Deal ». Android : menu ⋮ puis « Installer l\'application ».</p>';
+      const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
+    };
+    const off = PWA.on(paintApp); paintApp();
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b);
       if (S.demo) { st.dataset.ok = '0'; m.textContent = 'Démo active. Désactive-la pour chercher de vraies offres.'; }
@@ -2107,13 +2289,16 @@ function openSettings() {
       catch (e) { paintCart('error', { msg: 'Lecture impossible : ' + cartErr(e) }); }
     }
     async function doClear(items) {
-      let done = 0; paintCart('clearing', { done, total: items.length });
+      paintCart('clearing', { done: 0, total: items.length });
+      const task = floatTask('Vidage du panier CardTrader', { total: items.length, sub: `0 / ${items.length} lignes` }, () => !sheets.includes(api));
+      const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); if (!shown && (kind === 'ok' || !sheets.includes(api))) toast(msg); };
       try {
-        const res = await cartClear(items, undefined, (d, t) => paintCart('clearing', { done: d, total: t }));
+        const res = await cartClear(items, undefined, (d, t) => { paintCart('clearing', { done: d, total: t }); task.set(d, t, `${d} / ${t} lignes`); });
         const left = (await cartRead()).items.length; // vérification : on relit le panier
         paintCart('done', { ok: res.ok, failed: res.failed, left });
-        if (!left && !res.failed.length) toast('Panier CardTrader vidé');
-      } catch (e) { paintCart('error', { msg: 'Suppression interrompue : ' + cartErr(e) }); }
+        if (!left && !res.failed.length) bye('Panier CardTrader vidé', 'ok', plural(res.ok, 'ligne') + ' retirée' + (res.ok > 1 ? 's' : ''));
+        else bye('Panier partiellement vidé', 'warn', plural(left || res.failed.length, 'ligne') + ' restante' + ((left || res.failed.length) > 1 ? 's' : ''));
+      } catch (e) { paintCart('error', { msg: 'Suppression interrompue : ' + cartErr(e) }); bye('Suppression interrompue', 'bad', cartErr(e)); }
     }
     paintCart('idle');
     $('#btnTest', b).onclick = async e => {
@@ -2124,6 +2309,19 @@ function openSettings() {
       btn.disabled = false; btn.textContent = 'Tester la connexion';
     };
   });
+}
+/* ── Installation (bannière de la page d'accueil) ─────────────────────────────────────────────── */
+async function doInstall() { const r = await PWA.install(); if (r === 'dismissed') PWA.snooze(); }
+function paintInstallBar() {
+  const w = $('#installWrap'); if (!w) return;
+  const show = PWA.wantsBanner(), st = PWA.state();
+  w.classList.toggle('closed', !show); w.setAttribute('aria-hidden', show ? 'false' : 'true'); w.inert = !show;
+  $('#installSub').textContent = st === 'ios' ? 'Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».' : 'Lancement direct, plein écran, comme une vraie app.';
+  $('#btnInstallBar').hidden = st === 'ios';
+}
+function initInstall() {
+  $('#btnInstallBar').onclick = doInstall; $('#btnInstallX').onclick = PWA.snooze;
+  PWA.on(paintInstallBar); paintInstallBar();
 }
 async function detectProxy() {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return;
@@ -2199,6 +2397,7 @@ function init() {
       const row = $('.row.is-missing', $('#list')); if (row) { row.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); try { row.animate([{ background: 'var(--warn-soft)' }, { background: 'transparent' }], { duration: 1400 }); } catch (err) { /* ignore */ } }
     }
   });
+  initInstall();
   detectProxy();
 }
 
@@ -2593,6 +2792,58 @@ function initDecks() {
   renderAccountBtn(); renderDecks();
   setTimeout(connectCloud, 0);
 }
+
+
+/* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
+   Chrome/Edge/Android/Samsung : l'événement « beforeinstallprompt » ouvre la fenêtre d'installation du navigateur.
+   iPhone/iPad : Apple n'autorise que « Sur l'écran d'accueil » (pas d'installation déclenchable) → on explique le geste.
+   Le service worker (sw.js) est ce qui rend l'app installable et la fait s'ouvrir hors ligne. */
+const PWA = (() => {
+  let deferred = null, installed = false;
+  const subs = new Set(), KEY = 'deckdeal:install-x', QUIET = 30 * 864e5;
+  const mq = q => { try { return matchMedia(q).matches; } catch (e) { return false; } };
+  const standalone = () => mq('(display-mode: standalone)') || mq('(display-mode: minimal-ui)') || mq('(display-mode: window-controls-overlay)') || (typeof navigator !== 'undefined' && navigator.standalone === true);
+  const ios = () => typeof navigator !== 'undefined' && (/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const secure = () => typeof location !== 'undefined' && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+  const emit = () => subs.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  /** standalone : déjà ouverte comme une app · installed : installée à l'instant · ready : on peut déclencher l'installation · ios · manual : menu du navigateur · insecure : pas en https */
+  function state() {
+    if (standalone()) return 'standalone';
+    if (installed) return 'installed';
+    if (deferred) return 'ready';
+    if (ios()) return 'ios';
+    return secure() ? 'manual' : 'insecure';
+  }
+  async function install() {
+    if (!deferred) return 'none';
+    const d = deferred; deferred = null; emit();             // l'événement n'est utilisable qu'une fois
+    try { await d.prompt(); const r = await d.userChoice; return (r && r.outcome) || 'dismissed'; } catch (e) { return 'error'; }
+  }
+  const quiet = () => { try { const t = Number(localStorage.getItem(KEY)); return !!t && Date.now() - t < QUIET; } catch (e) { return false; } };
+  const snooze = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ } emit(); };
+  /** La bannière n'apparaît que si l'installation est réellement possible (ou expliquable sur iOS) et pas refusée récemment. */
+  const wantsBanner = () => { const s = state(); return (s === 'ready' || s === 'ios') && !quiet(); };
+  const on = f => { subs.add(f); return () => subs.delete(f); };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; emit(); });
+    window.addEventListener('appinstalled', () => { installed = true; deferred = null; emit(); try { toast('Deck Deal est installée'); } catch (e) { /* ignore */ } });
+    try { matchMedia('(display-mode: standalone)').addEventListener('change', emit); } catch (e) { /* ignore */ }
+    // Service worker : seulement en http(s) (pas depuis un fichier local ni un aperçu) ; une erreur ici ne doit jamais gêner l'app.
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      // On vérifie d'abord que sw.js existe vraiment (hébergement statique sans le fichier, aperçu, artifact…) : pas de SW, pas de bruit, l'app marche quand même.
+      const reg = async () => {
+        try {
+          const r = await fetch('sw.js', { method: 'HEAD', cache: 'no-store' });
+          if (!r.ok || !/javascript|ecmascript/i.test(r.headers.get('content-type') || '')) return;
+          await navigator.serviceWorker.register('sw.js', { scope: './' });
+        } catch (e) { /* ignore */ }
+      };
+      if (document.readyState === 'complete') reg(); else window.addEventListener('load', reg);
+    }
+  }
+  return { state, install, snooze, wantsBanner, on, standalone };
+})();
 
 
 /* ── main.js : démarrage ─────────────────────────────────────────────────────────────────────── */

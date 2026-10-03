@@ -30,3 +30,13 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 - Clé invalide : délai de 400 ms, puis blocage 5 min de l'IP après 15 essais (nécessite `X-Forwarded-For`).
 - `APP_KEY` : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
 - Scryfall : 2 requêtes/s max sur `/cards/search`, pause automatique sur 429, résultats en cache 7 jours.
+
+## Installation (PWA)
+
+`pwa/` contient le manifeste, le service worker et les icônes, servis par `proxy.mjs` en liste blanche (aucun autre fichier du dépôt n'est exposé).
+Le dossier doit être déployé avec `proxy.mjs`.
+
+- Chrome / Edge / Android : bannière « Installer Deck Deal » sur l'accueil, ou Réglages › Application, ou icône d'installation de la barre d'adresse. Fenêtre dédiée, icône, lancement direct.
+- iPhone / iPad : Apple n'autorise que Safari › Partager › « Sur l'écran d'accueil ».
+- Hors ligne : l'interface s'ouvre (mode démo utilisable) ; la recherche live a besoin du réseau. `/api/*` n'est jamais mis en cache.
+- Le service worker (`pwa/sw.js`) charge la page en réseau d'abord : un nouveau déploiement est pris au rechargement suivant.
