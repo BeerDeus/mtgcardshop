@@ -992,36 +992,51 @@ class Limiter {
     finally { this.active--; this.pump(); }
   }
   slow() { this.rate = Math.max(this.min, this.rate * 0.5); this.cool = performance.now() + 5000; }
+  /** Pause globale : aucune requête de cette file ne part avant `ms` (429 → toutes les requêtes en attente respectent le délai). */
+  pause(ms) { this.next = Math.max(this.next, performance.now() + ms); }
   speedUp() { if (performance.now() > this.cool) this.rate = Math.min(this.max, this.rate + 0.3); }
   rps() { const t = performance.now(); this.stamps = this.stamps.filter(s => t - s < 5000); return this.stamps.length / 5; }
 }
 const limCT = new Limiter({ rate: 6, conc: 5, max: 9 });
-const limScry = new Limiter({ rate: 5, conc: 2, max: 6 });
+const limScry = new Limiter({ rate: 1.8, conc: 1, min: 0.5, max: 1.8 }); // Scryfall : /cards/search et /named limités à 2 req/s
 
 const hostOf = u => { try { return new URL(u, typeof location !== 'undefined' ? location.href : 'http://x').host; } catch (e) { return ''; } };
-const NET_RETRIES = 3;
+/** Attentes (ms) avant nouvel essai. Scryfall bloque 30 s après un 429 : inutile (et risqué) de réessayer plus vite. */
+const BACKOFF = { net: [700, 1400, 2100], scry: [1500, 6000, 31000], cool429: 30000, coolNet: 120000, maxGate: 130000 };
+/** Cooldown Scryfall mémorisé (localStorage) : relancer pendant un blocage prolongerait la sanction. */
+const SCRY_KEY = 'deckdeal:scry-until';
+const scryUntil = () => { try { return Number(localStorage.getItem(SCRY_KEY)) || 0; } catch (e) { return 0; } };
+const setScryUntil = t => { try { localStorage.setItem(SCRY_KEY, String(Math.min(t, Date.now() + BACKOFF.maxGate))); } catch (e) { /* stockage indisponible */ } };
+const scryLeft = () => Math.max(0, Math.min(scryUntil() - Date.now(), BACKOFF.maxGate));
 
 async function httpJson(lim, url, init, signal, retries = 4) {
+  const host = hostOf(url), scry = /scryfall/.test(host);
   for (let a = 0, n = 0; ;) {
     let r;
     try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal); }
     catch (e) {
       if (e.name === 'AbortError') throw e;
-      // Coupure passagère (réseau mobile, IP partagée, 429 sans en-têtes CORS…) : on ralentit puis on retente.
+      // Coupure passagère (réseau mobile, 429 sans en-têtes CORS…) : on ralentit puis on retente, sauf si l'appareil est hors ligne.
       lim.slow();
-      if (n < NET_RETRIES) { n++; await sleep(700 * n, signal); continue; }
-      throw netErr('network', 'Connexion impossible', { cause: e, host: hostOf(url) });
+      const waits = scry ? BACKOFF.scry : BACKOFF.net;
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (n < waits.length && !offline) { const w = waits[n++]; if (lim.onWait) lim.onWait(w, 'net'); await sleep(w, signal); continue; }
+      if (scry && !offline) setScryUntil(Date.now() + BACKOFF.coolNet); // blocage probable : on évite de marteler à la relance
+      throw netErr('network', 'Connexion impossible', { cause: e, host, offline });
     }
     if (r.status === 429 || r.status === 503) {
       lim.slow();
-      if (a >= retries) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status, host: hostOf(url) });
-      await sleep(900 * (a + 1), signal); a++; continue;
+      if (a >= (scry ? 2 : retries)) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status, host });
+      const ra = Number(r.headers.get('retry-after'));
+      const wait = r.status === 429 && scry ? (Number.isFinite(ra) && r.headers.has('retry-after') ? Math.min(60000, ra * 1000) : BACKOFF.cool429) : 900 * (a + 1);
+      lim.pause(wait); if (scry) setScryUntil(Date.now() + wait); if (lim.onWait) lim.onWait(wait, 'rate');
+      await sleep(wait, signal); a++; continue;
     }
-    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status, host: hostOf(url) });
+    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status, host });
     if (r.status === 404) throw netErr('404', 'Introuvable', { status: 404 });
     if (!r.ok) {
       if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); a++; continue; }
-      throw netErr('http', 'Erreur ' + r.status, { status: r.status, host: hostOf(url) });
+      throw netErr('http', 'Erreur ' + r.status, { status: r.status, host });
     }
     lim.speedUp();
     return r.json();
@@ -1174,13 +1189,27 @@ async function runLive(cards, opts, hooks, signal) {
   const total = cards.length;
   hooks.step('prints', 'run', '0 / ' + total);
   const printsOf = {}; let done = 0;
-  await pool(cards, 3, async c => {
-    const ck = 'sc:' + c.key;
-    let pr = await Cache.get(ck, 3 * DAY);
-    if (!pr) { pr = await scryPrints(c.name, signal); if (pr.length) await Cache.set(ck, pr); }
-    printsOf[c.key] = pr; done++;
-    hooks.step('prints', 'run', done + ' / ' + total); hooks.progress(0.15 * done / total);
-  });
+  const label = () => done + ' / ' + total;
+  // Pause visible quand Scryfall demande de ralentir (429) ou ne répond plus, au lieu d'un écran qui semble figé.
+  limScry.onWait = (ms, kind) => hooks.step('prints', 'run', (kind === 'rate' ? 'Scryfall demande une pause · ' : 'Nouvelle tentative · ') + Math.ceil(ms / 1000) + ' s');
+  // Cooldown mémorisé d'un essai précédent : on attend au lieu de relancer pendant le blocage.
+  let gate = null;
+  const scryGate = () => {
+    if (!scryLeft()) return null;
+    return gate || (gate = (async () => {
+      try { for (let l; (l = scryLeft()) > 0;) { hooks.step('prints', 'run', 'Scryfall en pause · ' + Math.ceil(l / 1000) + ' s'); await sleep(Math.min(1000, l), signal); } }
+      finally { gate = null; hooks.step('prints', 'run', label()); }
+    })());
+  };
+  try {
+    await pool(cards, 3, async c => {
+      const ck = 'sc:' + c.key;
+      let pr = await Cache.get(ck, 7 * DAY);
+      if (!pr) { await scryGate(); pr = await scryPrints(c.name, signal); if (pr.length) await Cache.set(ck, pr); }
+      printsOf[c.key] = pr; done++;
+      hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
+    });
+  } finally { limScry.onWait = null; }
   hooks.step('prints', 'done', total + ' cartes');
 
   hooks.step('catalog', 'run', 'Extensions…');
@@ -1591,7 +1620,7 @@ async function startRun() {
       const svc = /scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader';
       const own = typeof location !== 'undefined' && e.host && e.host === location.host;
       const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: [svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', 'settings', 'Réglages'],
-        network: [CTX.proxy ? (own ? 'Le proxy ne répond plus (' + e.host + '). Relance : les cartes déjà traitées sont en cache.' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.') : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
+        network: [CTX.proxy ? (/scryfall/.test(e.host || '') && !e.offline ? 'Scryfall ne répond plus (limite probable pour ton IP). Attends 2 minutes ou change de réseau, puis relance : les cartes déjà traitées sont en cache.' : e.offline ? 'Tu es hors ligne. Reconnecte-toi puis relance : les cartes déjà traitées sont en cache.' : own ? 'Le proxy ne répond plus (' + e.host + '). Relance : les cartes déjà traitées sont en cache.' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.') : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
         rate: [svc + ' limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
       run.error = { msg: m[0], action: m[1], label: m[2] };
     }
