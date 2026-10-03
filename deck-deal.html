@@ -1,0 +1,2346 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.">
+<meta name="theme-color" content="#f1f3f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<title>Deck Deal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap">
+<style>
+html{padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Deck Deal — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
+:root{
+  --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
+  --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
+  --accent:#3a46d6; --accent-ink:#ffffff; --accent-soft:#e6e8fb; --ring:rgba(58,70,214,.28);
+  --good:#0b8a5e; --good-soft:#dff5ec; --warn:#a46606; --warn-soft:#fbefd6; --bad:#c23a4b; --bad-soft:#fbe4e7;
+  --bar-bg:rgba(241,243,248,.84); --scrim:rgba(10,14,30,.46);
+  --shadow:0 1px 2px rgba(16,21,43,.06),0 10px 28px -14px rgba(16,21,43,.22);
+  --thumb-l:90%; --thumb-ink:30%;
+  --foil:linear-gradient(115deg,#ff8fc3 0%,#ffd479 24%,#7be8c8 48%,#7fb0ff 72%,#c79bff 100%);
+  --font-display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --font-body:'Instrument Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-lg:20px; --r-md:14px; --r-sm:9px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
+    --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+    --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
+    --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
+    --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.7);
+    --thumb-l:22%; --thumb-ink:82%;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
+  --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+  --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
+  --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
+  --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.7);
+  --thumb-l:22%; --thumb-ink:82%;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;min-height:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,p{margin:0}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+/* ── Header ───────────────────────────────────────────── */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--line)}
+.bar-in{max-width:640px;margin-inline:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:17px;height:23px;border-radius:5px;background:var(--foil);background-size:200% 200%;transform:rotate(-9deg);box-shadow:0 2px 8px -2px rgba(127,176,255,.7);animation:foilmove 7s linear infinite}
+.word{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.02em}
+.bar-right{display:flex;align-items:center;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.chip[data-live="1"] .dot{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+.icon-btn{width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2);transition:transform .15s,background .2s}
+.icon-btn:active{transform:scale(.94)}
+
+/* ── Layout ───────────────────────────────────────────── */
+.wrap{max-width:640px;margin-inline:auto;padding-inline:16px;padding-block:20px 128px}
+.view{display:flex;flex-direction:column;gap:18px;animation:viewIn .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes foilmove{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:150% 0}100%{background-position:-50% 0}}
+
+.intro{display:flex;flex-direction:column;gap:8px;padding-top:6px}
+.intro h1{font-family:var(--font-display);font-weight:700;font-size:clamp(27px,7.4vw,36px);line-height:1.06;letter-spacing:-.03em;text-wrap:balance}
+.intro p{color:var(--ink-2);max-width:46ch;text-wrap:pretty}
+
+.field{display:flex;flex-direction:column;gap:8px}
+.field-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.label{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.tools{display:flex;gap:6px}
+.link-btn{border:0;background:transparent;color:var(--accent);font-weight:600;font-size:13.5px;padding:6px 8px;border-radius:8px}
+.link-btn:active{background:var(--accent-soft)}
+textarea#deckText{width:100%;min-height:236px;max-height:46vh;resize:vertical;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);font-family:var(--font-mono);font-size:12.5px;line-height:1.6;transition:border-color .2s,box-shadow .2s}
+textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--ring)}
+.stats{display:flex;flex-wrap:wrap;gap:6px;min-height:26px}
+.stat{display:inline-flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:99px;background:var(--surface-2);font-size:12.5px;color:var(--ink-2)}
+.stat b{font-family:var(--font-mono);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat.warn{background:var(--warn-soft);color:var(--warn)}
+.stat.warn b{color:inherit}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow)}
+.panel h2{font-family:var(--font-display);font-size:17px;font-weight:650;letter-spacing:-.01em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctl.span2{grid-column:1/-1}
+.sel{position:relative}
+.sel select{width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 36px 0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);font-weight:500}
+.sel::after{content:"";position:absolute;right:15px;top:50%;width:7px;height:7px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.num{display:flex;align-items:center;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);padding:0 12px;gap:6px}
+.num input{border:0;background:transparent;width:100%;font-family:var(--font-mono);font-weight:500;outline:none;font-size:14px}
+.num:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.num span{color:var(--ink-3);font-weight:600}
+.hint{font-size:12.5px;color:var(--ink-3);text-wrap:pretty}
+
+.seg{--n:2;--idx:0;position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);background:var(--surface-2);padding:3px;border-radius:13px;isolation:isolate}
+.seg-thumb{position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/var(--n));border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgba(16,21,43,.12),0 4px 10px -4px rgba(16,21,43,.2);transform:translateX(calc(var(--idx)*100%));transition:transform .32s cubic-bezier(.3,.9,.3,1)}
+.seg-opt{border:0;background:transparent;min-height:40px;padding:6px 8px;border-radius:10px;font-weight:600;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;transition:color .2s}
+.seg-opt[aria-checked="true"]{color:var(--ink)}
+.seg-opt small{font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.seg-opt[aria-checked="true"] small{color:var(--accent)}
+
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer}
+.switch-row .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.switch-row .t b{font-weight:600}
+.switch{position:relative;flex:none;width:46px;height:28px}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.switch i{position:absolute;inset:0;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);transition:background .25s,border-color .25s}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .28s cubic-bezier(.3,.9,.3,1)}
+.switch input:checked + i{background:var(--accent);border-color:var(--accent)}
+.switch input:checked + i::after{transform:translateX(18px)}
+.switch input:focus-visible + i{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── Boutons ──────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:50px;padding:0 20px;border-radius:15px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:650;font-size:15.5px;letter-spacing:-.005em;transition:transform .15s,opacity .2s,box-shadow .2s;box-shadow:0 6px 16px -8px var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.45;box-shadow:none;cursor:not-allowed}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.btn.block{width:100%}
+.btn.danger{background:var(--bad)}
+.btn.small{height:38px;padding:0 14px;border-radius:12px;font-size:14px}
+
+/* ── Dock ─────────────────────────────────────────────── */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--bar-bg);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.dock-in{max-width:640px;margin-inline:auto;display:flex;align-items:center;gap:14px}
+.dock-sum{display:flex;flex-direction:column;min-width:0;flex:1}
+.dock-sum small{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock-sum b{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* ── Résultats ────────────────────────────────────────── */
+.crumb{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.crumb .link-btn{display:inline-flex;align-items:center;gap:4px;padding-left:2px}
+
+.collapsible{display:grid;grid-template-rows:1fr;transition:grid-template-rows .55s cubic-bezier(.3,.8,.3,1),opacity .4s,margin .55s}
+.collapsible > div{min-height:0;overflow:hidden}
+.collapsible.closed{grid-template-rows:0fr;opacity:0;margin-top:-18px}
+.progress{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.prog-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.prog-head h2{font-family:var(--font-display);font-size:17px;font-weight:650}
+.prog-head .pct{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.track{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.fill{height:100%;width:0;border-radius:99px;background:var(--foil);background-size:200% 100%;animation:foilmove 5s linear infinite;transition:width .45s cubic-bezier(.3,.8,.3,1)}
+.steps{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.step{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;font-size:14px;color:var(--ink-3);transition:color .3s}
+.step[data-state="run"],.step[data-state="done"]{color:var(--ink)}
+.st-ico{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line)}
+.step[data-state="run"] .st-ico{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
+.step[data-state="done"] .st-ico{border:0;background:var(--good);color:#fff}
+.step[data-state="done"] .st-ico::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:translate(0,-1px) rotate(45deg)}
+.step[data-state="skip"] .st-ico{opacity:.5}
+.step .det{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.prog-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink-3)}
+
+.hero{padding:2px;border-radius:calc(var(--r-lg) + 2px);background:var(--foil);background-size:220% 220%;animation:foilmove 9s linear infinite;box-shadow:var(--shadow)}
+.hero-in{background:var(--surface);border-radius:var(--r-lg);padding:18px 18px 16px;display:flex;flex-direction:column;gap:6px}
+.hero-label{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.partial{padding:2px 8px;border-radius:99px;background:var(--warn-soft);color:var(--warn);font-size:11px;letter-spacing:.04em}
+.hero-amt{font-family:var(--font-display);font-weight:700;font-size:clamp(40px,12vw,52px);line-height:1;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.hero-sub{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;color:var(--ink-2);font-size:14px}
+.hero-sub i{width:3px;height:3px;border-radius:50%;background:var(--ink-3)}
+.save{align-self:flex-start;margin-top:4px;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--good-soft);color:var(--good);font-weight:650;font-size:13px}
+
+.toolbar{display:flex;align-items:center;gap:10px}
+.toolbar .seg{flex:1}
+
+.alerts{display:flex;flex-direction:column;gap:8px}
+.alert{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:var(--r-md);background:var(--warn-soft);color:var(--warn);font-size:13.5px;font-weight:550;animation:rise .4s both}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert .grow{flex:1;min-width:0}
+.alert button{border:0;background:transparent;color:inherit;font-weight:700;text-decoration:underline;padding:0;font-size:inherit}
+
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);animation:rise .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--i,0),14)*22ms);transition:transform .15s,border-color .2s,background .2s}
+.row:active{transform:scale(.988)}
+.row:hover{border-color:var(--ink-3)}
+.row.is-missing{border-style:dashed;background:transparent}
+.thumb{--h:220;width:40px;height:56px;border-radius:5px;overflow:hidden;background:hsl(var(--h) 42% var(--thumb-l));color:hsl(var(--h) 38% var(--thumb-ink));display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:20px;position:relative}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+.thumb img.ok{opacity:1}
+.row-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.row-name{font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.005em}
+.row-meta{display:flex;flex-wrap:wrap;gap:4px}
+.row-seller{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-price{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.row-price b{font-family:var(--font-mono);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.row-price small{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.row-miss{font-size:13px;color:var(--ink-3)}
+.tag{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);font-family:var(--font-mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.good{background:var(--good-soft);color:var(--good)}
+.tag.accent{background:var(--accent-soft);color:var(--accent)}
+.sk{border-radius:6px;background:linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%);background-size:300% 100%;animation:shimmer 1.3s linear infinite}
+.sk.name{height:14px;width:62%}
+.sk.meta{height:12px;width:38%}
+.sk.price{height:16px;width:54px}
+.sk.thumbsk{width:40px;height:56px;border-radius:5px}
+
+.group{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;animation:rise .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--i,0),10)*40ms)}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--line)}
+.group-head .who{display:flex;align-items:center;gap:8px;min-width:0}
+.group-head .who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650}
+.group-head .sum{font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.group-head .sum small{display:block;font-size:11px;color:var(--ink-3);font-weight:500}
+.gi{display:flex;justify-content:space-between;gap:12px;padding:9px 14px;font-size:14px;border-top:1px solid var(--line)}
+.gi:first-of-type{border-top:0}
+.gi span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gi span:last-child{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+.basics{font-size:13.5px;color:var(--ink-2);padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2)}
+
+/* ── Sheets & toast ───────────────────────────────────── */
+.sheet-root{position:fixed;inset:0;z-index:50;pointer-events:none}
+.sheet-wrap{position:absolute;inset:0;pointer-events:none}
+.sheet-backdrop{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity .32s;pointer-events:auto}
+.sheet{position:absolute;left:50%;bottom:0;width:100%;max-width:580px;max-height:90%;display:flex;flex-direction:column;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px -10px rgba(0,0,0,.35);transform:translate(-50%,102%);transition:transform .42s cubic-bezier(.2,.85,.25,1);pointer-events:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-wrap.open .sheet{transform:translate(-50%,0)}
+.sheet-wrap.open .sheet-backdrop{opacity:1}
+.grab{width:38px;height:4px;border-radius:99px;background:var(--line);margin:9px auto 0;flex:none}
+.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 18px 8px}
+.sheet-head h2{font-family:var(--font-display);font-size:20px;font-weight:680;letter-spacing:-.02em;text-wrap:balance}
+.sheet-head p{color:var(--ink-3);font-size:13.5px;margin-top:2px}
+.sheet-body{padding:6px 18px 18px;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px}
+.sheet-foot{padding:12px 18px 16px;display:flex;gap:10px;border-top:1px solid var(--line)}
+.sheet-foot .btn{flex:1}
+
+.offer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;width:100%;text-align:left;padding:11px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);transition:border-color .2s,background .2s}
+.offer[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.offer .o-who{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.offer .o-price{font-family:var(--font-mono);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.offer .o-meta{display:flex;flex-wrap:wrap;gap:4px;grid-column:1/-1}
+.offers{display:flex;flex-direction:column;gap:8px}
+
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px 12px;font-size:14.5px}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.kv .total{font-family:var(--font-body)}
+.cartbar{height:8px}
+.fail{font-size:13.5px;color:var(--bad);display:flex;flex-direction:column;gap:4px}
+.field-in{display:flex;flex-direction:column;gap:6px}
+.field-in input[type="text"],.field-in input[type="password"],.field-in input[type="email"]{height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);font-size:14.5px;min-width:0;width:100%}
+.field-in input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.status{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:var(--r-md);background:var(--surface-2);font-size:14px}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}
+.status[data-ok="1"] .dot{background:var(--good)}
+.sec-title{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:60;transform:translate(-50%,16px);opacity:0;pointer-events:none;max-width:min(92vw,460px);padding:11px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:opacity .28s,transform .38s cubic-bezier(.2,.85,.25,1)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (min-width:720px){
+  .wrap{padding-block:28px 140px}
+  .sheet{bottom:auto;top:50%;border-radius:24px;max-height:86%;transform:translate(-50%,-40%);opacity:0;transition:transform .42s cubic-bezier(.2,.85,.25,1),opacity .3s}
+  .sheet-wrap.open .sheet{transform:translate(-50%,-50%);opacity:1}
+  .grab{display:none}
+}
+@media (max-width:380px){
+  .grid2{grid-template-columns:1fr}
+  .hero-amt{font-size:38px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+.o-who i{font-style:normal;font-weight:500;color:var(--ink-3);margin-left:8px;font-size:.86em}
+
+/* ── Compte & decks ───────────────────────────────────── */
+@keyframes pulse{50%{opacity:.35}}
+.avatar{position:relative;overflow:hidden}
+.avatar #avatarLetter{display:none;font-family:var(--font-display);font-weight:700;font-size:15px;line-height:1;color:var(--accent)}
+.avatar[data-in="1"]{background:var(--accent-soft);border-color:transparent}
+.avatar[data-in="1"] svg{display:none}
+.avatar[data-in="1"] #avatarLetter{display:block}
+.crumb-r{display:flex;align-items:center;gap:0}
+.link-btn.strong{font-weight:700}
+.link-btn[disabled]{opacity:.5;pointer-events:none}
+.link-btn.saved{color:var(--good)}
+
+.decks{display:flex;flex-direction:column;gap:10px}
+.decks-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.decks-head h2{font-family:var(--font-display);font-size:17px;font-weight:650;letter-spacing:-.01em}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);opacity:.55;flex:none}
+.sync[data-s="synced"] i{background:var(--good);opacity:1}
+.sync[data-s="pending"] i{background:var(--warn);opacity:1;animation:pulse 1.2s ease-in-out infinite}
+.sync[data-s="error"] i{background:var(--bad);opacity:1}
+.deck-list{display:flex;flex-direction:column;gap:8px}
+.deck{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow);transition:border-color .2s,box-shadow .25s}
+.deck.fresh{animation:rise .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.deck.skel{height:62px;grid-template-columns:1fr;align-content:center;gap:8px;padding:0 14px}
+.deck[data-active="1"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.deck-main{border:0;background:transparent;text-align:left;padding:12px 6px 12px 14px;display:flex;flex-direction:column;gap:3px;min-width:0;border-radius:var(--r-md);transition:transform .15s}
+.deck-main:active{transform:scale(.985)}
+.deck-name{font-family:var(--font-display);font-weight:650;font-size:16px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck-meta{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck-price{display:flex;flex-direction:column;align-items:flex-end;gap:1px;padding:0 4px;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.deck-price b{font-size:14.5px;font-weight:600}
+.delta{font-size:11.5px;font-weight:600}
+.delta.down{color:var(--good)}
+.delta.up{color:var(--bad)}
+.delta.flat{color:var(--ink-3)}
+.deck-more{width:40px;height:40px;margin-right:4px;border:0;background:transparent;color:var(--ink-3);border-radius:12px;display:grid;place-items:center}
+.deck-more:active{background:var(--surface-2)}
+.deck-more svg{fill:currentColor;stroke:none}
+.more-decks{align-self:flex-start}
+.deck-empty{padding:14px;border:1px dashed var(--line);border-radius:var(--r-md);color:var(--ink-3);font-size:13.5px;text-align:center}
+.import-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--r-md);background:var(--accent-soft);color:var(--ink);font-size:13.5px}
+.import-row .btn{height:34px;padding:0 14px;border-radius:10px;font-size:13.5px;flex:none}
+.stat.deckchip{padding-right:4px;background:var(--accent-soft);color:var(--accent)}
+.stat.deckchip b{color:var(--accent);font-family:var(--font-body);max-width:34ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-x{border:0;background:transparent;color:inherit;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;padding:0}
+.stat-x:active{background:var(--ring)}
+.stat-x svg{width:13px;height:13px}
+
+.auth{display:flex;flex-direction:column;gap:14px}
+.auth form{display:flex;flex-direction:column;gap:14px}
+.auth-msg{font-size:13.5px;padding:10px 12px;border-radius:12px;background:var(--bad-soft);color:var(--bad);text-wrap:pretty}
+.auth-msg.ok{background:var(--good-soft);color:var(--good)}
+.divider{display:flex;align-items:center;gap:12px;color:var(--ink-3);font-size:12.5px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.who{display:flex;align-items:center;gap:14px;min-width:0}
+.who-av{width:52px;height:52px;border-radius:16px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:22px;flex:none}
+.who-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.who-t b{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-t span{font-size:13px;color:var(--ink-3)}
+.btn.ghost-danger{background:var(--surface);color:var(--bad);border:1px solid var(--line);box-shadow:none}
+.chart{width:100%;height:72px;display:block}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chart .ar{fill:var(--accent-soft);stroke:none}
+.chart .dt{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.hist{display:grid;grid-template-columns:1fr auto auto;gap:9px 14px;font-size:13.5px;align-items:baseline}
+.hist .d{color:var(--ink-3)}
+.hist .t{font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.link-inline{align-self:flex-start;padding-left:0}
+button.sync{border:0;background:transparent;padding:6px 0 6px 8px;border-radius:8px}
+button.sync:active{background:var(--surface-2)}
+.delta-line{align-self:flex-start;font-size:13px;font-weight:650;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.delta-line.down{color:var(--good)}
+.delta-line.up{color:var(--bad)}
+.delta-line.flat{color:var(--ink-3)}
+.field-head{flex-wrap:wrap;row-gap:0}
+.tools{flex-wrap:wrap;margin-left:auto;justify-content:flex-end}
+.link-btn{white-space:nowrap}
+.deck-more{color:var(--ink-2)}
+.tools{gap:2px}
+.tools .link-btn{padding:6px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11h10.6L20 8H6.2"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.4v.1"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header class="bar">
+    <div class="bar-in">
+      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
+      <div class="bar-right">
+        <button class="chip" id="modeChip" type="button" data-live="0" aria-label="Mode de connexion"><span class="dot"></span><span id="modeLabel">Démo</span></button>
+        <button class="icon-btn avatar" id="btnAccount" type="button" aria-label="Compte" data-in="0"><svg class="i"><use href="#i-user"/></svg><span id="avatarLetter" aria-hidden="true"></span></button>
+        <button class="icon-btn" id="btnSettings" type="button" aria-label="Réglages"><svg class="i"><use href="#i-settings"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ── Saisie ─────────────────────────────────────── -->
+    <section class="view" id="viewInput" aria-label="Decklist">
+      <div class="intro">
+        <h1>Ta decklist au meilleur prix, en français.</h1>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+      </div>
+
+      <section class="decks" id="decksSec" aria-label="Mes decks" hidden>
+        <div class="decks-head"><h2>Mes decks</h2><button class="sync" id="decksSync" type="button" data-s="local"><i></i><span id="decksSyncTxt">Sur cet appareil</span></button></div>
+        <div class="deck-list" id="deckList"></div>
+        <button class="link-btn more-decks" id="btnMoreDecks" type="button" hidden></button>
+      </section>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="label" for="deckText">Decklist</label>
+          <div class="tools">
+            <button class="link-btn" id="btnPaste" type="button">Coller</button>
+            <button class="link-btn" id="btnSample" type="button">Exemple</button>
+            <button class="link-btn" id="btnClear" type="button">Vider</button>
+            <button class="link-btn strong" id="btnSave" type="button">Enregistrer</button>
+          </div>
+        </div>
+        <textarea id="deckText" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="1 Sol Ring&#10;1 Swords to Plowshares&#10;25 Plains"></textarea>
+        <div class="stats" id="deckStats" aria-live="polite"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Critères</h2>
+        <div class="grid2">
+          <div class="ctl">
+            <label class="label" for="optLang">Langue</label>
+            <div class="sel"><select id="optLang">
+              <option value="fr">Français</option><option value="en">Anglais</option><option value="de">Allemand</option>
+              <option value="es">Espagnol</option><option value="it">Italien</option><option value="pt">Portugais</option><option value="jp">Japonais</option>
+            </select></div>
+          </div>
+          <div class="ctl">
+            <label class="label" for="optCond">État minimum</label>
+            <div class="sel"><select id="optCond">
+              <option value="Mint">Mint</option>
+              <option value="Near Mint">Near Mint</option>
+              <option value="Slightly Played">Slightly Played</option>
+              <option value="Moderately Played">Moderately Played</option>
+              <option value="Played">Played</option>
+            </select></div>
+          </div>
+          <div class="ctl span2">
+            <span class="label" id="lblFoil">Foil</span>
+            <div class="seg" id="segFoil" role="radiogroup" aria-labelledby="lblFoil"></div>
+          </div>
+          <div class="ctl span2">
+            <span class="label" id="lblMode">Livraison</span>
+            <div class="seg" id="segMode" role="radiogroup" aria-labelledby="lblMode"></div>
+            <p class="hint" id="modeHint"></p>
+          </div>
+          <div class="ctl" id="shipField" hidden>
+            <label class="label" for="optShip">Port par vendeur</label>
+            <div class="num"><input id="optShip" inputmode="decimal" autocomplete="off" value="2,80"><span>€</span></div>
+          </div>
+        </div>
+        <label class="switch-row" for="optFallback">
+          <span class="t"><b>Compléter en anglais</b><span class="hint">Si une carte n'a aucune offre dans la langue choisie.</span></span>
+          <span class="switch"><input type="checkbox" id="optFallback" checked><i></i></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Résultats ──────────────────────────────────── -->
+    <section class="view" id="viewResults" aria-label="Résultats" hidden>
+      <div class="crumb">
+        <button class="link-btn" id="btnBack" type="button"><svg class="i"><use href="#i-back"/></svg>Modifier</button>
+        <div class="crumb-r">
+          <button class="link-btn" id="btnSave2" type="button"><svg class="i"><use href="#i-bookmark"/></svg><span id="btnSave2Txt">Enregistrer</span></button>
+          <button class="link-btn" id="btnCopy" type="button"><svg class="i"><use href="#i-copy"/></svg>Copier</button>
+        </div>
+      </div>
+
+      <div class="collapsible" id="progressWrap"><div>
+        <div class="progress" id="progressCard">
+          <div class="prog-head"><h2 id="progTitle">Recherche des offres</h2><span class="pct" id="progPct">0 %</span></div>
+          <div class="track"><div class="fill" id="progFill"></div></div>
+          <ol class="steps" id="steps"></ol>
+          <div class="prog-foot"><span id="progRate">Démarrage…</span><button class="link-btn" id="btnCancel" type="button">Arrêter</button></div>
+        </div>
+      </div></div>
+
+      <div class="hero" id="hero">
+        <div class="hero-in">
+          <div class="hero-label"><span id="heroLabel">Total articles</span><span class="partial" id="heroPartial" hidden>En cours</span></div>
+          <div class="hero-amt" id="heroAmt">0,00 €</div>
+          <div class="hero-sub"><span id="heroCount">—</span><i></i><span id="heroSellers">—</span></div>
+          <div class="save" id="heroSave" hidden></div>
+        <div class="delta-line" id="heroDelta" hidden></div>
+        </div>
+      </div>
+
+      <div class="seg" id="segDeliv" role="radiogroup" aria-label="Mode de livraison"></div>
+
+      <div class="alerts" id="alerts"></div>
+
+      <div class="toolbar"><div class="seg" id="segTab" role="radiogroup" aria-label="Affichage"></div></div>
+
+      <div class="list" id="list"></div>
+      <div class="list" id="sellers" hidden></div>
+      <div class="basics" id="basicsNote" hidden></div>
+    </section>
+  </main>
+
+  <div class="dock" id="dock">
+    <div class="dock-in" id="dockInput">
+      <button class="btn block" id="btnRun" type="button"><svg class="i"><use href="#i-search"/></svg><span id="btnRunLabel">Chercher les offres</span></button>
+    </div>
+    <div class="dock-in" id="dockResults" hidden>
+      <div class="dock-sum"><small id="dockSmall">Panier</small><b id="dockTotal">0,00 €</b></div>
+      <button class="btn" id="btnCart" type="button"><svg class="i"><use href="#i-cart"/></svg>Remplir le panier</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-root" id="sheetRoot"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
+
+const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
+const COND_SHORT = { 'Mint': 'MT', 'Near Mint': 'NM', 'Slightly Played': 'SP', 'Moderately Played': 'MP', 'Played': 'PL', 'Heavily Played': 'HP', 'Poor': 'PO' };
+const BASIC_NAMES = new Set(['plains', 'island', 'swamp', 'mountain', 'forest', 'wastes',
+  'snow covered plains', 'snow covered island', 'snow covered swamp', 'snow covered mountain', 'snow covered forest', 'snow covered wastes']);
+
+function normPart(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function normName(s) { return String(s || '').split('//').map(normPart).filter(Boolean).join(' // '); }
+function frontName(s) { return normName(s).split(' // ')[0]; }
+
+const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
+
+/** Lit une decklist (EDHREC, Moxfield, Archidekt, MTGO). Terrains de base séparés. */
+function parseDeck(text) {
+  const cards = new Map();
+  const basics = new Map();
+  let lines = 0, ignored = 0;
+  for (let raw of String(text || '').split(/\r?\n/)) {
+    let line = raw.trim();
+    if (!line) continue;
+    lines++;
+    if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) { ignored++; continue; }
+    let qty = 1, name = line;
+    const m = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+    if (m) { qty = parseInt(m[1], 10); name = m[2]; }
+    name = name.replace(/\s+\*[A-Za-z]+\*\s*$/, '')
+      .replace(/\s+\([A-Za-z0-9]{2,8}\)(\s+[A-Za-z0-9★-]+)?\s*$/, '')
+      .trim();
+    if (!name || qty < 1 || qty > 999) { ignored++; continue; }
+    const key = normName(name);
+    if (!key) { ignored++; continue; }
+    const bucket = BASIC_NAMES.has(key) ? basics : cards;
+    const cur = bucket.get(key);
+    if (cur) cur.qty += qty; else bucket.set(key, { key, name, qty });
+  }
+  const c = [...cards.values()], b = [...basics.values()];
+  const copies = c.reduce((a, x) => a + x.qty, 0);
+  const basicCopies = b.reduce((a, x) => a + x.qty, 0);
+  return { cards: c, basics: b, lines, ignored, copies: copies + basicCopies, basicCopies };
+}
+
+/** Une offre passe-t-elle les critères (état, foil, hors vendeurs en vacances, etc.) ? */
+function passes(o, f) {
+  if (!o || o.vac || o.graded || o.signed || o.altered) return false;
+  if ((o.bundle || 1) > 1) return false;
+  const ci = CONDITIONS.indexOf(o.cond), mi = CONDITIONS.indexOf(f.cond);
+  if (ci < 0 || ci > mi) return false;
+  if (f.foil === 'no' && o.foil) return false;
+  if (f.foil === 'yes' && !o.foil) return false;
+  return o.price > 0 && o.qty > 0;
+}
+
+/** Produit CardTrader (/marketplace/products) → offre normalisée. */
+function normalizeProduct(p, info) {
+  const h = p.properties_hash || {};
+  const u = p.user || {};
+  const e = p.expansion || {};
+  return {
+    id: p.id, productId: p.id, bpId: p.blueprint_id,
+    sellerId: u.id, seller: u.username || '?', country: u.country_code || '', hub: !!u.can_sell_via_hub, type: u.user_type || '',
+    price: p.price ? p.price.cents : 0, cur: p.price ? p.price.currency : 'EUR', qty: p.quantity || 0,
+    cond: h.condition, foil: !!h.mtg_foil, lang: h.mtg_language || '',
+    signed: !!h.signed, altered: !!h.altered, graded: !!p.graded, vac: !!p.on_vacation, bundle: p.bundle_size || 1,
+    set: e.code || (info && info.set) || '', setName: e.name_en || (info && info.setName) || '',
+    num: (info && info.num) || h.collector_number || '', img: (info && info.img) || null,
+  };
+}
+
+/* ── Optimiseur ─────────────────────────────────────────────────────────────────────────── */
+const byPrice = (a, b) => (a.price - b.price) || (b.qty - a.qty) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+function allocate(sorted, qty, allowed) {
+  const parts = []; let need = qty, cost = 0;
+  for (const o of sorted) {
+    if (need <= 0) break;
+    if (allowed && !allowed.has(o.sellerId)) continue;
+    const n = Math.min(need, o.qty);
+    if (n > 0) { parts.push({ offer: o, n }); need -= n; cost += o.price * n; }
+  }
+  return { parts, short: need, cost };
+}
+
+function sellersOf(keys, alloc) {
+  const m = new Map();
+  for (const k of keys) for (const p of alloc[k].parts) {
+    let s = m.get(p.offer.sellerId);
+    if (!s) { s = new Set(); m.set(p.offer.sellerId, s); }
+    s.add(k);
+  }
+  return m;
+}
+
+function summarize(keys, alloc, ship, mode) {
+  let items = 0; const sellers = new Map(); const picks = {}; const missing = [], partial = [];
+  for (const k of keys) {
+    const a = alloc[k]; picks[k] = a; items += a.cost;
+    if (!a.parts.length) missing.push(k); else if (a.short > 0) partial.push(k);
+    for (const p of a.parts) {
+      const o = p.offer;
+      let g = sellers.get(o.sellerId);
+      if (!g) { g = { sellerId: o.sellerId, seller: o.seller, country: o.country, hub: o.hub, items: [], subtotal: 0, count: 0 }; sellers.set(o.sellerId, g); }
+      g.items.push({ key: k, offer: o, n: p.n }); g.subtotal += o.price * p.n; g.count += p.n;
+    }
+  }
+  const sellerCount = sellers.size;
+  const shipCents = mode === 'direct' ? ship * sellerCount : 0;
+  return { mode, items, ship: shipCents, total: items + shipCents, sellerCount, picks, missing, partial,
+    sellers: [...sellers.values()].sort((a, b) => b.subtotal - a.subtotal) };
+}
+
+function localSearch(keys, qtyOf, sorted, alloc, ship, locked) {
+  const offersBySeller = new Map();
+  for (const k of keys) for (const o of sorted[k]) {
+    let s = offersBySeller.get(o.sellerId);
+    if (!s) { s = new Set(); offersBySeller.set(o.sellerId, s); }
+    s.add(k);
+  }
+  for (let iter = 0; iter < 60; iter++) {
+    let improved = false;
+    // 1) supprimer un vendeur : ses cartes sont reprises chez les autres vendeurs déjà utilisés
+    const order = [...sellersOf(keys, alloc).entries()].sort((a, b) => a[1].size - b[1].size);
+    for (const [s] of order) {
+      const cur = sellersOf(keys, alloc);
+      const mine = cur.get(s);
+      if (!mine) continue;
+      let blocked = false;
+      for (const k of mine) if (locked.has(k)) { blocked = true; break; }
+      if (blocked) continue;
+      const allowed = new Set(cur.keys()); allowed.delete(s);
+      let delta = -ship, ok = true; const next = {};
+      for (const k of mine) {
+        const na = allocate(sorted[k], qtyOf[k], allowed);
+        if (na.short > alloc[k].short) { ok = false; break; }
+        delta += na.cost - alloc[k].cost; next[k] = na;
+      }
+      if (ok && delta < 0) { Object.assign(alloc, next); improved = true; }
+    }
+    // 2) ajouter un vendeur : on le prend s'il économise plus que son port
+    const used = sellersOf(keys, alloc);
+    const cands = [...offersBySeller.entries()].filter(([s]) => !used.has(s)).sort((a, b) => b[1].size - a[1].size).slice(0, 80);
+    for (const [t, ks] of cands) {
+      const cur = sellersOf(keys, alloc);
+      if (cur.has(t)) continue;
+      const allowed = new Set(cur.keys()); allowed.add(t);
+      let delta = ship; const next = {};
+      for (const k of ks) {
+        if (locked.has(k)) continue;
+        const na = allocate(sorted[k], qtyOf[k], allowed);
+        const d = na.cost - alloc[k].cost;
+        if (na.short <= alloc[k].short && (d < 0 || na.short < alloc[k].short)) { next[k] = na; delta += d; }
+      }
+      if (Object.keys(next).length && delta < 0) { Object.assign(alloc, next); improved = true; }
+    }
+    if (!improved) break;
+  }
+}
+
+/**
+ * demand: [{key, qty}] ; offersByKey: {key: [offre]} (déjà filtrées par critères)
+ * opts: {mode:'zero'|'direct', ship:centimes, forced:{key: offerId}}
+ */
+function optimize(demand, offersByKey, opts) {
+  const mode = opts.mode === 'direct' ? 'direct' : 'zero';
+  const ship = mode === 'direct' ? (opts.ship || 0) : 0;
+  const forced = opts.forced || {};
+  const keys = [], qtyOf = {}, sorted = {}, alloc = {}, locked = new Set();
+  for (const d of demand) {
+    keys.push(d.key); qtyOf[d.key] = d.qty;
+    sorted[d.key] = (offersByKey[d.key] || []).filter(o => mode !== 'zero' || o.hub).slice().sort(byPrice);
+  }
+  for (const k of keys) {
+    const fo = forced[k] ? sorted[k].find(o => o.id === forced[k]) : null;
+    if (fo) {
+      const n = Math.min(qtyOf[k], fo.qty);
+      const rest = allocate(sorted[k].filter(o => o !== fo), qtyOf[k] - n, null);
+      alloc[k] = { parts: [{ offer: fo, n }, ...rest.parts], short: rest.short, cost: fo.price * n + rest.cost };
+      locked.add(k);
+    } else alloc[k] = allocate(sorted[k], qtyOf[k], null);
+  }
+  const base = summarize(keys, alloc, ship, mode);
+  if (mode === 'direct') localSearch(keys, qtyOf, sorted, alloc, ship, locked);
+  const out = summarize(keys, alloc, ship, mode);
+  out.baseline = { items: base.items, total: base.total, sellers: base.sellerCount };
+  return out;
+}
+
+/* ── Démo : offres simulées, déterministes ───────────────────────────────────────────────── */
+function hash32(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const DEMO_SELLERS = [
+  { id: 101, name: 'cartes_du_midi', country: 'FR', hub: true }, { id: 102, name: 'magic_boutique', country: 'FR', hub: true },
+  { id: 103, name: 'lotus_noir_fr', country: 'FR', hub: false }, { id: 104, name: 'tcg_bordeaux', country: 'FR', hub: true },
+  { id: 105, name: 'carta_viva', country: 'IT', hub: true }, { id: 106, name: 'singles_roma', country: 'IT', hub: true },
+  { id: 107, name: 'kartenhain', country: 'DE', hub: true }, { id: 108, name: 'mox_und_mehr', country: 'DE', hub: false },
+  { id: 109, name: 'cartomania_es', country: 'ES', hub: true }, { id: 110, name: 'brussels_cards', country: 'BE', hub: true },
+  { id: 111, name: 'poldeck', country: 'PL', hub: true }, { id: 112, name: 'lusa_magic', country: 'PT', hub: true },
+  { id: 113, name: 'tulip_tcg', country: 'NL', hub: true }, { id: 114, name: 'alsace_cartes', country: 'FR', hub: false },
+];
+const DEMO_SETS = [['cmm', 'Commander Masters'], ['c21', 'Commander 2021'], ['mh2', 'Modern Horizons 2'], ['2x2', 'Double Masters 2022'],
+  ['fdn', 'Foundations'], ['clb', "Commander Legends: Battle for Baldur's Gate"], ['ncc', 'New Capenna Commander'], ['dmu', 'Dominaria United']];
+const DEMO_BASE = { 'sol ring': 1.6, 'swords to plowshares': 2.4, 'path to exile': 3.2, 'sword of fire and ice': 31, 'sword of light and shadow': 9,
+  'sword of hearth and home': 4.5, 'sun titan': 3.1, 'mother of runes': 5.5, 'giver of runes': 1.2, 'arcane signet': 1.1, 'restoration angel': 3.4,
+  'skyclave apparition': 3.5, 'flickerwisp': 0.5, 'panharmonicon': 2.2, 'fellwar stone': 1.4, 'pearl medallion': 1.8, 'teleportation circle': 0.7,
+  'ephemerate': 0.9, 'monumental henge': 2.6, 'minas tirith': 2.1, 'emeria the sky ruin': 1.3, 'cloister gargoyle': 0.4, 'felidar guardian': 0.5 };
+
+/** Offres simulées pour une carte. lang='fr' : ~8 % des cartes n'en ont aucune (sert à tester le repli EN). */
+function makeDemoOffers(card, lang) {
+  const key = card.key;
+  const r = mulberry32(hash32(key + '|' + lang));
+  const noLang = lang !== 'en' && (hash32(key + '|nolang') % 100) < 8;
+  if (noLang) return [];
+  const rb = mulberry32(hash32(key + '|base'));
+  const base = DEMO_BASE[key] != null ? DEMO_BASE[key] : 0.18 + Math.pow(rb(), 3) * 6.5;
+  const out = [];
+  for (const s of DEMO_SELLERS) {
+    if (r() > 0.56) continue;
+    const n = 1 + (r() < 0.25 ? 1 : 0);
+    for (let j = 0; j < n; j++) {
+      const cond = ['Near Mint', 'Near Mint', 'Slightly Played', 'Slightly Played', 'Moderately Played', 'Played'][Math.floor(r() * 6)];
+      const mult = { 'Near Mint': 1, 'Slightly Played': 0.92, 'Moderately Played': 0.82, 'Played': 0.7 }[cond];
+      const foil = r() < 0.12;
+      const price = Math.max(5, Math.round(base * (0.88 + r() * 0.55) * mult * (foil ? 2.3 : 1) * 100));
+      const set = DEMO_SETS[Math.floor(r() * DEMO_SETS.length)];
+      const id = hash32(key + '|' + s.id + '|' + j + '|' + lang);
+      out.push({ id, productId: id, bpId: hash32(key + set[0]), sellerId: s.id, seller: s.name, country: s.country, hub: s.hub, type: 'normal',
+        price, cur: 'EUR', qty: 1 + Math.floor(r() * 4), cond, foil, lang, signed: false, altered: false, graded: false, vac: false, bundle: 1,
+        set: set[0], setName: set[1], num: String(1 + Math.floor(r() * 380)), img: null });
+    }
+  }
+  return out;
+}
+
+/* ── Decks enregistrés : normalisation, historique de prix, temps relatif ───────────────────── */
+const HISTORY_MAX = 12, NAME_MAX = 120, TEXT_MAX = 60000;
+const OPT_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
+const OPT_FOIL = ['no', 'any', 'yes'];
+const OPT_MODE = ['zero', 'direct'];
+
+/** Options de recherche : on ne garde que des valeurs connues (le document est lu depuis le cloud). */
+function sanitizeOpts(o) {
+  o = o || {};
+  const ship = Number(o.ship);
+  return {
+    lang: OPT_LANGS.includes(o.lang) ? o.lang : 'fr',
+    cond: CONDITIONS.includes(o.cond) ? o.cond : 'Slightly Played',
+    foil: OPT_FOIL.includes(o.foil) ? o.foil : 'no',
+    mode: OPT_MODE.includes(o.mode) ? o.mode : 'zero',
+    ship: Number.isFinite(ship) ? Math.max(0, Math.min(5000, Math.round(ship))) : 280,
+    fallbackEn: o.fallbackEn !== false,
+  };
+}
+
+/** Nom proposé : la première carte de la liste (le commandant, dans un export EDHREC). */
+function suggestName(text) {
+  const d = parseDeck(text);
+  const first = d.cards[0];
+  return first ? first.name.slice(0, NAME_MAX) : 'Nouveau deck';
+}
+
+/** Deux relevés sont comparables s'ils portent sur le même mode, le même nombre de cartes trouvées et les mêmes critères. */
+const sameKind = (a, b) => a.mode === b.mode && a.found === b.found && (a.sig || '') === (b.sig || '');
+
+/** Ajoute un relevé de prix. Même nature, même total, moins de 30 min : on rafraîchit la date au lieu d'empiler. */
+function pushHistory(history, entry) {
+  const h = (Array.isArray(history) ? history : []).filter(e => e && Number.isFinite(e.at) && Number.isFinite(e.total)).slice();
+  const last = h[h.length - 1];
+  if (last && sameKind(last, entry) && last.total === entry.total && entry.at - last.at < 30 * 60 * 1000) h[h.length - 1] = entry;
+  else h.push(entry);
+  return h.slice(-HISTORY_MAX);
+}
+
+/** Variation entre le dernier relevé et le précédent comparable. */
+function priceDelta(history) {
+  const h = Array.isArray(history) ? history : [];
+  const last = h[h.length - 1]; if (!last) return null;
+  for (let i = h.length - 2; i >= 0; i--) {
+    const p = h[i];
+    if (sameKind(p, last)) return { mode: last.mode, total: last.total, prev: p.total, diff: last.total - p.total, at: last.at, prevAt: p.at };
+  }
+  return { mode: last.mode, total: last.total, prev: null, diff: 0, at: last.at, prevAt: null };
+}
+
+/** Série de prix comparable au dernier relevé, pour le mini-graphique. */
+function priceSeries(history) {
+  const h = Array.isArray(history) ? history : []; const last = h[h.length - 1]; if (!last) return [];
+  return h.filter(e => sameKind(e, last)).map(e => e.total);
+}
+
+/** Document deck propre (même forme en local et dans Firestore). */
+function deckDoc(x, now) {
+  now = Number.isFinite(now) ? now : Date.now();
+  const text = String(x.text || '').slice(0, TEXT_MAX);
+  const name = String(x.name || '').trim().slice(0, NAME_MAX) || suggestName(text);
+  const cards = parseDeck(text).cards.length;
+  const history = (Array.isArray(x.history) ? x.history : []).filter(e => e && Number.isFinite(e.at) && Number.isFinite(e.total)).slice(-HISTORY_MAX)
+    .map(e => ({ at: e.at, total: Math.round(e.total), mode: OPT_MODE.includes(e.mode) ? e.mode : 'zero', found: Math.max(0, e.found | 0), count: Math.max(0, e.count | 0), sig: typeof e.sig === 'string' ? e.sig.slice(0, 40) : '' }));
+  return { name, text, opts: sanitizeOpts(x.opts), cards, history, createdAt: Number.isFinite(x.createdAt) ? x.createdAt : now, updatedAt: now };
+}
+
+/** Lecture tolérante d'un document venu du stockage (local ou cloud). */
+function readDeck(id, d) {
+  d = d || {};
+  const n = (v, f) => Number.isFinite(v) ? v : f;
+  const out = deckDoc({ name: d.name, text: d.text, opts: d.opts, history: d.history, createdAt: n(d.createdAt, 0) }, n(d.updatedAt, 0));
+  out.id = String(id); return out;
+}
+
+/** « à l'instant », « il y a 3 h », « hier », « 12 sept. » */
+function relTime(ts, now) {
+  now = now || Date.now();
+  const s = Math.round((now - ts) / 1000);
+  if (!Number.isFinite(s)) return '';
+  if (s < 45) return 'à l\'instant';
+  const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
+  if (s < 3600) return rtf.format(-Math.max(1, Math.round(s / 60)), 'minute');
+  if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour');
+  if (s < 7 * 86400) return rtf.format(-Math.round(s / 86400), 'day');
+  return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+/** Identifiant de document : valable pour Firestore, sans dépendre d'une API. */
+function newDeckId() {
+  const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let out = '';
+  try { const b = new Uint8Array(20); crypto.getRandomValues(b); for (const x of b) out += a[x % a.length]; }
+  catch (e) { for (let i = 0; i < 20; i++) out += a[Math.floor(Math.random() * a.length)]; }
+  return out;
+}
+
+/* Export Node pour les tests. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
+    hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
+    sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX };
+}
+
+
+/* ── cloud.js : compte + decks (Firebase Auth / Firestore). Chargé à la demande, jamais bloquant. ──
+   Sans SDK (hors ligne, CSP, file://) l'app reste entièrement utilisable en mode local. */
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCznNtazqWMhiYlPxce3O0Ss06mycgp6TY',
+  authDomain: 'm2s-mtg.firebaseapp.com',
+  projectId: 'm2s-mtg',
+  storageBucket: 'm2s-mtg.firebasestorage.app',
+  messagingSenderId: '760752938824',
+  appId: '1:760752938824:web:92327fe6c051b8f2741d7d',
+};
+const FB_BASE = 'https://www.gstatic.com/firebasejs/12.19.0/';
+
+/** Code d'erreur Firebase → message lisible. null = silence (l'utilisateur a juste fermé la fenêtre). */
+function authMessage(e) {
+  const c = (e && e.code) || '';
+  const m = {
+    'auth/invalid-email': 'Adresse email invalide.',
+    'auth/missing-email': 'Saisis ton adresse email.',
+    'auth/missing-password': 'Saisis ton mot de passe.',
+    'auth/user-not-found': 'Email ou mot de passe incorrect.',
+    'auth/wrong-password': 'Email ou mot de passe incorrect.',
+    'auth/invalid-credential': 'Email ou mot de passe incorrect.',
+    'auth/email-already-in-use': 'Un compte existe déjà avec cet email. Connecte-toi.',
+    'auth/weak-password': 'Mot de passe trop court : 6 caractères minimum.',
+    'auth/too-many-requests': 'Trop de tentatives. Réessaie dans quelques minutes.',
+    'auth/network-request-failed': 'Pas de connexion. Réessaie une fois en ligne.',
+    'auth/popup-blocked': 'Fenêtre bloquée par le navigateur. Autorise-la ou utilise l\'email.',
+    'auth/popup-closed-by-user': null,
+    'auth/cancelled-popup-request': null,
+    'auth/operation-not-allowed': 'Cette méthode n\'est pas activée dans la console Firebase (Authentication › Mode de connexion).',
+    'auth/unauthorized-domain': 'Ce domaine n\'est pas autorisé : ajoute-le dans Firebase › Authentication › Paramètres › Domaines autorisés.',
+    'auth/operation-not-supported-in-this-environment': 'La connexion n\'est pas disponible dans ce contexte. Ouvre l\'app en http(s).',
+    'auth/user-disabled': 'Ce compte est désactivé.',
+    'auth/requires-recent-login': 'Reconnecte-toi pour continuer.',
+  };
+  if (c in m) return m[c];
+  return 'Connexion impossible' + (c ? ' (' + c.replace('auth/', '') + ')' : '') + '.';
+}
+
+/** Construit l'API cloud à partir des modules du SDK (injectables pour les tests). */
+function makeCloud(m) {
+  const app = m.app.getApps().length ? m.app.getApp() : m.app.initializeApp(FIREBASE_CONFIG);
+  const auth = m.auth.getAuth(app);
+  let db;
+  try { db = m.fs.initializeFirestore(app, { localCache: m.fs.persistentLocalCache({ tabManager: m.fs.persistentMultipleTabManager() }) }); }
+  catch (e) { db = m.fs.getFirestore(app); }
+  const col = uid => m.fs.collection(db, 'users', uid, 'decks');
+  return {
+    onUser: cb => m.auth.onAuthStateChanged(auth, cb),
+    signIn: (email, pw) => m.auth.signInWithEmailAndPassword(auth, email, pw),
+    signUp: (email, pw) => m.auth.createUserWithEmailAndPassword(auth, email, pw),
+    google: () => { const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.signInWithPopup(auth, p); },
+    reset: email => m.auth.sendPasswordResetEmail(auth, email),
+    signOut: () => m.auth.signOut(auth),
+    /** Écoute temps réel des decks de l'utilisateur, du plus récent au plus ancien. */
+    watch(uid, onData, onErr) {
+      const q = m.fs.query(col(uid), m.fs.orderBy('updatedAt', 'desc'));
+      return m.fs.onSnapshot(q, { includeMetadataChanges: true }, snap => onData(snap.docs.map(d => ({ id: d.id, data: d.data() })), snap.metadata.hasPendingWrites), onErr);
+    },
+    newId: uid => m.fs.doc(col(uid)).id,
+    save: (uid, id, data) => m.fs.setDoc(m.fs.doc(col(uid), id), data),
+    remove: (uid, id) => m.fs.deleteDoc(m.fs.doc(col(uid), id)),
+    saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
+  };
+}
+
+let cloudP = null;
+/** Charge le SDK une seule fois ; en cas d'échec, un nouvel appel réessaie. */
+function loadCloud() {
+  if (cloudP) return cloudP;
+  cloudP = (async () => {
+    if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) {
+      throw Object.assign(new Error('Ouvre l\'app via http(s) (proxy local ou ton hébergement) pour te connecter.'), { code: 'env' });
+    }
+    const [app, auth, fs] = await Promise.all([import(FB_BASE + 'firebase-app.js'), import(FB_BASE + 'firebase-auth.js'), import(FB_BASE + 'firebase-firestore.js')]);
+    return makeCloud({ app, auth, fs });
+  })();
+  cloudP.catch(() => { cloudP = null; });
+  return cloudP;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud };
+
+
+/* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
+
+const CTX = { proxy: false, needsKey: false, token: '', appKey: '' };
+
+const sleep = (ms, signal) => new Promise((res, rej) => {
+  if (signal && signal.aborted) return rej(abortErr());
+  const t = setTimeout(res, ms);
+  if (signal) signal.addEventListener('abort', () => { clearTimeout(t); rej(abortErr()); }, { once: true });
+});
+function abortErr() { const e = new Error('Annulé'); e.name = 'AbortError'; return e; }
+function netErr(code, msg, extra) { const e = new Error(msg); e.code = code; Object.assign(e, extra || {}); return e; }
+
+/** File d'attente cadencée : `rate` requêtes/s, `conc` en parallèle, ralentit seule sur 429/503. */
+class Limiter {
+  constructor({ rate = 6, conc = 4, min = 1, max = 10 } = {}) {
+    Object.assign(this, { rate, conc, min, max, queue: [], active: 0, next: 0, count: 0, stamps: [], cool: 0 });
+  }
+  schedule(fn, signal) { return new Promise((res, rej) => { this.queue.push({ fn, res, rej, signal }); this.pump(); }); }
+  pump() {
+    while (this.queue.length && this.active < this.conc) {
+      const job = this.queue.shift(); this.active++;
+      const now = performance.now(); const at = Math.max(now, this.next);
+      this.next = at + 1000 / this.rate;
+      setTimeout(() => this.run(job), Math.max(0, at - now));
+    }
+  }
+  async run(job) {
+    try {
+      if (job.signal && job.signal.aborted) throw abortErr();
+      const r = await job.fn();
+      this.count++; this.stamps.push(performance.now());
+      job.res(r);
+    } catch (e) { job.rej(e); }
+    finally { this.active--; this.pump(); }
+  }
+  slow() { this.rate = Math.max(this.min, this.rate * 0.5); this.cool = performance.now() + 5000; }
+  speedUp() { if (performance.now() > this.cool) this.rate = Math.min(this.max, this.rate + 0.3); }
+  rps() { const t = performance.now(); this.stamps = this.stamps.filter(s => t - s < 5000); return this.stamps.length / 5; }
+}
+const limCT = new Limiter({ rate: 6, conc: 5, max: 9 });
+const limScry = new Limiter({ rate: 7, conc: 3, max: 8 });
+
+async function httpJson(lim, url, init, signal, retries = 4) {
+  for (let a = 0; ; a++) {
+    let r;
+    try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal); }
+    catch (e) {
+      if (e.name === 'AbortError') throw e;
+      throw netErr('network', 'Connexion impossible', { cause: e });
+    }
+    if (r.status === 429 || r.status === 503) {
+      lim.slow();
+      if (a >= retries) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status });
+      await sleep(900 * (a + 1), signal); continue;
+    }
+    if (r.status === 401 || r.status === 403) throw netErr('auth', 'Accès refusé', { status: r.status });
+    if (r.status === 404) throw netErr('404', 'Introuvable', { status: 404 });
+    if (!r.ok) {
+      if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); continue; }
+      throw netErr('http', 'Erreur ' + r.status, { status: r.status });
+    }
+    lim.speedUp();
+    return r.json();
+  }
+}
+
+/* ── Cache (IndexedDB, repli mémoire) ─────────────────────────────────────────────────────── */
+const Cache = (() => {
+  const mem = new Map(); let dbp = null;
+  function db() {
+    if (dbp) return dbp;
+    dbp = new Promise(res => {
+      try {
+        if (typeof indexedDB === 'undefined') return res(null);
+        const r = indexedDB.open('deckdeal', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null);
+      } catch (e) { res(null); }
+    });
+    return dbp;
+  }
+  async function get(k, maxAge) {
+    const m = mem.get(k); if (m && Date.now() - m.t < maxAge) return m.v;
+    const d = await db(); if (!d) return null;
+    return new Promise(res => {
+      try {
+        const rq = d.transaction('kv').objectStore('kv').get(k);
+        rq.onsuccess = () => { const v = rq.result; if (v && Date.now() - v.t < maxAge) { mem.set(k, v); res(v.v); } else res(null); };
+        rq.onerror = () => res(null);
+      } catch (e) { res(null); }
+    });
+  }
+  async function set(k, v) {
+    const rec = { v, t: Date.now() }; mem.set(k, rec);
+    const d = await db(); if (!d) return;
+    try { d.transaction('kv', 'readwrite').objectStore('kv').put(rec, k); } catch (e) { /* quota */ }
+  }
+  async function clear() {
+    mem.clear(); const d = await db(); if (!d) return;
+    try { d.transaction('kv', 'readwrite').objectStore('kv').clear(); } catch (e) { /* ignore */ }
+  }
+  return { get, set, clear };
+})();
+const DAY = 86400000;
+
+/* ── Scryfall : toutes les impressions papier d'une carte ─────────────────────────────────── */
+const imgOf = c => (c.image_uris && c.image_uris.small) || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris && c.card_faces[0].image_uris.small) || null;
+
+async function scryPrints(name, signal) {
+  const search = async n => {
+    const q = '!"' + n.replace(/"/g, '') + '" game:paper';
+    let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&include_extras=true&include_variations=true';
+    const out = [];
+    while (url && out.length < 600) {
+      let j;
+      try { j = await httpJson(limScry, url, { headers: { Accept: 'application/json' } }, signal); }
+      catch (e) { if (e.code === '404') return out; throw e; }
+      for (const c of j.data || []) {
+        if (c.oversized || c.set_type === 'memorabilia') continue;
+        out.push({ id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name });
+      }
+      url = j.has_more ? j.next_page : null;
+    }
+    return out;
+  };
+  let prints = await search(name);
+  if (!prints.length) { // nom approximatif (virgule oubliée, accent…) : on demande à Scryfall le nom exact
+    try {
+      const j = await httpJson(limScry, 'https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name), { headers: { Accept: 'application/json' } }, signal);
+      if (j && j.name) prints = await search(j.name);
+    } catch (e) { if (e.name === 'AbortError' || e.code === 'network') throw e; }
+  }
+  return prints;
+}
+
+/* ── CardTrader ───────────────────────────────────────────────────────────────────────────── */
+function ct(path, { method = 'GET', params, body, signal } = {}) {
+  if (!CTX.proxy && !CTX.token) throw netErr('notoken', 'Token CardTrader manquant');
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  const url = CTX.proxy ? 'api/' + path + qs : 'https://api.cardtrader.com/api/v2/' + path + qs;
+  const headers = { Accept: 'application/json' };
+  if (CTX.proxy) { if (CTX.appKey) headers['x-app-key'] = CTX.appKey; }
+  else headers.Authorization = 'Bearer ' + CTX.token;
+  if (body) headers['Content-Type'] = 'application/json';
+  return httpJson(limCT, url, { method, headers, body: body ? JSON.stringify(body) : undefined }, signal);
+}
+
+async function getExpansions(signal) {
+  let list = await Cache.get('ct:expansions', 3 * DAY);
+  if (!list) {
+    const j = await ct('expansions', { signal });
+    list = (Array.isArray(j) ? j : []).filter(e => e.game_id === 1).map(e => ({ id: e.id, code: String(e.code || '').toLowerCase(), name: e.name }));
+    await Cache.set('ct:expansions', list);
+  }
+  const byCode = new Map(), byName = new Map();
+  for (const e of list) { byCode.set(e.code, e.id); byName.set(normPart(e.name), e.id); }
+  return { byCode, byName };
+}
+
+async function getBlueprints(expId, signal) {
+  let list = await Cache.get('ct:bp:' + expId, 7 * DAY);
+  if (!list) {
+    const j = await ct('blueprints/export', { params: { expansion_id: expId }, signal });
+    list = (Array.isArray(j) ? j : []).map(b => ({ id: b.id, name: b.name, sid: b.scryfall_id || null }));
+    await Cache.set('ct:bp:' + expId, list);
+  }
+  const byScry = new Map(), byName = new Map();
+  for (const b of list) {
+    if (b.sid) byScry.set(b.sid, b);
+    const f = frontName(b.name);
+    if (!byName.has(f)) byName.set(f, []);
+    byName.get(f).push(b);
+  }
+  return { byScry, byName };
+}
+
+function mapBlueprints(card, prints, exps, bpIndex) {
+  const out = new Map(); const front = frontName(card.name);
+  for (const p of prints) {
+    const eid = exps.byCode.get(p.set) || exps.byName.get(normPart(p.setName));
+    const idx = eid && bpIndex.get(eid); if (!idx) continue;
+    const direct = idx.byScry.get(p.id);
+    const hits = direct ? [direct] : (idx.byName.get(front) || []);
+    for (const b of hits) if (!out.has(b.id)) out.set(b.id, { id: b.id, set: p.set, setName: p.setName, num: p.num, img: p.img });
+  }
+  return [...out.values()];
+}
+
+async function fetchBpOffers(bp, lang, foil, signal) {
+  const params = { blueprint_id: bp.id };
+  if (lang) params.language = lang;
+  if (foil === 'no') params.foil = 'false'; else if (foil === 'yes') params.foil = 'true';
+  const j = await ct('marketplace/products', { params, signal });
+  const arr = Array.isArray(j) ? j : Object.values(j || {}).flat();
+  return arr.map(p => normalizeProduct(p, bp));
+}
+
+async function pool(items, n, fn) {
+  let i = 0; const errs = [];
+  const worker = async () => { while (i < items.length) { const it = items[i++]; await fn(it); } };
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
+  return errs;
+}
+
+/**
+ * Pipeline live. hooks : step(id,state,detail) · progress(frac) · rate(rps,total) · card(key,payload)
+ * payload : {offers, bps, img, notFound, fellBack}
+ */
+async function runLive(cards, opts, hooks, signal) {
+  const total = cards.length;
+  hooks.step('prints', 'run', '0 / ' + total);
+  const printsOf = {}; let done = 0;
+  await pool(cards, 3, async c => {
+    const ck = 'sc:' + c.key;
+    let pr = await Cache.get(ck, 3 * DAY);
+    if (!pr) { pr = await scryPrints(c.name, signal); if (pr.length) await Cache.set(ck, pr); }
+    printsOf[c.key] = pr; done++;
+    hooks.step('prints', 'run', done + ' / ' + total); hooks.progress(0.15 * done / total);
+  });
+  hooks.step('prints', 'done', total + ' cartes');
+
+  hooks.step('catalog', 'run', 'Extensions…');
+  const exps = await getExpansions(signal);
+  const needed = new Set();
+  for (const c of cards) for (const p of printsOf[c.key]) {
+    const eid = exps.byCode.get(p.set) || exps.byName.get(normPart(p.setName)); if (eid) needed.add(eid);
+  }
+  const bpIndex = new Map(); let bd = 0; const ids = [...needed];
+  await pool(ids, 4, async id => {
+    bpIndex.set(id, await getBlueprints(id, signal)); bd++;
+    hooks.step('catalog', 'run', bd + ' / ' + ids.length + ' extensions'); hooks.progress(0.15 + 0.25 * bd / ids.length);
+  });
+  hooks.step('catalog', 'done', ids.length + ' extensions');
+
+  const plan = cards.map(c => ({ c, bps: mapBlueprints(c, printsOf[c.key], exps, bpIndex) }));
+  const reqTotal = plan.reduce((a, p) => a + p.bps.length, 0) || 1;
+  let reqDone = 0; const t0 = performance.now();
+  hooks.step('offers', 'run', '0 / ' + reqTotal);
+  const tick = () => { hooks.step('offers', 'run', reqDone + ' / ' + reqTotal); hooks.progress(0.4 + 0.55 * reqDone / reqTotal); hooks.rate(limCT.rps(), limCT.count); };
+  const store = {};
+  await pool(plan, 4, async ({ c, bps }) => {
+    const img = (printsOf[c.key][0] || {}).img || null;
+    if (!printsOf[c.key].length) { hooks.card(c.key, { offers: [], bps: [], img, notFound: true }); return; }
+    const all = [];
+    await Promise.all(bps.map(async bp => {
+      try { all.push(...await fetchBpOffers(bp, opts.lang, opts.foil, signal)); }
+      catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network' || e.code === 'notoken') throw e; }
+      reqDone++; tick();
+    }));
+    store[c.key] = { bps, img };
+    hooks.card(c.key, { offers: all, bps, img });
+  });
+  hooks.step('offers', 'done', reqDone + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
+
+  if (opts.fallbackEn && opts.lang !== 'en') {
+    const miss = cards.filter(c => store[c.key] && store[c.key].bps.length && !hooks.hasOffers(c.key));
+    if (miss.length) {
+      hooks.step('fallback', 'run', '0 / ' + miss.length); let fd = 0;
+      await pool(miss, 4, async c => {
+        const { bps, img } = store[c.key]; const all = [];
+        await Promise.all(bps.map(async bp => { try { all.push(...await fetchBpOffers(bp, 'en', opts.foil, signal)); } catch (e) { if (e.name === 'AbortError') throw e; } }));
+        fd++; hooks.step('fallback', 'run', fd + ' / ' + miss.length); hooks.progress(0.95 + 0.05 * fd / miss.length);
+        hooks.card(c.key, { offers: all, bps, img, fellBack: true });
+      });
+      hooks.step('fallback', 'done', miss.length + ' cartes');
+    } else hooks.step('fallback', 'skip', 'Inutile');
+  } else hooks.step('fallback', 'skip', 'Désactivé');
+  hooks.progress(1);
+}
+
+/** Recherche en anglais pour une seule carte (depuis la fiche carte). */
+async function searchOneEnglish(card, st, opts, signal) {
+  const all = [];
+  await Promise.all((st.bps || []).map(async bp => { try { all.push(...await fetchBpOffers(bp, 'en', opts.foil, signal)); } catch (e) { if (e.name === 'AbortError') throw e; } }));
+  return all;
+}
+
+/* ── Pipeline démo : mêmes hooks, données simulées ────────────────────────────────────────── */
+async function runDemo(cards, opts, hooks, signal) {
+  const total = cards.length;
+  hooks.step('prints', 'run', '0 / ' + total);
+  for (let i = 0; i < total; i++) { await sleep(14 + (hash32(cards[i].key) % 16), signal); hooks.step('prints', 'run', (i + 1) + ' / ' + total); hooks.progress(0.15 * (i + 1) / total); }
+  hooks.step('prints', 'done', total + ' cartes');
+  hooks.step('catalog', 'run', 'Extensions…');
+  const nExp = 9; for (let i = 1; i <= nExp; i++) { await sleep(70, signal); hooks.step('catalog', 'run', i + ' / ' + nExp + ' extensions'); hooks.progress(0.15 + 0.25 * i / nExp); }
+  hooks.step('catalog', 'done', nExp + ' extensions');
+  hooks.step('offers', 'run', '0 / ' + total);
+  let reqs = 0; const t0 = performance.now();
+  for (let i = 0; i < total; i++) {
+    const c = cards[i];
+    await sleep(38 + (hash32(c.key + 'z') % 70), signal);
+    reqs += 4 + (hash32(c.key) % 7);
+    hooks.card(c.key, { offers: makeDemoOffers(c, opts.lang), bps: [{ id: 1 }], img: null });
+    hooks.step('offers', 'run', (i + 1) + ' / ' + total);
+    hooks.progress(0.4 + 0.55 * (i + 1) / total);
+    hooks.rate(reqs / Math.max(1, (performance.now() - t0) / 1000), reqs);
+  }
+  hooks.step('offers', 'done', reqs + ' requêtes simulées');
+  if (opts.fallbackEn && opts.lang !== 'en') {
+    const miss = cards.filter(c => !hooks.hasOffers(c.key));
+    if (miss.length) {
+      hooks.step('fallback', 'run', '0 / ' + miss.length);
+      for (let i = 0; i < miss.length; i++) {
+        await sleep(160, signal);
+        hooks.card(miss[i].key, { offers: makeDemoOffers(miss[i], 'en'), bps: [{ id: 1 }], img: null, fellBack: true });
+        hooks.step('fallback', 'run', (i + 1) + ' / ' + miss.length); hooks.progress(0.95 + 0.05 * (i + 1) / miss.length);
+      }
+      hooks.step('fallback', 'done', miss.length + ' cartes');
+    } else hooks.step('fallback', 'skip', 'Inutile');
+  } else hooks.step('fallback', 'skip', 'Désactivé');
+  hooks.progress(1);
+}
+
+/* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
+async function cartFill(parts, mode, address, signal, onItem, demo) {
+  const failed = []; let ok = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const { offer, n, name } = parts[i];
+    try {
+      if (demo) { await sleep(70, signal); if (hash32(String(offer.id)) % 23 === 0) throw netErr('gone', 'Plus disponible'); }
+      else {
+        const body = { product_id: offer.productId, quantity: n, via_cardtrader_zero: mode === 'zero' };
+        if (address) { body.shipping_address = address; body.billing_address = address; }
+        await ct('cart/add', { method: 'POST', body, signal });
+      }
+      ok++;
+    } catch (e) {
+      if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e;
+      failed.push({ name, reason: e.message });
+    }
+    onItem(i + 1, parts.length);
+  }
+  return { ok, failed };
+}
+
+
+/* ── app.js : interface ─────────────────────────────────────────────────────────────────────── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+const LANGS = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien', pt: 'portugais', jp: 'japonais' };
+
+const SAMPLE = `1 Cloud, Midgar Mercenary
+1 Aang, the Last Airbender
+1 Angel of the Ruins
+1 Appa, Steadfast Guardian
+1 Aven Interrupter
+1 Cloister Gargoyle
+1 Curious Colossus
+1 Esper Sentinel
+1 Felidar Guardian
+1 Flickering Hound
+1 Flickerwisp
+1 Giver of Runes
+1 Glorious Protector
+1 Goliath Paladin
+1 Guardian of Ghirapur
+1 Guide of Souls
+1 Icewind Stalwart
+1 Karmic Guide
+1 Kíli the Resourceful
+1 Loran of the Third Path
+1 Moonshaker Cavalry
+1 Mother of Runes
+1 Nadaar, Selfless Paladin
+1 Phelia, Exuberant Shepherd
+1 Radiant Solar
+1 Ranger's Hawk
+1 Recruiter of the Guard
+1 Restoration Angel
+1 Seasoned Dungeoneer
+1 Skyclave Apparition
+1 Summon: Yojimbo
+1 Sun Titan
+1 Tataru Taru
+1 Voice of Victory
+1 White Plume Adventurer
+1 Witch Enchanter
+1 Abandoned Air Temple
+1 Buried Ruin
+1 Eiganjo, Seat of the Empire
+1 Emeria, the Sky Ruin
+1 Ishgard, the Holy See
+1 Minas Tirith
+1 Monumental Henge
+25 Plains
+1 Scavenger Grounds
+1 Arcane Signet
+1 Delver's Torch
+1 Fellwar Stone
+1 Liquimetal Torque
+1 Panharmonicon
+1 Pearl Medallion
+1 Sarevok's Tome
+1 Sol Ring
+1 Springleaf Drum
+1 Sword of Fire and Ice
+1 Sword of Hearth and Home
+1 Sword of Light and Shadow
+1 Trailblazer's Torch
+1 Avatar's Wrath
+1 Emeria's Call
+1 Ondu Inversion
+1 Winds of Abandon
+1 Bilbo's Gambit
+1 Clever Concealment
+1 Cosmic Intervention
+1 Ephemerate
+1 Flare of Fortitude
+1 Get Lost
+1 Path to Exile
+1 Razorgrass Ambush
+1 Reprieve
+1 Restoration Magic
+1 Sejiri Shelter
+1 Swords to Plowshares
+1 Sigarda's Aid
+1 Teleportation Circle`;
+
+/* ── État ─────────────────────────────────────────────────────────────────────────────────── */
+const S = {
+  demo: true, demoPref: null, proxy: false, token: '', appKey: '', address: {}, theme: 'auto', draft: null,
+  opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
+  deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
+  view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
+};
+let runSeq = 0;
+
+function loadStore() { try { return JSON.parse(localStorage.getItem('deckdeal:v1') || '{}'); } catch (e) { return {}; } }
+function saveStore() {
+  try {
+    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
+  } catch (e) { /* stockage indisponible */ }
+}
+
+/* ── Utilitaires UI ───────────────────────────────────────────────────────────────────────── */
+const fmtCache = {};
+function fmt(c, cur) {
+  cur = cur || S.cur || 'EUR';
+  const f = fmtCache[cur] || (fmtCache[cur] = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }));
+  return f.format(c / 100);
+}
+function tween(el, to) {
+  const from = el._v == null ? 0 : el._v; el._v = to;
+  if (reduceMotion() || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), d = 620; cancelAnimationFrame(el._raf);
+  const step = now => {
+    const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(Math.round(from + (to - from) * e));
+    if (p < 1) el._raf = requestAnimationFrame(step);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+let toastT;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2700);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copié'); return; } catch (e) { /* repli */ }
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;top:0';
+    document.body.appendChild(ta); ta.select(); const ok = document.execCommand && document.execCommand('copy'); ta.remove();
+    toast(ok ? 'Copié' : 'Copie impossible, sélectionne le texte à la main');
+  } catch (e) { toast('Copie impossible'); }
+}
+async function lockScreen() { try { S.wake = await navigator.wakeLock.request('screen'); } catch (e) { /* refusé */ } }
+function unlockScreen() { try { if (S.wake) S.wake.release(); } catch (e) { /* ignore */ } S.wake = null; }
+
+function mountSeg(root, options, value, onChange) {
+  root.style.setProperty('--n', options.length);
+  root.innerHTML = '<span class="seg-thumb"></span>' + options.map(o =>
+    `<button type="button" class="seg-opt" role="radio" aria-checked="false" data-v="${esc(o.v)}"><span>${esc(o.label)}</span>${o.sub != null ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('');
+  const set = (v, fire) => {
+    const i = Math.max(0, options.findIndex(o => o.v === v));
+    root.style.setProperty('--idx', i);
+    $$('.seg-opt', root).forEach((b, k) => b.setAttribute('aria-checked', String(k === i)));
+    root._v = options[i].v;
+    if (fire && onChange) onChange(options[i].v);
+  };
+  root.onclick = e => { const b = e.target.closest('.seg-opt'); if (b) set(b.dataset.v, true); };
+  root.setValue = v => set(v, false);
+  root.setLabel = (v, t) => { const n = $(`.seg-opt[data-v="${v}"] span`, root); if (n) n.textContent = t; };
+  root.setSub = (v, t) => { const n = $(`.seg-opt[data-v="${v}"] small`, root); if (n) n.textContent = t; };
+  set(value, false);
+}
+
+/* ── Sheets ───────────────────────────────────────────────────────────────────────────────── */
+const sheets = [];
+function openSheet(title, sub, build) {
+  const wrap = document.createElement('div'); wrap.className = 'sheet-wrap';
+  wrap.innerHTML = `<div class="sheet-backdrop" data-close></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="grab"></div>
+      <div class="sheet-head"><div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>
+        <button class="icon-btn" type="button" data-close aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button></div>
+      <div class="sheet-body"></div><div class="sheet-foot" hidden></div></div>`;
+  const prev = document.activeElement;
+  $('#toast').classList.remove('on');
+  const api = { body: $('.sheet-body', wrap), foot: $('.sheet-foot', wrap), wrap,
+    close() {
+      const i = sheets.indexOf(api); if (i < 0) return; sheets.splice(i, 1);
+      wrap.classList.remove('open');
+      setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 440);
+      if (!sheets.length) { const app = $('#app'); app.inert = false; app.removeAttribute('aria-hidden'); }
+      try { if (prev && prev.focus) prev.focus(); } catch (e) { /* ignore */ }
+    },
+    setFoot(html) { api.foot.hidden = !html; api.foot.innerHTML = html || ''; } };
+  wrap.addEventListener('click', e => { if (e.target.closest('[data-close]')) api.close(); });
+  $('#sheetRoot').appendChild(wrap); sheets.push(api);
+  const app = $('#app'); app.inert = true; app.setAttribute('aria-hidden', 'true');
+  build(api);
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('open'); const c = $('[data-close].icon-btn', wrap); if (c) c.focus({ preventScroll: true }); }));
+  return api;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheets.length) sheets[sheets.length - 1].close(); });
+
+/* ── Saisie ───────────────────────────────────────────────────────────────────────────────── */
+let draftT;
+function refreshDeck() {
+  const d = parseDeck($('#deckText').value); S.deck = d;
+  const chips = [];
+  const dk = findDeck(S.deckId);
+  if (dk) chips.push(`<span class="stat deckchip"><b>${esc(dk.name)}</b><button class="stat-x" type="button" data-act="detach" aria-label="Détacher ce deck"><svg class="i"><use href="#i-close"/></svg></button></span>`);
+  if (S.isSample) chips.push('<span class="stat accent"><b>Exemple</b> liste de démonstration</span>');
+  if (d.cards.length) chips.push(`<span class="stat"><b>${d.cards.length}</b> cartes à chercher</span>`);
+  if (d.basicCopies) chips.push(`<span class="stat"><b>${d.basicCopies}</b> terrains de base à part</span>`);
+  if (d.ignored) chips.push(`<span class="stat warn"><b>${d.ignored}</b> ligne${d.ignored > 1 ? 's' : ''} ignorée${d.ignored > 1 ? 's' : ''}</span>`);
+  $('#deckStats').innerHTML = chips.join('');
+  const n = d.cards.length;
+  $('#btnRunLabel').textContent = n ? `Chercher les offres · ${n} cartes` : 'Colle une liste pour commencer';
+  $('#btnRun').disabled = !n;
+  updateSaveButtons();
+  clearTimeout(draftT); draftT = setTimeout(saveStore, 400);
+}
+
+function readOpts() {
+  S.opts.lang = $('#optLang').value; S.opts.cond = $('#optCond').value;
+  S.opts.foil = $('#segFoil')._v; S.opts.mode = $('#segMode')._v;
+  S.opts.fallbackEn = $('#optFallback').checked;
+  const v = parseFloat(String($('#optShip').value || '0').replace(',', '.'));
+  S.opts.ship = Math.max(0, Math.round((isNaN(v) ? 0 : v) * 100));
+}
+function syncShip() { $('#shipField').hidden = S.opts.mode !== 'direct'; }
+function modeHint() {
+  $('#modeHint').textContent = S.opts.mode === 'zero'
+    ? 'CardTrader Zero regroupe tous les vendeurs dans un seul colis (9 à 14 jours). Les frais et la livraison sont calculés par CardTrader.'
+    : 'Chaque vendeur expédie lui-même. Deck Deal minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
+}
+
+/* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
+function showView(v) {
+  S.view = v;
+  $('#viewInput').hidden = v !== 'input'; $('#viewResults').hidden = v !== 'results';
+  $('#dockInput').hidden = v !== 'input'; $('#dockResults').hidden = v !== 'results';
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+/* ── Recherche ────────────────────────────────────────────────────────────────────────────── */
+const STEP_DEFS = [['prints', 'Lecture des impressions'], ['catalog', 'Catalogue CardTrader'], ['offers', 'Offres'], ['fallback', 'Repli en anglais']];
+function buildSteps() {
+  $('#steps').innerHTML = STEP_DEFS.map(([id, t]) =>
+    `<li class="step" data-id="${id}" data-state="idle"><span class="st-ico"></span><span>${id === 'offers' ? `Offres en ${esc(LANGS[S.opts.lang] || S.opts.lang)}` : esc(t)}</span><span class="det"></span></li>`).join('');
+}
+function setStep(id, state, detail) {
+  const li = $(`.step[data-id="${id}"]`); if (!li) return;
+  li.dataset.state = state; $('.det', li).textContent = detail || '';
+}
+function setProgress(f) {
+  f = Math.max(0, Math.min(1, f));
+  $('#progFill').style.width = (f * 100).toFixed(1) + '%'; $('#progPct').textContent = Math.round(f * 100) + ' %';
+}
+function setRate(rps, total) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s`; }
+
+function buildList() {
+  const list = $('#list'); list.innerHTML = '';
+  S.deck.cards.forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.dataset.key = c.key; b.style.setProperty('--i', i);
+    list.appendChild(b); updateRow(b, c, { s: 'loading' }, null);
+  });
+  const bs = S.deck.basics;
+  const note = $('#basicsNote');
+  note.hidden = !bs.length;
+  if (bs.length) note.textContent = 'Terrains de base non cherchés : ' + bs.map(b => `${b.qty} × ${b.name}`).join(', ') + '. Prends-les en lot chez un seul vendeur ou en boutique.';
+}
+
+async function startRun() {
+  readOpts(); refreshDeck();
+  const cards = S.deck.cards; if (!cards.length) return;
+  if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
+  if (S.run && S.run.ctrl) S.run.ctrl.abort();
+  saveStore();
+  const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
+  for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
+  S.run = run; S.overrides = {}; S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null;
+  S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
+  $('#segTab').setValue('cards'); $('#list').hidden = false; $('#sellers').hidden = true;
+  $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
+  $('#progTitle').textContent = S.demo ? 'Recherche simulée' : 'Recherche des offres';
+  $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
+  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…';
+  syncSegDeliv(); buildList(); updateHero(); updateDock();
+  showView('results'); lockScreen();
+
+  const alive = () => !run.ctrl.signal.aborted && S.run === run;
+  const hooks = {
+    step: (id, st, d) => { if (alive()) setStep(id, st, d); },
+    progress: f => { if (alive()) setProgress(f); },
+    rate: (r, t) => { if (alive()) setRate(r, t); },
+    card: (key, p) => {
+      if (!alive()) return; const st = run.cards[key]; if (!st) return;
+      st.fetched = true; st.offers = p.offers || []; st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img;
+      if (p.fellBack) st.fellBack = true;
+      scheduleRecompute();
+    },
+    hasOffers: key => { const st = run.cards[key]; return !!st && st.offers.some(o => passes(o, S.opts)); },
+  };
+  try {
+    await (S.demo ? runDemo : runLive)(cards, { ...S.opts }, hooks, run.ctrl.signal);
+    if (S.run === run) run.status = 'done';
+  } catch (e) {
+    if (S.run !== run) return;
+    if (e.name === 'AbortError') { run.status = 'cancelled'; }
+    else {
+      run.status = 'error';
+      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: ['CardTrader refuse l\'accès. Vérifie le token ou la clé du proxy.', 'settings', 'Réglages'],
+        network: [CTX.proxy ? 'Impossible de joindre CardTrader ou Scryfall. Vérifie ta connexion.' : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
+        rate: ['CardTrader limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
+      run.error = { msg: m[0], action: m[1], label: m[2] };
+    }
+  } finally {
+    if (S.run === run) {
+      unlockScreen(); scheduleRecompute(true);
+      if (run.status === 'done') recordRun();
+      $('#heroPartial').hidden = true; $('#btnCancel').hidden = true;
+      if (run.status === 'done') {
+        setProgress(1); $('#progTitle').textContent = 'Recherche terminée';
+        setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
+      } else { $('#progTitle').textContent = run.status === 'cancelled' ? 'Recherche arrêtée' : 'Recherche interrompue'; }
+      updateAlerts(); updateDock();
+    }
+  }
+}
+
+let rcTimer = 0;
+function scheduleRecompute(now) {
+  if (now) { clearTimeout(rcTimer); rcTimer = 0; recompute(); return; }
+  if (rcTimer) return;
+  rcTimer = setTimeout(() => { rcTimer = 0; recompute(); }, 240);
+}
+
+function recompute() {
+  if (!S.run) return;
+  const demand = [], by = {}; S.fo = {};
+  for (const c of S.deck.cards) {
+    const st = S.run.cards[c.key]; if (!st || !st.fetched || st.notFound) continue;
+    const list = st.offers.filter(o => passes(o, S.opts)); S.fo[c.key] = list;
+    if (!list.length) continue;
+    if (!S.cur || S.cur === 'EUR') S.cur = list[0].cur || 'EUR';
+    demand.push({ key: c.key, qty: c.qty }); by[c.key] = list;
+  }
+  S.res = { zero: optimize(demand, by, { mode: 'zero', forced: S.overrides }), direct: optimize(demand, by, { mode: 'direct', ship: S.opts.ship, forced: S.overrides }) };
+  updateHero(); updateRows(); updateAlerts(); updateDock();
+  if (S.tab === 'sellers') renderSellers(false);
+}
+
+/* ── Rendu : résumé ───────────────────────────────────────────────────────────────────────── */
+function curRes() { return S.res[S.opts.mode]; }
+function totalOf(r) { return S.opts.mode === 'direct' ? r.total : r.items; }
+function foundCount(r) { return S.deck.cards.filter(c => { const p = r.picks[c.key]; return p && p.parts.length; }).length; }
+
+function syncSegDeliv() {
+  const seg = $('#segDeliv');
+  if (!seg._init) { mountSeg(seg, [{ v: 'zero', label: 'Zero · 1 colis', sub: '—' }, { v: 'direct', label: 'Direct · —', sub: '—' }], S.opts.mode, v => { S.opts.mode = v; $('#segMode').setValue(v); syncShip(); modeHint(); saveStore(); recompute(); }); seg._init = true; }
+  seg.setValue(S.opts.mode);
+}
+function updateHero() {
+  const r = curRes(), z = S.res.zero, d = S.res.direct;
+  const running = S.run && S.run.status === 'running';
+  tween($('#heroAmt'), totalOf(r));
+  $('#heroLabel').textContent = S.opts.mode === 'zero' ? 'Total articles' : 'Total estimé, port inclus';
+  $('#heroCount').textContent = `${foundCount(r)} / ${S.deck.cards.length} cartes`;
+  $('#heroSellers').textContent = S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
+  const sv = $('#heroSave'), diff = S.opts.mode === 'direct' ? r.baseline.total - r.total : 0;
+  sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = `Économie de ${fmt(diff)} avec le regroupement`;
+  updateHeroDelta();
+  const seg = $('#segDeliv');
+  seg.setSub('zero', fmt(z.items) + ' + frais'); seg.setLabel('direct', `Direct · ${d.sellerCount} vendeur${d.sellerCount > 1 ? 's' : ''}`); seg.setSub('direct', fmt(d.total));
+}
+function updateDock() {
+  const r = curRes(); const running = S.run && S.run.status === 'running';
+  $('#dockSmall').textContent = (S.opts.mode === 'zero' ? 'Articles · Zero' : 'Port inclus · Direct') + (running ? ' · en cours' : '');
+  tween($('#dockTotal'), totalOf(r));
+  $('#btnCart').disabled = running || !foundCount(r);
+}
+
+/* ── Rendu : lignes ───────────────────────────────────────────────────────────────────────── */
+function cardView(c) {
+  const st = S.run.cards[c.key];
+  if (!st || !st.fetched) return { s: 'loading' };
+  if (st.notFound) return { s: 'notfound' };
+  const list = S.fo[c.key] || [];
+  if (!list.length) return { s: 'none' };
+  const pick = curRes().picks[c.key];
+  if (!pick || !pick.parts.length) return { s: 'nohub' };
+  return { s: 'ok', pick };
+}
+function updateRows() {
+  $$('.row', $('#list')).forEach(el => {
+    const c = S.deck.cards.find(x => x.key === el.dataset.key); if (!c) return;
+    updateRow(el, c, cardView(c), S.run.cards[c.key]);
+  });
+}
+function updateRow(el, c, v, st) {
+  const pick = v.pick;
+  const sig = v.s + '|' + (pick ? pick.parts.map(p => p.offer.id + ':' + p.n).join(',') : '') + '|' + (st && st.fellBack ? 1 : 0) + '|' + S.opts.lang + '|' + S.cur;
+  if (el._sig === sig) return; el._sig = sig;
+  const hue = hash32(c.key) % 360, letter = esc((c.name.trim()[0] || '?').toUpperCase());
+  const top = pick && pick.parts[0] ? pick.parts[0].offer : null;
+  const img = (top && top.img) || (st && st.img);
+  const thumb = `<span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
+  const qty = c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : '';
+  const langName = LANGS[S.opts.lang] || S.opts.lang;
+  el.classList.toggle('is-missing', v.s === 'none' || v.s === 'notfound' || v.s === 'nohub');
+  if (v.s === 'loading') {
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
+  } else if (v.s === 'ok') {
+    const tags = [];
+    tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
+    tags.push(`<span class="tag">${esc(COND_SHORT[top.cond] || top.cond || '?')}</span>`);
+    if (top.lang && (top.lang !== S.opts.lang || (st && st.fellBack))) tags.push(`<span class="tag warn">${esc(top.lang.toUpperCase())}</span>`);
+    if (top.foil) tags.push('<span class="tag accent">Foil</span>');
+    if (pick.parts.length > 1) tags.push(`<span class="tag">+${pick.parts.length - 1} offre${pick.parts.length > 2 ? 's' : ''}</span>`);
+    if (pick.short > 0) tags.push(`<span class="tag warn">Il en manque ${pick.short}</span>`);
+    const n = pick.parts.reduce((a, p) => a + p.n, 0);
+    const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
+  } else {
+    const msg = v.s === 'notfound' ? 'Nom introuvable, vérifie l\'orthographe'
+      : v.s === 'nohub' ? 'Aucune offre compatible Zero'
+        : (st && st.fellBack ? 'Aucune offre, même en anglais' : `Aucune offre en ${langName}`);
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-miss">${esc(msg)}</span></span><span class="row-price"><span class="tag">${v.s === 'notfound' ? 'Erreur' : 'Voir'}</span></span>`;
+  }
+}
+
+/* ── Rendu : vendeurs ─────────────────────────────────────────────────────────────────────── */
+function renderSellers(animate) {
+  const r = curRes(), host = $('#sellers'); const nameOf = k => (S.deck.cards.find(c => c.key === k) || {}).name || k;
+  host.innerHTML = r.sellers.map((g, i) => {
+    const items = g.items.slice().sort((a, b) => nameOf(a.key).localeCompare(nameOf(b.key))).map(it =>
+      `<div class="gi"><span>${it.n > 1 ? it.n + ' × ' : ''}${esc(nameOf(it.key))}</span><span>${fmt(it.offer.price * it.n, it.offer.cur)}</span></div>`).join('');
+    return `<div class="group" style="--i:${animate ? i : 0}${animate ? '' : ';animation:none'}"><div class="group-head"><div class="who"><b>${esc(g.seller)}</b><span class="tag">${esc(g.country || '?')}</span>${g.hub ? '<span class="tag good">Zero</span>' : ''}</div><div class="sum">${fmt(g.subtotal, g.items[0].offer.cur)}<small>${g.count} carte${g.count > 1 ? 's' : ''}</small></div></div>${items}</div>`;
+  }).join('') || '<p class="hint">Aucune offre retenue pour le moment.</p>';
+  const seg = $('#segTab'); seg.setLabel('cards', `Cartes · ${foundCount(r)}`); seg.setLabel('sellers', `Vendeurs · ${r.sellerCount}`);
+}
+
+/* ── Alertes ──────────────────────────────────────────────────────────────────────────────── */
+function updateAlerts() {
+  if (!S.run) return;
+  const items = [];
+  if (S.run.error) items.push({ k: 'bad', html: esc(S.run.error.msg) + (S.run.error.action ? ` <button type="button" data-act="${S.run.error.action}">${esc(S.run.error.label)}</button>` : '') });
+  if (S.run.status === 'cancelled') items.push({ k: '', html: 'Recherche arrêtée : les résultats sont partiels.' });
+  if (S.run.status !== 'running') {
+    let none = 0, nohub = 0, nf = [], short = 0;
+    for (const c of S.deck.cards) { const v = cardView(c); if (v.s === 'none') none++; else if (v.s === 'nohub') nohub++; else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'ok' && v.pick.short > 0) short++; }
+    const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en' ? ' ni en anglais' : '';
+    if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>` });
+    if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>` });
+    if (nf.length) items.push({ k: 'bad', html: `Nom introuvable : ${esc(nf.slice(0, 3).join(', '))}${nf.length > 3 ? '…' : ''}` });
+    if (short) items.push({ k: '', html: `${short} carte${short > 1 ? 's' : ''} en quantité insuffisante.` });
+  }
+  const host = $('#alerts'), sig = JSON.stringify(items);
+  if (host._sig === sig) return; host._sig = sig;
+  host.innerHTML = items.map(a => `<div class="alert ${a.k}"><svg class="i"><use href="#i-alert"/></svg><div class="grow">${a.html}</div></div>`).join('');
+}
+
+/* ── Fiche carte ──────────────────────────────────────────────────────────────────────────── */
+function openCardSheet(key) {
+  const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return;
+  const st = S.run.cards[key]; if (!st || !st.fetched) return;
+  const mode = S.opts.mode;
+  const list = (S.fo[key] || []).filter(o => mode !== 'zero' || o.hub).slice().sort((a, b) => a.price - b.price).slice(0, 14);
+  const chosen = new Set((curRes().picks[key] || { parts: [] }).parts.map(p => p.offer.id));
+  openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
+    if (!list.length) {
+      const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
+      api.body.innerHTML = `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : 'Aucune offre ne correspond à tes critères.'}</p>`;
+      if (canEn) {
+        api.setFoot('<button class="btn" type="button" id="btnEn">Chercher en anglais</button>');
+        $('#btnEn', api.foot).onclick = async e => {
+          e.target.disabled = true; e.target.textContent = 'Recherche…';
+          try {
+            const offers = S.demo ? makeDemoOffers(c, 'en') : await searchOneEnglish(c, st, S.opts, S.run.ctrl.signal);
+            if (S.demo) await sleep(350);
+            st.offers = offers; st.fellBack = true; st.fetched = true; scheduleRecompute(true); api.close(); toast(offers.length ? 'Offres anglaises ajoutées' : 'Aucune offre en anglais non plus');
+          } catch (err) { e.target.disabled = false; e.target.textContent = 'Chercher en anglais'; toast('Recherche impossible : ' + (err.message || 'erreur')); }
+        };
+      }
+      return;
+    }
+    api.body.innerHTML = `<div class="offers">${list.map(o => `<button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
+      <span class="o-who">${esc(o.seller)}${o.country ? `<i>${esc(o.country)}</i>` : ''}</span><span class="o-price">${fmt(o.price, o.cur)}</span>
+      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${o.lang ? `<span class="tag ${o.lang !== S.opts.lang ? 'warn' : ''}">${esc(o.lang.toUpperCase())}</span>` : ''}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>`).join('')}</div>
+      ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}`;
+    api.body.onclick = e => {
+      const b = e.target.closest('.offer'); if (!b) return;
+      const id = list.find(o => String(o.id) === b.dataset.id); if (!id) return;
+      S.overrides[key] = id.id; scheduleRecompute(true); api.close(); toast('Offre choisie');
+    };
+    if (S.overrides[key]) {
+      api.setFoot('<button class="btn ghost" type="button" id="btnAuto">Revenir au choix automatique</button>');
+      $('#btnAuto', api.foot).onclick = () => { delete S.overrides[key]; scheduleRecompute(true); api.close(); };
+    }
+  });
+}
+
+/* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
+function cartParts() {
+  const r = curRes(), out = [];
+  for (const c of S.deck.cards) { const p = r.picks[c.key]; if (p) for (const x of p.parts) out.push({ offer: x.offer, n: x.n, name: c.name }); }
+  return out;
+}
+function openCartSheet() {
+  const r = curRes(), parts = cartParts(); if (!parts.length) return;
+  const nItems = parts.reduce((a, p) => a + p.n, 0);
+  openSheet('Remplir le panier', 'CardTrader', api => {
+    const addr = S.address && S.address.street ? S.address : null;
+    api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
+      <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
+    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
+    $('#btnGo', api.foot).onclick = async () => {
+      api.setFoot('');
+      api.body.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span id="cartMsg">Ajout des articles…</span></div><div class="track cartbar"><div class="fill" id="cartFill"></div></div>';
+      const ctrl = new AbortController();
+      try {
+        const res = await cartFill(parts, S.opts.mode, addr && { name: addr.name, street: addr.street, zip: addr.zip, city: addr.city, state_or_province: addr.state || undefined, country_code: (addr.country || 'FR').toUpperCase() },
+          ctrl.signal, (i, n) => { $('#cartFill', api.body).style.width = (100 * i / n) + '%'; $('#cartMsg', api.body).textContent = `Ajout des articles… ${i} / ${n}`; }, S.demo);
+        let html = `<div class="status" data-ok="1"><span class="dot"></span><span>${res.ok} offre${res.ok > 1 ? 's' : ''} ajoutée${res.ok > 1 ? 's' : ''}${S.demo ? ' (simulation)' : ''}.</span></div>`;
+        if (res.failed.length) html += `<div class="fail"><b>${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}</b>${res.failed.slice(0, 8).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
+        if (!S.demo) {
+          try {
+            const cart = await ct('cart', { signal: ctrl.signal }); const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
+            const rows = [['Articles', money(cart.subtotal)], ['Frais CardTrader Zero', money(cart.ct_zero_fee_amount)], ['Port', money(cart.shipping_cost)]].filter(x => x[1]);
+            if (rows.length) html += `<dl class="kv">${rows.map(x => `<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="hint">CardTrader confirme le total final à la caisse.</p>`;
+          } catch (e) { html += '<p class="hint">Le panier est rempli, mais ses totaux n\'ont pas pu être lus.</p>'; }
+        }
+        api.body.innerHTML = html;
+        api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/cart" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
+      } catch (e) {
+        api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(e.message || 'Erreur')}</span></div>`;
+        api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button>');
+      }
+    };
+  });
+}
+
+/* ── Réglages ─────────────────────────────────────────────────────────────────────────────── */
+function modeLabel() {
+  const live = !S.demo; const chip = $('#modeChip');
+  chip.dataset.live = live ? '1' : '0';
+  $('#modeLabel').textContent = live ? 'Live' : 'Démo';
+}
+function applyTheme() {
+  const r = document.documentElement;
+  if (S.theme === 'light' || S.theme === 'dark') r.setAttribute('data-theme', S.theme); else r.removeAttribute('data-theme');
+}
+function syncCTX() { CTX.token = S.token; CTX.appKey = S.appKey; }
+function openSettings() {
+  openSheet('Réglages', 'Connexion, adresse et affichage', api => {
+    const a = S.address || {};
+    api.body.innerHTML = `
+      <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Données simulées, aucune requête envoyée.</span></span>
+        <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
+      <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
+      <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Utilisé seulement sans proxy" value="${esc(S.token)}"><span class="hint">Avec le proxy local, le token reste dans son environnement et n'est pas nécessaire ici.</span></div>
+      <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}"></div>
+      <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester la connexion</button>
+      <div class="sec-title">Adresse de livraison (facultatif)</div>
+      <div class="field-in"><label class="label" for="adName">Nom</label><input type="text" id="adName" autocomplete="name" value="${esc(a.name || '')}"></div>
+      <div class="field-in"><label class="label" for="adStreet">Rue</label><input type="text" id="adStreet" autocomplete="street-address" value="${esc(a.street || '')}"></div>
+      <div class="grid2"><div class="field-in"><label class="label" for="adZip">Code postal</label><input type="text" id="adZip" autocomplete="postal-code" value="${esc(a.zip || '')}"></div>
+      <div class="field-in"><label class="label" for="adCity">Ville</label><input type="text" id="adCity" autocomplete="address-level2" value="${esc(a.city || '')}"></div></div>
+      <div class="grid2"><div class="field-in"><label class="label" for="adState">Région ou département</label><input type="text" id="adState" value="${esc(a.state || '')}"></div>
+      <div class="field-in"><label class="label" for="adCountry">Pays (2 lettres)</label><input type="text" id="adCountry" maxlength="2" autocomplete="country" value="${esc(a.country || 'FR')}"></div></div>
+      <div class="sec-title">Affichage</div>
+      <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
+      <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>`;
+    const b = api.body;
+    const status = () => {
+      const st = $('#connStatus', b), m = $('#connMsg', b);
+      if (S.demo) { st.dataset.ok = '0'; m.textContent = 'Démo active. Désactive-la pour chercher de vraies offres.'; }
+      else if (CTX.proxy) { st.dataset.ok = '1'; m.textContent = 'Proxy local détecté. Le token reste côté proxy.'; }
+      else if (S.token) { st.dataset.ok = '1'; m.textContent = 'Connexion directe avec ton token. Le navigateur peut la bloquer, le proxy est plus fiable.'; }
+      else { st.dataset.ok = '0'; m.textContent = 'Aucun proxy détecté et aucun token saisi.'; }
+      $('#boxToken', b).hidden = CTX.proxy;
+    };
+    status();
+    $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; modeLabel(); status(); saveStore(); };
+    $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); syncCTX(); status(); saveStore(); };
+    $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
+    const addrIds = { name: 'adName', street: 'adStreet', zip: 'adZip', city: 'adCity', state: 'adState', country: 'adCountry' };
+    Object.entries(addrIds).forEach(([k, id]) => { $('#' + id, b).oninput = e => { S.address = { ...S.address, [k]: e.target.value }; saveStore(); }; });
+    mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
+    $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
+    $('#btnTest', b).onclick = async e => {
+      const btn = e.target; btn.disabled = true; btn.textContent = 'Test…';
+      const st = $('#connStatus', b), m = $('#connMsg', b);
+      try { const j = await ct('info'); st.dataset.ok = '1'; m.textContent = 'Connexion réussie' + (j && j.name ? ' (app « ' + j.name + ' »)' : '') + '.'; }
+      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? 'Accès refusé : token ou clé invalide.' : 'CardTrader est injoignable depuis ce navigateur.'; }
+      btn.disabled = false; btn.textContent = 'Tester la connexion';
+    };
+  });
+}
+async function detectProxy() {
+  if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return;
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
+    const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
+    if (!r.ok) return; const j = await r.json();
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; S.proxy = true; if (S.demoPref == null) S.demo = false; }
+  } catch (e) { /* pas de proxy */ }
+  modeLabel();
+}
+
+/* ── Récap à copier ───────────────────────────────────────────────────────────────────────── */
+function recapText() {
+  const r = curRes(), lines = [`Deck Deal · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
+  const miss = [];
+  for (const c of S.deck.cards) {
+    const p = r.picks[c.key];
+    if (!p || !p.parts.length) { miss.push(c.name); continue; }
+    for (const x of p.parts) { const o = x.offer; lines.push(`${x.n} ${c.name} · ${fmt(o.price * x.n, o.cur)} · ${o.seller} (${o.country}) · ${(o.set || '').toUpperCase()}${o.num ? ' ' + o.num : ''} · ${COND_SHORT[o.cond] || o.cond} · ${(o.lang || '').toUpperCase()}`); }
+  }
+  if (miss.length) lines.push('', 'Sans offre : ' + miss.join(', '));
+  return lines.join('\n');
+}
+
+/* ── Branchements ─────────────────────────────────────────────────────────────────────────── */
+function init() {
+  const saved = loadStore();
+  if (saved.opts) Object.assign(S.opts, saved.opts);
+  S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.address = saved.address || {}; S.theme = saved.theme || 'auto';
+  S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null;
+  S.demo = S.demoPref == null ? !S.token : S.demoPref;
+  syncCTX(); applyTheme();
+
+  $('#optLang').value = S.opts.lang; $('#optCond').value = S.opts.cond; $('#optFallback').checked = !!S.opts.fallbackEn;
+  $('#optShip').value = (S.opts.ship / 100).toFixed(2).replace('.', ',');
+  mountSeg($('#segFoil'), [{ v: 'no', label: 'Sans foil' }, { v: 'any', label: 'Peu importe' }, { v: 'yes', label: 'Foil' }], S.opts.foil, () => { readOpts(); saveStore(); });
+  mountSeg($('#segMode'), [{ v: 'zero', label: 'CardTrader Zero' }, { v: 'direct', label: 'Direct vendeurs' }], S.opts.mode, () => { readOpts(); syncShip(); modeHint(); saveStore(); });
+  mountSeg($('#segTab'), [{ v: 'cards', label: 'Cartes' }, { v: 'sellers', label: 'Vendeurs' }], 'cards', v => {
+    S.tab = v; $('#list').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true);
+  });
+  ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { readOpts(); saveStore(); }));
+  syncShip(); modeHint(); modeLabel();
+
+  const ta = $('#deckText');
+  ta.value = saved.draft || SAMPLE; S.isSample = !saved.draft;
+  ta.addEventListener('input', () => { S.isSample = false; refreshDeck(); });
+  $('#btnSample').onclick = () => { ta.value = SAMPLE; S.isSample = true; S.deckId = null; refreshDeck(); };
+  $('#btnClear').onclick = () => { ta.value = ''; S.isSample = false; S.deckId = null; refreshDeck(); ta.focus(); };
+  $('#btnPaste').onclick = async () => {
+    try { const t = await navigator.clipboard.readText(); if (!t) throw new Error('vide'); ta.value = t; S.isSample = false; refreshDeck(); toast('Liste collée'); }
+    catch (e) { ta.focus(); toast('Colle la liste dans le champ avec un appui long'); }
+  };
+  initDecks();
+  refreshDeck();
+
+  $('#btnRun').onclick = startRun;
+  $('#btnBack').onclick = () => { if (S.run && S.run.status === 'running') S.run.ctrl.abort(); showView('input'); };
+  $('#btnCancel').onclick = () => { if (S.run) S.run.ctrl.abort(); };
+  $('#btnCopy').onclick = () => { if (S.run) copyText(recapText()); };
+  $('#btnCart').onclick = openCartSheet;
+  $('#btnSettings').onclick = openSettings; $('#modeChip').onclick = openSettings;
+  $('#list').addEventListener('click', e => { const r = e.target.closest('.row'); if (r) openCardSheet(r.dataset.key); });
+  $('#list').addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+  $('#list').addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+  $('#alerts').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    if (b.dataset.act === 'settings') openSettings();
+    else if (b.dataset.act === 'direct') { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); }
+    else if (b.dataset.act === 'goto') {
+      if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#sellers').hidden = true; }
+      const row = $('.row.is-missing', $('#list')); if (row) { row.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); try { row.animate([{ background: 'var(--warn-soft)' }, { background: 'transparent' }], { duration: 1400 }); } catch (err) { /* ignore */ } }
+    }
+  });
+  detectProxy();
+}
+
+
+/* ── decks.js : compte, decks enregistrés, historique de prix ─────────────────────────────────
+   Invité : decks dans localStorage. Connecté : decks dans Firestore (users/{uid}/decks), temps réel,
+   persistance hors ligne. Les decks locaux peuvent être importés dans le compte. */
+const LOCAL_KEY = 'deckdeal:decks:v1', ACCT_KEY = 'deckdeal:acct';
+const D = {
+  list: [], localList: [], user: null, uid: null, cloud: null, state: 'idle', err: '',
+  unsub: null, pending: false, listErr: '', authReady: false, hint: null, expanded: false, seen: new Set(), account: null, importing: new Set(),
+};
+
+/* ── Stockage local ───────────────────────────────────────────────────────────────────────── */
+function localRead() {
+  try {
+    const a = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+    return (Array.isArray(a) ? a : []).filter(d => d && d.id).map(d => readDeck(d.id, d)).sort((x, y) => y.updatedAt - x.updatedAt);
+  } catch (e) { return []; }
+}
+function localWrite(list) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); return true; }
+  catch (e) { toast('Stockage local indisponible : le deck ne sera pas conservé'); return false; }
+}
+const stripDeck = d => ({ name: d.name, text: d.text, opts: d.opts, cards: d.cards, history: d.history, createdAt: d.createdAt, updatedAt: d.updatedAt });
+const allDecks = () => (D.user ? D.list : D.localList);
+const findDeck = id => (id ? allDecks().find(d => d.id === id) || null : null);
+const cloudOn = () => !!(D.user && D.cloud);
+/** Decks de cet appareil pas encore envoyés dans le compte. */
+const importable = () => (D.user ? D.localList.filter(d => !D.importing.has(d.id)) : []);
+
+function deckErr(err) {
+  const c = (err && err.code) || '';
+  if (c === 'permission-denied') return 'Accès refusé : publie les règles Firestore pour users/{uid}/decks.';
+  if (c === 'unavailable') return 'Hors ligne : la modification sera envoyée au retour du réseau.';
+  if (c === 'resource-exhausted') return 'Quota Firestore dépassé.';
+  return 'Opération impossible' + (c ? ' (' + c + ')' : '') + '.';
+}
+
+/* ── Écriture ─────────────────────────────────────────────────────────────────────────────── */
+function putDeck(id, doc) {
+  if (cloudOn()) {
+    D.pending = true; paintSync();
+    return D.cloud.save(D.user.uid, id, doc).catch(err => { D.pending = false; D.listErr = ''; paintSync(); toast(deckErr(err)); });
+  }
+  const full = { id, ...doc }, i = D.localList.findIndex(d => d.id === id);
+  if (i >= 0) D.localList[i] = full; else D.localList.unshift(full);
+  D.localList.sort((a, b) => b.updatedAt - a.updatedAt);
+  localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
+  renderDecks();
+  return Promise.resolve();
+}
+function removeDeck(id) {
+  if (S.deckId === id) S.deckId = null;
+  if (cloudOn()) return D.cloud.remove(D.user.uid, id).catch(err => toast(deckErr(err)));
+  D.localList = D.localList.filter(d => d.id !== id);
+  localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
+  renderDecks();
+  return Promise.resolve();
+}
+const newIdFor = () => (cloudOn() ? D.cloud.newId(D.user.uid) : newDeckId());
+
+/** Relevé de prix de la dernière recherche, s'il correspond bien à la liste courante et à de vraies offres. */
+function snapshotEntry() {
+  if (S.demo || !S.run || S.run.status !== 'done' || !S.run.live || !S.res) return null;
+  const sig = [S.opts.lang, S.opts.cond, S.opts.foil].join('|');
+  if (sig !== S.run.sig) return null;   // critères modifiés depuis la recherche : le prix ne correspondrait plus
+  const r = curRes(), found = foundCount(r); if (!found) return null;
+  return { at: Date.now(), total: totalOf(r), mode: S.opts.mode, found, count: S.deck.cards.length, sig };
+}
+
+/** Enregistre la liste courante : met à jour le deck rattaché, ou en crée un. */
+function saveCurrent(name) {
+  readOpts();
+  const prev = findDeck(S.deckId);
+  const text = $('#deckText').value;
+  let history = prev ? prev.history : [];
+  const e = S.run && S.run.text.trim() === text.trim() ? snapshotEntry() : null;
+  if (e) history = pushHistory(history, e);
+  const doc = deckDoc({ name: name || (prev && prev.name), text, opts: S.opts, history, createdAt: prev && prev.createdAt });
+  const id = prev ? prev.id : newIdFor();
+  putDeck(id, doc);
+  S.deckId = id;
+  if (e) S.runDelta = deltaFor(history);
+  refreshDeck(); updateSaveButtons(); updateHeroDelta();
+  return id;
+}
+function deltaFor(history) { const d = priceDelta(history); return d && d.prev != null ? d : null; }
+
+/** Après une recherche live terminée : on garde le prix dans l'historique du deck rattaché. */
+function recordRun() {
+  const d = findDeck(S.deckId); if (!d) return;
+  if (S.run.text.trim() !== d.text.trim()) return;
+  const e = snapshotEntry(); if (!e) return;
+  const history = pushHistory(d.history, e);
+  putDeck(d.id, deckDoc({ ...d, history }));
+  S.runDelta = deltaFor(history); updateHeroDelta();
+}
+
+const dateShort = ts => new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+function updateHeroDelta() {
+  const el = $('#heroDelta'), dl = S.runDelta;
+  const show = !!(dl && dl.mode === S.opts.mode && S.run && S.run.status === 'done' && !S.demo);
+  el.hidden = !show; if (!show) return;
+  const flat = dl.diff === 0, down = dl.diff < 0;
+  el.className = 'delta-line ' + (flat ? 'flat' : down ? 'down' : 'up');
+  const same = new Date(dl.prevAt).toDateString() === new Date(dl.at).toDateString();
+  const since = same ? 'la dernière recherche' : 'le ' + dateShort(dl.prevAt);
+  el.textContent = flat ? `Prix inchangé depuis ${since}` : `${down ? '▼' : '▲'} ${fmt(Math.abs(dl.diff))} depuis ${since}`;
+}
+
+/* ── Chargement d'un deck dans la saisie ──────────────────────────────────────────────────── */
+function applyOpts(o) {
+  Object.assign(S.opts, o);
+  $('#optLang').value = o.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
+  $('#optShip').value = (o.ship / 100).toFixed(2).replace('.', ',');
+  $('#segFoil').setValue(o.foil); $('#segMode').setValue(o.mode);
+  syncShip(); modeHint(); saveStore();
+}
+function loadDeck(id) {
+  const d = findDeck(id); if (!d) return;
+  if (S.run && S.run.status === 'running') S.run.ctrl.abort();
+  $('#deckText').value = d.text; S.isSample = false; S.deckId = d.id; S.runDelta = null;
+  applyOpts(d.opts);
+  if (S.view !== 'input') showView('input');
+  refreshDeck(); updateSaveButtons();
+  window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' });
+  toast('Deck chargé');
+}
+function detachDeck() { S.deckId = null; S.runDelta = null; refreshDeck(); updateSaveButtons(); updateHeroDelta(); }
+
+/* ── Rendu : liste des decks ──────────────────────────────────────────────────────────────── */
+function deltaChip(h) {
+  const d = deltaFor(h); if (!d || d.diff === 0) return '';
+  return `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${fmt(Math.abs(d.diff))}</span>`;
+}
+function deckCard(d, i) {
+  const dl = priceDelta(d.history), fresh = !D.seen.has(d.id);
+  return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
+    <button class="deck-main" type="button" data-act="open"><span class="deck-name">${esc(d.name)}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
+    <span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span>
+    <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
+}
+function renderDecks() {
+  const sec = $('#decksSec'), host = $('#deckList'), list = allDecks();
+  const loading = !!D.hint && !D.authReady, imp = importable();
+  sec.hidden = !(list.length || D.user || loading || imp.length);
+  if (sec.hidden) { updateSaveButtons(); return; }
+  const shown = D.expanded ? list : list.slice(0, 4);
+  let html = '';
+  if (loading) html = '<div class="deck skel"><span class="sk name"></span><span class="sk meta"></span></div><div class="deck skel"><span class="sk name"></span><span class="sk meta"></span></div>';
+  else {
+    if (imp.length) html += `<div class="import-row"><span>${imp.length} deck${imp.length > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" data-act="import">Importer</button></div>`;
+    html += shown.map(deckCard).join('');
+    if (!list.length && D.user) html += '<div class="deck-empty">Aucun deck pour le moment. Colle une liste, puis touche « Enregistrer ».</div>';
+  }
+  host.innerHTML = html;
+  shown.forEach(d => D.seen.add(d.id));
+  const more = $('#btnMoreDecks'); more.hidden = loading || list.length <= 4;
+  more.textContent = D.expanded ? 'Réduire' : `Afficher les ${list.length - 4} autres`;
+  paintSync(); updateSaveButtons();
+}
+function paintSync() {
+  const el = $('#decksSync'), t = $('#decksSyncTxt');
+  let s = 'local', txt = 'Sur cet appareil · se connecter';
+  if (D.user) {
+    if (D.listErr) { s = 'error'; txt = D.listErr; }
+    else if (D.pending) { s = 'pending'; txt = 'Synchronisation…'; }
+    else { s = 'synced'; txt = 'Synchronisé'; }
+  } else if (D.state === 'unavailable') txt = 'Sur cet appareil';
+  el.dataset.s = s; t.textContent = txt;
+  el.disabled = !D.user && D.state === 'unavailable';
+}
+function updateSaveButtons() {
+  const has = S.deck && S.deck.cards.length > 0, d = findDeck(S.deckId);
+  const b1 = $('#btnSave'); b1.disabled = !has; b1.title = d ? 'Mettre à jour « ' + d.name + ' »' : 'Enregistrer comme nouveau deck';
+  const b2 = $('#btnSave2'); b2.classList.toggle('saved', !!d);
+  $('#btnSave2Txt').textContent = d ? 'Enregistré' : 'Enregistrer';
+  $('use', b2).setAttribute('href', d ? '#i-check' : '#i-bookmark');
+  $$('.deck', $('#deckList')).forEach(el => { el.dataset.active = el.dataset.id === S.deckId ? '1' : '0'; });
+}
+function renderAccountBtn() {
+  const b = $('#btnAccount'), l = D.user ? ((D.user.displayName || D.user.email || '?').trim()[0] || '?').toUpperCase() : (D.hint && !D.authReady ? D.hint.l : '');
+  b.dataset.in = l ? '1' : '0'; $('#avatarLetter').textContent = l;
+  b.setAttribute('aria-label', D.user ? 'Compte : ' + (D.user.email || '') : 'Compte');
+}
+
+/* ── Feuille : enregistrer ────────────────────────────────────────────────────────────────── */
+function openSaveSheet() {
+  const text = $('#deckText').value, n = parseDeck(text).cards.length;
+  if (!n) { toast('Colle d\'abord une liste'); return; }
+  readOpts();
+  const modeName = S.opts.mode === 'zero' ? 'Zero' : 'Direct';
+  openSheet('Enregistrer le deck', null, api => {
+    const where = D.user ? `Enregistré sur ton compte (${esc(D.user.email || '')}).`
+      : `Enregistré sur cet appareil.${D.state !== 'unavailable' ? ' <button class="link-btn link-inline" type="button" id="svLogin">Connecte-toi</button> pour le retrouver partout.' : ''}`;
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="svName">Nom</label><input type="text" id="svName" maxlength="120" autocomplete="off" value="${esc(suggestName(text))}"></div>
+      <p class="hint">${n} cartes · ${esc(LANGS[S.opts.lang] || S.opts.lang)} · ${esc(COND_SHORT[S.opts.cond] || S.opts.cond)} min · ${modeName}. Les critères sont enregistrés avec la liste.</p>
+      <p class="hint" id="svWhere">${where}</p>`;
+    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="svGo">Enregistrer</button>');
+    const input = $('#svName', api.body), go = $('#svGo', api.foot);
+    const sync = () => { go.disabled = !input.value.trim(); }; input.oninput = sync;
+    const run = () => { if (go.disabled) return; saveCurrent(input.value.trim()); api.close(); toast(cloudOn() ? 'Deck enregistré sur ton compte' : 'Deck enregistré'); };
+    go.onclick = run; input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); run(); } };
+    const lg = $('#svLogin', api.body); if (lg) lg.onclick = () => { api.close(); setTimeout(openAccount, 120); };
+  });
+}
+
+/* ── Feuille : un deck (renommer, historique, dupliquer, supprimer) ───────────────────────── */
+function chartSvg(values, w) {
+  const h = 72, pad = 9;
+  const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
+  const x = i => pad + (w - 2 * pad) * (values.length === 1 ? 0.5 : i / (values.length - 1));
+  const y = v => max === min ? h / 2 : h - pad - (h - 2 * pad) * ((v - min) / span);
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const last = values.length - 1;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Évolution du prix"><polygon class="ar" points="${pad},${h} ${pts.join(' ')} ${(w - pad).toFixed(1)},${h}" opacity=".55"/><polyline class="ln" points="${pts.join(' ')}"/><circle class="dt" cx="${x(last).toFixed(1)}" cy="${y(values[last]).toFixed(1)}" r="4.5"/></svg>`;
+}
+function openDeckSheet(id) {
+  const d = findDeck(id); if (!d) return;
+  openSheet(d.name, `${d.cards} carte${d.cards > 1 ? 's' : ''} · modifié ${relTime(d.updatedAt)}`, api => {
+    const series = priceSeries(d.history);
+    const rows = d.history.slice().reverse().slice(0, 6).map((e, i, arr) => {
+      const p = arr.slice(i + 1).find(x => sameKind(x, e)); const df = p ? e.total - p.total : null;
+      const when = new Date(e.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return `<span class="d">${esc(when)} · ${e.mode === 'zero' ? 'Zero' : 'Direct'}</span><span class="delta ${df == null || df === 0 ? 'flat' : df < 0 ? 'down' : 'up'}">${df == null || df === 0 ? '' : (df < 0 ? '−' : '+') + fmt(Math.abs(df))}</span><span class="t">${fmt(e.total)}</span>`;
+    }).join('');
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">Nom</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
+      <div class="sec-title">Historique des prix</div>
+      ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) : ''}
+      ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.</p>'}
+      <button class="link-btn link-inline" type="button" id="dkDup">Dupliquer ce deck</button>`;
+    api.setFoot('<button class="btn ghost-danger" type="button" id="dkDel">Supprimer</button><button class="btn" type="button" id="dkOpen">Ouvrir</button>');
+    const name = $('#dkName', api.body);
+    name.onchange = () => {
+      const v = name.value.trim(); if (!v) { name.value = d.name; return; }
+      if (v !== d.name) { const cur = findDeck(id); if (cur) { putDeck(id, deckDoc({ ...cur, name: v })); $('.sheet-head h2', api.wrap).textContent = v; toast('Deck renommé'); } }
+    };
+    name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } };
+    $('#dkOpen', api.foot).onclick = () => { api.close(); loadDeck(id); };
+    $('#dkDup', api.body).onclick = () => {
+      const cur = findDeck(id) || d, nid = newIdFor();
+      putDeck(nid, deckDoc({ ...cur, name: (cur.name + ' (copie)').slice(0, 120), history: [], createdAt: Date.now() }));
+      api.close(); toast('Deck dupliqué');
+    };
+    const del = $('#dkDel', api.foot); let armed = 0;
+    del.onclick = () => {
+      if (!armed) { armed = setTimeout(() => { armed = 0; del.textContent = 'Supprimer'; del.className = 'btn ghost-danger'; }, 4000); del.textContent = 'Confirmer'; del.className = 'btn danger'; return; }
+      clearTimeout(armed); removeDeck(id); api.close(); toast('Deck supprimé');
+    };
+  });
+}
+
+/* ── Feuille : compte ─────────────────────────────────────────────────────────────────────── */
+function openAccount() {
+  openSheet('Compte', null, api => { D.account = { api, mode: 'in' }; paintAccount(); });
+}
+function accountOpen() { return D.account && sheets.indexOf(D.account.api) >= 0; }
+function paintAccount() {
+  if (!accountOpen()) return;
+  const { api } = D.account, b = api.body;
+  api.setFoot('');
+  if (D.user) return paintAccountIn(api);
+  if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>Chargement…</span></div>'; return; }
+  if (D.state === 'unavailable') {
+    b.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(D.err)}</span></div>
+      <p class="hint">Tes decks restent enregistrés sur cet appareil. Le compte permet de les retrouver sur tous tes appareils.</p>
+      <button class="btn ghost small" type="button" id="acRetry" style="align-self:flex-start">Réessayer</button>`;
+    $('#acRetry', b).onclick = () => { connectCloud(); };
+    return;
+  }
+  paintAuthForm(api);
+}
+function paintAuthForm(api) {
+  const b = api.body, st = D.account, up = st.mode === 'up';
+  b.innerHTML = `<div class="auth">
+    <div class="seg" id="acSeg" role="radiogroup" aria-label="Connexion ou création de compte"></div>
+    <form id="acForm" novalidate>
+      <div class="field-in"><label class="label" for="acEmail">Email</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
+      <div class="field-in"><label class="label" for="acPw">Mot de passe</label><input type="password" id="acPw" autocomplete="${up ? 'new-password' : 'current-password'}" ${up ? 'minlength="6"' : ''}>${up ? '<span class="hint">6 caractères minimum.</span>' : ''}</div>
+      <div class="auth-msg" id="acMsg" role="alert" hidden></div>
+      <button class="btn block" type="submit" id="acGo">${up ? 'Créer mon compte' : 'Me connecter'}</button>
+      ${up ? '' : '<button class="link-btn link-inline" type="button" id="acForgot">Mot de passe oublié ?</button>'}
+    </form>
+    <div class="divider"><span>ou</span></div>
+    <button class="btn ghost block" type="button" id="acGoogle">Continuer avec Google</button>
+    <p class="hint">Tes decks sont enregistrés sur ton compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p></div>`;
+  mountSeg($('#acSeg', b), [{ v: 'in', label: 'Connexion' }, { v: 'up', label: 'Créer un compte' }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
+  const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
+  const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? 'Créer mon compte' : 'Me connecter'); };
+  const done = () => { api.close(); toast('Connecté'); };
+  const fail = e => { busy(false, true); msg(authMessage(e)); };
+  $('#acForm', b).onsubmit = async e => {
+    e.preventDefault(); msg('');
+    const email = $('#acEmail', b).value.trim(), pw = $('#acPw', b).value;
+    if (!email) return msg('Saisis ton adresse email.'); if (!pw) return msg('Saisis ton mot de passe.');
+    if (up && pw.length < 6) return msg('Mot de passe trop court : 6 caractères minimum.');
+    busy(true, up ? 'Création…' : 'Connexion…');
+    try { await (up ? D.cloud.signUp(email, pw) : D.cloud.signIn(email, pw)); done(); } catch (err) { fail(err); }
+  };
+  $('#acGoogle', b).onclick = async () => { msg(''); busy(true); try { await D.cloud.google(); done(); } catch (err) { fail(err); } };
+  const fg = $('#acForgot', b);
+  if (fg) fg.onclick = async () => {
+    const email = $('#acEmail', b).value.trim(); if (!email) return msg('Saisis d\'abord ton adresse email.');
+    try { await D.cloud.reset(email); msg(`Email de réinitialisation envoyé à ${email}. Pense à vérifier les courriers indésirables.`, true); }
+    catch (err) { const t = authMessage(err); msg(err && err.code === 'auth/user-not-found' ? 'Si un compte existe avec cet email, un message vient d\'être envoyé.' : t, err && err.code === 'auth/user-not-found'); }
+  };
+}
+function paintAccountIn(api) {
+  const u = D.user, b = api.body, local = importable().length;
+  const n = D.list.length;
+  const state = D.listErr ? D.listErr : D.pending ? 'Synchronisation…' : `Synchronisé · ${n} deck${n > 1 ? 's' : ''}`;
+  b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || 'Compte')}</b><span id="acState">${esc(state)}</span></div></div>
+    ${local ? `<div class="import-row"><span>${local} deck${local > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" id="acImport">Importer</button></div>` : ''}
+    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p>`;
+  api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">Se déconnecter</button>');
+  $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast('Déconnecté'); } catch (err) { e.target.disabled = false; toast('Déconnexion impossible'); } };
+  const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
+}
+
+/** Envoie les decks de cet appareil dans le compte. Les copies locales ne sont retirées qu'une fois le serveur d'accord. */
+function importLocal() {
+  const todo = importable(); if (!cloudOn() || !todo.length) return;
+  const uid = D.user.uid, items = todo.map(d => ({ localId: d.id, id: D.cloud.newId(uid), data: stripDeck(d) }));
+  items.forEach(x => D.importing.add(x.localId)); renderDecks(); paintAccount();
+  toast('Import en cours…');
+  D.cloud.saveMany(uid, items.map(x => ({ id: x.id, data: x.data }))).then(() => {
+    const gone = new Set(items.map(x => x.localId));
+    gone.forEach(i => D.importing.delete(i));
+    D.localList = D.localList.filter(d => !gone.has(d.id));
+    localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
+    renderDecks(); paintAccount(); toast(`${items.length} deck${items.length > 1 ? 's' : ''} importé${items.length > 1 ? 's' : ''}`);
+  }).catch(err => { items.forEach(x => D.importing.delete(x.localId)); renderDecks(); paintAccount(); toast(deckErr(err)); });
+}
+
+/* ── Connexion au cloud ───────────────────────────────────────────────────────────────────── */
+function onUser(user) {
+  const prev = D.uid;
+  if (D.unsub) { try { D.unsub(); } catch (e) { /* ignore */ } D.unsub = null; }
+  D.user = user; D.uid = user ? user.uid : null; D.list = []; D.pending = false; D.listErr = ''; D.authReady = true;
+  if (prev !== D.uid) { S.deckId = null; S.runDelta = null; D.seen.clear(); }
+  try {
+    if (user) localStorage.setItem(ACCT_KEY, JSON.stringify({ l: ((user.displayName || user.email || '?').trim()[0] || '?').toUpperCase() }));
+    else localStorage.removeItem(ACCT_KEY);
+  } catch (e) { /* ignore */ }
+  if (user) {
+    D.unsub = D.cloud.watch(user.uid, (docs, pending) => {
+      D.list = docs.map(x => readDeck(x.id, x.data)); D.pending = pending; D.listErr = '';
+      if (S.deckId && !pending && !D.list.some(d => d.id === S.deckId)) S.deckId = null;
+      renderDecks(); renderAccountBtn(); paintAccount(); refreshDeck();
+    }, err => {
+      D.listErr = err && err.code === 'permission-denied' ? 'Règles Firestore à publier' : 'Synchronisation impossible';
+      console.error(err); renderDecks(); paintAccount();
+      toast(deckErr(err));
+    });
+  }
+  renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
+  if (!user && prev) updateHeroDelta();
+}
+async function connectCloud() {
+  D.state = 'loading'; D.err = ''; paintAccount(); paintSync();
+  try { D.cloud = await loadCloud(); }
+  catch (e) {
+    D.state = 'unavailable';
+    D.err = e && e.code === 'env' ? e.message : 'Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Les decks restent enregistrés sur cet appareil.';
+    D.authReady = true; renderAccountBtn(); renderDecks(); paintAccount(); paintSync();
+    return;
+  }
+  D.state = 'ready';
+  D.cloud.onUser(onUser);
+}
+
+function initDecks() {
+  D.localList = localRead();
+  try { D.hint = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null'); } catch (e) { D.hint = null; }
+  if (D.hint && typeof D.hint.l !== 'string') D.hint = null;
+  $('#btnAccount').onclick = openAccount;
+  $('#decksSync').onclick = openAccount;
+  $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast('Deck mis à jour'); } else openSaveSheet(); };
+  $('#btnSave2').onclick = () => {
+    if (!S.run) return;
+    if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast(snapshotEntry() ? 'Deck et prix mis à jour' : 'Deck mis à jour'); } else openSaveSheet();
+  };
+  $('#deckList').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'import') { b.disabled = true; importLocal(); return; }
+    const id = (b.closest('.deck') || {}).dataset && b.closest('.deck').dataset.id; if (!id) return;
+    if (b.dataset.act === 'open') loadDeck(id); else if (b.dataset.act === 'more') openDeckSheet(id);
+  });
+  $('#btnMoreDecks').onclick = () => { D.expanded = !D.expanded; renderDecks(); };
+  $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
+  renderAccountBtn(); renderDecks();
+  setTimeout(connectCloud, 0);
+}
+
+
+/* ── main.js : démarrage ─────────────────────────────────────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
