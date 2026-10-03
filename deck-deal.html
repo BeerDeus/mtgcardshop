@@ -365,6 +365,24 @@ button.sync:active{background:var(--surface-2)}
 .deck-more{color:var(--ink-2)}
 .tools{gap:2px}
 .tools .link-btn{padding:6px}
+
+/* drapeaux (langue de la carte) + récap */
+.flag{width:19px;height:13px;border-radius:3px;flex:none;box-shadow:0 0 0 1px rgba(16,21,43,.16);display:inline-block;vertical-align:-2px}
+.flag-x{font-family:var(--font-mono);font-size:10px;font-weight:700}
+.tag.lang{gap:5px;padding:0 6px}
+.gi .flag{margin-left:7px;width:16px;height:11px;vertical-align:-1px}
+.alert .grow button + button{margin-left:12px}
+.recap{display:flex;flex-direction:column;gap:9px;padding:13px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line)}
+.recap[hidden]{display:none}
+.recap-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:14px;color:var(--ink-2)}
+.recap-top b{font-family:var(--font-display);font-size:22px;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.recap-top i{width:3px;height:3px;border-radius:50%;background:var(--ink-3);align-self:center}
+.recap-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rchip{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 10px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px;font-weight:550}
+.rchip b{color:var(--ink);font-variant-numeric:tabular-nums}
+.rchip.warn{background:var(--warn-soft);color:var(--warn)} .rchip.warn b{color:inherit}
+.rchip.bad{background:var(--bad-soft);color:var(--bad)} .rchip.bad b{color:inherit}
+.recap-crit{font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
 </style>
 </head>
 <body>
@@ -494,6 +512,8 @@ button.sync:active{background:var(--surface-2)}
         <div class="delta-line" id="heroDelta" hidden></div>
         </div>
       </div>
+
+      <div class="recap" id="recap" hidden></div>
 
       <div class="seg" id="segDeliv" role="radiogroup" aria-label="Mode de livraison"></div>
 
@@ -865,8 +885,46 @@ function newDeckId() {
 }
 
 /* Export Node pour les tests. */
+/* ── Langue des offres, repli anglais, récapitulatif ──────────────────────────────────────── */
+/** Offres dans la langue demandée s'il y en a, sinon toutes (repli). Évite qu'une offre EN moins chère masque une offre FR. */
+function preferLang(list, lang) { const w = list.filter(o => o.lang === lang); return w.length ? w : list; }
+
+/** Offres exploitables dans un mode : Zero = vendeurs « hub » seulement ; langue demandée prioritaire (sauf choix manuel `keepAll`). */
+function forMode(list, mode, lang, keepAll) {
+  const l = mode === 'zero' ? list.filter(o => o.hub) : list;
+  return keepAll ? l : preferLang(l, lang);
+}
+
+/** La carte a-t-elle au moins une offre utilisable dans ce mode, dans la langue demandée ? (sinon : repli anglais utile) */
+function needsEnglish(offers, opts) {
+  return !offers.some(o => passes(o, opts) && (opts.mode !== 'zero' || o.hub) && o.lang === opts.lang);
+}
+
+/**
+ * Récapitulatif d'un résultat.
+ * items : [{state:'ok'|'none'|'nohub'|'notfound'|'loading', qty, short, parts:[{lang, n}]}]
+ * → {total, found, copies, byLang:{lang:{cards, copies}}, none, nohub, notfound, partial, loading}
+ */
+function recapOf(items) {
+  const r = { total: items.length, found: 0, copies: 0, byLang: {}, none: 0, nohub: 0, notfound: 0, partial: 0, loading: 0 };
+  for (const it of items) {
+    if (it.state === 'ok') {
+      r.found++;
+      if (it.short > 0) r.partial++;
+      const parts = it.parts || [];
+      for (const p of parts) { r.copies += p.n; const b = r.byLang[p.lang || '?'] || (r.byLang[p.lang || '?'] = { cards: 0, copies: 0 }); b.copies += p.n; }
+      const top = (parts[0] && parts[0].lang) || '?';
+      (r.byLang[top] || (r.byLang[top] = { cards: 0, copies: 0 })).cards++;
+    } else if (it.state === 'none') r.none++;
+    else if (it.state === 'nohub') r.nohub++;
+    else if (it.state === 'notfound') r.notfound++;
+    else r.loading++;
+  }
+  return r;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
+  module.exports = { preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX };
 }
@@ -1246,7 +1304,7 @@ async function runLive(cards, opts, hooks, signal) {
   hooks.step('offers', 'done', reqDone + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
 
   if (opts.fallbackEn && opts.lang !== 'en') {
-    const miss = cards.filter(c => store[c.key] && store[c.key].bps.length && !hooks.hasOffers(c.key));
+    const miss = cards.filter(c => store[c.key] && store[c.key].bps.length && hooks.needsEn(c.key));
     if (miss.length) {
       hooks.step('fallback', 'run', '0 / ' + miss.length); let fd = 0;
       await pool(miss, 4, async c => {
@@ -1290,7 +1348,7 @@ async function runDemo(cards, opts, hooks, signal) {
   }
   hooks.step('offers', 'done', reqs + ' requêtes simulées');
   if (opts.fallbackEn && opts.lang !== 'en') {
-    const miss = cards.filter(c => !hooks.hasOffers(c.key));
+    const miss = cards.filter(c => hooks.needsEn(c.key));
     if (miss.length) {
       hooks.step('fallback', 'run', '0 / ' + miss.length);
       for (let i = 0; i < miss.length; i++) {
@@ -1333,6 +1391,26 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 const LANGS = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien', pt: 'portugais', jp: 'japonais' };
+const FLAGS = {
+  fr: '<rect width="8" height="16" fill="#0055A4"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#EF4135"/>',
+  en: '<rect width="24" height="16" fill="#012169"/><path d="M0 0L24 16M24 0L0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0L24 16M24 0L0 16" stroke="#C8102E" stroke-width="1.1"/><path d="M12 0V16M0 8H24" stroke="#fff" stroke-width="5.4"/><path d="M12 0V16M0 8H24" stroke="#C8102E" stroke-width="3.2"/>',
+  de: '<rect width="24" height="5.4" fill="#000"/><rect y="5.3" width="24" height="5.4" fill="#DD0000"/><rect y="10.6" width="24" height="5.4" fill="#FFCE00"/>',
+  es: '<rect width="24" height="16" fill="#AA151B"/><rect y="4" width="24" height="8" fill="#F1BF00"/>',
+  it: '<rect width="8" height="16" fill="#009246"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#CE2B37"/>',
+  pt: '<rect width="24" height="16" fill="#FF0000"/><rect width="9.6" height="16" fill="#006600"/><circle cx="9.6" cy="8" r="2.7" fill="#FFCC29" stroke="#fff" stroke-width=".6"/>',
+  jp: '<rect width="24" height="16" fill="#fff"/><circle cx="12" cy="8" r="4.7" fill="#BC002D"/>',
+};
+/** Drapeau de la langue d'une carte (pas du pays du vendeur). */
+function flag(lang) {
+  const g = FLAGS[lang]; const name = LANGS[lang] || lang || '?';
+  return g ? `<svg class="flag" viewBox="0 0 24 16" role="img" aria-label="${esc(name)}"><title>${esc(name)}</title>${g}</svg>` : `<span class="flag-x">${esc(String(lang || '?').toUpperCase())}</span>`;
+}
+/** Pastille langue : drapeau seul si c'est la langue demandée, drapeau + code en orange si c'est un repli. */
+function langTag(lang) {
+  if (!lang) return '';
+  const diff = lang !== S.opts.lang;
+  return `<span class="tag lang${diff ? ' warn' : ''}">${flag(lang)}${diff ? esc(String(lang).toUpperCase()) : ''}</span>`;
+}
 
 const SAMPLE = `1 Cloud, Midgar Mercenary
 1 Aang, the Last Airbender
@@ -1417,6 +1495,7 @@ const S = {
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
+  enBusy: null, enCtrl: null,
 };
 let runSeq = 0;
 
@@ -1583,6 +1662,7 @@ async function startRun() {
   const cards = S.deck.cards; if (!cards.length) return;
   if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
+  if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
   saveStore();
   const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
@@ -1603,11 +1683,12 @@ async function startRun() {
     rate: (r, t) => { if (alive()) setRate(r, t); },
     card: (key, p) => {
       if (!alive()) return; const st = run.cards[key]; if (!st) return;
-      st.fetched = true; st.offers = p.offers || []; st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img;
+      st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img;
       if (p.fellBack) st.fellBack = true;
       scheduleRecompute();
     },
-    hasOffers: key => { const st = run.cards[key]; return !!st && st.offers.some(o => passes(o, S.opts)); },
+    // Repli anglais utile : aucune offre exploitable dans la langue demandée, avec le mode actuel (Zero = vendeurs hub seulement).
+    needsEn: key => { const st = run.cards[key]; return !!st && needsEnglish(st.offers, S.opts); },
   };
   try {
     await (S.demo ? runDemo : runLive)(cards, { ...S.opts }, hooks, run.ctrl.signal);
@@ -1647,15 +1728,18 @@ function scheduleRecompute(now) {
 
 function recompute() {
   if (!S.run) return;
-  const demand = [], by = {}; S.fo = {};
+  const demand = [], byZ = {}, byD = {}; S.fo = {};
   for (const c of S.deck.cards) {
     const st = S.run.cards[c.key]; if (!st || !st.fetched || st.notFound) continue;
     const list = st.offers.filter(o => passes(o, S.opts)); S.fo[c.key] = list;
     if (!list.length) continue;
     if (!S.cur || S.cur === 'EUR') S.cur = list[0].cur || 'EUR';
-    demand.push({ key: c.key, qty: c.qty }); by[c.key] = list;
+    // Langue demandée prioritaire dans chaque mode : une offre anglaise ne masque jamais une offre française (sauf choix manuel).
+    const keep = !!S.overrides[c.key];
+    demand.push({ key: c.key, qty: c.qty });
+    byZ[c.key] = forMode(list, 'zero', S.opts.lang, keep); byD[c.key] = forMode(list, 'direct', S.opts.lang, keep);
   }
-  S.res = { zero: optimize(demand, by, { mode: 'zero', forced: S.overrides }), direct: optimize(demand, by, { mode: 'direct', ship: S.opts.ship, forced: S.overrides }) };
+  S.res = { zero: optimize(demand, byZ, { mode: 'zero', forced: S.overrides }), direct: optimize(demand, byD, { mode: 'direct', ship: S.opts.ship, forced: S.overrides }) };
   updateHero(); updateRows(); updateAlerts(); updateDock();
   if (S.tab === 'sellers') renderSellers(false);
 }
@@ -1679,7 +1763,7 @@ function updateHero() {
   $('#heroSellers').textContent = S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
   const sv = $('#heroSave'), diff = S.opts.mode === 'direct' ? r.baseline.total - r.total : 0;
   sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = `Économie de ${fmt(diff)} avec le regroupement`;
-  updateHeroDelta();
+  updateHeroDelta(); updateRecap();
   const seg = $('#segDeliv');
   seg.setSub('zero', fmt(z.items) + ' + frais'); seg.setLabel('direct', `Direct · ${d.sellerCount} vendeur${d.sellerCount > 1 ? 's' : ''}`); seg.setSub('direct', fmt(d.total));
 }
@@ -1724,7 +1808,7 @@ function updateRow(el, c, v, st) {
     const tags = [];
     tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
     tags.push(`<span class="tag">${esc(COND_SHORT[top.cond] || top.cond || '?')}</span>`);
-    if (top.lang && (top.lang !== S.opts.lang || (st && st.fellBack))) tags.push(`<span class="tag warn">${esc(top.lang.toUpperCase())}</span>`);
+    if (top.lang) tags.unshift(langTag(top.lang));
     if (top.foil) tags.push('<span class="tag accent">Foil</span>');
     if (pick.parts.length > 1) tags.push(`<span class="tag">+${pick.parts.length - 1} offre${pick.parts.length > 2 ? 's' : ''}</span>`);
     if (pick.short > 0) tags.push(`<span class="tag warn">Il en manque ${pick.short}</span>`);
@@ -1744,7 +1828,7 @@ function renderSellers(animate) {
   const r = curRes(), host = $('#sellers'); const nameOf = k => (S.deck.cards.find(c => c.key === k) || {}).name || k;
   host.innerHTML = r.sellers.map((g, i) => {
     const items = g.items.slice().sort((a, b) => nameOf(a.key).localeCompare(nameOf(b.key))).map(it =>
-      `<div class="gi"><span>${it.n > 1 ? it.n + ' × ' : ''}${esc(nameOf(it.key))}</span><span>${fmt(it.offer.price * it.n, it.offer.cur)}</span></div>`).join('');
+      `<div class="gi"><span>${it.n > 1 ? it.n + ' × ' : ''}${esc(nameOf(it.key))}${it.offer.lang ? flag(it.offer.lang) : ''}</span><span>${fmt(it.offer.price * it.n, it.offer.cur)}</span></div>`).join('');
     return `<div class="group" style="--i:${animate ? i : 0}${animate ? '' : ';animation:none'}"><div class="group-head"><div class="who"><b>${esc(g.seller)}</b><span class="tag">${esc(g.country || '?')}</span>${g.hub ? '<span class="tag good">Zero</span>' : ''}</div><div class="sum">${fmt(g.subtotal, g.items[0].offer.cur)}<small>${g.count} carte${g.count > 1 ? 's' : ''}</small></div></div>${items}</div>`;
   }).join('') || '<p class="hint">Aucune offre retenue pour le moment.</p>';
   const seg = $('#segTab'); seg.setLabel('cards', `Cartes · ${foundCount(r)}`); seg.setLabel('sellers', `Vendeurs · ${r.sellerCount}`);
@@ -1757,17 +1841,77 @@ function updateAlerts() {
   if (S.run.error) items.push({ k: 'bad', html: esc(S.run.error.msg) + (S.run.error.action ? ` <button type="button" data-act="${S.run.error.action}">${esc(S.run.error.label)}</button>` : '') });
   if (S.run.status === 'cancelled') items.push({ k: '', html: 'Recherche arrêtée : les résultats sont partiels.' });
   if (S.run.status !== 'running') {
-    let none = 0, nohub = 0, nf = [], short = 0;
-    for (const c of S.deck.cards) { const v = cardView(c); if (v.s === 'none') none++; else if (v.s === 'nohub') nohub++; else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'ok' && v.pick.short > 0) short++; }
+    let none = 0, nohub = 0, nf = [], short = 0, enNone = 0, enHub = 0;
+    for (const c of S.deck.cards) {
+      const v = cardView(c), st = S.run.cards[c.key], cand = S.opts.lang !== 'en' && !!st && !st.fellBack && !S.enBusy; // repli anglais encore possible
+      if (v.s === 'none') { none++; if (cand) enNone++; } else if (v.s === 'nohub') { nohub++; if (cand) enHub++; }
+      else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'ok' && v.pick.short > 0) short++;
+    }
     const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en' ? ' ni en anglais' : '';
-    if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>` });
-    if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>` });
+    const enBtn = n => n ? ' <button type="button" data-act="en-all">Trouver en anglais</button>' : '';
+    if (S.enBusy) items.push({ k: '', html: `Recherche en anglais · ${S.enBusy.done} / ${S.enBusy.total}…` });
+    if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>${enBtn(enNone)}` });
+    if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>${enBtn(enHub)}` });
     if (nf.length) items.push({ k: 'bad', html: `Nom introuvable : ${esc(nf.slice(0, 3).join(', '))}${nf.length > 3 ? '…' : ''}` });
     if (short) items.push({ k: '', html: `${short} carte${short > 1 ? 's' : ''} en quantité insuffisante.` });
   }
   const host = $('#alerts'), sig = JSON.stringify(items);
   if (host._sig === sig) return; host._sig = sig;
   host.innerHTML = items.map(a => `<div class="alert ${a.k}"><svg class="i"><use href="#i-alert"/></svg><div class="grow">${a.html}</div></div>`).join('');
+}
+
+/** « Trouver en anglais » : lance le repli anglais pour toutes les cartes sans offre exploitable (en gardant leurs offres actuelles). */
+async function findEnglishAll() {
+  if (!S.run || S.enBusy || S.opts.lang === 'en') return;
+  const cands = S.deck.cards.filter(c => { const v = cardView(c), st = S.run.cards[c.key]; return st && !st.fellBack && !st.notFound && (v.s === 'none' || v.s === 'nohub'); });
+  if (!cands.length) return;
+  if (S.enCtrl) S.enCtrl.abort();
+  const ctrl = S.enCtrl = new AbortController(), run = S.run;
+  S.enBusy = { done: 0, total: cands.length }; updateAlerts();
+  let failed = 0, aborted = false, i = 0;
+  const worker = async () => {
+    while (i < cands.length && !ctrl.signal.aborted) {
+      const c = cands[i++], st = run.cards[c.key];
+      try {
+        const offers = S.demo ? (await sleep(140, ctrl.signal), makeDemoOffers(c, 'en')) : await searchOneEnglish(c, st, S.opts, ctrl.signal);
+        st.offers = st.offers.concat(offers); st.fellBack = true;
+      } catch (e) { if (e.name === 'AbortError') { aborted = true; return; } failed++; }
+      if (S.enBusy) { S.enBusy.done++; updateAlerts(); } scheduleRecompute();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, cands.length) }, worker));
+  if (S.enCtrl === ctrl) S.enBusy = null;
+  if (aborted || S.run !== run) { updateAlerts(); return; }
+  scheduleRecompute(true);
+  const ok = cands.filter(c => cardView(c).s === 'ok').length;
+  toast(`${ok} / ${cands.length} carte${cands.length > 1 ? 's' : ''} trouvée${ok > 1 ? 's' : ''} en anglais${failed ? ` · ${failed} erreur${failed > 1 ? 's' : ''}` : ''}`);
+}
+
+/* ── Récapitulatif (en haut des résultats) ─────────────────────────────────────────────────── */
+function updateRecap() {
+  const host = $('#recap'); if (!host) return;
+  if (!S.run || !S.deck.cards.length) { host.hidden = true; return; }
+  const items = S.deck.cards.map(c => {
+    const v = cardView(c);
+    return { state: v.s, qty: c.qty, short: v.pick ? v.pick.short : 0, parts: v.pick ? v.pick.parts.map(p => ({ lang: p.offer.lang, n: p.n })) : [] };
+  });
+  const r = recapOf(items);
+  const langs = Object.keys(r.byLang).sort((a, b) => (b === S.opts.lang) - (a === S.opts.lang) || r.byLang[b].cards - r.byLang[a].cards);
+  const chip = (cls, html) => `<span class="rchip ${cls}">${html}</span>`;
+  const chips = langs.filter(l => r.byLang[l].cards > 0 || r.byLang[l].copies > 0).map(l => chip(l === S.opts.lang ? '' : 'warn', `${flag(l)}<b>${r.byLang[l].cards}</b> ${esc(LANGS[l] || l)}`));
+  if (r.none) chips.push(chip('warn', `<b>${r.none}</b> sans offre`));
+  if (r.nohub) chips.push(chip('warn', `<b>${r.nohub}</b> hors Zero`));
+  if (r.partial) chips.push(chip('warn', `<b>${r.partial}</b> incomplète${r.partial > 1 ? 's' : ''}`));
+  if (r.notfound) chips.push(chip('bad', `<b>${r.notfound}</b> introuvable${r.notfound > 1 ? 's' : ''}`));
+  if (r.loading) chips.push(chip('', `<b>${r.loading}</b> en cours`));
+  const foil = S.opts.foil === 'no' ? 'non-foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non';
+  const crit = [LANGS[S.opts.lang] || S.opts.lang, 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), foil, S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
+  if (S.opts.fallbackEn && S.opts.lang !== 'en') crit.push('repli anglais');
+  const html = `<div class="recap-top"><b>${r.found}</b><span> / ${r.total} cartes trouvées</span><i></i><span>${r.copies} exemplaire${r.copies > 1 ? 's' : ''}</span></div>`
+    + (chips.length ? `<div class="recap-chips">${chips.join('')}</div>` : '')
+    + `<div class="recap-crit">${esc(crit.join(' · ').replace(/^./, m => m.toUpperCase()))}</div>`;
+  if (host._sig !== html) { host._sig = html; host.innerHTML = html; }
+  host.hidden = false;
 }
 
 /* ── Fiche carte ──────────────────────────────────────────────────────────────────────────── */
@@ -1780,15 +1924,20 @@ function openCardSheet(key) {
   openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
     if (!list.length) {
       const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
-      api.body.innerHTML = `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : 'Aucune offre ne correspond à tes critères.'}</p>`;
+      const hubOnly = !st.notFound && (S.fo[key] || []).length > 0; // des offres existent, mais aucune compatible Zero
+      const ln = LANGS[S.opts.lang] || S.opts.lang;
+      api.body.innerHTML = `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : hubOnly ? `Des offres en ${esc(ln)} existent, mais aucune n'est compatible Zero. Passe en Direct pour les voir${canEn ? ', ou cherche en anglais' : ''}.` : 'Aucune offre ne correspond à tes critères.'}</p>`;
+      if (hubOnly && mode === 'zero') {
+        api.setFoot(`<button class="btn ghost" type="button" id="btnDirect">Passer en Direct</button>${canEn ? '<button class="btn" type="button" id="btnEn">Chercher en anglais</button>' : ''}`);
+        $('#btnDirect', api.foot).onclick = () => { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); api.close(); };
+      } else if (canEn) api.setFoot('<button class="btn" type="button" id="btnEn">Chercher en anglais</button>');
       if (canEn) {
-        api.setFoot('<button class="btn" type="button" id="btnEn">Chercher en anglais</button>');
         $('#btnEn', api.foot).onclick = async e => {
           e.target.disabled = true; e.target.textContent = 'Recherche…';
           try {
             const offers = S.demo ? makeDemoOffers(c, 'en') : await searchOneEnglish(c, st, S.opts, S.run.ctrl.signal);
             if (S.demo) await sleep(350);
-            st.offers = offers; st.fellBack = true; st.fetched = true; scheduleRecompute(true); api.close(); toast(offers.length ? 'Offres anglaises ajoutées' : 'Aucune offre en anglais non plus');
+            st.offers = st.offers.concat(offers); st.fellBack = true; st.fetched = true; scheduleRecompute(true); api.close(); toast(offers.length ? 'Offres anglaises ajoutées' : 'Aucune offre en anglais non plus');
           } catch (err) { e.target.disabled = false; e.target.textContent = 'Chercher en anglais'; toast('Recherche impossible : ' + (err.message || 'erreur')); }
         };
       }
@@ -1796,7 +1945,7 @@ function openCardSheet(key) {
     }
     api.body.innerHTML = `<div class="offers">${list.map(o => `<button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
       <span class="o-who">${esc(o.seller)}${o.country ? `<i>${esc(o.country)}</i>` : ''}</span><span class="o-price">${fmt(o.price, o.cur)}</span>
-      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${o.lang ? `<span class="tag ${o.lang !== S.opts.lang ? 'warn' : ''}">${esc(o.lang.toUpperCase())}</span>` : ''}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>`).join('')}</div>
+      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>`).join('')}</div>
       ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}`;
     api.body.onclick = e => {
       const b = e.target.closest('.offer'); if (!b) return;
@@ -1841,7 +1990,7 @@ function openCartSheet() {
           } catch (e) { html += '<p class="hint">Le panier est rempli, mais ses totaux n\'ont pas pu être lus.</p>'; }
         }
         api.body.innerHTML = html;
-        api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/cart" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
+        api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
       } catch (e) {
         api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(e.message || 'Erreur')}</span></div>`;
         api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button>');
@@ -1974,6 +2123,7 @@ function init() {
   $('#alerts').addEventListener('click', e => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     if (b.dataset.act === 'settings') openSettings();
+    else if (b.dataset.act === 'en-all') findEnglishAll();
     else if (b.dataset.act === 'direct') { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); }
     else if (b.dataset.act === 'goto') {
       if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#sellers').hidden = true; }
