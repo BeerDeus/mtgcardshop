@@ -4957,11 +4957,12 @@ function openCollImport(initial) {
 
 
 /* ── scan.js : reconnaître les noms de cartes par OCR ──────────────────────────────────────────────────────────
-   L'aperçu de l'appareil photo ne lance AUCUN calcul : un appui sur le cercle prend la photo (la carte dans le cadre), et la lecture se fait en arrière-plan
-   pendant que l'aperçu continue ; on peut enchaîner les cartes, une file d'attente les lit une par une. La langue (anglais, puis français si rien de sûr) est devinée toute seule.
-   Seul le NOM est lu (bande du titre), puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle.
+   Deux façons de scanner, même file d'attente (lecture en arrière-plan, une carte après l'autre) :
+   · aperçu de l'appareil photo dans l'app : AUCUN calcul pendant l'aperçu ; le cercle prend la photo de la bande « nom · mana » ; on enchaîne ;
+   · « Appareil » (appareil photo du téléphone, <input capture>) ou « Photos » (galerie) : photo de la carte entière en portrait, seul le tiers haut est lu.
+   Seul le NOM est lu, puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle. La langue (anglais, puis français si rien de sûr) est devinée toute seule.
    ≥ 84 % de ressemblance = ajoutée (miniature Scryfall pour vérifier) · 72–84 % = à confirmer avec la miniature · en dessous = rien.
-   Les photos ne sont jamais enregistrées : elles restent en mémoire le temps de la lecture, puis sont vidées (il ne reste qu'une vignette de ~4 Ko pour reconnaître une carte non lue).
+   Les photos ne sont jamais enregistrées : décodées au moment de la lecture, puis vidées (il ne reste qu'une vignette de ~3 Ko de la zone lue pour reconnaître une carte non lue).
    Tesseract.js est chargé à la demande depuis un CDN (≈ 3 Mo de modèle anglais, gardés ensuite par le navigateur ; le français seulement si l'anglais ne trouve rien). */
 const TESS_V = '5.1.1', CDN = 'https://cdn.jsdelivr.net/npm/';
 const TESS = {
@@ -5106,22 +5107,32 @@ async function readNameAuto(src, box, outW, psm, cat, retry) {
   }
   return best;
 }
-/** Une capture → meilleure lecture. Caméra : la capture EST la bande « nom + mana » (on la lit entière ; les symboles de mana sont ignorés), puis en texte épars si rien de sûr.
- *  Photo d'une carte entière (galerie, « Appareil ») : bande du titre en haut, puis la carte entière si rien de sûr. */
+/** Zone lue d'une photo de carte (portrait) : le tiers haut, là où se trouvent le nom et le mana. Le reste de l'image n'est jamais lu. */
+const thirdBox = src => ({ x: 0, y: 0, w: src.naturalWidth || src.width, h: Math.round((src.naturalHeight || src.height) / 3) });
+/** Une capture → meilleure lecture. Aperçu de l'app : la capture EST la bande « nom + mana » (lue entière, les symboles de mana sont ignorés), puis en texte épars si rien de sûr.
+ *  Photo d'une carte entière (« Appareil », galerie) : bande du titre en haut, puis le tiers haut si rien de sûr ; le reste de l'image n'est jamais lu. */
 async function readCard(src, cat, strip) {
   const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height;
-  const top = strip ? { x: 0, y: 0, w: W, h: H } : { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) };
-  let m = await readNameAuto(src, top, strip ? 1400 : 1100, '6', cat, true);
-  if ((!m || m.score < 0.84) && SC.el) { const all = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, false); if (all && (!m || all.score > m.score)) m = all; }
+  if (strip) {
+    let m = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1400, '6', cat, true);
+    if ((!m || m.score < 0.84) && SC.el) { const all = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, false); if (all && (!m || all.score > m.score)) m = all; }
+    return m;
+  }
+  let m = await readNameAuto(src, { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) }, 1100, '6', cat, true);
+  for (const [psm, retry] of [['6', true], ['11', false]]) {      // tiers haut : un bloc de texte d'abord, texte épars en dernier recours
+    if ((m && m.score >= 0.84) || !SC.el) break;
+    const t = await readNameAuto(src, thirdBox(src), 1600, psm, cat, retry); if (t && (!m || t.score > m.score)) m = t;
+  }
   return m;
 }
 
 /* — File d'attente : les photos sont lues une par une en arrière-plan — */
-/** Vignette minuscule (≈ 4 Ko) pour reconnaître une photo dans la liste. */
-function thumbOf(src) {
+/** Vignette minuscule (≈ 3 Ko) de la zone lue (box : tiers haut d'une photo), pour reconnaître une photo dans la liste. */
+function thumbOf(src, box) {
   try {
-    const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, k = Math.min(100 / H, 140 / W), c = document.createElement('canvas');
-    c.width = Math.max(8, Math.round(W * k)); c.height = Math.max(8, Math.round(H * k)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    const W = box ? box.w : src.naturalWidth || src.width, H = box ? box.h : src.naturalHeight || src.height, k = Math.min(100 / H, 140 / W), c = document.createElement('canvas');
+    c.width = Math.max(8, Math.round(W * k)); c.height = Math.max(8, Math.round(H * k));
+    if (box) c.getContext('2d').drawImage(src, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height); else c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
     const u = c.toDataURL('image/jpeg', 0.55); c.width = c.height = 0; return u;
   } catch (e) { return ''; }
 }
@@ -5140,7 +5151,7 @@ async function scanWork() {
     while (SC.queue.length && SC.el) {
       const job = SC.queue.shift(), t0 = performance.now(); let m = null, fail = '';
       try {
-        if (!job.src && job.file) { const img = await loadImage(job.file); job.src = img; job.thumb = thumbOf(img); }
+        if (!job.src && job.file) { const img = await loadImage(job.file); job.src = img; job.thumb = thumbOf(img, thirdBox(img)); }
         m = await readCard(job.src, await collCatalog(), job.strip);
       } catch (e) { fail = e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : e && e.code === 'rate' ? 'Scryfall demande une pause…' : ''; }
       scanFree(job.src); job.src = null; job.file = null;
@@ -5255,9 +5266,11 @@ function loadImage(file) {
     img.src = url;
   });
 }
-function scanPhotos(files) {
+/** Photos prises avec « Appareil » (cam : appareil photo du téléphone) ou choisies dans la galerie : une carte par photo, lues l'une après l'autre en arrière-plan. */
+function scanPhotos(files, cam) {
   const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
-  list.forEach((f, i) => scanEnqueue({ label: `Photo ${i + 1}${f.name && f.name.length <= 24 ? ' · ' + f.name : ''}`, file: f }));
+  if (cam && SC.queue.length + list.length > 12) { toast('Patiente un instant : 12 cartes sont déjà en attente de lecture'); return; }
+  list.forEach((f, i) => scanEnqueue({ label: cam ? `Carte ${++SC.cap}` : `Photo ${i + 1}${f.name && f.name.length <= 24 ? ' · ' + f.name : ''}`, file: f }));
 }
 
 function closeScan() { if (SC.el) SC.el.__close(); }
@@ -5275,7 +5288,7 @@ function openScan() {
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
       <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>
-    <p class="hint sc-note">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone, « Photos » ta galerie.</p>
+    <p class="hint sc-note">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
   SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; const prevFocus = document.activeElement;
@@ -5289,7 +5302,7 @@ function openScan() {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
   $('#scFile', wrap).onchange = e => { scanPhotos(e.target.files); e.target.value = ''; };
-  $('#scCam', wrap).onchange = e => { scanPhotos(e.target.files); e.target.value = ''; };
+  $('#scCam', wrap).onchange = e => { scanPhotos(e.target.files, true); e.target.value = ''; };
   { let taps = 0, t0 = 0; $('.dv-title', wrap).onclick = () => { const n = performance.now(); taps = n - t0 < 2500 ? taps + 1 : 1; t0 = n; if (taps >= 5) { taps = 0; scanDiag($('.sc-diag', wrap).hidden); } }; }
   wrap.addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
