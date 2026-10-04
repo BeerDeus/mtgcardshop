@@ -737,7 +737,7 @@ button.sync:active{background:var(--surface-2)}
 .scan{background:var(--bg)}
 .sc-stage{position:relative;flex:none;height:min(34dvh,340px);background:#05070f;overflow:hidden}
 .sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 999px rgba(5,7,15,.42);pointer-events:none}
+.sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 50vw rgba(5,7,15,.42);pointer-events:none}
 .sc-stage[data-mode="many"] .sc-guide{aspect-ratio:auto;width:96%;max-width:none;height:86%;border-radius:10px}
 .sc-stage[data-mode="many"] .sc-band{height:32%;border-radius:8px 8px 0 0}
 .sc-stage[data-mode="many"][data-rows="2"] .sc-band{height:28%}
@@ -1847,6 +1847,29 @@ function coverMap(cw, ch, vw, vh, r) {
   const x = Math.max(0, (r.x - ox) / s), y = Math.max(0, (r.y - oy) / s);
   return { x: Math.round(x), y: Math.round(y), w: Math.round(Math.max(1, Math.min(vw - x, r.w / s))), h: Math.round(Math.max(1, Math.min(vh - y, r.h / s))) };
 }
+/** Mots utiles d'un nom lu (≥ 4 lettres, le trait d'union et l'apostrophe séparent), les plus longs d'abord : sert à chercher le nom imprimé chez Scryfall. */
+const frWords = text => [...new Set(String(text || '').replace(/[^\p{L}\s'’-]/gu, ' ').split(/[\s'’-]+/).filter(w => w.length >= 4))].sort((a, b) => b.length - a.length);
+/** Écart moyen (0–255) entre deux signatures d'image (vignettes grises) ; 255 si elles ne sont pas comparables. */
+function sigDiff(a, b) {
+  if (!a || !b || a.length !== b.length || !a.length) return 255;
+  let t = 0; for (let i = 0; i < a.length; i++) t += Math.abs(a[i] - b[i]);
+  return t / a.length;
+}
+/** Économie de batterie et de fluidité : quand l'image ne bouge plus, inutile de relancer l'OCR en boucle.
+ *  feed(signature) → true : lire. Une image qui change (écart ≥ tol par rapport à la dernière lue) est toujours lue ; ensuite `maxSame` relectures
+ *  identiques (confirmations), puis on saute, avec une lecture de contrôle toutes les `beat` images sautées. */
+function makeStill(maxSame = 2, tol = 4, beat = 12) {
+  let base = null, same = 0, skips = 0;
+  return {
+    feed(sig) {
+      if (!base || sigDiff(base, sig) >= tol) { base = sig; same = 0; skips = 0; return true; }
+      same++; if (same <= maxSame) return true;
+      if (++skips >= beat) { skips = 0; return true; }
+      return false;
+    },
+    reset() { base = null; same = 0; skips = 0; }
+  };
+}
 /** Évite de compter deux fois la même carte tenue devant l'objectif : elle n'est ajoutée de nouveau qu'après `gap` lectures sans elle. feed(clé | null) → true : ajouter. */
 function makeGate(gap = 3) {
   let key = null, absent = 0;
@@ -1899,7 +1922,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
-    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, wordClusters, bestMatch, coverMap, makeGate, makeMultiGate, extractShared };
+    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, wordClusters, bestMatch, coverMap, frWords, sigDiff, makeStill, makeGate, makeMultiGate, extractShared };
 }
 
 
@@ -5022,10 +5045,11 @@ function ocrWorker(lang) {
   return OCR.workers[lang];
 }
 /** Lit une image (canvas) : { lines: [{ text }], words: [{ text, x0, x1, y0, y1 }] }. psm : '6' bloc (bande du nom) · '11' texte épars (photo entière). */
-async function ocrRead(canvas, lang, psm) {
-  const w = await ocrWorker(lang);
-  await w.setParameters({ tessedit_pageseg_mode: psm || '6', tessedit_char_whitelist: LETTERS[lang] || '' });
-  const r = await w.recognize(canvas), d = (r && r.data) || {};
+async function ocrRead(canvas, lang, psm, needWords) {
+  const w = await ocrWorker(lang), mode = psm || '6';
+  if (w.__psm !== mode) { await w.setParameters({ tessedit_pageseg_mode: mode, tessedit_char_whitelist: LETTERS[lang] || '' }); w.__psm = mode; }
+  const r = await w.recognize(canvas, {}, needWords ? { text: true, blocks: true } : { text: true }), d = (r && r.data) || {};   // sans hocr/tsv/blocs inutiles : bien moins de calcul par lecture
+  if ((w.__cnt = (w.__cnt || 0) + 1) >= 300 && OCR.workers[lang]) { delete OCR.workers[lang]; Promise.resolve(w.terminate()).catch(() => {}); }   // moteur recréé de temps en temps : la mémoire de WebAssembly ne fait que grossir
   const lines = String(d.text || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
   const words = (d.words || []).filter(x => x && x.bbox && String(x.text || '').trim()).map(x => ({ text: String(x.text).trim(), x0: x.bbox.x0, x1: x.bbox.x1, y0: x.bbox.y0, y1: x.bbox.y1 }));
   return { lines, words };
@@ -5055,7 +5079,7 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
-const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', rows: 1, alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0 };
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', rows: 1, alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0, still: makeStill(2, 4, 12), skipped: 0 };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
@@ -5106,10 +5130,10 @@ async function frSearch(words, signal) {
 }
 /** Un texte lu (nom français probable) → { name (anglais), key, score, raw } ou null : mots longs cherchés chez Scryfall, puis nom imprimé comparé. */
 async function frenchName(text, signal) {
-  const words = text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length);
+  const words = frWords(text);
   if (!words.length) return null;
   let res = await frSearch(words.slice(0, 2), signal);
-  if (!res.length && words.length > 1) res = await frSearch(words.slice(0, 1), signal);
+  for (let i = 0; !res.length && words.length > 1 && i < Math.min(3, words.length); i++) res = await frSearch([words[i]], signal);   // un mot mal lu fait échouer la recherche à deux mots : on essaie chaque mot seul
   if (!res.length) return null;
   const fm = matchName(text, nameIndex(res.map(r => r.printed)), 0.72); if (!fm) return null;
   const hit = res.find(r => frontName(r.printed) === frontName(fm.name));
@@ -5138,12 +5162,12 @@ async function readName(src, box, outW, psm, cat, retry) {
 /** Une image prête (canvas) → cartes reconnues [{ name, key, score, raw, q }]. Français : les mots sont regroupés par proximité (un groupe = un nom probable)
  *  puis cherchés chez Scryfall ; budget.n = recherches neuves encore permises (les noms déjà cherchés sont en cache). pad : marge où les mots coupés sont ignorés. */
 async function readCanvas(c, cat, budget, pad = 0) {
-  const r = await ocrRead(c, SC.lang, '3'), ms = ocrMatches(r.lines, cat.idx, true);      // '3' : Tesseract découpe lui-même la page ; '6' (un seul bloc) se perd dès qu'il y a plusieurs cartes
+  const r = await ocrRead(c, SC.lang, '3', SC.lang === 'fra'), ms = ocrMatches(r.lines, cat.idx, true);      // '3' : Tesseract découpe lui-même la page ; '6' (un seul bloc) se perd dès qu'il y a plusieurs cartes
   if (SC.lang !== 'fra') return ms;
   const known = new Set(ms.filter(m => m.score >= 0.84).map(m => normPart(m.raw)));
   for (const g of wordClusters(r.words.filter(w => w.x0 > pad && w.x1 < c.width - pad))) {
     if (!SC.el || g.text.length < 5 || known.has(normPart(g.text))) continue;
-    const key = g.text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length).slice(0, 2).map(w => w.toLowerCase()).join(' ');
+    const key = frWords(g.text).slice(0, 2).map(w => w.toLowerCase()).join(' ');
     if (!key) continue;
     if (!FR_CACHE.has(key)) { if (budget.n <= 0) continue; budget.n--; }
     const fm = await frenchName(g.text); if (fm) ms.push({ ...fm, q: 1 });
@@ -5168,11 +5192,11 @@ async function readBand(src, box, cat) {
   const res = new Map(); mergeInto(res, ms); return [...res.values()];
 }
 /** Plusieurs lignes de cartes : une bande de noms par ligne (SC.rows), lues l'une après l'autre ; une carte vue dans deux bandes = deux exemplaires. */
-async function readBands(src, boxes, cat) {
+async function readBands(shots, cat) {
   const all = new Map();
-  for (const b of boxes) {
+  for (const sh of shots) {
     if (!SC.el) break;
-    for (const m of await readBand(src, b, cat)) { const c = all.get(m.key); if (!c) all.set(m.key, { ...m }); else { c.q += m.q; if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } } }
+    for (const m of await readBand(sh.src, sh.box, cat)) { const c = all.get(m.key); if (!c) all.set(m.key, { ...m }); else { c.q += m.q; if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } } }
   }
   return [...all.values()];
 }
@@ -5199,15 +5223,30 @@ function scanBoxes() {
   return out;
 }
 const manyHint = () => SC.rows > 1 ? `Pose les cartes sur ${SC.rows} lignes, noms en haut de chaque ligne` : 'Pose les cartes côte à côte, noms dans la bande du haut';
+/** Bandes à lire, dans l'image de la vidéo. (Découpées directement dans la vidéo : un essai avec createImageBitmap donnait des pixels un peu différents, donc des lectures moins sûres.) */
+const grabShots = (v, boxes) => boxes.map(b => ({ src: v, box: b }));
+/** Signature des bandes : vignettes 32×8 en gris, bout à bout. */
+function shotSig(shots) {
+  const c = SC.sigCv || (SC.sigCv = document.createElement('canvas')); c.width = 32; c.height = 8;
+  const x = c.getContext('2d', { willReadFrequently: true }), sig = new Uint8Array(shots.length * 256);
+  shots.forEach((sh, k) => {
+    x.drawImage(sh.src, sh.box.x, sh.box.y, sh.box.w, sh.box.h, 0, 0, 32, 8);
+    const a = x.getImageData(0, 0, 32, 8).data;
+    for (let i = 0, j = 0; i < 256; i++, j += 4) sig[k * 256 + i] = (a[j] * 77 + a[j + 1] * 150 + a[j + 2] * 29) >> 8;
+  });
+  return sig;
+}
 async function scanShot(manual) {
   if (SC.busy || !SC.el) return;
   const boxes = scanBoxes(), box = boxes && boxes[0]; if (!box) { if (manual) toast('L\'appareil photo n\'est pas prêt'); return; }
-  SC.busy = true; const my = ++SC.seq;
+  SC.busy = true; const my = ++SC.seq; let shots = []; SC.idle = false;
   try {
+    shots = grabShots($('.sc-video', SC.el), boxes);
+    if (!manual && !SC.still.feed(shotSig(shots))) { SC.skipped++; SC.idle = true; return; }       // image inchangée : on ne relance pas l'OCR en boucle
     const cat = await collCatalog();
     if (manual) scanHint('Lecture…', 'busy');
     if (SC.mode === 'many') {
-      const ms = await readBands($('.sc-video', SC.el), boxes, cat);
+      const ms = await readBands(shots, cat);
       if (!SC.el || my !== SC.seq) return;
       if (manual) {
         const ok = ms.filter(m => m.score >= 0.72); for (const m of ok) for (let q = 0; q < m.q; q++) scanAdd(m, 1, m.score < 0.84);
@@ -5216,7 +5255,7 @@ async function scanShot(manual) {
       } else scanGotMany(ms);
       return;
     }
-    const m = await readName($('.sc-video', SC.el), box, 1100, '6', cat, !!manual);
+    const m = await readName(shots[0].src, shots[0].box, 1100, '6', cat, !!manual);
     if (!SC.el || my !== SC.seq) return;
     if (manual) {
       if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84); if (m.score >= 0.84) { haptic('ok'); scanFlash(); scanHint('✓ ' + m.name, 'ok'); } else scanHint('À vérifier : ' + m.name, 'busy'); }
@@ -5233,7 +5272,8 @@ function scanLoop() {
   if (!SC.alive || !SC.el) return;
   const next = (ms) => { SC.tickT = setTimeout(scanLoop, ms); };
   if (!SC.auto || SC.busy || document.hidden || !SC.stream) return next(350);
-  scanShot(false).finally(() => next(260));
+  const t0 = performance.now();       // pause proportionnelle à la durée de lecture : le téléphone souffle entre deux lectures
+  scanShot(false).finally(() => next(SC.idle ? 500 : Math.max(260, Math.min(1200, 0.8 * (performance.now() - t0)))));
 }
 function scanFail(msg) { scanHint(msg, 'bad'); }
 async function scanCamera() {
@@ -5310,7 +5350,7 @@ function openScan() {
     <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : cartes alignées par le haut ; « 2 lignes » lit le haut de chaque moitié du cadre (les photos lisent toute l'image). Le français demande Scryfall pour chaque nom : un peu plus lent.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
-  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
+  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); SC.skipped = 0; SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
   const stop = () => { SC.alive = false; clearTimeout(SC.tickT); if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
   const onKey = e => { if (e.key === 'Escape' && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
@@ -5321,17 +5361,17 @@ function openScan() {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
   const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap), segRows = $('#scRows', wrap);
-  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {}); });
+  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); ocrWorker(v).catch(() => {}); });
   mountSeg(segMode, [{ v: 'one', label: '1 carte à la fois' }, { v: 'many', label: 'Plusieurs côte à côte' }], SC.mode, v => {
-    SC.mode = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); $('.sc-stage', wrap).dataset.mode = v; segRows.hidden = v !== 'many';
+    SC.mode = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); $('.sc-stage', wrap).dataset.mode = v; segRows.hidden = v !== 'many';
     if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? manyHint() : 'Place le nom de la carte dans la bande', '');
   });
   segRows.hidden = SC.mode !== 'many';
   mountSeg(segRows, [{ v: '1', label: '1 ligne' }, { v: '2', label: '2 lignes' }], String(SC.rows), v => {
-    SC.rows = +v; SC.seq++; SC.mgate.reset(); $('.sc-stage', wrap).dataset.rows = v;
+    SC.rows = +v; SC.seq++; SC.mgate.reset(); SC.still.reset(); $('.sc-stage', wrap).dataset.rows = v;
     if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(manyHint(), '');
   });
-  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); };
+  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); };
   $('#scFile', wrap).onchange = async e => { const f = e.target.files; await scanPhotos(f); e.target.value = ''; };
   wrap.addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
@@ -5370,7 +5410,7 @@ function openScan() {
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); scanCamera();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) { SC.gate.reset(); SC.mgate.reset(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) { SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); } });
 
 
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
