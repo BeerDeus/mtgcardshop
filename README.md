@@ -46,6 +46,31 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 - `APP_KEY` (si conservée) : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
 - Scryfall : 2 requêtes/s max ; les cartes sont cherchées par lots de 12 noms (une recherche `(!"A" or !"B" …)` au lieu d'une par carte, soit ~10 requêtes pour un deck de 100 cartes), repli carte par carte pour les noms approximatifs ; pause automatique sur 429 ; résultats en cache 7 jours.
 
+## Lecture des offres en tâche de fond
+
+CardTrader limite `marketplace/products` à 10 requêtes/s (1 blueprint par requête) : ~9 req/s est le plafond, une recherche de 700 offres prend donc ~80 s la première fois. Le serveur fait la boucle à la place de l'appareil (`POST /api/jobs`, suivi par `GET /api/jobs/<id>?from=n`, annulation `DELETE`) :
+
+- la lecture continue si l'app passe en arrière-plan ou se ferme ; relancer la même recherche se rattache à la tâche en cours ou terminée (aucune requête CardTrader en plus) ;
+- cache serveur des offres : 10 min pour les offres, 3 h pour « aucune offre » ; l'alerte « Prix lus il y a N min » propose « Actualiser les prix » (relit tout) quand les données ont plus d'1 min 30 ;
+- une seule cadence vers CardTrader (tâches + relais direct) ; 429 → pause puis cadence réduite ; jeton CardTrader refusé → échec signalé ;
+- « Arrêter » annule la tâche côté serveur ; fermer la page ne l'annule pas ;
+- serveur sans tâches (`JOBS=0`, ancienne version) ou tâches refusées : l'appareil lit lui-même les offres, comme avant.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `JOBS` | 1 | `0` désactive les tâches de fond (repli : lecture depuis l'appareil) |
+| `JOB_RATE` | 9 | Requêtes/s vers CardTrader (plafonné à 9,6) |
+| `OFFER_TTL_MS` | 600000 | Durée de vie du cache des offres |
+| `OFFER_TTL_EMPTY_MS` | 10800000 | Durée de vie du cache des blueprints sans offre |
+| `OFFERS_CACHE_MB` | 40 | Plafond mémoire du cache des offres |
+| `JOB_KEEP_MS` | 900000 | Conservation des tâches terminées |
+
+Limite à connaître : le cache et les tâches vivent en mémoire du processus. Si l'hébergeur le redémarre ou le met en veille pendant une lecture, l'app relance la tâche pour ce qui manque (le cache est alors perdu).
+
+## Carte en grand
+
+Toucher l'image d'une carte l'affiche en grand, dans la langue de l'offre retenue (Scryfall `/cards/<ext>/<n°>/<langue>`) ; si Scryfall n'a pas la version française, l'anglaise est affichée avec une mention. Cartes double face : bouton « Retourner ».
+
 ## Installation (PWA)
 
 `pwa/` contient le manifeste, le service worker et les icônes, servis par `proxy.mjs` en liste blanche (aucun autre fichier du dépôt n'est exposé).

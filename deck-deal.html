@@ -181,6 +181,7 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .step[data-state="done"] .st-ico::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:translate(0,-1px) rotate(45deg)}
 .step[data-state="skip"] .st-ico{opacity:.5}
 .step .det{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.prog-hint{margin:12px 0 0;font-size:12.5px;line-height:1.4;color:var(--ink-3)}
 .prog-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink-3)}
 
 .hero{padding:2px;border-radius:calc(var(--r-lg) + 2px);background:var(--foil);background-size:220% 220%;animation:foilmove 9s linear infinite;box-shadow:var(--shadow)}
@@ -494,6 +495,28 @@ button.sync:active{background:var(--surface-2)}
 .task.ok .task-ico,.task.warn .task-ico,.task.bad .task-ico{animation:popin .45s cubic-bezier(.3,1.5,.5,1)}
 .fchip,.sortsel,.seg-opt,.offer,.o-ext,.rx{-webkit-tap-highlight-color:transparent}
 .seg-opt:active{transform:scale(.97)}
+
+/* ── Carte en grand ───────────────────────────────────────────────────────────────────────────── */
+.thumb:has(img.ok){cursor:zoom-in}
+.imgv{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:rgba(6,8,18,.86);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);opacity:0;transition:opacity .25s}
+.imgv.on{opacity:1}
+.imgv-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}
+.imgv-card{position:relative;width:min(88vw,calc((100dvh - 200px) * .7179),460px);aspect-ratio:672/936;border-radius:5% / 3.6%;overflow:hidden;background:#1b2033;box-shadow:0 24px 60px -12px rgba(0,0,0,.7);transform:scale(.92);transition:transform .38s cubic-bezier(.2,.85,.25,1)}
+.imgv.on .imgv-card{transform:none}
+.imgv-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgv-ph{filter:blur(5px);transform:scale(1.04)}
+.imgv-img{opacity:0;transition:opacity .35s}
+.imgv-img.ok{opacity:1}
+.imgv-spin{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .8s linear infinite;opacity:0;transition:opacity .2s}
+.imgv-card[data-busy="1"] .imgv-spin{opacity:1}
+.imgv-cap{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:#fff;max-width:min(92vw,460px)}
+.imgv-cap b{font-family:var(--font-display);font-size:17px;font-weight:650;letter-spacing:-.01em}
+.imgv-sub{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;align-items:center;font-size:12.5px;color:rgba(255,255,255,.75)}
+.imgv-lang{display:inline-flex;align-items:center;gap:6px;font-weight:650;color:#fff}
+.imgv-sub em{flex-basis:100%;font-style:normal;color:#ffd48a}
+.imgv-flip{color:#fff;border-color:rgba(255,255,255,.35)}
+.imgv-flip[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.imgv,.imgv-card,.imgv-img{transition:none}}
 </style>
 </head>
 <body>
@@ -620,6 +643,7 @@ button.sync:active{background:var(--surface-2)}
           <div class="prog-head"><h2 id="progTitle">Recherche des offres</h2><span class="pct" id="progPct">0 %</span></div>
           <div class="track"><div class="fill" id="progFill"></div></div>
           <ol class="steps" id="steps"></ol>
+          <p class="prog-hint" id="progHint" hidden>Le serveur lit les offres à ta place : tu peux quitter l'app, la recherche continue.</p>
           <div class="prog-foot"><span id="progRate">Démarrage…</span><button class="link-btn" id="btnCancel" type="button">Arrêter</button></div>
         </div>
       </div></div>
@@ -775,6 +799,7 @@ function normalizeProduct(p, info) {
     signed: !!h.signed, altered: !!h.altered, graded: !!p.graded, vac: !!p.on_vacation, bundle: p.bundle_size || 1,
     set: e.code || (info && info.set) || '', setName: e.name_en || (info && info.setName) || '',
     num: (info && info.num) || h.collector_number || '', img: (info && info.img) || null,
+    sset: (info && info.set) || '',                           // code d'extension Scryfall (celui de CardTrader peut différer)
   };
 }
 
@@ -1195,7 +1220,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE
 
 /* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
 
-const CTX = { proxy: false, needsKey: false, needsLogin: false, token: '', appKey: '', idToken: null };
+const CTX = { proxy: false, needsKey: false, needsLogin: false, jobs: false, token: '', appKey: '', idToken: null };
 
 const sleep = (ms, signal) => new Promise((res, rej) => {
   if (signal && signal.aborted) return rej(abortErr());
@@ -1235,6 +1260,7 @@ class Limiter {
   rps() { const t = performance.now(); this.stamps = this.stamps.filter(s => t - s < 5000); return this.stamps.length / 5; }
 }
 const limCT = new Limiter({ rate: 6, conc: 5, max: 9 });
+const limJob = new Limiter({ rate: 4, conc: 2, min: 2, max: 4 });   // suivi des tâches du serveur (léger : une requête toutes les ~0,7 s)
 const limScry = new Limiter({ rate: 1.8, conc: 1, min: 0.5, max: 1.8 }); // Scryfall : /cards/search et /named limités à 2 req/s
 
 const hostOf = u => { try { return new URL(u, typeof location !== 'undefined' ? location.href : 'http://x').host; } catch (e) { return ''; } };
@@ -1396,8 +1422,28 @@ function scryChunks(cards) {
   return out;
 }
 
+/** Image de carte en grand, dans la langue de l'offre (Scryfall ne l'a pas toujours : repli sur l'anglais, signalé par `missing`). */
+const SCRY_LANG = { fr: 'fr', en: 'en', de: 'de', es: 'es', it: 'it', pt: 'pt', jp: 'ja', kr: 'ko', ru: 'ru', 'zh-CN': 'zhs', 'zh-TW': 'zht' };
+const bigOf = u => u && (u.large || u.normal || u.small);
+const facesOf = c => c.image_uris ? [bigOf(c.image_uris)].filter(Boolean) : (c.card_faces || []).map(f => bigOf(f.image_uris)).filter(Boolean);
+async function scryImage({ set, num, lang }, signal) {
+  const sl = SCRY_LANG[lang] || 'en';
+  if (!set || !num) return null;
+  const key = 'im:' + set + ':' + num + ':' + sl;
+  const hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
+  const base = 'https://api.scryfall.com/cards/' + encodeURIComponent(set) + '/' + encodeURIComponent(num);
+  const get = async l => {
+    try { const j = await httpJson(limScry, base + (l === 'en' ? '' : '/' + l), SCRY_JSON, signal); const urls = facesOf(j); return urls.length ? { urls, lang: j.lang || l } : null; }
+    catch (e) { if (e.code === '404') return null; throw e; }
+  };
+  let r = await get(sl);
+  if (!r && sl !== 'en') { r = await get('en'); if (r) r.missing = sl; }
+  if (r) await Cache.set(key, r);
+  return r;
+}
+
 /* ── CardTrader ───────────────────────────────────────────────────────────────────────────── */
-async function ct(path, { method = 'GET', params, body, signal } = {}) {
+async function ct(path, { method = 'GET', params, body, signal, lim = limCT } = {}) {
   if (!CTX.proxy && !CTX.token) throw netErr('notoken', 'Token CardTrader manquant');
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
   const url = CTX.proxy ? 'api/' + path + qs : 'https://api.cardtrader.com/api/v2/' + path + qs;
@@ -1408,7 +1454,7 @@ async function ct(path, { method = 'GET', params, body, signal } = {}) {
       if (CTX.needsLogin && CTX.idToken) { const t = await CTX.idToken(force); if (t) headers['x-firebase-token'] = t; } // jeton Firebase : le proxy vérifie que c'est bien ton compte
     } else headers.Authorization = 'Bearer ' + CTX.token;
     if (body) headers['Content-Type'] = 'application/json';
-    return httpJson(limCT, url, { method, headers, body: body ? JSON.stringify(body) : undefined }, signal);
+    return httpJson(lim, url, { method, headers, body: body ? JSON.stringify(body) : undefined }, signal);
   };
   try { return await call(false); }
   catch (e) { if (e.code === 'auth' && e.reason === 'token_expired' && CTX.idToken) return call(true); throw e; } // jeton périmé : on force son renouvellement, une seule fois
@@ -1455,13 +1501,89 @@ function mapBlueprints(card, prints, exps, bpIndex) {
   return [...out.values()];
 }
 
-async function fetchBpOffers(bp, lang, foil, signal) {
-  const params = { blueprint_id: bp.id };
+async function fetchBpRaw(id, lang, foil, signal) {
+  const params = { blueprint_id: id };
   if (lang) params.language = lang;
   if (foil === 'no') params.foil = 'false'; else if (foil === 'yes') params.foil = 'true';
   const j = await ct('marketplace/products', { params, signal });
-  const arr = Array.isArray(j) ? j : Object.values(j || {}).flat();
-  return arr.map(p => normalizeProduct(p, bp));
+  return Array.isArray(j) ? j : Object.values(j || {}).flat();
+}
+async function fetchBpOffers(bp, lang, foil, signal) { return (await fetchBpRaw(bp.id, lang, foil, signal)).map(p => normalizeProduct(p, bp)); }
+
+/**
+ * Lecture des offres de plusieurs blueprints par une TÂCHE DU SERVEUR : une seule cadence vers CardTrader (≤ 10 req/s),
+ * la boucle continue même si l'application passe en arrière-plan ou se ferme, et un cache court évite de relire deux fois.
+ * Relancer la même recherche se rattache à la tâche en cours (ou terminée). onItem({bp, products|error}) · onInfo(état de la tâche).
+ */
+async function jobOffers(ids, lang, foil, { fresh = false, signal, onItem, onInfo }) {
+  const want = new Set(ids), kill = id => { ct('jobs/' + id, { method: 'DELETE', lim: limJob }).catch(() => {}); };
+  const down = (e, why) => Object.assign(netErr('jobs', why || 'Tâches du serveur indisponibles', { cause: e }), { jobsDown: true });
+  for (let attempt = 0; want.size; attempt++) {
+    if (attempt >= 3) throw down(null, 'Recherche serveur interrompue à plusieurs reprises');
+    let st;
+    try { st = await ct('jobs', { method: 'POST', body: { type: 'offers', lang: lang || '', foil: foil === 'no' || foil === 'yes' ? foil : 'any', bps: [...want], fresh: !!fresh && attempt === 0 }, signal, lim: limJob }); }
+    catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e; throw down(e); }   // 404 (désactivées) · 429 (serveur occupé) · 400 : on retombe sur la lecture depuis l'appareil
+    const onAbort = () => kill(st.id); signal && signal.addEventListener('abort', onAbort, { once: true });
+    let from = 0, lost = false, bad = 0;
+    try {
+      for (;;) {
+        let r;
+        try { r = await ct('jobs/' + st.id, { params: { from }, signal, lim: limJob }); bad = 0; }
+        catch (e) {
+          if (e.name === 'AbortError' || e.code === 'auth') throw e;
+          if (e.code === '404') { lost = true; break; }                              // serveur redémarré : on relance pour ce qui manque
+          if (++bad > 8) throw e;                                                    // réseau mobile capricieux : la tâche continue côté serveur, on retente
+          await sleep(2000, signal); continue;
+        }
+        for (const it of r.items) if (want.delete(it.bp)) onItem(it);
+        from = r.next; if (onInfo) onInfo(r, !!st.attached);
+        if (r.status === 'failed' && r.fatal) throw netErr('auth', 'Accès refusé', { status: r.fatal, host: '', reason: '' });
+        if (r.status !== 'running' && from >= r.count) { if (r.status === 'cancelled' || r.status === 'failed') lost = true; break; }
+        if (from >= r.count) await sleep(650, signal);                               // plus rien de nouveau : on laisse le serveur avancer
+      }
+    } finally { signal && signal.removeEventListener('abort', onAbort); }
+    if (!lost) return;                                                               // tâche terminée : ce qui manquerait encore sera lu depuis l'appareil
+  }
+}
+
+/**
+ * Une passe d'offres pour un groupe de cartes dans une langue : tâche serveur si le serveur la propose, sinon blueprint par blueprint.
+ * entries : [{ c, bps, img }] · onCard(entry, offers) quand TOUTES les offres d'une carte sont arrivées · onTick(done, total, info) · retourne { total, cacheAge, mode }
+ */
+async function offersPass(entries, lang, opts, signal, onCard, onTick) {
+  const owners = new Map(), ids = [], pend = new Map(), acc = new Map(), seen = new Set(); let done = 0, cacheAge = 0, firstInfo = true, mode = 'client';
+  for (const e of entries) {
+    pend.set(e, e.bps.length); acc.set(e, []);
+    for (const bp of e.bps) { if (!owners.has(bp.id)) { owners.set(bp.id, []); ids.push(bp.id); } owners.get(bp.id).push({ e, bp }); }
+  }
+  const total = ids.length;
+  for (const e of entries) if (!e.bps.length) onCard(e, []);
+  const got = (id, raw) => {
+    if (seen.has(id)) return; seen.add(id); done++;
+    for (const { e, bp } of owners.get(id)) { if (raw) acc.get(e).push(...raw.map(p => normalizeProduct(p, bp))); const n = pend.get(e) - 1; pend.set(e, n); if (n === 0) onCard(e, acc.get(e)); }
+  };
+  if (total && CTX.proxy && CTX.jobs) {
+    try {
+      mode = 'job';
+      await jobOffers(ids, lang, opts.foil, { fresh: opts.fresh, signal, onItem: it => { got(it.bp, it.error ? null : it.products); },
+        onInfo: (r, attached) => {
+          // Âge des prix servis « d'avance » : cache lu au lancement ; ou, si on se rattache à une tâche existante, âge de ses données à cet instant (relevé une seule fois).
+          const a = attached ? (firstInfo ? r.dataAge : 0) : r.cacheAge; firstInfo = false; cacheAge = Math.max(cacheAge, a || 0);
+          onTick(done, total, { mode, sent: r.sent, cached: r.cached, rps: r.rps, cacheAge });
+        } });
+    } catch (e) { if (!e.jobsDown) throw e; CTX.jobs = false; mode = 'client'; }   // tâches indisponibles : on continue depuis l'appareil
+  }
+  const rest = ids.filter(id => !seen.has(id));
+  if (rest.length) {
+    if (mode === 'job') mode = 'client';
+    await pool(rest, 5, async id => {
+      let raw = null;
+      try { raw = await fetchBpRaw(id, lang, opts.foil, signal); }
+      catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network' || e.code === 'notoken') throw e; }
+      got(id, raw); onTick(done, total, { mode: 'client' });
+    });
+  }
+  return { total, cacheAge, mode };
 }
 
 async function pool(items, n, fn) {
@@ -1532,38 +1654,36 @@ async function runLive(cards, opts, hooks, signal) {
   hooks.step('catalog', 'done', ids.length + ' extensions');
 
   const plan = cards.map(c => ({ c, bps: mapBlueprints(c, printsOf[c.key], exps, bpIndex) }));
-  const reqTotal = plan.reduce((a, p) => a + p.bps.length, 0) || 1;
-  let reqDone = 0; const t0 = performance.now();
-  hooks.step('offers', 'run', '0 / ' + reqTotal);
-  const tick = () => { hooks.step('offers', 'run', reqDone + ' / ' + reqTotal); hooks.progress(0.4 + 0.55 * reqDone / reqTotal); hooks.rate(limCT.rps(), limCT.count); };
-  const store = {};
-  await pool(plan, 4, async ({ c, bps }) => {
+  const store = {}; const entries = [];
+  for (const { c, bps } of plan) {
     const img = (printsOf[c.key][0] || {}).img || null;
-    if (!printsOf[c.key].length) { hooks.card(c.key, { offers: [], bps: [], img, notFound: true }); return; }
-    const all = [];
-    await Promise.all(bps.map(async bp => {
-      try { all.push(...await fetchBpOffers(bp, opts.lang, opts.foil, signal)); }
-      catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network' || e.code === 'notoken') throw e; }
-      reqDone++; tick();
-    }));
-    store[c.key] = { bps, img };
-    hooks.card(c.key, { offers: all, bps, img });
-  });
-  hooks.step('offers', 'done', reqDone + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
+    if (!printsOf[c.key].length) { hooks.card(c.key, { offers: [], bps: [], img, notFound: true }); continue; }
+    store[c.key] = { bps, img }; entries.push({ c, bps, img });
+  }
+  const reqTotal = entries.reduce((a, e) => a + e.bps.length, 0) || 1, t0 = performance.now();
+  hooks.step('offers', 'run', '0 / ' + reqTotal);
+  // Progression : en mode serveur, la cadence et le nombre de requêtes sont ceux du serveur ; sinon ceux de cet appareil.
+  const tick = base => (done, total, info) => {
+    hooks.step('offers', 'run', done + ' / ' + total); hooks.progress(base.from + (base.to - base.from) * done / Math.max(1, total));
+    if (info && info.mode === 'job') { hooks.hint(true); hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); } else { hooks.hint(false); hooks.rate(limCT.rps(), limCT.count); }
+  };
+  const first = await offersPass(entries, opts.lang, opts, signal, (e, offers) => hooks.card(e.c.key, { offers, bps: e.bps, img: e.img }), tick({ from: 0.4, to: 0.95 }));
+  hooks.cacheAge(first.cacheAge);
+  hooks.step('offers', 'done', first.mode === 'job' ? 'sur le serveur · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s' : first.total + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
 
   if (opts.fallbackEn && opts.lang !== 'en') {
-    const miss = cards.filter(c => store[c.key] && store[c.key].bps.length && hooks.needsEn(c.key));
+    const miss = entries.filter(e => e.bps.length && hooks.needsEn(e.c.key));
     if (miss.length) {
       hooks.step('fallback', 'run', '0 / ' + miss.length); let fd = 0;
-      await pool(miss, 4, async c => {
-        const { bps, img } = store[c.key]; const all = [];
-        await Promise.all(bps.map(async bp => { try { all.push(...await fetchBpOffers(bp, 'en', opts.foil, signal)); } catch (e) { if (e.name === 'AbortError') throw e; } }));
-        fd++; hooks.step('fallback', 'run', fd + ' / ' + miss.length); hooks.progress(0.95 + 0.05 * fd / miss.length);
-        hooks.card(c.key, { offers: all, bps, img, fellBack: true });
-      });
+      const second = await offersPass(miss, 'en', opts, signal, (e, offers) => {
+        fd++; hooks.step('fallback', 'run', fd + ' / ' + miss.length);
+        hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, fellBack: true });
+      }, (done, total, info) => { hooks.progress(0.95 + 0.05 * fd / miss.length); if (info && info.mode === 'job') hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); });
+      hooks.cacheAge(second.cacheAge);
       hooks.step('fallback', 'done', miss.length + ' cartes');
     } else hooks.step('fallback', 'skip', 'Inutile');
   } else hooks.step('fallback', 'skip', 'Désactivé');
+  hooks.hint(false);
   hooks.progress(1);
 }
 
@@ -2044,7 +2164,7 @@ function paintSearchTask() {
   const r = S.run, t = r && r.task; if (!t || t.done) return;
   t.set(Math.round(r.frac * 100), 100, Math.round(r.frac * 100) + ' %' + (r.step ? ' · ' + r.step : ''));
 }
-function setRate(rps, total) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s`; }
+function setRate(rps, total, extra) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s` + (extra ? ' · ' + extra : ''); }
 
 /** Une ligne de la liste : le bouton de la carte + une petite croix (visible une fois la carte scannée). */
 function makeRow(c, i) {
@@ -2154,7 +2274,8 @@ function authHint(e, svc = 'CardTrader') {
   if (r === 'token_expired') return { msg: 'Session expirée : relance la recherche.', action: null, label: null };
   return { msg: svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', action: 'settings', label: 'Réglages' };
 }
-async function startRun() {
+async function startRun(fresh) {
+  fresh = fresh === true;                                    // true : « Actualiser les prix » (ignore le cache du serveur)
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
   if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
@@ -2166,7 +2287,7 @@ async function startRun() {
   const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
   S.run = run; S.overrides = {}; S.gone = new Set(); S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null; S.removed = []; S.filter = 'all'; paintUndo();
-  run.frac = 0; run.step = '';
+  run.frac = 0; run.step = ''; run.cacheAge = 0;
   watchSeen($('#progressCard'));
   run.task = floatTask(S.demo ? 'Recherche simulée' : 'Recherche des offres', { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
   S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
@@ -2174,7 +2295,7 @@ async function startRun() {
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
   $('#progTitle').textContent = S.demo ? 'Recherche simulée' : 'Recherche des offres';
   $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
-  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…';
+  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…'; $('#progHint').hidden = true;
   syncSegDeliv(); buildList(); updateHero(); updateDock();
   showView('results'); lockScreen();
 
@@ -2182,7 +2303,9 @@ async function startRun() {
   const hooks = {
     step: (id, st, d) => { if (alive()) setStep(id, st, d); },
     progress: f => { if (alive()) setProgress(f); },
-    rate: (r, t) => { if (alive()) setRate(r, t); },
+    rate: (r, t, x) => { if (alive()) setRate(r, t, x); },
+    hint: on => { if (alive()) $('#progHint').hidden = !on; },                       // « le serveur lit les offres : tu peux quitter l'app »
+    cacheAge: a => { if (alive() && a > run.cacheAge) run.cacheAge = a; },             // âge (s) du plus vieux prix servi par le cache du serveur
     card: (key, p) => {
       if (!alive()) return; const st = run.cards[key]; if (!st) return;
       st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img;
@@ -2193,7 +2316,7 @@ async function startRun() {
     needsEn: key => { const st = run.cards[key]; return !!st && needsEnglish(st.offers, S.opts); },
   };
   try {
-    await (S.demo ? runDemo : runLive)(cards, { ...S.opts }, hooks, run.ctrl.signal);
+    await (S.demo ? runDemo : runLive)(cards, { ...S.opts, fresh }, hooks, run.ctrl.signal);
     if (S.run === run) run.status = 'done';
   } catch (e) {
     if (S.run !== run) return;
@@ -2212,7 +2335,7 @@ async function startRun() {
     if (S.run === run) {
       unlockScreen(); scheduleRecompute(true);
       if (run.status === 'done') recordRun();
-      $('#heroPartial').hidden = true; $('#btnCancel').hidden = true;
+      $('#heroPartial').hidden = true; $('#btnCancel').hidden = true; $('#progHint').hidden = true;
       if (run.status === 'done') {
         setProgress(1); $('#progTitle').textContent = 'Recherche terminée';
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
@@ -2350,6 +2473,7 @@ function updateAlerts() {
   const items = [];
   if (S.run.error) items.push({ k: 'bad', html: esc(S.run.error.msg) + (S.run.error.action ? ` <button type="button" data-act="${S.run.error.action}">${esc(S.run.error.label)}</button>` : '') });
   if (S.run.status === 'cancelled') items.push({ k: '', html: 'Recherche arrêtée : les résultats sont partiels.' });
+  if (S.run.status === 'done' && S.run.cacheAge >= 90) { const m = Math.round(S.run.cacheAge / 60), ago = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''); items.push({ k: '', html: `Prix lus il y a ${ago} (cache du serveur). <button type="button" data-act="refresh">Actualiser les prix</button>` }); }
   if (S.run.status !== 'running') {
     let none = 0, nohub = 0, nf = [], short = 0, enNone = 0, enHub = 0;
     for (const c of S.deck.cards) {
@@ -2472,6 +2596,63 @@ function openCardSheet(key) {
       $('#btnAuto', api.foot).onclick = () => { delete S.overrides[key]; scheduleRecompute(true); api.close(); };
     }
   });
+}
+
+/* ── Image de la carte en grand ───────────────────────────────────────────────────────────────── */
+let imgView = null;
+function closeCardImage() { if (imgView) imgView.close(); }
+/** Ouvre la carte en grand, dans la langue de l'offre retenue (français si FR, anglais pour un repli). */
+function openCardImage(key) {
+  const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return;
+  const st = S.run.cards[key] || {}, v = cardView(c);
+  const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null, bp = (st.bps || [])[0] || {};
+  const small = (o && o.img) || st.img || bp.img; if (!small) return;
+  const lang = o && o.lang ? o.lang : 'en', set = o ? (o.sset || o.set) : bp.set, num = o ? o.num : bp.num;
+  closeCardImage();
+  const enBig = small.replace('/small/', '/large/');           // même image que la vignette, en grande taille
+  const wrap = document.createElement('div'); wrap.className = 'imgv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', c.name);
+  wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
+    <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" src="${esc(small)}"><img class="imgv-img" alt="${esc(c.name)}" hidden><span class="imgv-spin"></span></div>
+    <div class="imgv-cap"><b>${esc(c.name)}</b><span class="imgv-sub"></span></div>
+    <button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button>`;
+  const ctrl = new AbortController(), card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap);
+  const prev = document.activeElement, app = $('#app');
+  const where = [o && o.setName, set && num ? set.toUpperCase() + ' ' + num : ''].filter(Boolean).join(' · ');
+  const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
+  const caption = (l0, note) => { const l = lk(l0); sub.innerHTML = `<span class="imgv-lang">${flag(l)}${esc(LANGS[l] || l)}</span>${where ? `<span>${esc(where)}</span>` : ''}${note ? `<em>${esc(note)}</em>` : ''}`; };
+  caption(lang === 'en' ? 'en' : lang, '');
+  const api = imgView = { close() {
+    if (imgView !== api) return; imgView = null; ctrl.abort();
+    wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
+    setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 260);
+    if (!sheets.length) { app.inert = false; app.removeAttribute('aria-hidden'); }
+    try { if (prev && prev.focus && prev.isConnected) prev.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  } };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); api.close(); } };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('.imgv-x')) api.close(); });
+  document.body.appendChild(wrap); app.inert = true; app.setAttribute('aria-hidden', 'true');
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
+  haptic('tap');
+
+  let urls = [], face = 0;
+  const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
+    face = i; const probe = new Image();
+    probe.onload = () => { if (imgView !== api) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
+    probe.onerror = () => { if (imgView !== api) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
+    img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
+  };
+  flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
+  (async () => {
+    let r = null;
+    if (!scryLeft()) { try { r = await scryImage({ set, num, lang }, ctrl.signal); } catch (e) { if (e.name === 'AbortError') return; } }
+    if (imgView !== api) return;
+    if (r && r.urls.length) {
+      urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
+      flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
+    } else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
+    show(0);
+  })();
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
@@ -2718,7 +2899,7 @@ async function detectProxy() {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; S.proxy = true; if (S.demoPref == null) S.demo = false; }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; S.proxy = true; if (S.demoPref == null) S.demo = false; }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
@@ -2776,6 +2957,7 @@ function init() {
   $('#btnSettings').onclick = openSettings; $('#modeChip').onclick = openSettings;
   $('#list').addEventListener('click', e => {
     const x = e.target.closest('.rx'); if (x) return removeCard(x.dataset.key);
+    const th = e.target.closest('.thumb'); if (th && th.querySelector('img.ok')) { const rw = th.closest('.rw'); if (rw) return openCardImage(rw.dataset.key); } // vignette → carte en grand
     const r = e.target.closest('.row'); if (r) { haptic('tap'); openCardSheet(r.dataset.key); }
   });
   $('#optSort').value = S.sort;
@@ -2790,6 +2972,7 @@ function init() {
     if (b.dataset.act === 'settings') openSettings();
     else if (b.dataset.act === 'account') openAccount();
     else if (b.dataset.act === 'en-all') findEnglishAll();
+    else if (b.dataset.act === 'refresh') startRun(true);
     else if (b.dataset.act === 'direct') { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); }
     else if (b.dataset.act === 'goto') {
       if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true; }

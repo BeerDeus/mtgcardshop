@@ -9,7 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { timingSafeEqual, createPublicKey, verify as rsaVerify } from 'node:crypto';
+import { timingSafeEqual, createPublicKey, verify as rsaVerify, randomBytes, createHash } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8787;
@@ -69,6 +69,147 @@ const UP_CONC = Number(process.env.UP_CONC) || 6, UP_QUEUE_MAX = 200;
 let upActive = 0; const upQueue = [];
 const upGate = () => upActive < UP_CONC ? (upActive++, Promise.resolve()) : new Promise(r => upQueue.push(r));
 const upDone = () => { const n = upQueue.shift(); if (n) n(); else upActive--; };
+
+/* ── Recherche d'offres en tâche de fond ─────────────────────────────────────────────────────────
+   Le navigateur envoie la liste des blueprints ; le serveur les interroge à cadence constante (la limite CardTrader est de
+   10 requêtes/s sur marketplace/products) et le navigateur relève les résultats. Si l'appli est quittée ou mise en veille,
+   la boucle continue ici ; la même recherche relancée se rattache à la tâche en cours ou lit le cache.
+   Cache : offres 10 min, absences d'offres 3 h (un blueprint sans offre française l'est rarement une heure plus tard). */
+const JOBS_ON = process.env.JOBS !== '0';
+const JOB_RATE = Math.min(9.6, Math.max(1, Number(process.env.JOB_RATE) || 9));
+const JOB_CONC = 4, JOB_MAX_RUNNING = 3, JOB_MAX_KEPT = 8, JOB_MAX_BPS = 3000, JOB_PAGE = 300;
+const JOB_KEEP = Number(process.env.JOB_KEEP_MS ?? 15 * 60e3);
+const OFFER_TTL = Number(process.env.OFFER_TTL_MS ?? 10 * 60e3), OFFER_TTL_EMPTY = Number(process.env.OFFER_TTL_EMPTY_MS ?? 3 * 3600e3);
+const OFFERS_MAX = (Number(process.env.OFFERS_CACHE_MB) || 40) * 1024 * 1024;
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+
+// Cadence commune à toutes les requêtes marketplace/products (tâches de fond ET relais direct) : un seul budget vers CardTrader.
+let paceAt = 0, paceSlow = 0;
+async function pace() {
+  const rate = paceSlow > 0 ? Math.max(3, JOB_RATE * 0.6) : JOB_RATE; if (paceSlow > 0) paceSlow--;
+  const now = Date.now(), at = Math.max(now, paceAt); paceAt = at + 1000 / rate;
+  if (at > now) await sleepMs(at - now);
+}
+const throttle = ms => { paceSlow = 40; paceAt = Math.max(paceAt, Date.now() + ms); };   // 429 : pause puis cadence réduite pendant 40 requêtes
+
+const offers = new Map(); let offersBytes = 0;
+const okey = (bp, lang, foil) => bp + '|' + lang + '|' + foil;
+function offersGet(k) {
+  const e = offers.get(k); if (!e) return null;
+  if (Date.now() - e.t > (e.products.length ? OFFER_TTL : OFFER_TTL_EMPTY)) { offers.delete(k); offersBytes -= e.size; return null; }
+  return e;
+}
+function offersSet(k, products) {
+  if (!(products.length ? OFFER_TTL : OFFER_TTL_EMPTY)) return;
+  const size = 96 + JSON.stringify(products).length, old = offers.get(k); if (old) offersBytes -= old.size;
+  offers.delete(k); offers.set(k, { t: Date.now(), products, size }); offersBytes += size;
+  for (const [kk, v] of offers) { if (offersBytes <= OFFERS_MAX) break; offers.delete(kk); offersBytes -= v.size; }
+}
+// On ne garde que les champs lus par l'application (3× plus léger en mémoire et sur le réseau).
+const pick = (o, keys) => o && Object.fromEntries(keys.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
+const slim = p => ({ id: p.id, blueprint_id: p.blueprint_id, quantity: p.quantity, graded: p.graded, on_vacation: p.on_vacation, bundle_size: p.bundle_size,
+  price: pick(p.price, ['cents', 'currency']), expansion: pick(p.expansion, ['code', 'name_en']),
+  properties_hash: pick(p.properties_hash, ['condition', 'mtg_language', 'mtg_foil', 'signed', 'altered', 'collector_number']),
+  user: pick(p.user, ['id', 'username', 'country_code', 'can_sell_via_hub', 'user_type']) });
+
+const cancelled = () => Object.assign(new Error('cancelled'), { cancelled: true });
+async function fetchProducts(bp, lang, foil, signal) {
+  const qs = new URLSearchParams({ blueprint_id: String(bp) }); if (lang) qs.set('language', lang);
+  if (foil === 'no') qs.set('foil', 'false'); else if (foil === 'yes') qs.set('foil', 'true');
+  const url = UPSTREAM + 'marketplace/products?' + qs, soft = m => Object.assign(new Error(m), { soft: true });
+  for (let a = 0; ; a++) {
+    if (signal.aborted) throw cancelled();
+    await pace(); await upGate();
+    if (signal.aborted) { upDone(); throw cancelled(); }
+    const ctl = new AbortController(), onAbort = () => ctl.abort(), timer = setTimeout(() => ctl.abort(), 30000);
+    signal.addEventListener('abort', onAbort, { once: true });
+    let r, text;
+    try { r = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN, Accept: 'application/json' }, signal: ctl.signal }); text = await r.text(); }
+    catch (e) { if (signal.aborted) throw cancelled(); if (a < 3) { await sleepMs(800 * (a + 1)); continue; } throw soft('upstream_unreachable'); }
+    finally { clearTimeout(timer); signal.removeEventListener('abort', onAbort); upDone(); }
+    if (r.status === 429 || r.status >= 500) {
+      if (r.status === 429) throttle(Number(r.headers.get('retry-after')) * 1000 || 1100);
+      if (a < 4) { await sleepMs(r.status === 429 ? 0 : 700 * (a + 1)); continue; }
+      throw soft('upstream_' + r.status);
+    }
+    if (r.status === 401 || r.status === 403) throw Object.assign(new Error('upstream_auth'), { fatal: r.status });
+    if (!r.ok) throw soft('upstream_' + r.status);
+    let j; try { j = JSON.parse(text); } catch (e) { throw soft('upstream_bad_json'); }
+    return (Array.isArray(j) ? j : Object.values(j || {}).flat()).filter(Boolean).map(slim);
+  }
+}
+
+const jobs = new Map();
+function newJob({ lang, foil, bps, fresh }) {
+  const sig = createHash('sha1').update([lang, foil, ...bps.slice().sort((a, b) => a - b)].join(',')).digest('hex');
+  const now = Date.now();
+  let same = null;                                                    // la tâche la plus récente de même signature (en cours, ou terminée et encore valable)
+  for (const j of jobs.values()) if (j.sig === sig && (j.status === 'running' || (j.status === 'done' && !fresh && now - j.end < OFFER_TTL)) && (!same || j.t0 > same.t0)) same = j;
+  if (same) return { job: same, attached: true };
+  if ([...jobs.values()].filter(j => j.status === 'running').length >= JOB_MAX_RUNNING) return { busy: true };
+  const job = { id: randomBytes(12).toString('hex'), sig, lang, foil, fresh: !!fresh, bps, queue: bps.slice(), total: bps.length, results: [], done: 0, cached: 0, cacheAge: 0, oldest: Infinity, errors: 0, sent: 0, stamps: [],
+    status: 'running', fatal: null, ctl: new AbortController(), t0: now, end: 0 };
+  jobs.set(job.id, job);
+  runJob(job);
+  return { job, attached: false };
+}
+async function runJob(job) {
+  const worker = async () => {
+    while (job.status === 'running') {
+      const bp = job.queue.shift(); if (bp === undefined) return;
+      const k = okey(bp, job.lang, job.foil), hit = job.fresh ? null : offersGet(k);
+      let products = null, error = null;
+      if (hit) { products = hit.products; job.cached++; job.cacheAge = Math.max(job.cacheAge, Date.now() - hit.t); job.oldest = Math.min(job.oldest, hit.t); }
+      else {
+        try { const at = Date.now(); products = await fetchProducts(bp, job.lang, job.foil, job.ctl.signal); offersSet(k, products); job.sent++; job.stamps.push(Date.now()); job.oldest = Math.min(job.oldest, at); }
+        catch (e) {
+          if (e.cancelled) return;
+          if (e.fatal) { job.fatal = e.fatal; job.status = 'failed'; job.ctl.abort(); return; }
+          error = e.message || 'error'; job.errors++;
+        }
+      }
+      job.results.push(error ? { bp, error } : { bp, products }); job.done++;
+    }
+  };
+  try { await Promise.all(Array.from({ length: Math.min(JOB_CONC, job.queue.length) }, worker)); }
+  catch (e) { console.error('job:', e); if (job.status === 'running') job.status = 'failed'; }
+  if (job.status === 'running') job.status = 'done';
+  job.end = Date.now();
+}
+function gcJobs() {
+  const now = Date.now(), fin = [];
+  for (const [id, j] of jobs) {
+    if (j.status === 'running' && now - j.t0 > 30 * 60e3) { j.status = 'cancelled'; j.ctl.abort(); j.end = now; }
+    if (j.end && now - j.end > JOB_KEEP) jobs.delete(id); else if (j.end) fin.push(j);
+  }
+  fin.sort((a, b) => a.end - b.end); while (fin.length > JOB_MAX_KEPT) jobs.delete(fin.shift().id);
+}
+if (JOBS_ON) setInterval(gcJobs, 30e3).unref();
+
+async function jobsApi(req, res, path, url) {
+  if (!JOBS_ON) return json(res, 404, { error: 'jobs_disabled' });
+  const m = /^jobs(?:\/([a-f0-9]{24}))?$/.exec(path);
+  if (!m) return json(res, 404, { error: 'not_found' });
+  if (req.method === 'POST' && !m[1]) {
+    let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
+    const lang = b && b.lang == null ? '' : String(b && b.lang), foil = b && b.foil == null ? 'any' : String(b && b.foil);
+    const ids = Array.isArray(b && b.bps) ? [...new Set(b.bps)] : [];
+    if (!b || b.type !== 'offers' || !/^([a-z]{2}(-[A-Za-z]{2})?)?$/.test(lang) || !['no', 'yes', 'any'].includes(foil) || !ids.length || ids.length > JOB_MAX_BPS || !ids.every(x => Number.isSafeInteger(x) && x > 0))
+      return json(res, 400, { error: 'bad_request', message: 'Paramètres invalides (type, lang, foil ou bps).' });
+    const r = newJob({ lang, foil, bps: ids, fresh: !!b.fresh });
+    if (r.busy) return json(res, 429, { error: 'busy', message: 'Trop de recherches en cours sur le serveur.' }, { 'Retry-After': '10' });
+    return json(res, 202, { id: r.job.id, total: r.job.total, attached: r.attached, status: r.job.status });
+  }
+  const job = m[1] && jobs.get(m[1]);
+  if (!job) return json(res, m[1] ? 404 : 405, { error: m[1] ? 'job_not_found' : 'method_not_allowed', message: m[1] ? 'Recherche introuvable (serveur redémarré ou trop ancienne).' : undefined });
+  if (req.method === 'DELETE') { if (job.status === 'running') { job.status = 'cancelled'; job.ctl.abort(); job.end = Date.now(); } return json(res, 200, { id: job.id, status: job.status }); }
+  if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+  const from = Math.max(0, Math.floor(Number(url.searchParams.get('from')) || 0));
+  const items = job.results.slice(from, from + JOB_PAGE), now = Date.now();
+  while (job.stamps.length && now - job.stamps[0] > 5000) job.stamps.shift();
+  return json(res, 200, { id: job.id, status: job.status, total: job.total, done: job.done, cached: job.cached, cacheAge: Math.round(job.cacheAge / 1000), dataAge: job.oldest === Infinity ? 0 : Math.round((now - job.oldest) / 1000), errors: job.errors, sent: job.sent,
+    rps: Math.round(job.stamps.length / Math.min(5, Math.max(1, (now - job.t0) / 1000)) * 10) / 10, count: job.results.length, from, next: from + items.length, items, fatal: job.fatal });
+}
 
 // En-têtes de sécurité sur toutes les réponses (pas de CSP : la page charge Firebase, Scryfall et Google Fonts).
 const SEC = {
@@ -180,6 +321,7 @@ async function api(req, res, url) {
   if (!TOKEN) return json(res, 401, { error: 'no_token', message: 'CARDTRADER_TOKEN absent côté proxy.' });
 
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
+  if (path === 'jobs' || path.startsWith('jobs/')) return jobsApi(req, res, path, url);
   const allowed = ALLOW[req.method];
   if (!allowed) return json(res, 405, { error: 'method_not_allowed' });
   if (!allowed.has(path)) return json(res, 403, { error: 'blocked', message: 'Route non autorisée par le proxy : ' + path });
@@ -200,6 +342,7 @@ async function api(req, res, url) {
     init.headers['Content-Type'] = 'application/json';
   }
   if (upQueue.length >= UP_QUEUE_MAX) return json(res, 503, { error: 'busy', message: 'Trop de requêtes en attente.' }, { 'Retry-After': '2' });
+  if (path === 'marketplace/products') await pace(); // même budget que les tâches de fond
   await upGate();
   init.signal = AbortSignal.timeout(30000); // armé après l'attente en file, pas avant
   let up, body;
@@ -217,7 +360,7 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       if (!PAGE) return json(res, 404, { error: 'page_missing', message: 'Place deck-deal.html à côté de proxy.mjs.' });
