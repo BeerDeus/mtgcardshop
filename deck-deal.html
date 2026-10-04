@@ -315,7 +315,7 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .sync[data-s="pending"] i{background:var(--warn);opacity:1;animation:pulse 1.2s ease-in-out infinite}
 .sync[data-s="error"] i{background:var(--bad);opacity:1}
 .deck-list{display:flex;flex-direction:column;gap:8px}
-.deck{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow);transition:border-color .2s,box-shadow .25s}
+.deck{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow);transition:border-color .2s,box-shadow .25s}
 .deck.fresh{animation:rise .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*45ms)}
 .deck.skel{height:62px;grid-template-columns:1fr;align-content:center;gap:8px;padding:0 14px}
 .deck[data-active="1"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
@@ -517,6 +517,69 @@ button.sync:active{background:var(--surface-2)}
 .imgv-flip{color:#fff;border-color:rgba(255,255,255,.35)}
 .imgv-flip[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){.imgv,.imgv-card,.imgv-img{transition:none}}
+
+/* ── Deck viewer ─────────────────────────────────────────────────────────────────────────────── */
+.deck-view{height:30px;padding:0 11px;margin-left:2px;border:1px solid var(--line);background:var(--surface-3);color:var(--accent);font-weight:650;font-size:12.5px;border-radius:99px;transition:background .15s,transform .15s}
+.deck-view:active{transform:scale(.95);background:var(--accent-soft)}
+.dv{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);opacity:0;transform:translateY(14px);transition:opacity .24s,transform .3s cubic-bezier(.2,.8,.2,1)}
+.dv.on{opacity:1;transform:none}
+.dv-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;border-bottom:1px solid var(--line);background:var(--bar-bg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.dv-title{display:flex;flex-direction:column;min-width:0}
+.dv-title b{font-family:var(--font-display);font-size:18px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-title span{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.dv-body{max-width:1100px;margin:0 auto;padding:16px 16px 28px;display:flex;flex-direction:column;gap:16px}
+.dv-sum{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.dv-total{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dv-eur{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.dv-crit{font-size:12.5px;color:var(--ink-3)}
+.dv-age{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--ink-2)}
+.dv-age[data-age="old"]{color:var(--warn)}
+.dv-age[data-age="old"] span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
+.dv-curve{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end}
+.dv-bar{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;padding:0;min-width:0}
+.dv-bar[disabled]{cursor:default}
+.dv-n{height:14px;font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.dv-col{display:flex;align-items:flex-end;width:100%;height:42px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.dv-col i{display:block;width:100%;min-height:0;border-radius:7px 7px 0 0;background:var(--accent);opacity:.85;transition:height .4s cubic-bezier(.2,.8,.2,1)}
+.dv-bar:not([disabled]):active .dv-col i{opacity:1}
+.dv-bar .dv-x{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+.dv-seg{position:sticky;top:8px;z-index:3;box-shadow:var(--shadow)}
+.dv-groups{display:flex;flex-direction:column;gap:20px}
+.dv-g h3{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 2px 10px;font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.01em}
+.dv-g h3 small{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.dv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.dvc{position:relative;display:block;padding:0;border:0;background:transparent;border-radius:6px;text-align:left;transition:transform .15s}
+.dvc:active{transform:scale(.96)}
+.dvc-art{position:relative;display:grid;place-items:center;aspect-ratio:672/936;border-radius:5% / 3.6%;overflow:hidden;background:hsl(var(--h) 38% var(--thumb-l));color:hsl(var(--h) 45% var(--thumb-ink));box-shadow:0 1px 2px rgba(16,21,43,.2),0 8px 16px -10px rgba(16,21,43,.5)}
+.dvc-art b{font-family:var(--font-display);font-size:34px;font-weight:700;line-height:1}
+.dvc-art i{position:absolute;left:8px;right:8px;bottom:26px;font-style:normal;font-size:11px;line-height:1.2;text-align:center;font-weight:600}
+.dvc-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.dvc-art img.ok{opacity:1}
+.dvc[data-s="none"] .dvc-art,.dvc[data-s="nohub"] .dvc-art,.dvc[data-s="nf"] .dvc-art{filter:saturate(.55) brightness(.9)}
+.dvc-q{position:absolute;top:5px;right:5px;min-width:24px;height:22px;padding:0 6px;display:grid;place-items:center;border-radius:99px;background:rgba(10,14,30,.82);color:#fff;font-family:var(--font-mono);font-size:11.5px;font-weight:700;box-shadow:0 0 0 1.5px rgba(255,255,255,.55)}
+.dvc-l{position:absolute;top:5px;left:5px;height:19px;padding:0 6px;display:grid;place-items:center;border-radius:6px;background:#f2b441;color:#2a1c00;font-family:var(--font-mono);font-size:10.5px;font-weight:700}
+.dvc-p{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);max-width:calc(100% - 10px);padding:2px 8px;border-radius:99px;background:rgba(10,14,30,.84);color:#fff;font-family:var(--font-mono);font-size:11.5px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.dvc-p.warn{background:#f2b441;color:#2a1c00}
+.dvc-p.bad{background:var(--bad);color:#fff}
+.dv-foot{display:flex;gap:10px;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--line);background:var(--bar-bg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.dv-foot .btn{flex:1;height:46px}
+.dv-foot[hidden]{display:none}
+.dv-empty{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:48px 20px;color:var(--ink-2)}
+.dv-empty b{font-family:var(--font-display);font-size:18px;color:var(--ink)}
+.dv-empty p{max-width:34ch;font-size:14px}
+@media (min-width:700px){.dv-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px}.dvc-art i{font-size:12px}}
+@media (prefers-reduced-motion:reduce){.dv,.dvc,.dvc-art img,.dv-col i{transition:none}}
+/* carte en grand : navigation */
+.imgv-nav{position:absolute;z-index:2;top:50%;width:44px;height:64px;margin-top:-32px;display:grid;place-items:center;border:0;border-radius:14px;background:rgba(255,255,255,.12);color:#fff;transition:opacity .2s,background .2s}
+.imgv-nav:active{background:rgba(255,255,255,.26)}
+.imgv-nav[disabled]{opacity:.22;pointer-events:none}
+.imgv-nav.prev{left:6px}.imgv-nav.next{right:6px}.imgv-nav.next svg{transform:scaleX(-1)}
+.imgv-nav svg{width:22px;height:22px}
+.imgv-count{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 20px);left:16px;font-family:var(--font-mono);font-size:13px;font-weight:600;color:rgba(255,255,255,.8);font-variant-numeric:tabular-nums}
+.imgv-extra{display:block;margin-top:2px;font-family:var(--font-mono);font-size:12.5px;color:#fff;opacity:.92}
+.imgv-extra[hidden]{display:none}
+@media (max-width:520px){.imgv-nav{width:36px;height:56px;margin-top:-28px;background:rgba(255,255,255,.08)}}
 </style>
 </head>
 <body>
@@ -533,6 +596,7 @@ button.sync:active{background:var(--surface-2)}
     <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.4"/></symbol>
     <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.4v.1"/></symbol>
   </defs>
@@ -633,6 +697,7 @@ button.sync:active{background:var(--surface-2)}
       <div class="crumb">
         <button class="link-btn" id="btnBack" type="button"><svg class="i"><use href="#i-back"/></svg>Modifier</button>
         <div class="crumb-r">
+          <button class="link-btn" id="btnViewer" type="button" disabled><svg class="i"><use href="#i-grid"/></svg>Viewer</button>
           <button class="link-btn" id="btnSave2" type="button"><svg class="i"><use href="#i-bookmark"/></svg><span id="btnSave2Txt">Enregistrer</span></button>
           <button class="link-btn" id="btnCopy" type="button"><svg class="i"><use href="#i-copy"/></svg>Copier</button>
         </div>
@@ -1034,6 +1099,82 @@ function priceSeries(history) {
   return h.filter(e => sameKind(e, last)).map(e => e.total);
 }
 
+/* ── Prix gardés carte par carte + regroupements du deck viewer ───────────────────────────── */
+const SNAP_MAX = 400, SNAP_STATES = ['ok', 'none', 'nohub', 'nf', 'basic'];
+/** Relevé compact d'une recherche : { at, mode, lang, sig, items:[{k,n,q,s, c,l,d,st,nu,sn,im,cm,mc,tl,cl,sl,fb,sh}] }. null si inutilisable. */
+function sanitizeSnap(x) {
+  if (!x || typeof x !== 'object' || !Array.isArray(x.items) || !Number.isFinite(x.at)) return null;
+  const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+  const int = (v, lo, hi) => (Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v))) : null);
+  const items = [];
+  for (const i of x.items) {
+    if (items.length >= SNAP_MAX) break;
+    if (!i || typeof i.k !== 'string' || typeof i.n !== 'string' || !i.k || !i.n) continue;
+    const o = { k: str(i.k, 80), n: str(i.n, 100), q: int(i.q, 1, 999) || 1, s: SNAP_STATES.includes(i.s) ? i.s : 'none' };
+    const c = int(i.c, 0, 100000000); if (c != null && o.s === 'ok') o.c = c;
+    for (const [f, n] of [['l', 8], ['d', 8], ['st', 12], ['nu', 12], ['sn', 80], ['im', 200], ['mc', 60], ['tl', 120], ['cl', 6], ['sl', 60]]) { const v = str(i[f], n); if (v) o[f] = v; }
+    const cm = int(i.cm, 0, 99); if (cm != null) o.cm = cm;
+    const sh = int(i.sh, 1, 999); if (sh != null) o.sh = sh;
+    if (i.fb) o.fb = 1;
+    items.push(o);
+  }
+  return items.length ? { at: x.at, mode: OPT_MODE.includes(x.mode) ? x.mode : 'zero', lang: str(x.lang, 8), sig: str(x.sig, 40), items } : null;
+}
+/** Le plus récent de plusieurs relevés (cloud / appareil), ou null. */
+const newestSnap = (...a) => a.filter(Boolean).sort((p, q) => q.at - p.at)[0] || null;
+
+const TYPE_ORDER = ['Créatures', 'Planeswalkers', 'Batailles', 'Artefacts', 'Enchantements', 'Éphémères', 'Rituels', 'Terrains', 'Autres'];
+/** Famille d'une carte d'après sa ligne de type (Artifact Creature → Créatures ; Artifact Land → Terrains). */
+function typeBucket(tl) {
+  const t = String(tl || '').toLowerCase();
+  if (t.includes('creature')) return 'Créatures';
+  if (t.includes('planeswalker')) return 'Planeswalkers';
+  if (t.includes('battle')) return 'Batailles';
+  if (t.includes('land')) return 'Terrains';
+  if (t.includes('artifact')) return 'Artefacts';
+  if (t.includes('enchantment')) return 'Enchantements';
+  if (t.includes('instant')) return 'Éphémères';
+  if (t.includes('sorcery')) return 'Rituels';
+  return 'Autres';
+}
+const isLand = i => i.s === 'basic' || (i.tl ? typeBucket(i.tl) === 'Terrains' : false);
+const byName = (a, b) => a.n.localeCompare(b.n, 'fr', { sensitivity: 'base' });
+const byCmcName = (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b);
+const sumGroup = items => ({ count: items.reduce((a, i) => a + i.q, 0), cost: items.reduce((a, i) => a + (i.c || 0), 0) });
+/**
+ * Regroupe les cartes pour le viewer. sort : 'mana' (colonnes par coût converti, terrains à part) · 'price' (du plus cher au moins cher) · 'type'.
+ * Toujours en fin de liste : « Introuvables ». Retourne [{ id, label, items, count, cost }] — les groupes vides n'existent pas.
+ */
+function groupSnap(items, sort) {
+  const list = items.slice(), out = [];
+  const add = (id, label, arr) => { if (arr.length) out.push({ id, label, items: arr, ...sumGroup(arr) }); };
+  const nf = list.filter(i => i.s === 'nf').sort(byName), rest = list.filter(i => i.s !== 'nf');
+  if (sort === 'price') {
+    const priced = rest.filter(i => i.s === 'ok').sort((a, b) => (b.c - a.c) || byName(a, b));
+    add('p', 'Du plus cher au moins cher', priced);
+    add('np', 'Sans offre', rest.filter(i => i.s === 'none' || i.s === 'nohub').sort(byName));
+    add('b', 'Terrains de base', rest.filter(i => i.s === 'basic').sort(byName));
+  } else if (sort === 'type') {
+    const by = new Map(TYPE_ORDER.map(t => [t, []]));
+    for (const i of rest) by.get(i.s === 'basic' ? 'Terrains' : typeBucket(i.tl)).push(i);
+    for (const t of TYPE_ORDER) add('t-' + t, t, by.get(t).sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byCmcName(a, b)));
+  } else {
+    const nonLand = rest.filter(i => !isLand(i)), lands = rest.filter(isLand);
+    for (let m = 0; m <= 7; m++) add('m' + m, m === 7 ? '7 et plus' : String(m), nonLand.filter(i => Math.min(i.cm ?? 0, 7) === m).sort(byName));
+    add('land', 'Terrains', lands.sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byName(a, b)));
+  }
+  add('nf', 'Introuvables', nf);
+  return out;
+}
+/** Courbe de mana : nombre d'exemplaires par coût (0 à 7+), hors terrains. */
+function curveOf(items) {
+  const c = new Array(8).fill(0);
+  for (const i of items) if (i.s !== 'nf' && !isLand(i)) c[Math.min(i.cm ?? 0, 7)] += i.q;
+  return c;
+}
+/** Fraîcheur d'un relevé : 'fresh' (< 24 h) ou 'old'. */
+const snapAge = (snap, now) => ((now || Date.now()) - snap.at >= 24 * 3600e3 ? 'old' : 'fresh');
+
 /** Document deck propre (même forme en local et dans Firestore). */
 function deckDoc(x, now) {
   now = Number.isFinite(now) ? now : Date.now();
@@ -1042,14 +1183,16 @@ function deckDoc(x, now) {
   const cards = parseDeck(text).cards.length;
   const history = (Array.isArray(x.history) ? x.history : []).filter(e => e && Number.isFinite(e.at) && Number.isFinite(e.total)).slice(-HISTORY_MAX)
     .map(e => ({ at: e.at, total: Math.round(e.total), mode: OPT_MODE.includes(e.mode) ? e.mode : 'zero', found: Math.max(0, e.found | 0), count: Math.max(0, e.count | 0), sig: typeof e.sig === 'string' ? e.sig.slice(0, 40) : '' }));
-  return { name, text, opts: sanitizeOpts(x.opts), cards, history, createdAt: Number.isFinite(x.createdAt) ? x.createdAt : now, updatedAt: now };
+  const out = { name, text, opts: sanitizeOpts(x.opts), cards, history, createdAt: Number.isFinite(x.createdAt) ? x.createdAt : now, updatedAt: now };
+  const snap = sanitizeSnap(x.snap); if (snap) out.snap = snap;          // prix gardés carte par carte (viewer) : absent tant qu'aucune recherche n'a été enregistrée
+  return out;
 }
 
 /** Lecture tolérante d'un document venu du stockage (local ou cloud). */
 function readDeck(id, d) {
   d = d || {};
   const n = (v, f) => Number.isFinite(v) ? v : f;
-  const out = deckDoc({ name: d.name, text: d.text, opts: d.opts, history: d.history, createdAt: n(d.createdAt, 0) }, n(d.updatedAt, 0));
+  const out = deckDoc({ name: d.name, text: d.text, opts: d.opts, history: d.history, snap: d.snap, createdAt: n(d.createdAt, 0) }, n(d.updatedAt, 0));
   out.id = String(id); return out;
 }
 
@@ -1130,7 +1273,8 @@ function recapOf(items) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
-    sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX };
+    sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
+    sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX };
 }
 
 
@@ -1353,6 +1497,9 @@ const DAY = 86400000;
 /* ── Scryfall : toutes les impressions papier d'une carte ─────────────────────────────────── */
 const imgOf = c => (c.image_uris && c.image_uris.small) || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris && c.card_faces[0].image_uris.small) || null;
 
+/** Données de la carte (communes à toutes ses impressions) : coût converti, coût de mana, type, couleurs — pour le deck viewer. */
+const metaOf = c => { const f0 = (c.card_faces && c.card_faces[0]) || {}; return { cmc: Number.isFinite(c.cmc) ? c.cmc : 0, mc: String(c.mana_cost || f0.mana_cost || '').slice(0, 60), tl: String(c.type_line || '').slice(0, 120), cl: (c.colors || f0.colors || []).join('') }; };
+
 async function scryPrints(name, signal, exactDone = false) { // exactDone : la recherche exacte a déjà eu lieu dans un lot réussi → inutile de la refaire
   const search = async n => {
     const q = '!"' + n.replace(/"/g, '') + '" game:paper';
@@ -1364,7 +1511,7 @@ async function scryPrints(name, signal, exactDone = false) { // exactDone : la r
       catch (e) { if (e.code === '404') return out; throw e; }
       for (const c of j.data || []) {
         if (c.oversized || c.set_type === 'memorabilia') continue;
-        out.push({ id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name });
+        out.push({ id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...metaOf(c) });
       }
       url = j.has_more ? j.next_page : null;
     }
@@ -1403,7 +1550,7 @@ async function scryPrintsBatch(cards, signal) {
     catch (e) { if (e.code === '404') break; throw e; }
     for (const c of j.data || []) {
       if (c.oversized || c.set_type === 'memorabilia') continue;
-      const pr = { id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name };
+      const pr = { id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...metaOf(c) };
       for (const k of keysOf(c.name)) { let a = got.get(k); if (!a) got.set(k, a = []); if (a.length < 600) a.push(pr); }
     }
     url = j.has_more ? j.next_page : null;
@@ -1615,7 +1762,7 @@ async function runLive(cards, opts, hooks, signal) {
   };
   try {
     // 1) cache (7 jours) · 2) recherche groupée par lots · 3) carte par carte pour les absentes (nom approximatif, lot en échec)
-    await pool(cards, 6, async c => { const pr = await Cache.get('sc:' + c.key, 7 * DAY); if (pr) { printsOf[c.key] = pr; done++; } });
+    await pool(cards, 6, async c => { const pr = await Cache.get('sc:' + c.key, 7 * DAY); if (pr && pr.length && pr[0].cmc !== undefined) { printsOf[c.key] = pr; done++; } });   // anciennes entrées sans coût de mana : relues une fois
     hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
     const single = [];
     for (const chunk of scryChunks(cards.filter(c => !printsOf[c.key]))) {
@@ -1656,9 +1803,9 @@ async function runLive(cards, opts, hooks, signal) {
   const plan = cards.map(c => ({ c, bps: mapBlueprints(c, printsOf[c.key], exps, bpIndex) }));
   const store = {}; const entries = [];
   for (const { c, bps } of plan) {
-    const img = (printsOf[c.key][0] || {}).img || null;
+    const p0 = printsOf[c.key][0] || {}, img = p0.img || null, meta = p0.cmc !== undefined ? { cm: p0.cmc, mc: p0.mc, tl: p0.tl, cl: p0.cl } : null;
     if (!printsOf[c.key].length) { hooks.card(c.key, { offers: [], bps: [], img, notFound: true }); continue; }
-    store[c.key] = { bps, img }; entries.push({ c, bps, img });
+    store[c.key] = { bps, img }; entries.push({ c, bps, img, meta });
   }
   const reqTotal = entries.reduce((a, e) => a + e.bps.length, 0) || 1, t0 = performance.now();
   hooks.step('offers', 'run', '0 / ' + reqTotal);
@@ -1667,7 +1814,7 @@ async function runLive(cards, opts, hooks, signal) {
     hooks.step('offers', 'run', done + ' / ' + total); hooks.progress(base.from + (base.to - base.from) * done / Math.max(1, total));
     if (info && info.mode === 'job') { hooks.hint(true); hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); } else { hooks.hint(false); hooks.rate(limCT.rps(), limCT.count); }
   };
-  const first = await offersPass(entries, opts.lang, opts, signal, (e, offers) => hooks.card(e.c.key, { offers, bps: e.bps, img: e.img }), tick({ from: 0.4, to: 0.95 }));
+  const first = await offersPass(entries, opts.lang, opts, signal, (e, offers) => hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, meta: e.meta }), tick({ from: 0.4, to: 0.95 }));
   hooks.cacheAge(first.cacheAge);
   hooks.step('offers', 'done', first.mode === 'job' ? 'sur le serveur · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s' : first.total + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
 
@@ -1677,7 +1824,7 @@ async function runLive(cards, opts, hooks, signal) {
       hooks.step('fallback', 'run', '0 / ' + miss.length); let fd = 0;
       const second = await offersPass(miss, 'en', opts, signal, (e, offers) => {
         fd++; hooks.step('fallback', 'run', fd + ' / ' + miss.length);
-        hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, fellBack: true });
+        hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, meta: e.meta, fellBack: true });
       }, (done, total, info) => { hooks.progress(0.95 + 0.05 * fd / miss.length); if (info && info.mode === 'job') hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); });
       hooks.cacheAge(second.cacheAge);
       hooks.step('fallback', 'done', miss.length + ' cartes');
@@ -2090,7 +2237,7 @@ function openSheet(title, sub, build) {
       syncFloat();
       wrap.classList.remove('open');
       setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 440);
-      if (!sheets.length) { const app = $('#app'); app.inert = false; app.removeAttribute('aria-hidden'); }
+      if (!sheets.length && !appHolds) { const app = $('#app'); app.inert = false; app.removeAttribute('aria-hidden'); }
       try { if (prev && prev.focus) prev.focus(); } catch (e) { /* ignore */ }
     },
     setFoot(html) { api.foot.hidden = !html; api.foot.innerHTML = html || ''; } };
@@ -2295,7 +2442,7 @@ async function startRun(fresh) {
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
   $('#progTitle').textContent = S.demo ? 'Recherche simulée' : 'Recherche des offres';
   $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
-  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…'; $('#progHint').hidden = true;
+  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…'; $('#progHint').hidden = true; $('#btnViewer').disabled = true;
   syncSegDeliv(); buildList(); updateHero(); updateDock();
   showView('results'); lockScreen();
 
@@ -2308,7 +2455,7 @@ async function startRun(fresh) {
     cacheAge: a => { if (alive() && a > run.cacheAge) run.cacheAge = a; },             // âge (s) du plus vieux prix servi par le cache du serveur
     card: (key, p) => {
       if (!alive()) return; const st = run.cards[key]; if (!st) return;
-      st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img;
+      st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img; if (p.meta) st.meta = p.meta;
       if (p.fellBack) st.fellBack = true;
       scheduleRecompute();
     },
@@ -2336,6 +2483,7 @@ async function startRun(fresh) {
       unlockScreen(); scheduleRecompute(true);
       if (run.status === 'done') recordRun();
       $('#heroPartial').hidden = true; $('#btnCancel').hidden = true; $('#progHint').hidden = true;
+      $('#btnViewer').disabled = run.status !== 'done' || !run.live;
       if (run.status === 'done') {
         setProgress(1); $('#progTitle').textContent = 'Recherche terminée';
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
@@ -2596,63 +2744,6 @@ function openCardSheet(key) {
       $('#btnAuto', api.foot).onclick = () => { delete S.overrides[key]; scheduleRecompute(true); api.close(); };
     }
   });
-}
-
-/* ── Image de la carte en grand ───────────────────────────────────────────────────────────────── */
-let imgView = null;
-function closeCardImage() { if (imgView) imgView.close(); }
-/** Ouvre la carte en grand, dans la langue de l'offre retenue (français si FR, anglais pour un repli). */
-function openCardImage(key) {
-  const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return;
-  const st = S.run.cards[key] || {}, v = cardView(c);
-  const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null, bp = (st.bps || [])[0] || {};
-  const small = (o && o.img) || st.img || bp.img; if (!small) return;
-  const lang = o && o.lang ? o.lang : 'en', set = o ? (o.sset || o.set) : bp.set, num = o ? o.num : bp.num;
-  closeCardImage();
-  const enBig = small.replace('/small/', '/large/');           // même image que la vignette, en grande taille
-  const wrap = document.createElement('div'); wrap.className = 'imgv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', c.name);
-  wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
-    <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" src="${esc(small)}"><img class="imgv-img" alt="${esc(c.name)}" hidden><span class="imgv-spin"></span></div>
-    <div class="imgv-cap"><b>${esc(c.name)}</b><span class="imgv-sub"></span></div>
-    <button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button>`;
-  const ctrl = new AbortController(), card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap);
-  const prev = document.activeElement, app = $('#app');
-  const where = [o && o.setName, set && num ? set.toUpperCase() + ' ' + num : ''].filter(Boolean).join(' · ');
-  const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
-  const caption = (l0, note) => { const l = lk(l0); sub.innerHTML = `<span class="imgv-lang">${flag(l)}${esc(LANGS[l] || l)}</span>${where ? `<span>${esc(where)}</span>` : ''}${note ? `<em>${esc(note)}</em>` : ''}`; };
-  caption(lang === 'en' ? 'en' : lang, '');
-  const api = imgView = { close() {
-    if (imgView !== api) return; imgView = null; ctrl.abort();
-    wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
-    setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 260);
-    if (!sheets.length) { app.inert = false; app.removeAttribute('aria-hidden'); }
-    try { if (prev && prev.focus && prev.isConnected) prev.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
-  } };
-  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); api.close(); } };
-  document.addEventListener('keydown', onKey, true);
-  wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('.imgv-x')) api.close(); });
-  document.body.appendChild(wrap); app.inert = true; app.setAttribute('aria-hidden', 'true');
-  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
-  haptic('tap');
-
-  let urls = [], face = 0;
-  const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
-    face = i; const probe = new Image();
-    probe.onload = () => { if (imgView !== api) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
-    probe.onerror = () => { if (imgView !== api) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
-    img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
-  };
-  flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
-  (async () => {
-    let r = null;
-    if (!scryLeft()) { try { r = await scryImage({ set, num, lang }, ctrl.signal); } catch (e) { if (e.name === 'AbortError') return; } }
-    if (imgView !== api) return;
-    if (r && r.urls.length) {
-      urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
-      flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
-    } else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
-    show(0);
-  })();
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
@@ -3005,7 +3096,7 @@ function localWrite(list) {
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); return true; }
   catch (e) { toast('Stockage local indisponible : le deck ne sera pas conservé'); return false; }
 }
-const stripDeck = d => ({ name: d.name, text: d.text, opts: d.opts, cards: d.cards, history: d.history, createdAt: d.createdAt, updatedAt: d.updatedAt });
+const stripDeck = d => ({ name: d.name, text: d.text, opts: d.opts, cards: d.cards, history: d.history, createdAt: d.createdAt, updatedAt: d.updatedAt });   // les prix gardés (snap) restent dans snapsRead() pour les decks locaux
 const allDecks = () => (D.user ? D.list : D.localList);
 const findDeck = id => (id ? allDecks().find(d => d.id === id) || null : null);
 const cloudOn = () => !!(D.user && D.cloud);
@@ -3024,7 +3115,14 @@ function deckErr(err) {
 function putDeck(id, doc) {
   if (cloudOn()) {
     D.pending = true; paintSync();
-    return D.cloud.save(D.user.uid, id, doc).catch(err => { D.pending = false; D.listErr = ''; paintSync(); toast(deckErr(err)); });
+    const bare = d => { const o = { ...d }; delete o.snap; return o; };
+    const fail = err => { D.pending = false; D.listErr = ''; paintSync(); toast(deckErr(err)); };
+    // Règles Firestore pas encore à jour : elles refusent le champ « snap ». On renvoie le deck sans lui (les prix restent sur cet appareil) et on n'insiste plus de la session.
+    if (doc.snap && D.noSnap) doc = bare(doc);
+    return D.cloud.save(D.user.uid, id, doc).catch(err => {
+      if (err && err.code === 'permission-denied' && doc.snap) { D.noSnap = true; return D.cloud.save(D.user.uid, id, bare(doc)).catch(fail); }
+      fail(err);
+    });
   }
   const full = { id, ...doc }, i = D.localList.findIndex(d => d.id === id);
   if (i >= 0) D.localList[i] = full; else D.localList.unshift(full);
@@ -3035,6 +3133,7 @@ function putDeck(id, doc) {
 }
 function removeDeck(id) {
   if (S.deckId === id) S.deckId = null;
+  snapDrop(id);
   if (cloudOn()) return D.cloud.remove(D.user.uid, id).catch(err => toast(deckErr(err)));
   D.localList = D.localList.filter(d => d.id !== id);
   localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
@@ -3060,8 +3159,10 @@ function saveCurrent(name) {
   let history = prev ? prev.history : [];
   const e = S.run && S.run.text.trim() === text.trim() ? snapshotEntry() : null;
   if (e) history = pushHistory(history, e);
-  const doc = deckDoc({ name: name || (prev && prev.name), text, opts: S.opts, history, createdAt: prev && prev.createdAt });
+  const snap = e ? buildSnap() : null;
+  const doc = deckDoc({ name: name || (prev && prev.name), text, opts: S.opts, history, snap: snap || (prev && prev.snap), createdAt: prev && prev.createdAt });
   const id = prev ? prev.id : newIdFor();
+  if (snap) snapSave(id, snap);
   putDeck(id, doc);
   S.deckId = id;
   if (e) S.runDelta = deltaFor(history);
@@ -3075,8 +3176,9 @@ function recordRun() {
   const d = findDeck(S.deckId); if (!d) return;
   if (S.run.text.trim() !== d.text.trim()) return;
   const e = snapshotEntry(); if (!e) return;
-  const history = pushHistory(d.history, e);
-  putDeck(d.id, deckDoc({ ...d, history }));
+  const history = pushHistory(d.history, e), snap = buildSnap();
+  if (snap) snapSave(d.id, snap);
+  putDeck(d.id, deckDoc({ ...d, history, snap: snap || d.snap }));
   S.runDelta = deltaFor(history); updateHeroDelta();
 }
 
@@ -3100,13 +3202,14 @@ function applyOpts(o) {
   $('#segFoil').setValue(o.foil); $('#segMode').setValue(o.mode);
   syncShip(); modeHint(); saveStore();
 }
-function loadDeck(id) {
+function loadDeck(id, quiet) {
   const d = findDeck(id); if (!d) return;
   if (S.run && S.run.status === 'running') S.run.ctrl.abort();
   $('#deckText').value = d.text; S.isSample = false; S.deckId = d.id; S.runDelta = null;
   applyOpts(d.opts);
   if (S.view !== 'input') showView('input');
   refreshDeck(); updateSaveButtons();
+  if (quiet) return;
   window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' });
   toast('Deck chargé');
 }
@@ -3122,6 +3225,7 @@ function deckCard(d, i) {
   return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
     <button class="deck-main" type="button" data-act="open"><span class="deck-name">${esc(d.name)}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
     <span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span>
+    <button class="deck-view" type="button" data-act="view" aria-label="Voir ${esc(d.name)} dans le viewer">Voir</button>
     <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
 }
 function renderDecks() {
@@ -3369,6 +3473,7 @@ function initDecks() {
   $('#btnAccount').onclick = openAccount;
   $('#decksSync').onclick = openAccount;
   $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast('Deck mis à jour'); } else openSaveSheet(); };
+  $('#btnViewer').onclick = () => openDeckViewer({ live: true });
   $('#btnSave2').onclick = () => {
     if (!S.run) return;
     if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast(snapshotEntry() ? 'Deck et prix mis à jour' : 'Deck mis à jour'); } else openSaveSheet();
@@ -3377,12 +3482,260 @@ function initDecks() {
     const b = e.target.closest('[data-act]'); if (!b) return;
     if (b.dataset.act === 'import') { b.disabled = true; importLocal(); return; }
     const id = (b.closest('.deck') || {}).dataset && b.closest('.deck').dataset.id; if (!id) return;
-    if (b.dataset.act === 'open') loadDeck(id); else if (b.dataset.act === 'more') openDeckSheet(id);
+    if (b.dataset.act === 'open') loadDeck(id); else if (b.dataset.act === 'view') openDeckViewer({ id }); else if (b.dataset.act === 'more') openDeckSheet(id);
   });
   $('#btnMoreDecks').onclick = () => { D.expanded = !D.expanded; renderDecks(); };
   $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
   renderAccountBtn(); renderDecks();
   setTimeout(connectCloud, 0);
+}
+
+
+/* ── viewer.js : carte en grand (navigable) + deck viewer (prix gardés, façon MTGA) ─────────────────────── */
+
+/* L'app derrière une surcouche plein écran est inerte ; plusieurs surcouches peuvent s'empiler (viewer → carte en grand). */
+let appHolds = 0;
+function holdApp() { appHolds++; const a = $('#app'); a.inert = true; a.setAttribute('aria-hidden', 'true'); }
+function releaseApp() { appHolds = Math.max(0, appHolds - 1); if (!appHolds && !sheets.length) { const a = $('#app'); a.inert = false; a.removeAttribute('aria-hidden'); } }
+
+/* ── Carte en grand ───────────────────────────────────────────────────────────────────────────── */
+let imgView = null;
+function closeCardImage() { if (imgView) imgView.close(); }
+
+/** Fiche image d'une carte de la liste de résultats : langue de l'offre retenue (français si FR, anglais pour un repli). */
+function cardImageItem(key) {
+  const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return null;
+  const st = S.run.cards[key] || {}, v = cardView(c);
+  const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null, bp = (st.bps || [])[0] || {};
+  const small = (o && o.img) || st.img || bp.img; if (!small) return null;
+  return { key, name: c.name, small, lang: o && o.lang ? o.lang : 'en', set: o ? (o.sset || o.set) : bp.set, num: o ? o.num : bp.num, setName: o && o.setName, extra: '' };
+}
+/** Depuis la liste de résultats : la carte touchée, et on peut passer aux suivantes dans l'ordre affiché. */
+function openCardImage(key) {
+  if (!S.run) return;
+  const items = [];
+  for (const rw of $$('#list .rw')) { if (rw.hidden) continue; const it = cardImageItem(rw.dataset.key); if (it) items.push(it); }
+  const i = items.findIndex(x => x.key === key); if (i < 0) return;
+  openCardViewer(items, i);
+}
+
+/**
+ * Visionneuse : items = [{ key, name, small, lang, set, num, setName, extra }] ; index de départ.
+ * Précédent / suivant : boutons, flèches du clavier, glissement. Chaque carte est chargée dans sa langue (repli anglais signalé).
+ */
+function openCardViewer(items, index) {
+  if (!items.length) return;
+  closeCardImage();
+  const wrap = document.createElement('div'); wrap.className = 'imgv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
+  const multi = items.length > 1;
+  wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
+    ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
+    <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
+    <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span></div>
+    <button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button>`;
+  const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap);
+  const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
+  const prevFocus = document.activeElement;
+  const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
+  let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '';
+  const api = imgView = { close() {
+    if (imgView !== api) return; imgView = null; if (ctrl) ctrl.abort();
+    wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
+    setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 260);
+    releaseApp();
+    try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  } };
+  const caption = (l0, note) => { const l = lk(l0); sub.innerHTML = `<span class="imgv-lang">${flag(l)}${esc(LANGS[l] || l)}</span>${where ? `<span>${esc(where)}</span>` : ''}${note ? `<em>${esc(note)}</em>` : ''}`; };
+  const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
+    face = i; const probe = new Image(), mine = it;
+    probe.onload = () => { if (imgView !== api || it !== mine) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
+    probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
+    img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
+  };
+  const go = n => {
+    idx = n; it = items[n]; if (ctrl) ctrl.abort(); ctrl = new AbortController(); const my = ctrl, mine = it;
+    lang = it.lang || 'en'; enBig = it.small.replace('/small/', '/large/'); urls = []; face = 0;
+    where = [it.setName, it.set && it.num ? String(it.set).toUpperCase() + ' ' + it.num : ''].filter(Boolean).join(' · ');
+    wrap.setAttribute('aria-label', it.name); title.textContent = it.name;
+    ph.src = it.small; ph.hidden = false; img.hidden = true; img.classList.remove('ok'); img.removeAttribute('src'); card.dataset.busy = '1'; img.alt = it.name;
+    caption(lang, ''); flipB.hidden = true; flipB.textContent = 'Retourner la carte';
+    extra.textContent = it.extra || ''; extra.hidden = !it.extra;
+    if (multi) { countEl.textContent = (n + 1) + ' / ' + items.length; prevB.disabled = n === 0; nextB.disabled = n === items.length - 1; }
+    (async () => {
+      let r = null;
+      if (!scryLeft()) { try { r = await scryImage({ set: it.set, num: it.num, lang }, my.signal); } catch (e) { if (e.name === 'AbortError') return; } }
+      if (imgView !== api || it !== mine) return;
+      if (r && r.urls.length) {
+        urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
+        flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
+      } else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
+      show(0);
+    })();
+  };
+  const step = d => { const n = idx + d; if (!multi || n < 0 || n >= items.length) return; haptic('tap'); go(n); };
+  const onKey = e => {
+    if (e.key === 'Escape') { e.stopPropagation(); api.close(); }
+    else if (e.key === 'ArrowRight') { e.stopPropagation(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.stopPropagation(); step(-1); }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('click', e => {
+    if (e.target === wrap || e.target.closest('.imgv-x')) return api.close();
+    if (e.target.closest('.imgv-nav.prev')) step(-1); else if (e.target.closest('.imgv-nav.next')) step(1);
+  });
+  flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
+  let sx = null, sy = 0;                                         // glissement horizontal : carte suivante / précédente
+  wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 ? t.clientX : null; sy = t.clientY; }, { passive: true });
+  wrap.addEventListener('touchend', e => { if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1); }, { passive: true });
+  document.body.appendChild(wrap); holdApp();
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
+  haptic('tap'); go(idx);
+}
+
+/* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
+const DV_SORT_KEY = 'deckdeal:dv-sort';
+const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, prevFocus: null, flat: [] };
+try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
+
+/** Relevé de la recherche en cours, carte par carte (null si pas de vraie recherche terminée). */
+function buildSnap() {
+  if (S.demo || !S.run || S.run.status !== 'done' || !S.run.live || !S.res) return null;
+  const sig = [S.opts.lang, S.opts.cond, S.opts.foil].join('|');
+  if (sig !== S.run.sig) return null;                        // critères modifiés depuis la recherche : les prix ne correspondraient plus
+  const items = [];
+  for (const c of S.deck.cards) {
+    const st = S.run.cards[c.key] || {}, v = cardView(c), m = st.meta || {}, bp = (st.bps || [])[0] || {};
+    const it = { k: c.key, n: c.name, q: c.qty, s: v.s === 'ok' ? 'ok' : v.s === 'notfound' ? 'nf' : v.s === 'nohub' ? 'nohub' : 'none' };
+    if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
+    const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null;
+    it.im = (o && o.img) || st.img || bp.img || '';
+    if (o) {
+      it.c = v.pick.cost; it.l = o.lang || ''; it.d = COND_SHORT[o.cond] || ''; it.st = o.sset || o.set || ''; it.nu = o.num || ''; it.sn = o.setName || ''; it.sl = o.seller + (o.country ? ' · ' + o.country : '');
+      if (st.fellBack && o.lang === 'en') it.fb = 1;
+      if (v.pick.short > 0) it.sh = v.pick.short;
+    } else { it.st = bp.set || ''; it.nu = bp.num || ''; it.sn = bp.setName || ''; }
+    items.push(it);
+  }
+  for (const b of S.deck.basics || []) items.push({ k: b.key, n: b.name, q: b.qty, s: 'basic' });
+  return sanitizeSnap({ at: Date.now(), mode: S.opts.mode, lang: S.opts.lang, sig, items });
+}
+
+/* Relevés gardés sur cet appareil (toujours) ; ils sont aussi dans le document du deck quand le compte l'accepte (règles Firestore à jour). */
+const SNAPS_KEY = 'deckdeal:snaps:v1';
+function snapsRead() { try { const o = JSON.parse(localStorage.getItem(SNAPS_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+function snapSave(id, snap) {
+  if (!id || !snap) return;
+  const all = snapsRead(); all[id] = snap;
+  const keep = Object.keys(all).sort((a, b) => ((all[b] && all[b].at) || 0) - ((all[a] && all[a].at) || 0)).slice(0, 30), out = {};
+  for (const k of keep) out[k] = all[k];
+  try { localStorage.setItem(SNAPS_KEY, JSON.stringify(out)); } catch (e) { /* quota : le relevé du compte reste utilisable */ }
+}
+function snapDrop(id) { const all = snapsRead(); if (!(id in all)) return; delete all[id]; try { localStorage.setItem(SNAPS_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ } }
+const snapOf = d => (d ? newestSnap(d.snap, sanitizeSnap(snapsRead()[d.id])) : null);
+
+const dvImg = it => (it.im ? it.im.replace('/small/', '/normal/') : '');
+const dvLetter = it => esc((it.n.trim()[0] || '?').toUpperCase());
+function dvTile(it, i, snap) {
+  const hue = hash32(it.k) % 360, art = dvImg(it);
+  const tag = it.s === 'ok' ? `<span class="dvc-p">${esc(fmt(it.c))}</span>`
+    : it.s === 'nf' ? '<span class="dvc-p bad">Introuvable</span>' : it.s === 'basic' ? '' : '<span class="dvc-p warn">Aucune offre</span>';
+  const en = it.s === 'ok' && it.l && snap.lang && it.l !== snap.lang ? `<span class="dvc-l">${esc(it.l.toUpperCase())}</span>` : '';
+  const q = it.q > 1 ? `<span class="dvc-q">×${it.q}</span>` : '';
+  const label = `${it.n}${it.q > 1 ? ', ×' + it.q : ''}${it.s === 'ok' ? ', ' + fmt(it.c) : it.s === 'nf' ? ', introuvable' : it.s === 'basic' ? '' : ', aucune offre'}`;
+  return `<button type="button" class="dvc" data-s="${it.s}" data-i="${i}" aria-label="${esc(label)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>${q}${en}${tag}</button>`;
+}
+function dvCurve(items) {
+  const c = curveOf(items), max = Math.max(1, ...c);
+  return `<div class="dv-curve" role="img" aria-label="Courbe de mana : ${c.map((n, m) => n + ' carte' + (n > 1 ? 's' : '') + ' à ' + (m === 7 ? '7 et plus' : m)).join(', ')}">${c.map((n, m) => `<button type="button" class="dv-bar" data-m="${m}" ${n ? '' : 'disabled'} aria-label="Coût ${m === 7 ? '7 et plus' : m} : ${n}"><span class="dv-n">${n || ''}</span><span class="dv-col"><i style="height:${Math.round(n / max * 100)}%"></i></span><span class="dv-x">${m === 7 ? '7+' : m}</span></button>`).join('')}</div>`;
+}
+function dvRender() {
+  const snap = DV.snap, el = DV.el; if (!el) return;
+  const scroller = $('.dv-scroll', el), keep = scroller ? scroller.scrollTop : 0;
+  if (!snap) {
+    $('.dv-body', el).innerHTML = `<div class="dv-empty"><b>Aucun prix gardé pour ce deck</b><p>Lance une recherche : les prix, les cartes et leur coût de mana seront gardés ici pour les revoir sans attendre.</p>${DV.deckId ? '<button class="btn" type="button" data-act="refresh">Chercher les prix</button>' : ''}</div>`;
+    $('.dv-title span', el).textContent = ''; $('.dv-foot', el).hidden = !DV.deckId; return;
+  }
+  const items = snap.items, found = items.filter(i => i.s === 'ok'), total = found.reduce((a, i) => a + i.c, 0);
+  const copies = items.reduce((a, i) => a + i.q, 0), miss = items.filter(i => i.s === 'nf').length, none = items.filter(i => i.s === 'none' || i.s === 'nohub').length;
+  const groups = groupSnap(items, DV.sort); DV.flat = []; let n = 0;
+  const old = !DV.live && snapAge(snap) === 'old';
+  const crit = [LANGS[snap.lang] || snap.lang, snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
+  const when = DV.live ? 'Prix de la recherche en cours' : `Prix du ${dateShort(snap.at)} · ${relTime(snap.at)}`;
+  $('.dv-title span', el).textContent = `${copies} carte${copies > 1 ? 's' : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}`;
+  $('.dv-body', el).innerHTML = `<section class="dv-sum">
+      <div class="dv-total"><span class="dv-eur">${esc(fmt(total))}</span><span class="dv-crit">Articles · ${esc(crit)}</span></div>
+      <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
+      ${dvCurve(items)}
+    </section>
+    <div class="seg dv-seg" id="dvSeg"></div>
+    <div class="dv-groups">${groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + esc(fmt(g.cost)) : ''}</small></h3><div class="dv-grid">${g.items.map(it => { DV.flat.push(it); return dvTile(it, n++, snap); }).join('')}</div></section>`).join('')}</div>`;
+  mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: 'Prix' }, { v: 'type', label: 'Type' }], DV.sort, v => {
+    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); dvRender();
+    const g = $('.dv-groups', DV.el); if (g && scroller) scroller.scrollTop = Math.min(scroller.scrollTop, g.offsetTop - 8);
+  });
+  $('#dvSeg', el).setValue(DV.sort);
+  $('.dv-foot', el).hidden = false; $('.dv-foot [data-act="edit"]', el).hidden = DV.live || !DV.deckId; $('.dv-foot [data-act="refresh"]', el).hidden = DV.live || !DV.deckId;
+  $('.dv-foot [data-act="close"]', el).hidden = !DV.live;
+  if (scroller) scroller.scrollTop = keep;
+}
+function dvItemFor(it) {
+  if (it.s === 'basic' || it.s === 'nf' || !it.im) return null;
+  const extra = it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + it.q : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') : 'Aucune offre avec tes critères';
+  return { key: it.k, name: it.n, small: it.im, lang: it.l || 'en', set: it.st, num: it.nu, setName: it.sn, extra };
+}
+function dvOpenCard(i) {
+  const list = [], at = new Map();
+  DV.flat.forEach((it, k) => { const v = dvItemFor(it); if (v) { at.set(k, list.length); list.push(v); } });
+  if (at.has(i)) openCardViewer(list, at.get(i));
+}
+function closeDeckViewer() { if (DV.el) DV.el.__close(); }
+/** Ouvre le viewer d'un deck enregistré ({ id }) ou de la recherche en cours ({ live: true }). */
+function openDeckViewer({ id, live } = {}) {
+  closeDeckViewer(); closeCardImage();
+  const d = id ? findDeck(id) : null;
+  DV.live = !!live; DV.deckId = id || (live ? S.deckId : null) || null;
+  DV.snap = live ? buildSnap() : snapOf(d);
+  DV.name = d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
+  if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
+  const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Deck viewer · ' + DV.name);
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le viewer"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div></header>
+    <div class="dv-scroll"><div class="dv-body"></div></div>
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">Modifier la liste</button><button class="btn" type="button" data-act="refresh">Actualiser</button><button class="btn" type="button" data-act="close">Fermer</button></footer>`;
+  DV.el = wrap; DV.prevFocus = document.activeElement;
+  const onKey = e => { if (e.key === 'Escape' && !imgView) { e.stopPropagation(); wrap.__close(); } };
+  wrap.__close = () => {
+    if (DV.el !== wrap) return; DV.el = null; document.removeEventListener('keydown', onKey, true);
+    wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
+    try { if (DV.prevFocus && DV.prevFocus.focus && DV.prevFocus.isConnected) DV.prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+  wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);   // image absente : la vignette de nom reste
+  wrap.addEventListener('click', e => {
+    const tile = e.target.closest('.dvc'); if (tile) return dvOpenCard(Number(tile.dataset.i));
+    const bar = e.target.closest('.dv-bar'); if (bar && !bar.disabled) {
+      const m = bar.dataset.m; const go = () => { const g = $(`.dv-g[data-g="m${m}"]`, wrap); if (g) { $('.dv-scroll', wrap).scrollTo({ top: g.offsetTop - 56, behavior: reduceMotion() ? 'auto' : 'smooth' }); } };
+      if (DV.sort !== 'mana') { DV.sort = 'mana'; dvRender(); } haptic('tap'); return go();
+    }
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const act = b.dataset.act, deck = DV.deckId;
+    if (act === 'close') wrap.__close();
+    else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
+    else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
+  });
+  document.body.appendChild(wrap); holdApp(); dvRender();
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  haptic('tap');
+}
+/** « Actualiser » : recharge le deck, relit les prix (cache serveur ignoré) puis propose de revenir au viewer. */
+async function refreshDeckPrices(id) {
+  const d = findDeck(id); if (!d) return;
+  const before = (snapOf(d) || {}).at || 0;
+  loadDeck(id, true);
+  await startRun(true);
+  const cur = findDeck(id), now = snapOf(cur);
+  if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
 }
 
 

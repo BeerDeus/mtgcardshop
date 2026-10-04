@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Existant, inchangé
+    match /games/{gameId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Deck Deal : chacun ne lit et n'écrit que ses propres decks
+    match /users/{uid}/decks/{deckId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'text', 'opts', 'cards', 'history', 'snap', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['name', 'text', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.text is string && request.resource.data.text.size() <= 60000
+        && request.resource.data.updatedAt is number
+        && (!('history' in request.resource.data)
+            || (request.resource.data.history is list && request.resource.data.history.size() <= 12))
+        // Prix gardés carte par carte (deck viewer) : facultatif, borné
+        && (!('snap' in request.resource.data)
+            || (request.resource.data.snap is map
+                && request.resource.data.snap.keys().hasOnly(['at', 'mode', 'lang', 'sig', 'items'])
+                && request.resource.data.snap.items is list
+                && request.resource.data.snap.items.size() <= 400));
+    }
+  }
+}

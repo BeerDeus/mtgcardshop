@@ -67,9 +67,20 @@ CardTrader limite `marketplace/products` à 10 requêtes/s (1 blueprint par requ
 
 Limite à connaître : le cache et les tâches vivent en mémoire du processus. Si l'hébergeur le redémarre ou le met en veille pendant une lecture, l'app relance la tâche pour ce qui manque (le cache est alors perdu).
 
+## Deck viewer et prix gardés
+
+Chaque recherche live d'un deck enregistré garde les prix carte par carte (carte retenue, langue, état, vendeur, extension, coût de mana, type, image) : sur l'appareil (`deckdeal:snaps:v1`, 30 decks max) et, si les règles Firestore le permettent, dans le document du deck (champ `snap`, synchronisé entre appareils).
+
+- Liste « Mes decks » › **Voir** : viewer plein écran du deck, sans nouvelle recherche. Aussi dans les résultats : bouton **Viewer** (recherche en cours).
+- Tri **Mana** (colonnes par coût, terrains à part, courbe de mana cliquable), **Prix** (du plus cher au moins cher) ou **Type** ; le choix est mémorisé.
+- Toucher une carte l'ouvre en grand (langue de l'offre) ; précédent / suivant par boutons, flèches du clavier ou glissement ; prix, état et vendeur sous l'image.
+- Âge des prix affiché (« Prix du 4 oct. · il y a 3 jours »), en orange après 24 h ; **Actualiser** relit tout (cache serveur ignoré) puis propose de revenir au viewer.
+
+**Règles Firestore à republier** (Firebase › Firestore › Règles, contenu de `firestore.rules`) pour synchroniser les prix entre appareils : le champ `snap` a été ajouté à la liste autorisée. Tant que ce n'est pas fait, l'app renvoie le deck sans `snap` (aucune erreur visible) et garde les prix sur l'appareil seulement.
+
 ## Carte en grand
 
-Toucher l'image d'une carte l'affiche en grand, dans la langue de l'offre retenue (Scryfall `/cards/<ext>/<n°>/<langue>`) ; si Scryfall n'a pas la version française, l'anglaise est affichée avec une mention. Cartes double face : bouton « Retourner ».
+Toucher l'image d'une carte l'affiche en grand (précédent / suivant dans l'ordre de la liste), dans la langue de l'offre retenue (Scryfall `/cards/<ext>/<n°>/<langue>`) ; si Scryfall n'a pas la version française, l'anglaise est affichée avec une mention. Cartes double face : bouton « Retourner ».
 
 ## Installation (PWA)
 
