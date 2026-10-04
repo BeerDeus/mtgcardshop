@@ -100,7 +100,9 @@ Bouton **Ma collection** sur l'accueil. Les cartes possédées sont retirées de
 Collection › icône appareil photo. Seul le **nom** de la carte est lu (bande du titre), jamais le reste : le texte est comparé au catalogue Scryfall et c'est la carte officielle qui est ajoutée, avec sa miniature Scryfall pour vérifier d'un coup d'œil.
 
 - ≥ 84 % de ressemblance : ajoutée ; 72–84 % : « à vérifier » (miniature + bouton ✓, jamais ajoutée seule) ; en dessous : ligne « nom non reconnu » avec « Saisir ». Rien n'est enregistré avant « Ajouter » ; quantités et suppression corrigeables.
-- Caméra en continu (mode Auto : une carte tenue devant l'objectif n'est comptée qu'une fois), ou **Photos** : « 1 carte / photo » (le plus fiable) ou « Plusieurs / photo » (lecture par bandes, noms anglais, chaque carte comptée une fois).
+- **1 carte à la fois** (le plus fiable) : cadre de la taille d'une carte, nom dans la bande ; en mode Auto, une carte tenue devant l'objectif n'est comptée qu'une fois.
+- **Plusieurs côte à côte** : le cadre prend toute la largeur ; pose tes cartes en ligne, alignées par le haut (3 ou 4 tiennent bien), et tous les noms de la bande sont lus d'un coup. Chaque carte est ajoutée à sa première lecture sûre et ne recompte pas tant qu'elle reste dans le cadre ; retire-la du cadre puis repose-la pour en ajouter un exemplaire de plus (ou corrige la quantité dans la liste). Une lecture douteuse n'apparaît « à vérifier » qu'après deux lectures concordantes. Noms anglais seulement.
+- **Photos** (importer des photos prises avant) : « 1 carte à la fois » ou « Plusieurs côte à côte » (lecture par bandes, chaque carte comptée une fois).
 - Français expérimental : le nom imprimé est cherché chez Scryfall (`lang:fr`) puis converti en nom anglais.
 - Tesseract.js (≈ 3 Mo de modèle) est chargé depuis le CDN jsDelivr au premier scan seulement ; la lecture se fait sur l'appareil, aucune image n'est envoyée. Il faut https pour la caméra (la page « Photos » marche partout).
 

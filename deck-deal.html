@@ -738,6 +738,8 @@ button.sync:active{background:var(--surface-2)}
 .sc-stage{position:relative;flex:none;height:min(34dvh,340px);background:#05070f;overflow:hidden}
 .sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 999px rgba(5,7,15,.42);pointer-events:none}
+.sc-stage[data-mode="many"] .sc-guide{aspect-ratio:auto;width:96%;max-width:none;height:86%;border-radius:10px}
+.sc-stage[data-mode="many"] .sc-band{height:32%;border-radius:8px 8px 0 0}
 .sc-band{position:absolute;left:0;right:0;top:0;height:20%;border-radius:10px 10px 0 0;background:rgba(146,156,255,.22);border-bottom:2px dashed rgba(255,255,255,.85)}
 .sc-flash{position:absolute;inset:0;background:#7be8b4;opacity:0;pointer-events:none}
 .sc-flash.go{animation:scflash .5s ease-out}
@@ -1830,6 +1832,35 @@ function makeGate(gap = 3) {
   return { feed(k) { if (!k) { absent++; return false; } if (k === key && absent < gap) { absent = 0; return false; } key = k; absent = 0; return true; }, reset() { key = null; absent = 0; } };
 }
 
+/** Même idée pour plusieurs cartes côte à côte. Chaque lecture donne les cartes sûres [{ key, q }] et les douteuses [key] :
+ *  une carte sûre est ajoutée à sa première lecture (puis seulement si on en voit davantage), tant qu'elle reste dans le cadre elle ne recompte pas,
+ *  et elle ne peut être recomptée qu'après `gap` lectures sans elle ; une douteuse n'est proposée (« à vérifier ») qu'après `confirm` lectures de suite.
+ *  feed(sûres, douteuses) → { add: [{ key, d }] (d = exemplaires en plus, 0 = simple confirmation), maybe: [key] }. */
+function makeMultiGate(gap = 3, confirm = 2) {
+  const seen = new Map(), pend = new Map();
+  return {
+    feed(sure, maybe) {
+      const add = [], out = [], now = new Set();
+      for (const { key, q } of sure) {
+        now.add(key); const n = Math.max(1, q | 0), t = seen.get(key);
+        if (!t) { seen.set(key, { n, absent: 0, maybe: false }); add.push({ key, d: n }); pend.delete(key); }
+        else { t.absent = 0; if (t.maybe) { t.maybe = false; add.push({ key, d: 0 }); } if (n > t.n) { add.push({ key, d: n - t.n }); t.n = n; } }
+      }
+      for (const [k, t] of seen) if (!now.has(k) && !(maybe || []).includes(k)) { if (++t.absent >= gap) seen.delete(k); }
+      const cand = new Set();
+      for (const key of maybe || []) {
+        if (now.has(key)) continue; cand.add(key);
+        const t = seen.get(key); if (t) { t.absent = 0; continue; }
+        const c = (pend.get(key) || 0) + 1; pend.set(key, c);
+        if (c >= confirm) { seen.set(key, { n: 1, absent: 0, maybe: true }); pend.delete(key); out.push(key); }
+      }
+      for (const k of [...pend.keys()]) if (!cand.has(k)) pend.delete(k);
+      return { add, maybe: out };
+    },
+    reset() { seen.clear(); pend.clear(); },
+  };
+}
+
 /* ── Partage vers l'app (Web Share Target) ───────────────────────────────────────────────────── */
 const URL_RE = /https?:\/\/[^\s<>"')]+/gi;
 /** Paramètres reçus (title, text, url) → { text, urls } : le texte est gardé s'il ressemble à une decklist (3 cartes ou plus), les liens sont listés. */
@@ -1847,7 +1878,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
-    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeGate, extractShared };
+    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeGate, makeMultiGate, extractShared };
 }
 
 
@@ -4996,7 +5027,7 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
-const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', alive: false, gate: makeGate(3), sug: null, seq: 0, tickT: 0 };
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0 };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
@@ -5074,12 +5105,31 @@ async function readMany(img, cat, prog) {
   return [...res.values()];
 }
 
+/** Cartes côte à côte devant l'objectif : toute la bande des noms est lue, chaque nom retrouvé est traité séparément. retry : relit en polarité inverse (lecture manuelle). */
+async function readBand(src, box, cat, retry) {
+  const res = new Map();
+  const take = ms => { for (const m of ms) { const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); } } };
+  const c1 = prepCanvas(src, box, 2000); take(ocrMatches(await ocrLines(c1, SC.lang, '6'), cat.idx, true));
+  if (retry && SC.el) take(ocrMatches(await ocrLines(prepCanvas(src, box, 2000, c1.inv ? 0 : 1), SC.lang, '6'), cat.idx, true));
+  return [...res.values()];
+}
+/** Lecture en continu de plusieurs cartes : sûres ajoutées une fois chacune, douteuses proposées après deux lectures concordantes. */
+function scanGotMany(ms) {
+  const by = new Map(ms.map(m => [m.key, m])), sure = ms.filter(m => m.score >= 0.84), maybe = ms.filter(m => m.score < 0.84 && m.score >= 0.72);
+  const out = SC.mgate.feed(sure.map(m => ({ key: m.key, q: Math.min(m.q, 4) })), maybe.map(m => m.key));
+  const fresh = out.add.filter(a => a.d > 0).map(a => by.get(a.key).name);
+  for (const a of out.add) scanAdd(by.get(a.key), a.d, false);
+  for (const k of out.maybe) scanAdd(by.get(k), 1, true);
+  if (fresh.length) { haptic('ok'); scanFlash(); scanHint('✓ ' + fresh.slice(0, 3).join(', ') + (fresh.length > 3 ? ` +${fresh.length - 3}` : ''), 'ok'); }
+  else if (out.maybe.length) scanHint('À vérifier : ' + by.get(out.maybe[0]).name, 'busy');
+}
+
 /* — Appareil photo — */
 function scanBox() {
   const v = $('.sc-video', SC.el), stage = $('.sc-stage', SC.el), g = $('.sc-guide', SC.el);
   if (!v.videoWidth) return null;
   const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect();
-  return coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height * 0.2 });
+  return coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height * (SC.mode === 'many' ? 0.32 : 0.2) });
 }
 async function scanShot(manual) {
   if (SC.busy || !SC.el) return;
@@ -5088,6 +5138,16 @@ async function scanShot(manual) {
   try {
     const cat = await collCatalog();
     if (manual) scanHint('Lecture…', 'busy');
+    if (SC.mode === 'many') {
+      const ms = await readBand($('.sc-video', SC.el), box, cat, !!manual);
+      if (!SC.el || my !== SC.seq) return;
+      if (manual) {
+        const ok = ms.filter(m => m.score >= 0.72); for (const m of ok) for (let q = 0; q < m.q; q++) scanAdd(m, 1, m.score < 0.84);
+        if (ok.length) { haptic('ok'); scanFlash(); scanHint(ok.length + ' carte' + (ok.length > 1 ? 's' : '') + ' lue' + (ok.length > 1 ? 's' : ''), 'ok'); }
+        else scanHint('Aucun nom reconnu : rapproche-toi, évite les reflets', 'bad');
+      } else scanGotMany(ms);
+      return;
+    }
     const m = await readName($('.sc-video', SC.el), box, 1100, '6', cat, !!manual);
     if (!SC.el || my !== SC.seq) return;
     if (manual) {
@@ -5115,7 +5175,7 @@ async function scanCamera() {
     SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
     const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
-    stage.dataset.cam = 'on'; scanHint('Place le nom de la carte dans la bande', ''); scanLoop();
+    stage.dataset.cam = 'on'; scanHint(SC.mode === 'many' ? 'Pose les cartes côte à côte, noms dans la bande du haut' : 'Place le nom de la carte dans la bande', ''); scanLoop();
     // Réchauffe le moteur et le catalogue pendant que tu cadres.
     ocrWorker(SC.lang).catch(() => {}); collCatalog().catch(() => {});
   } catch (e) {
@@ -5169,7 +5229,7 @@ function openScan() {
   const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
       <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom de la carte dans la bande</span></div></header>
-    <div class="sc-stage" data-cam="wait"><video class="sc-video" playsinline muted autoplay></video>
+    <div class="sc-stage" data-cam="wait" data-mode="${SC.mode}"><video class="sc-video" playsinline muted autoplay></video>
       <div class="sc-guide" aria-hidden="true"><span class="sc-band"></span></div>
       <div class="sc-flash"></div>
       <p class="sc-hint" hidden></p><div class="sc-sug" hidden></div><p class="sc-prog" hidden></p>
@@ -5178,11 +5238,11 @@ function openScan() {
       <label class="sc-auto"><span class="switch"><input type="checkbox" id="scAuto" checked><i></i></span><b>Auto</b></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Lire la carte"><i></i></button>
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label></div>
-    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Photos"></div></div>
-    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Le français et « Plusieurs / photo » (noms anglais) sont moins fiables.</p>
+    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Nombre de cartes"></div></div>
+    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : noms anglais, cartes alignées par le haut. Le français est expérimental.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
-  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
+  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
   const stop = () => { SC.alive = false; clearTimeout(SC.tickT); if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
   const onKey = e => { if (e.key === 'Escape' && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
@@ -5192,9 +5252,17 @@ function openScan() {
   };
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
-  mountSeg($('#scLang', wrap), [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'En français' }], SC.lang, v => { SC.lang = v; SC.gate.reset(); ocrWorker(v).catch(() => {}); });
-  mountSeg($('#scMode', wrap), [{ v: 'one', label: '1 carte / photo' }, { v: 'many', label: 'Plusieurs / photo' }], SC.mode, v => { SC.mode = v; });
-  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); };
+  const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap);
+  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'En français' }], SC.lang, v => {
+    SC.lang = v; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {});
+    if (v === 'fra' && SC.mode === 'many') { SC.mode = 'one'; segMode.setValue('one'); $('.sc-stage', wrap).dataset.mode = 'one'; toast('Plusieurs côte à côte : anglais seulement'); }
+  });
+  mountSeg(segMode, [{ v: 'one', label: '1 carte à la fois' }, { v: 'many', label: 'Plusieurs côte à côte' }], SC.mode, v => {
+    SC.mode = v; SC.gate.reset(); SC.mgate.reset(); $('.sc-stage', wrap).dataset.mode = v;
+    if (v === 'many' && SC.lang === 'fra') { SC.lang = 'eng'; segLang.setValue('eng'); ocrWorker('eng').catch(() => {}); toast('Plusieurs côte à côte : noms anglais'); }
+    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? 'Pose les cartes côte à côte, noms dans la bande du haut' : 'Place le nom de la carte dans la bande', '');
+  });
+  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); };
   $('#scFile', wrap).onchange = async e => { const f = e.target.files; await scanPhotos(f); e.target.value = ''; };
   wrap.addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
@@ -5233,7 +5301,7 @@ function openScan() {
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); scanCamera();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) SC.gate.reset(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) { SC.gate.reset(); SC.mgate.reset(); } });
 
 
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
