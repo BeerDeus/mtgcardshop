@@ -740,6 +740,10 @@ button.sync:active{background:var(--surface-2)}
 .sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 999px rgba(5,7,15,.42);pointer-events:none}
 .sc-stage[data-mode="many"] .sc-guide{aspect-ratio:auto;width:96%;max-width:none;height:86%;border-radius:10px}
 .sc-stage[data-mode="many"] .sc-band{height:32%;border-radius:8px 8px 0 0}
+.sc-stage[data-mode="many"][data-rows="2"] .sc-band{height:28%}
+.sc-stage[data-mode="many"][data-rows="2"] .sc-band2{display:block;top:50%;border-radius:0}
+.sc-stage[data-mode="many"][data-rows="2"]{height:min(42dvh,400px)}
+.sc-band2{display:none}
 .sc-band{position:absolute;left:0;right:0;top:0;height:20%;border-radius:10px 10px 0 0;background:rgba(146,156,255,.22);border-bottom:2px dashed rgba(255,255,255,.85)}
 .sc-flash{position:absolute;inset:0;background:#7be8b4;opacity:0;pointer-events:none}
 .sc-flash.go{animation:scflash .5s ease-out}
@@ -763,6 +767,8 @@ button.sync:active{background:var(--surface-2)}
 .sc-photo input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 .sc-opts{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
 .sc-opts .seg-opt{min-height:36px;font-size:12.5px}
+.sc-opts #scRows{grid-column:1/-1}
+.sc-opts [hidden]{display:none}
 .sc-note{flex:none;padding:6px 16px 0}
 .sc-list{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
 .sc-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 8px 8px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
@@ -5049,7 +5055,7 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
-const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0 };
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', rows: 1, alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0 };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
@@ -5161,6 +5167,15 @@ async function readBand(src, box, cat) {
   if (!ms.some(m => m.score >= 0.84) && SC.el) ms = ms.concat(await readCanvas(prepCanvas(src, box, 2000, c1.inv ? 0 : 1), cat, budget, pad));
   const res = new Map(); mergeInto(res, ms); return [...res.values()];
 }
+/** Plusieurs lignes de cartes : une bande de noms par ligne (SC.rows), lues l'une après l'autre ; une carte vue dans deux bandes = deux exemplaires. */
+async function readBands(src, boxes, cat) {
+  const all = new Map();
+  for (const b of boxes) {
+    if (!SC.el) break;
+    for (const m of await readBand(src, b, cat)) { const c = all.get(m.key); if (!c) all.set(m.key, { ...m }); else { c.q += m.q; if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } } }
+  }
+  return [...all.values()];
+}
 /** Lecture en continu de plusieurs cartes : sûres ajoutées une fois chacune, douteuses proposées après deux lectures concordantes. */
 function scanGotMany(ms) {
   const by = new Map(ms.map(m => [m.key, m])), sure = ms.filter(m => m.score >= 0.84), maybe = ms.filter(m => m.score < 0.84 && m.score >= 0.72);
@@ -5173,21 +5188,26 @@ function scanGotMany(ms) {
 }
 
 /* — Appareil photo — */
-function scanBox() {
+const BAND_H = { 1: 0.32, 2: 0.28 };    // hauteur d'une bande de noms, en part du cadre (1 ligne : 32 % ; 2 lignes : 28 % en haut de chaque moitié)
+const scanRows = () => (SC.mode === 'many' ? SC.rows : 1);
+/** Bandes de noms, en pixels de la vidéo : une seule pour « 1 carte », une par ligne pour « plusieurs côte à côte ». */
+function scanBoxes() {
   const v = $('.sc-video', SC.el), stage = $('.sc-stage', SC.el), g = $('.sc-guide', SC.el);
   if (!v.videoWidth) return null;
-  const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect();
-  return coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height * (SC.mode === 'many' ? 0.32 : 0.2) });
+  const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect(), n = scanRows(), bh = SC.mode === 'many' ? BAND_H[n] : 0.2, out = [];
+  for (let i = 0; i < n; i++) out.push(coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top + r.height * i / n, w: r.width, h: r.height * bh }));
+  return out;
 }
+const manyHint = () => SC.rows > 1 ? `Pose les cartes sur ${SC.rows} lignes, noms en haut de chaque ligne` : 'Pose les cartes côte à côte, noms dans la bande du haut';
 async function scanShot(manual) {
   if (SC.busy || !SC.el) return;
-  const box = scanBox(); if (!box) { if (manual) toast('L\'appareil photo n\'est pas prêt'); return; }
+  const boxes = scanBoxes(), box = boxes && boxes[0]; if (!box) { if (manual) toast('L\'appareil photo n\'est pas prêt'); return; }
   SC.busy = true; const my = ++SC.seq;
   try {
     const cat = await collCatalog();
     if (manual) scanHint('Lecture…', 'busy');
     if (SC.mode === 'many') {
-      const ms = await readBand($('.sc-video', SC.el), box, cat);
+      const ms = await readBands($('.sc-video', SC.el), boxes, cat);
       if (!SC.el || my !== SC.seq) return;
       if (manual) {
         const ok = ms.filter(m => m.score >= 0.72); for (const m of ok) for (let q = 0; q < m.q; q++) scanAdd(m, 1, m.score < 0.84);
@@ -5223,7 +5243,7 @@ async function scanCamera() {
     SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
     const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
-    stage.dataset.cam = 'on'; scanHint(SC.mode === 'many' ? 'Pose les cartes côte à côte, noms dans la bande du haut' : 'Place le nom de la carte dans la bande', ''); scanLoop();
+    stage.dataset.cam = 'on'; scanHint(SC.mode === 'many' ? manyHint() : 'Place le nom de la carte dans la bande', ''); scanLoop();
     // Réchauffe le moteur et le catalogue pendant que tu cadres.
     ocrWorker(SC.lang).catch(() => {}); collCatalog().catch(() => {});
   } catch (e) {
@@ -5277,8 +5297,8 @@ function openScan() {
   const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
       <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom de la carte dans la bande</span></div></header>
-    <div class="sc-stage" data-cam="wait" data-mode="${SC.mode}"><video class="sc-video" playsinline muted autoplay></video>
-      <div class="sc-guide" aria-hidden="true"><span class="sc-band"></span></div>
+    <div class="sc-stage" data-cam="wait" data-mode="${SC.mode}" data-rows="${SC.rows}"><video class="sc-video" playsinline muted autoplay></video>
+      <div class="sc-guide" aria-hidden="true"><span class="sc-band"></span><span class="sc-band sc-band2"></span></div>
       <div class="sc-flash"></div>
       <p class="sc-hint" hidden></p><div class="sc-sug" hidden></div><p class="sc-prog" hidden></p>
       <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ci-dessous.</p></div>
@@ -5286,8 +5306,8 @@ function openScan() {
       <label class="sc-auto"><span class="switch"><input type="checkbox" id="scAuto" checked><i></i></span><b>Auto</b></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Lire la carte"><i></i></button>
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label></div>
-    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Nombre de cartes"></div></div>
-    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : cartes alignées par le haut. Le français demande Scryfall pour chaque nom : un peu plus lent.</p>
+    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Nombre de cartes"></div><div class="seg" id="scRows" role="radiogroup" aria-label="Lignes de cartes"></div></div>
+    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : cartes alignées par le haut ; « 2 lignes » lit le haut de chaque moitié du cadre (les photos lisent toute l'image). Le français demande Scryfall pour chaque nom : un peu plus lent.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
   SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
@@ -5300,11 +5320,16 @@ function openScan() {
   };
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
-  const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap);
-  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {}); });
+  const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap), segRows = $('#scRows', wrap);
+  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {}); });
   mountSeg(segMode, [{ v: 'one', label: '1 carte à la fois' }, { v: 'many', label: 'Plusieurs côte à côte' }], SC.mode, v => {
-    SC.mode = v; SC.gate.reset(); SC.mgate.reset(); $('.sc-stage', wrap).dataset.mode = v;
-    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? 'Pose les cartes côte à côte, noms dans la bande du haut' : 'Place le nom de la carte dans la bande', '');
+    SC.mode = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); $('.sc-stage', wrap).dataset.mode = v; segRows.hidden = v !== 'many';
+    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? manyHint() : 'Place le nom de la carte dans la bande', '');
+  });
+  segRows.hidden = SC.mode !== 'many';
+  mountSeg(segRows, [{ v: '1', label: '1 ligne' }, { v: '2', label: '2 lignes' }], String(SC.rows), v => {
+    SC.rows = +v; SC.seq++; SC.mgate.reset(); $('.sc-stage', wrap).dataset.rows = v;
+    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(manyHint(), '');
   });
   $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); };
   $('#scFile', wrap).onchange = async e => { const f = e.target.files; await scanPhotos(f); e.target.value = ''; };
