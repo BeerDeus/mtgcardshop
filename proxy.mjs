@@ -4,12 +4,13 @@
 //   HOST=0.0.0.0 ALLOWED_UIDS=<uid Firebase> node proxy.mjs  → accessible depuis le téléphone, réservé à ton compte Firebase
 //   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → variante : clé partagée à saisir dans Réglages
 // Le token reste côté serveur. Seules les routes utiles sont relayées ; l'achat (cart/purchase) est bloqué.
+//   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { timingSafeEqual, createPublicKey, verify as rsaVerify, randomBytes, createHash } from 'node:crypto';
+import { timingSafeEqual, createPublicKey, createPrivateKey, verify as rsaVerify, sign as dsaSign, randomBytes, createHash, createECDH, createCipheriv, hkdfSync } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8787;
@@ -139,6 +140,93 @@ async function fetchProducts(bp, lang, foil, signal) {
   }
 }
 
+
+/* ── Notifications push « recherche terminée » (Web Push : RFC 8030 · 8291 · 8292), sans dépendance ─────────────────────
+   Le navigateur envoie son abonnement avec la recherche ; si plus personne ne relève la tâche à sa fin, le serveur pousse une
+   notification chiffrée. Rien n'est stocké : l'abonnement vit avec la tâche (15 min) puis disparaît. */
+const VAPID_PUB = (process.env.VAPID_PUBLIC_KEY || '').trim(), VAPID_PRIV = (process.env.VAPID_PRIVATE_KEY || '').trim(), VAPID_SUB = (process.env.VAPID_SUBJECT || '').trim();
+const PUSH_GRACE = Number(process.env.PUSH_GRACE_MS ?? 4000);
+const PUSH_HOSTS = [/(^|\.)fcm\.googleapis\.com$/, /(^|\.)android\.googleapis\.com$/, /(^|\.)push\.services\.mozilla\.com$/, /(^|\.)notify\.windows\.com$/, /(^|\.)push\.apple\.com$/];
+const PUSH_EXTRA = new Set(csv(process.env.PUSH_ALLOW_HOSTS));        // tests uniquement : « 127.0.0.1:9999 »
+let vapidKey = null;
+if (VAPID_PUB || VAPID_PRIV || VAPID_SUB) {
+  try {
+    const pub = Buffer.from(VAPID_PUB, 'base64url');
+    if (pub.length !== 65 || pub[0] !== 4) throw new Error('VAPID_PUBLIC_KEY illisible (65 octets en base64url attendus)');
+    if (!/^(mailto:[^\s@]+@[^\s@]+\.[^\s@]+|https:\/\/[^\s]+)$/.test(VAPID_SUB)) throw new Error('VAPID_SUBJECT doit être « mailto:toi@exemple.fr » ou une adresse https://');
+    const chk = createECDH('prime256v1'); chk.setPrivateKey(Buffer.from(VAPID_PRIV, 'base64url'));
+    if (!chk.getPublicKey().equals(pub)) throw new Error('VAPID_PRIVATE_KEY ne correspond pas à VAPID_PUBLIC_KEY');
+    vapidKey = createPrivateKey({ key: { kty: 'EC', crv: 'P-256', x: pub.subarray(1, 33).toString('base64url'), y: pub.subarray(33).toString('base64url'), d: VAPID_PRIV }, format: 'jwk' });
+  } catch (e) { console.error('Notifications désactivées : ' + e.message); vapidKey = null; }
+}
+const PUSH_ON = !!vapidKey;
+const jwtCache = new Map();
+function vapidAuth(aud) {
+  const now = Math.floor(Date.now() / 1000), c = jwtCache.get(aud);
+  if (c && c.exp - now > 3600) return c.h;
+  const exp = now + 12 * 3600, enc = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const unsigned = enc({ typ: 'JWT', alg: 'ES256' }) + '.' + enc({ aud, exp, sub: VAPID_SUB });
+  const sig = dsaSign('sha256', Buffer.from(unsigned), { key: vapidKey, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  const h = `vapid t=${unsigned}.${sig}, k=${VAPID_PUB}`; jwtCache.set(aud, { exp, h }); return h;
+}
+/** Chiffrement du message (aes128gcm, RFC 8291) pour l'abonnement {p256dh, auth}. */
+function encryptPush(payload, p256dh, auth) {
+  const ua = Buffer.from(p256dh, 'base64url'), au = Buffer.from(auth, 'base64url');
+  const ecdh = createECDH('prime256v1'); ecdh.generateKeys();
+  const asPub = ecdh.getPublicKey(), secret = ecdh.computeSecret(ua), salt = randomBytes(16);
+  const ikm = Buffer.from(hkdfSync('sha256', secret, au, Buffer.concat([Buffer.from('WebPush: info\0'), ua, asPub]), 32));
+  const cek = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: aes128gcm\0'), 16));
+  const nonce = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: nonce\0'), 12));
+  const gcm = createCipheriv('aes-128-gcm', cek, nonce);
+  const ct = Buffer.concat([gcm.update(Buffer.concat([payload, Buffer.from([2])])), gcm.final(), gcm.getAuthTag()]);
+  const rs = Buffer.alloc(4); rs.writeUInt32BE(4096);
+  return Buffer.concat([salt, rs, Buffer.from([asPub.length]), asPub, ct]);
+}
+function pushEndpointOk(s) {
+  if (typeof s !== 'string' || s.length > 700) return false;
+  let u; try { u = new URL(s); } catch (e) { return false; }
+  if (u.username || u.password) return false;
+  if (PUSH_EXTRA.has(u.host)) return u.protocol === 'http:' || u.protocol === 'https:';
+  return u.protocol === 'https:' && !u.port && PUSH_HOSTS.some(re => re.test(u.hostname));
+}
+/** Abonnement + texte reçus du navigateur → forme sûre, ou null (la recherche part quand même, sans notification). */
+function parsePush(p) {
+  if (!PUSH_ON || !p || typeof p !== 'object') return null;
+  const s = p.sub, k = s && s.keys;
+  if (!s || !pushEndpointOk(s.endpoint) || !k || typeof k.p256dh !== 'string' || typeof k.auth !== 'string') return null;
+  if (!/^[A-Za-z0-9_-]{80,100}$/.test(k.p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(k.auth)) return null;
+  const ua = Buffer.from(k.p256dh, 'base64url');
+  if (ua.length !== 65 || ua[0] !== 4) return null;
+  try { const e = createECDH('prime256v1'); e.generateKeys(); e.computeSecret(ua); } catch (e) { return null; }   // point hors courbe
+  const str = (v, n, d) => typeof v === 'string' && v.trim() ? v.replace(/[\u0000-\u001f]/g, ' ').slice(0, n) : d;
+  const url = typeof p.url === 'string' && /^\.\/(\?[\w=&.%-]{0,60})?$/.test(p.url) ? p.url : './?resume=1';
+  return { sub: { endpoint: s.endpoint, keys: { p256dh: k.p256dh, auth: k.auth } }, title: str(p.title, 80, 'Recherche terminée'), body: str(p.body, 200, 'Les offres sont prêtes.'), url };
+}
+async function sendPush(p) {
+  const u = new URL(p.sub.endpoint), body = encryptPush(Buffer.from(JSON.stringify({ title: p.title, body: p.body, url: p.url })), p.sub.keys.p256dh, p.sub.keys.auth);
+  for (let a = 0; a < 2; a++) {
+    let r;
+    try {
+      r = await fetch(u, { method: 'POST', body, signal: AbortSignal.timeout(10000), redirect: 'manual',
+        headers: { Authorization: vapidAuth(u.origin), 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '3600', Urgency: 'high', Topic: 'deckdeal-run' } });
+    } catch (e) { if (a === 0) { await sleepMs(1500); continue; } return 0; }
+    if ((r.status === 429 || r.status >= 500) && a === 0) { await sleepMs(Math.min(5000, Number(r.headers.get('retry-after')) * 1000 || 1500)); continue; }
+    return r.status;
+  }
+  return 0;
+}
+/** Fin de tâche : si personne n'a relevé l'état final dans le délai de grâce (appli quittée, téléphone en veille), on prévient. */
+function pushWhenDone(job) {
+  if (!PUSH_ON || job.status !== 'done' || !job.pushes.length) return;
+  setTimeout(async () => {
+    if (job.seenEnd) return;
+    for (const p of job.pushes.splice(0)) {
+      const st = await sendPush(p);
+      if (st && st < 300) console.log('push envoyé (' + st + ')'); else console.warn('push refusé (' + (st || 'réseau') + ')' + (st === 404 || st === 410 ? ' : abonnement expiré' : ''));
+    }
+  }, PUSH_GRACE).unref();
+}
+
 const jobs = new Map();
 function newJob({ lang, foil, bps, fresh }) {
   const sig = createHash('sha1').update([lang, foil, ...bps.slice().sort((a, b) => a - b)].join(',')).digest('hex');
@@ -148,7 +236,7 @@ function newJob({ lang, foil, bps, fresh }) {
   if (same) return { job: same, attached: true };
   if ([...jobs.values()].filter(j => j.status === 'running').length >= JOB_MAX_RUNNING) return { busy: true };
   const job = { id: randomBytes(12).toString('hex'), sig, lang, foil, fresh: !!fresh, bps, queue: bps.slice(), total: bps.length, results: [], done: 0, cached: 0, cacheAge: 0, oldest: Infinity, errors: 0, sent: 0, stamps: [],
-    status: 'running', fatal: null, ctl: new AbortController(), t0: now, end: 0 };
+    status: 'running', fatal: null, ctl: new AbortController(), t0: now, end: 0, pushes: [], seenEnd: false };
   jobs.set(job.id, job);
   runJob(job);
   return { job, attached: false };
@@ -175,6 +263,7 @@ async function runJob(job) {
   catch (e) { console.error('job:', e); if (job.status === 'running') job.status = 'failed'; }
   if (job.status === 'running') job.status = 'done';
   job.end = Date.now();
+  pushWhenDone(job);
 }
 function gcJobs() {
   const now = Date.now(), fin = [];
@@ -198,12 +287,15 @@ async function jobsApi(req, res, path, url) {
       return json(res, 400, { error: 'bad_request', message: 'Paramètres invalides (type, lang, foil ou bps).' });
     const r = newJob({ lang, foil, bps: ids, fresh: !!b.fresh });
     if (r.busy) return json(res, 429, { error: 'busy', message: 'Trop de recherches en cours sur le serveur.' }, { 'Retry-After': '10' });
-    return json(res, 202, { id: r.job.id, total: r.job.total, attached: r.attached, status: r.job.status });
+    const pu = parsePush(b.push);
+    if (pu && r.job.status === 'running' && r.job.pushes.length < 3 && !r.job.pushes.some(x => x.sub.endpoint === pu.sub.endpoint)) r.job.pushes.push(pu);
+    return json(res, 202, { id: r.job.id, total: r.job.total, attached: r.attached, status: r.job.status, push: !!pu });
   }
   const job = m[1] && jobs.get(m[1]);
   if (!job) return json(res, m[1] ? 404 : 405, { error: m[1] ? 'job_not_found' : 'method_not_allowed', message: m[1] ? 'Recherche introuvable (serveur redémarré ou trop ancienne).' : undefined });
-  if (req.method === 'DELETE') { if (job.status === 'running') { job.status = 'cancelled'; job.ctl.abort(); job.end = Date.now(); } return json(res, 200, { id: job.id, status: job.status }); }
+  if (req.method === 'DELETE') { if (job.status === 'running') { job.status = 'cancelled'; job.ctl.abort(); job.end = Date.now(); job.pushes.length = 0; } return json(res, 200, { id: job.id, status: job.status }); }
   if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+  if (job.status !== 'running') job.seenEnd = true;               // quelqu'un relève le résultat final : pas de notification
   const from = Math.max(0, Math.floor(Number(url.searchParams.get('from')) || 0));
   const items = job.results.slice(from, from + JOB_PAGE), now = Date.now();
   while (job.stamps.length && now - job.stamps[0] > 5000) job.stamps.shift();
@@ -216,7 +308,7 @@ const SEC = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=(), payment=()',   // caméra : scan des cartes de la collection
 };
 const json = (res, status, obj, extra = {}) => {
   const b = JSON.stringify(obj);
@@ -316,8 +408,86 @@ async function authorize(req, res) {
   await badKey(req, res); return false;
 }
 
+
+/* ── Import d'une liste depuis un lien (menu « Partager » de l'appli EDHREC, Archidekt, Moxfield) ──────────────────────────
+   Lecture seule, hôtes en liste blanche, aucune redirection suivie, 2 Mo et 8 s maximum. Le serveur renvoie la liste en texte
+   « 1 Sol Ring » avec un en-tête « Commander » si le site le distingue. Archidekt et Moxfield : au mieux (leurs API peuvent changer). */
+const IMPORT_UP = (process.env.IMPORT_UPSTREAM || '').replace(/\/+$/, '');          // tests uniquement
+const IMPORT_MAX = 2 * 1024 * 1024, IMPORT_LINES = 450;
+const UA = 'Mozilla/5.0 (compatible; DeckDeal/1.0)';
+async function getJsonLimited(url, headers = {}) {
+  let r;
+  try { r = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': UA, ...headers }, redirect: 'manual', signal: AbortSignal.timeout(8000) }); }
+  catch (e) { throw Object.assign(new Error('Site injoignable'), { status: 502 }); }
+  if (r.status >= 300 && r.status < 400) throw Object.assign(new Error('Redirection non suivie'), { status: 502 });
+  if (r.status === 404) throw Object.assign(new Error('Liste introuvable (privée ou lien incomplet ?)'), { status: 404 });
+  if (!r.ok) throw Object.assign(new Error('Le site a refusé la lecture (' + r.status + ')'), { status: 502 });
+  const len = Number(r.headers.get('content-length')); if (len > IMPORT_MAX) throw Object.assign(new Error('Réponse trop grosse'), { status: 413 });
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > IMPORT_MAX) throw Object.assign(new Error('Réponse trop grosse'), { status: 413 });
+  try { return JSON.parse(buf.toString('utf8')); } catch (e) { throw Object.assign(new Error('Réponse illisible'), { status: 502 }); }
+}
+const qn = v => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n > 0 && n < 100 ? n : 1; };
+const cleanName = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 150) : '';
+function toText(cmd, main) {
+  const line = ([n, q]) => q + ' ' + n;
+  const out = [];
+  if (cmd.length) out.push('Commander', ...cmd.map(line), '');
+  if (out.length) out.push('Deck');
+  out.push(...main.map(line));
+  return out.join('\n');
+}
+function fromEdhrec(j) {
+  const d = j && j.deck, cmd = [], main = [];
+  const add = (list, n, q) => { n = cleanName(n); if (n) list.push([n, qn(q)]); };
+  if (Array.isArray(d)) for (const x of d) { const m = /^\s*(\d+)\s*x?\s+(.+?)\s*$/.exec(String(x)); if (m) add(main, m[2], m[1]); else add(main, String(x), 1); }
+  else if (d && typeof d === 'object') {
+    for (const x of d.commander_v2 || (d.commander || []).map(n => [n, 1])) add(cmd, x[0], x[1]);
+    for (const list of Object.values(d.cards || {})) if (Array.isArray(list)) for (const x of list) add(main, x[0], x[1]);
+  }
+  if (!main.length && Array.isArray(j && j.archidekt)) for (const x of j.archidekt) add(main, x && x.c, x && x.q);
+  const hdr = cleanName(j && j.header).replace(/^Average Deck for\s+/i, '');
+  return { name: hdr || (cmd[0] && cmd[0][0]) || 'Deck EDHREC', cmd, main };
+}
+function fromArchidekt(j) {
+  const cmd = [], main = [];
+  for (const c of (j && j.cards) || []) {
+    const cats = (c.categories || []).map(x => String(x).toLowerCase()), n = cleanName(c.card && c.card.oracleCard && c.card.oracleCard.name || c.card && c.card.name);
+    if (!n || cats.some(x => /maybe|sideboard|considering/.test(x))) continue;
+    (cats.includes('commander') ? cmd : main).push([n, qn(c.quantity)]);
+  }
+  return { name: cleanName(j && j.name) || 'Deck Archidekt', cmd, main };
+}
+function fromMoxfield(j) {
+  const cmd = [], main = [], read = (board, list) => { for (const e of Object.values((board && (board.cards || board)) || {})) { const n = cleanName(e && e.card && e.card.name); if (n) list.push([n, qn(e.quantity)]); } };
+  const b = j && j.boards;
+  read(b ? b.commanders : j && j.commanders, cmd); read(b ? b.mainboard : j && j.mainboard, main);
+  return { name: cleanName(j && j.name) || 'Deck Moxfield', cmd, main };
+}
+async function importApi(req, res, url) {
+  if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+  let u; try { u = new URL(String(url.searchParams.get('url') || '').trim()); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'Lien invalide.' }); }
+  const host = u.hostname.replace(/^www\./, '').toLowerCase(), segs = u.pathname.split('/').filter(Boolean);
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return json(res, 400, { error: 'bad_request', message: 'Lien https attendu.' });
+  const slug = /^[a-z0-9][a-z0-9-]{0,120}$/i, num = /^\d{1,10}$/, mox = /^[A-Za-z0-9_-]{4,40}$/;
+  let site, target, parse, headers = {};
+  if (host === 'edhrec.com' && ['average-decks', 'commanders'].includes(segs[0]) && slug.test(segs[1] || '') && segs.length <= 3 && (!segs[2] || slug.test(segs[2]))) {
+    site = 'EDHREC'; parse = fromEdhrec;
+    target = (IMPORT_UP ? IMPORT_UP + '/edhrec' : 'https://json.edhrec.com') + '/pages/average-decks/' + segs[1] + (segs[0] === 'average-decks' && segs[2] ? '/' + segs[2] : '') + '.json';
+  } else if (host === 'archidekt.com' && segs[0] === 'decks' && num.test(segs[1] || '')) {
+    site = 'Archidekt'; parse = fromArchidekt; target = (IMPORT_UP ? IMPORT_UP + '/archidekt' : 'https://archidekt.com') + '/api/decks/' + segs[1] + '/';
+  } else if (host === 'moxfield.com' && segs[0] === 'decks' && mox.test(segs[1] || '')) {
+    site = 'Moxfield'; parse = fromMoxfield; target = (IMPORT_UP ? IMPORT_UP + '/moxfield' : 'https://api2.moxfield.com') + '/v3/decks/all/' + segs[1]; headers = { Referer: 'https://moxfield.com/', Origin: 'https://moxfield.com' };
+  } else return json(res, 400, { error: 'unsupported', message: 'Lien non pris en charge : EDHREC (average-decks), Archidekt ou Moxfield.' });
+  try {
+    const r = parse(await getJsonLimited(target, headers));
+    if (!r.main.length && !r.cmd.length) return json(res, 422, { error: 'empty', message: 'Aucune carte trouvée dans cette liste.' });
+    return json(res, 200, { site, name: r.name, count: r.cmd.length + r.main.length, text: toText(r.cmd.slice(0, 4), r.main.slice(0, IMPORT_LINES)) });
+  } catch (e) { return json(res, e.status || 502, { error: 'import_failed', message: e.message }); }
+}
+
 async function api(req, res, url) {
   if (!(await authorize(req, res))) return;
+  if (url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '') === 'import') return importApi(req, res, url);   // n'a pas besoin du token CardTrader
   if (!TOKEN) return json(res, 401, { error: 'no_token', message: 'CARDTRADER_TOKEN absent côté proxy.' });
 
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
@@ -360,7 +530,7 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, push: PUSH_ON ? VAPID_PUB : '' });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       if (!PAGE) return json(res, 404, { error: 'page_missing', message: 'Place deck-deal.html à côté de proxy.mjs.' });

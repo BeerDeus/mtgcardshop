@@ -241,7 +241,7 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .basics{font-size:13.5px;color:var(--ink-2);padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2)}
 
 /* ── Sheets & toast ───────────────────────────────────── */
-.sheet-root{position:fixed;inset:0;z-index:50;pointer-events:none}
+.sheet-root{position:fixed;inset:0;z-index:85;pointer-events:none}
 .sheet-wrap{position:absolute;inset:0;pointer-events:none}
 .sheet-backdrop{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity .32s;pointer-events:auto}
 .sheet{position:absolute;left:50%;bottom:0;width:100%;max-width:580px;max-height:90%;display:flex;flex-direction:column;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px -10px rgba(0,0,0,.35);transform:translate(-50%,102%);transition:transform .42s cubic-bezier(.2,.85,.25,1);pointer-events:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -276,7 +276,7 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .status[data-ok="1"] .dot{background:var(--good)}
 .sec-title{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
 
-.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:60;transform:translate(-50%,16px);opacity:0;pointer-events:none;max-width:min(92vw,460px);padding:11px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:opacity .28s,transform .38s cubic-bezier(.2,.85,.25,1)}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:95;transform:translate(-50%,16px);opacity:0;pointer-events:none;width:max-content;max-width:min(92vw,460px);padding:11px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:opacity .28s,transform .38s cubic-bezier(.2,.85,.25,1)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 @media (min-width:720px){
@@ -396,7 +396,7 @@ button.sync:active{background:var(--surface-2)}
 .cart-actions{display:flex;gap:10px;flex-wrap:wrap}
 
 /* pastilles de progression flottantes */
-.tasks{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);right:12px;z-index:70;width:min(310px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none;transition:top .32s cubic-bezier(.2,.8,.2,1)}
+.tasks{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);right:12px;z-index:88;width:min(310px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none;transition:top .32s cubic-bezier(.2,.8,.2,1)}
 .tasks.over{top:calc(env(safe-area-inset-top,0px) + 8px)}
 .task{pointer-events:auto;position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 10px 13px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);transform:translateX(calc(100% + 18px));opacity:0;transition:transform .4s cubic-bezier(.2,.9,.25,1),opacity .25s}
 .task.in{transform:none;opacity:1}
@@ -580,6 +580,205 @@ button.sync:active{background:var(--surface-2)}
 .imgv-extra{display:block;margin-top:2px;font-family:var(--font-mono);font-size:12.5px;color:#fff;opacity:.92}
 .imgv-extra[hidden]{display:none}
 @media (max-width:520px){.imgv-nav{width:36px;height:56px;margin-top:-28px;background:rgba(255,255,255,.08)}}
+
+
+/* ── Cartes possédées, référence Cardmarket ───────────────────────────────────────────────────── */
+.collsec{display:block}
+.coll-open{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:transform .15s,border-color .2s}
+.coll-open:active{transform:scale(.99)}
+.coll-ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.coll-ico .i{width:20px;height:20px}
+.coll-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.coll-t b{font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.01em}
+.coll-t span{font-size:12.5px;color:var(--ink-3);text-wrap:pretty}
+.coll-open[data-empty="0"] .coll-t span{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.coll-open .chev{color:var(--ink-3)}
+.row.is-own{background:transparent;border-color:var(--good-soft)}
+.row.is-own .thumb{filter:saturate(.8)}
+.tag.ref{background:var(--surface-2);color:var(--ink-2)}
+.tag.ref.good{background:var(--good-soft);color:var(--good)}
+.tag.ref.warn{background:var(--warn-soft);color:var(--warn)}
+.refline{padding:9px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink-2)}
+.refline b{color:var(--ink)}
+.refline[data-l="good"]{background:var(--good-soft)} .refline[data-l="good"] b{color:var(--good)}
+.refline[data-l="warn"]{background:var(--warn-soft)} .refline[data-l="warn"] b{color:var(--warn)}
+.ownbtn{margin-top:2px}
+.stat.good{background:var(--good-soft);color:var(--good)} .stat.good b{color:inherit}
+.rchip.good{background:var(--good-soft);color:var(--good)} .rchip.good b{color:inherit}
+.chart-cap{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-3);font-family:var(--font-mono);font-variant-numeric:tabular-nums;margin-top:-6px}
+.chart-cap span:nth-child(2){text-align:center}
+
+/* pastilles de mana */
+.mc{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:6px;border-radius:50%;font-style:normal;font-family:var(--font-mono);font-size:10px;font-weight:700;line-height:1;color:#1b1b1b;background:#c9ccd6;vertical-align:-3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.16)}
+.mc-w{background:#f6f0d2}.mc-u{background:#8cc4f0}.mc-b{background:#7d7078;color:#fff}.mc-r{background:#ef8a6c}.mc-g{background:#6fba84}.mc-m{background:#e0bd57}.mc-n{background:#c9ccd6}
+.cmd-mc .mc{margin:0 3px 0 0;width:20px;height:20px}
+
+/* barre de recherche + filtres */
+.fbar{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fbar-row{display:flex;gap:8px;align-items:center}
+.fsearch{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);transition:border-color .2s,box-shadow .2s}
+.fsearch:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.fsearch input{flex:1;min-width:0;border:0;background:transparent;outline:none;font-size:14.5px;color:var(--ink);-webkit-appearance:none;appearance:none}
+.fsearch input::-webkit-search-cancel-button{display:none}
+.fclear{flex:none;width:30px;height:30px;border:0;background:transparent;color:var(--ink-3);border-radius:9px;display:grid;place-items:center;padding:0}
+.fclear:active{background:var(--surface-2)}
+.fclear svg{width:15px;height:15px}
+.fbtn{flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 13px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:13.5px;color:var(--ink-2);transition:transform .15s,background .2s,border-color .2s}
+.fbtn:active{transform:scale(.97)}
+.fbtn.on,.fbtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.fbtn b{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:11px;display:grid;place-items:center;font-family:var(--font-mono)}
+.fpanel{display:flex;flex-direction:column;gap:12px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);animation:rise .3s both}
+.fgrp{display:flex;flex-direction:column;gap:7px}
+.fgl{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.fcols,.fopts{display:flex;flex-wrap:wrap;gap:7px}
+.fcol{width:38px;height:38px;border-radius:50%;border:2px solid transparent;font-family:var(--font-mono);font-weight:700;font-size:13px;color:#1b1b1b;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);transition:transform .15s,border-color .15s,opacity .2s;opacity:.55}
+.fcol.mc-b{color:#fff}
+.fcol[aria-pressed="true"]{opacity:1;border-color:var(--accent);transform:scale(1.06)}
+.fcol:active{transform:scale(.92)}
+.fopt{height:34px;min-width:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface-3);font-size:13px;font-weight:600;color:var(--ink-2);transition:transform .15s,background .2s,border-color .2s}
+.fopt[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.fopt:active{transform:scale(.95)}
+.cmcs .fopt{min-width:40px;padding:0;font-family:var(--font-mono)}
+.freset[hidden]{display:none}
+
+/* ── Écran de la collection ───────────────────────────────────────────────────────────────────── */
+.coll-tools{margin-left:auto;display:flex;gap:8px}
+.coll-body{gap:12px}
+.coll-controls{display:flex;flex-direction:column;gap:10px}
+.coll-controls[hidden],.coll-fwrap[hidden]{display:none}
+.coll-fwrap{display:flex;flex-direction:column;gap:8px}
+.coll-sort{align-self:flex-start}
+.coll-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);color:var(--ink);font-size:13px;flex-wrap:wrap}
+.coll-status[hidden]{display:none}
+.coll-status[data-k="run"]{flex-direction:column;align-items:stretch;gap:8px}
+.coll-status[data-k="err"]{background:var(--warn-soft);color:var(--warn)}
+.coll-status .track{height:6px}
+.coll-list{display:flex;flex-direction:column;gap:8px}
+.crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
+.crow.ro{grid-template-columns:40px minmax(0,1fr) auto}
+.crow .thumb{cursor:default}
+.qstep{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface-3);overflow:hidden}
+.qstep button{width:38px;height:38px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink-2);display:grid;place-items:center;padding:0}
+.qstep button:active{background:var(--accent-soft);color:var(--accent)}
+.qstep b{min-width:30px;text-align:center;font-family:var(--font-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.coll-count{padding:0 2px}
+.coll-more{margin-top:4px}
+.coll-cta{display:flex;flex-direction:column;gap:8px;width:min(100%,320px)}
+.cs-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cs-tiles>div{display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);min-width:0}
+.cs-tiles b{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.cs-tiles span{font-size:11.5px;color:var(--ink-3);text-wrap:balance}
+.cs-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 2px 0;font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.01em}
+.cs-h small{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--ink-3)}
+.cs-bars{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line)}
+.cs-b{display:grid;grid-template-columns:minmax(96px,34%) 1fr 44px;gap:10px;align-items:center;font-size:13.5px}
+.cs-l{display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-t{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.cs-t i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.cs-t i.k-w{background:#e8dfae}.cs-t i.k-u{background:#6fb1ea}.cs-t i.k-b{background:#7d7078}.cs-t i.k-r{background:#e8765a}.cs-t i.k-g{background:#5aaa74}.cs-t i.k-m{background:#d9b24a}.cs-t i.k-n{background:#a9adb9}
+.cs-n{font-family:var(--font-mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.cs-top{display:flex;flex-direction:column;gap:8px}
+.cs-top .row-price b{font-family:var(--font-mono);font-weight:600;font-size:14px}
+
+/* import + saisie */
+.ci-file{position:relative;align-self:flex-start;cursor:pointer;gap:8px}
+.ci-file input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.ci-text{width:100%;min-height:130px;max-height:34vh;resize:vertical;padding:12px;background:var(--surface-3);border:1px solid var(--line);border-radius:12px;font-family:var(--font-mono);font-size:12.5px;line-height:1.55}
+.ci-text:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.ci-sum{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border-radius:12px;background:var(--accent-soft);font-size:14px}
+.ci-sum b{font-family:var(--font-mono)}
+.ci-sum span{font-size:12.5px;color:var(--ink-3)}
+.ci-sum.bad{background:var(--bad-soft);color:var(--bad)}
+.ca-list{display:flex;flex-direction:column;gap:6px}
+.ca-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:550}
+.ca-opt i{font-style:normal;font-family:var(--font-mono);font-size:12.5px;color:var(--accent);min-width:34px;text-align:right}
+.ca-opt:active{background:var(--accent-soft)}
+.ca-opt.pop{animation:pricepop .5s cubic-bezier(.3,1.4,.5,1)}
+
+/* ── Deck viewer : commandant, évolution, référence ───────────────────────────────────────────── */
+.dv-cmds{display:flex;flex-direction:column;gap:10px}
+.dv-cmd{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:16px;align-items:center;width:100%;text-align:left;padding:14px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .15s}
+.dv-cmd::before{content:"";position:absolute;inset:0;background:var(--foil);opacity:.1;pointer-events:none}
+.dv-cmd:active{transform:scale(.99)}
+.dv-cmd .dvc-art{position:relative}
+.cmd-t{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cmd-t small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cmd-t strong{font-family:var(--font-display);font-size:21px;line-height:1.1;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.cmd-tl{font-size:12.5px;color:var(--ink-3)}
+.cmd-mc{display:flex;flex-wrap:wrap;gap:2px}
+.cmd-p{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:2px}
+.cmd-p b{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.cmd-p b.own{color:var(--good);font-size:17px}.cmd-p b.warn{color:var(--warn);font-size:17px}.cmd-p b.bad{color:var(--bad);font-size:17px}
+.cmd-ref{font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
+.dvc-p.own{background:var(--good);color:#fff}
+.dvc-p em{font-style:normal;font-size:9.5px;margin-left:5px}
+.dvc-p em.dn{color:#7be8b4}.dvc-p em.up{color:#ff9aa6}
+.dv-evo{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.dv-evo-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2)}
+.dv-evo-h b{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:14px}
+.dv-evo-h b.down{color:var(--good)}.dv-evo-h b.up{color:var(--bad)}.dv-evo-h b.flat{color:var(--ink-3)}
+.dv-mv{display:flex;flex-direction:column;gap:5px}
+.mv{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;align-items:baseline;text-align:left;padding:7px 10px;border:0;border-radius:10px;background:var(--surface-3);font-size:13px}
+.mv span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:550}
+.mv i{font-style:normal;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3)}
+.mv b{font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.mv.down b{color:var(--good)}.mv.up b{color:var(--bad)}
+.mv:active{background:var(--accent-soft)}
+.dv-ref>span{min-width:0}
+.dv-ref{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);padding:8px 10px;border-radius:10px;background:var(--surface-3)}
+.dv-ref b{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.dv-ref.good{background:var(--good-soft)} .dv-ref.good>b{color:var(--good)}
+.dv-ref.warn{background:var(--warn-soft)} .dv-ref.warn>b{color:var(--warn)}
+.dv-fcount{padding:0 2px}
+.dv .fbar{margin-top:-4px}
+@media (max-width:420px){.dv-cmd{grid-template-columns:minmax(0,112px) minmax(0,1fr);gap:12px}.cmd-t strong{font-size:18px}}
+
+/* ── Scan des cartes ──────────────────────────────────────────────────────────────────────────── */
+.scan{background:var(--bg)}
+.sc-stage{position:relative;flex:none;height:min(34dvh,340px);background:#05070f;overflow:hidden}
+.sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 999px rgba(5,7,15,.42);pointer-events:none}
+.sc-band{position:absolute;left:0;right:0;top:0;height:20%;border-radius:10px 10px 0 0;background:rgba(146,156,255,.22);border-bottom:2px dashed rgba(255,255,255,.85)}
+.sc-flash{position:absolute;inset:0;background:#7be8b4;opacity:0;pointer-events:none}
+.sc-flash.go{animation:scflash .5s ease-out}
+@keyframes scflash{0%{opacity:.5}100%{opacity:0}}
+.sc-hint{position:absolute;left:12px;right:12px;bottom:10px;margin:0;padding:8px 12px;border-radius:12px;background:rgba(10,14,30,.8);color:#fff;font-size:13.5px;font-weight:600;text-align:center;text-wrap:balance}
+.sc-hint[data-k="ok"]{background:rgba(11,138,94,.92)}.sc-hint[data-k="bad"]{background:rgba(194,58,75,.92)}.sc-hint[data-k="busy"]{background:rgba(58,70,214,.85)}
+.sc-hint[hidden],.sc-sug[hidden],.sc-prog[hidden]{display:none}
+.sc-sug{position:absolute;left:12px;right:12px;bottom:56px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:14px;background:rgba(242,180,65,.96);color:#2a1c00;font-size:14px}
+.sc-sug span{flex:1;min-width:0}.sc-sug .btn{height:34px;padding:0 14px;background:#2a1c00;color:#fff;box-shadow:none}
+.sc-prog{position:absolute;top:10px;left:50%;transform:translateX(-50%);margin:0;padding:6px 14px;border-radius:99px;background:rgba(10,14,30,.84);color:#fff;font-size:13px;font-weight:600;font-family:var(--font-mono)}
+.sc-nocam{display:none;position:absolute;inset:0;place-items:center;padding:20px;margin:0;color:#fff;text-align:center;font-size:14px}
+.sc-stage[data-cam="no"] .sc-nocam{display:grid}
+.sc-stage[data-cam="no"]{height:min(24dvh,190px)}
+.sc-stage[data-cam="no"] .sc-video,.sc-stage[data-cam="no"] .sc-guide{display:none}
+.sc-bar{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px}
+.sc-auto{display:inline-flex;align-items:center;gap:9px;justify-self:start;font-size:13.5px;cursor:pointer}
+.sc-shot{width:60px;height:60px;border-radius:50%;border:3px solid var(--ink);background:transparent;padding:4px;display:grid;place-items:center;transition:transform .15s}
+.sc-shot i{display:block;width:100%;height:100%;border-radius:50%;background:var(--accent)}
+.sc-shot:active{transform:scale(.92)}
+.sc-photo{position:relative;justify-self:end;cursor:pointer;gap:6px}
+.sc-photo input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.sc-opts{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.sc-opts .seg-opt{min-height:36px;font-size:12.5px}
+.sc-note{flex:none;padding:6px 16px 0}
+.sc-list{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
+.sc-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 8px 8px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.sc-item.maybe{border-color:var(--warn);background:var(--warn-soft)}
+.sc-item .qstep button{width:34px;height:36px}.sc-item .qstep b{min-width:24px}
+.sc-item.miss{grid-template-columns:minmax(0,1fr) auto auto;padding-left:12px;border-style:dashed}
+.sc-th{width:36px;height:50px;flex:none;border-radius:4px;object-fit:cover;background:var(--line);transition:opacity .2s}
+.sc-th.bad{opacity:0}
+.sc-item.maybe .sc-th{width:52px;height:72px;border-radius:5px}
+.sc-sug .sc-th{width:28px;height:39px;border-radius:3px}
+.sc-n{display:flex;flex-direction:column;min-width:0}
+.sc-n b{font-weight:620;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}
+.sc-n small{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-ok,.sc-x{width:38px;height:38px;border:0;border-radius:11px;background:transparent;display:grid;place-items:center;padding:0;color:var(--ink-3)}
+.sc-ok{background:var(--good);color:#fff}
+.sc-x:active{background:var(--bad-soft);color:var(--bad)}
+.sc-empty{text-align:center;padding:20px 8px}
+@media (prefers-reduced-motion:reduce){.sc-flash.go{animation:none}}
 </style>
 </head>
 <body>
@@ -599,6 +798,13 @@ button.sync:active{background:var(--surface-2)}
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.4"/></symbol>
     <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.4v.1"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17.5l4.5-4.5 3 3 2.5-2.5 4 4"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
   </defs>
 </svg>
 
@@ -635,6 +841,14 @@ button.sync:active{background:var(--surface-2)}
         <div class="decks-head"><h2>Mes decks</h2><button class="sync" id="decksSync" type="button" data-s="local"><i></i><span id="decksSyncTxt">Sur cet appareil</span></button></div>
         <div class="deck-list" id="deckList"></div>
         <button class="link-btn more-decks" id="btnMoreDecks" type="button" hidden></button>
+      </section>
+
+      <section class="collsec" id="collSec" aria-label="Ma collection">
+        <button class="coll-open" id="btnColl" type="button" data-empty="1">
+          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-stack"/></svg></span>
+          <span class="coll-t"><b>Ma collection</b><span id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</span></span>
+          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+        </button>
       </section>
 
       <div class="field">
@@ -688,6 +902,10 @@ button.sync:active{background:var(--surface-2)}
         <label class="switch-row" for="optFallback">
           <span class="t"><b>Compléter en anglais</b><span class="hint">Si une carte n'a aucune offre dans la langue choisie.</span></span>
           <span class="switch"><input type="checkbox" id="optFallback" checked><i></i></span>
+        </label>
+        <label class="switch-row" for="optColl" id="collRow" hidden>
+          <span class="t"><b>Déduire ma collection</b><span class="hint" id="collHint"></span></span>
+          <span class="switch"><input type="checkbox" id="optColl" checked><i></i></span>
         </label>
       </div>
     </section>
@@ -777,11 +995,11 @@ function frontName(s) { return normName(s).split(' // ')[0]; }
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
-/** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête, invalide) · { qty, name, key }. */
+/** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête : + quiet ; invalide : signalée) · { qty, name, key }. */
 function parseLine(raw) {
   const line = String(raw == null ? '' : raw).trim();
   if (!line) return undefined;
-  if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) return { ignored: true };
+  if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) return { ignored: true, quiet: true };   // commentaire, banc, en-tête : volontaire, pas signalé
   let qty = 1, name = line;
   const m = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
   if (m) { qty = parseInt(m[1], 10); name = m[2]; }
@@ -802,7 +1020,7 @@ function parseDeck(text) {
     const p = parseLine(raw);
     if (!p) continue;
     lines++;
-    if (p.ignored) { ignored++; continue; }
+    if (p.ignored) { if (!p.quiet) ignored++; continue; }
     const bucket = BASIC_NAMES.has(p.key) ? basics : cards;
     const cur = bucket.get(p.key);
     if (cur) cur.qty += p.qty; else bucket.set(p.key, { key: p.key, name: p.name, qty: p.qty });
@@ -865,6 +1083,7 @@ function normalizeProduct(p, info) {
     set: e.code || (info && info.set) || '', setName: e.name_en || (info && info.setName) || '',
     num: (info && info.num) || h.collector_number || '', img: (info && info.img) || null,
     sset: (info && info.set) || '',                           // code d'extension Scryfall (celui de CardTrader peut différer)
+    ref: info ? (h.mtg_foil ? info.ef : info.eu) ?? null : null,   // prix de référence Cardmarket (Scryfall, centimes) de cette impression, foil ou non
   };
 }
 
@@ -1037,14 +1256,14 @@ function makeDemoOffers(card, lang) {
       const id = hash32(key + '|' + s.id + '|' + j + '|' + lang);
       out.push({ id, productId: id, bpId: hash32(key + set[0]), sellerId: s.id, seller: s.name, country: s.country, hub: s.hub, type: 'normal',
         price, cur: 'EUR', qty: 1 + Math.floor(r() * 4), cond, foil, lang, signed: false, altered: false, graded: false, vac: false, bundle: 1,
-        set: set[0], setName: set[1], num: String(1 + Math.floor(r() * 380)), img: null });
+        set: set[0], setName: set[1], num: String(1 + Math.floor(r() * 380)), img: null, ref: Math.max(5, Math.round(base * (foil ? 2.3 : 1) * 100)) });
     }
   }
   return out;
 }
 
 /* ── Decks enregistrés : normalisation, historique de prix, temps relatif ───────────────────── */
-const HISTORY_MAX = 12, NAME_MAX = 120, TEXT_MAX = 60000;
+const HISTORY_MAX = 40, NAME_MAX = 120, TEXT_MAX = 60000;
 const OPT_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
 const OPT_FOIL = ['no', 'any', 'yes'];
 const OPT_MODE = ['zero', 'direct'];
@@ -1100,8 +1319,9 @@ function priceSeries(history) {
 }
 
 /* ── Prix gardés carte par carte + regroupements du deck viewer ───────────────────────────── */
-const SNAP_MAX = 400, SNAP_STATES = ['ok', 'none', 'nohub', 'nf', 'basic'];
-/** Relevé compact d'une recherche : { at, mode, lang, sig, items:[{k,n,q,s, c,l,d,st,nu,sn,im,cm,mc,tl,cl,sl,fb,sh}] }. null si inutilisable. */
+const SNAP_MAX = 400, SNAP_STATES = ['ok', 'none', 'nohub', 'nf', 'basic', 'own'];
+/** Relevé compact d'une recherche : { at, mode, lang, sig, items:[{k,n,q,s, c,l,d,st,nu,sn,im,cm,mc,tl,cl,sl,fb,sh, rf,ow,cmd}], pv, pa }. null si inutilisable.
+ *  rf : prix de référence Cardmarket par exemplaire (centimes) · ow : exemplaires déjà possédés · cmd : commandant · pv/pa : prix unitaires du relevé précédent et sa date. */
 function sanitizeSnap(x) {
   if (!x || typeof x !== 'object' || !Array.isArray(x.items) || !Number.isFinite(x.at)) return null;
   const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
@@ -1115,10 +1335,20 @@ function sanitizeSnap(x) {
     for (const [f, n] of [['l', 8], ['d', 8], ['st', 12], ['nu', 12], ['sn', 80], ['im', 200], ['mc', 60], ['tl', 120], ['cl', 6], ['sl', 60]]) { const v = str(i[f], n); if (v) o[f] = v; }
     const cm = int(i.cm, 0, 99); if (cm != null) o.cm = cm;
     const sh = int(i.sh, 1, 999); if (sh != null) o.sh = sh;
+    const rf = int(i.rf, 1, 10000000); if (rf != null && o.s === 'ok') o.rf = rf;
+    const ow = int(i.ow, 1, 999); if (ow != null) o.ow = Math.min(ow, o.q);
     if (i.fb) o.fb = 1;
+    if (i.cmd) o.cmd = 1;
     items.push(o);
   }
-  return items.length ? { at: x.at, mode: OPT_MODE.includes(x.mode) ? x.mode : 'zero', lang: str(x.lang, 8), sig: str(x.sig, 40), items } : null;
+  if (!items.length) return null;
+  const out = { at: x.at, mode: OPT_MODE.includes(x.mode) ? x.mode : 'zero', lang: str(x.lang, 8), sig: str(x.sig, 40), items };
+  if (x.pv && typeof x.pv === 'object' && !Array.isArray(x.pv) && Number.isFinite(x.pa)) {
+    const pv = {}; let n = 0;
+    for (const k of Object.keys(x.pv)) { if (n >= SNAP_MAX) break; const v = x.pv[k]; if (Number.isFinite(v) && v >= 0.5 && k && k.length <= 80) { pv[k] = Math.min(10000000, Math.round(v)); n++; } }
+    if (n) { out.pv = pv; out.pa = x.pa; }
+  }
+  return out;
 }
 /** Le plus récent de plusieurs relevés (cloud / appareil), ou null. */
 const newestSnap = (...a) => a.filter(Boolean).sort((p, q) => q.at - p.at)[0] || null;
@@ -1152,6 +1382,7 @@ function groupSnap(items, sort) {
   if (sort === 'price') {
     const priced = rest.filter(i => i.s === 'ok').sort((a, b) => (b.c - a.c) || byName(a, b));
     add('p', 'Du plus cher au moins cher', priced);
+    add('own', 'Dans ta collection', rest.filter(i => i.s === 'own').sort(byName));
     add('np', 'Sans offre', rest.filter(i => i.s === 'none' || i.s === 'nohub').sort(byName));
     add('b', 'Terrains de base', rest.filter(i => i.s === 'basic').sort(byName));
   } else if (sort === 'type') {
@@ -1270,11 +1501,353 @@ function recapOf(items) {
   return r;
 }
 
+
+/* ── Prix de référence Cardmarket (donnés par Scryfall) ──────────────────────────────────────── */
+/** « 1.23 » (euros, texte Scryfall) → 123 centimes ; null si absent ou nul. */
+const eurCents = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null; };
+/** Référence la moins chère parmi les impressions (foil ou non) : sert quand l'impression de l'offre n'a pas de prix. */
+function minRef(bps, foil) {
+  let m = null;
+  for (const b of bps || []) { const v = foil ? b.ef : b.eu; if (Number.isFinite(v) && v > 0 && (m == null || v < m)) m = v; }
+  return m;
+}
+/** Prix retenu pour une carte (parts : [{offer, n}]) comparé à la référence Cardmarket. Retourne null sans référence exploitable.
+ *  level : good (au plus 5 % au-dessus) · ok · warn (plus de 40 % au-dessus ET au moins 0,30 €). unit/ref : centimes par exemplaire. */
+function refInfo(parts, bps) {
+  let n = 0, cost = 0, ref = 0;
+  for (const p of parts || []) {
+    const r = Number.isFinite(p.offer.ref) && p.offer.ref > 0 ? p.offer.ref : minRef(bps, p.offer.foil);
+    if (r == null) return null;
+    n += p.n; cost += p.offer.price * p.n; ref += r * p.n;
+  }
+  if (!n || !ref) return null;
+  const unit = cost / n, rf = ref / n, diff = unit - rf;
+  return { unit: Math.round(unit), ref: Math.round(rf), diff: Math.round(diff), pct: Math.round(diff / rf * 100), level: unit <= rf * 1.05 ? 'good' : (unit > rf * 1.4 && diff >= 30) ? 'warn' : 'ok' };
+}
+/** Total du relevé face à la référence, sur les cartes qui en ont une : { ref, cost, n, cards }. */
+function refTotals(items) {
+  let ref = 0, cost = 0, n = 0, cards = 0;
+  for (const i of items) {
+    if (i.s !== 'ok' || !i.rf || i.c == null) continue;
+    const m = Math.max(1, i.q - (i.ow || 0) - (i.sh || 0));
+    ref += i.rf * m; cost += i.c; n += m; cards++;
+  }
+  return { ref, cost, n, cards, pct: ref ? Math.round((cost - ref) / ref * 100) : 0 };
+}
+
+/* ── Évolution des prix carte par carte ────────────────────────────────────────────────────── */
+/** Prix unitaire (centimes) d'une carte du relevé, ou null. */
+const unitOf = i => (i.s === 'ok' && i.c != null ? Math.round(i.c / Math.max(1, i.q - (i.ow || 0) - (i.sh || 0))) : null);
+/** Prix unitaires d'un relevé, à garder dans le suivant : { clé: centimes }. */
+function pvOf(snap) {
+  if (!snap) return null;
+  const pv = {}; let n = 0;
+  for (const i of snap.items) { const u = unitOf(i); if (u != null && u > 0 && n < SNAP_MAX) { pv[i.k] = u; n++; } }
+  return n ? pv : null;
+}
+/** Variations par rapport au relevé précédent : Map(clé → { unit, prev, diff, tot }) ; tot = écart sur le prix payé pour la quantité demandée. */
+function snapDeltas(items, pv) {
+  const out = new Map(); if (!pv) return out;
+  for (const i of items) {
+    const u = unitOf(i), p = pv[i.k];
+    if (u != null && Number.isFinite(p) && p !== u) out.set(i.k, { unit: u, prev: p, diff: u - p, tot: (u - p) * Math.max(1, i.q - (i.ow || 0) - (i.sh || 0)) });
+  }
+  return out;
+}
+/** Plus fortes variations : { up: [...], down: [...] } (n par sens), triées par écart total. */
+function topMovers(items, deltas, n = 3) {
+  const by = new Map(items.map(i => [i.k, i])), all = [...deltas].map(([k, d]) => ({ item: by.get(k), ...d })).filter(x => x.item);
+  return { up: all.filter(x => x.tot > 0).sort((a, b) => b.tot - a.tot).slice(0, n), down: all.filter(x => x.tot < 0).sort((a, b) => a.tot - b.tot).slice(0, n) };
+}
+
+/* ── Commandant ───────────────────────────────────────────────────────────────────────────────── */
+/** Cartes sous un en-tête « Commander » de la liste (export Archidekt, MTGO…). Vide si la liste n'en a pas. */
+function commanderKeys(text) {
+  const out = []; let on = false;
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) { on = false; continue; }
+    if (/^(commanders?|commandants?)\s*(\(\d+\))?\s*:?\s*$/i.test(line)) { on = true; continue; }
+    if (HEADER_RE.test(line)) { on = false; continue; }
+    if (on) { const p = parseLine(line); if (p && !p.ignored && !out.includes(p.key)) out.push(p.key); }
+  }
+  return out;
+}
+/** Sans en-tête : la première carte de la liste (export EDHREC) est le commandant si elle est légendaire (créature ou planeswalker). */
+const canLead = tl => /legendary/i.test(String(tl || '')) && /(creature|planeswalker)/i.test(String(tl || ''));
+
+/* ── Collection : lecture CSV / texte, cartes possédées ──────────────────────────────────────── */
+/** Clé d'une carte pour la collection : nom de la première face, normalisé (« Fire // Ice » et « Fire » se rejoignent). */
+const ownKey = name => frontName(name);
+const COLL_MAX = 20000;
+
+function csvSplit(line, d) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === d) { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur); return out.map(x => x.trim());
+}
+const NAME_COLS = ['name', 'card name', 'card', 'cardname', 'nom', 'nom de la carte', 'carte'];
+const QTY_COLS = ['quantity', 'qty', 'count', 'amount', 'quantite', 'reg qty', 'total qty', 'owned'];
+const colNorm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Lit une collection : export CSV (ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield, TCGplayer…) ou texte « 3 Sol Ring ».
+ * Retourne { items:[{k, n, q}], lines, skipped, format:'csv'|'text', copies }. Les quantités d'une même carte (impressions différentes) s'additionnent.
+ */
+function parseCollection(text) {
+  const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/);
+  let i0 = 0; while (i0 < lines.length && (!lines[i0].trim() || /^sep=.$/i.test(lines[i0].trim()))) i0++;
+  const first = lines[i0] || '';
+  let delim = null, nameCol = -1, qtyCol = -1;
+  for (const d of [',', ';', '\t']) {
+    const cols = csvSplit(first, d).map(colNorm);
+    if (cols.length < 2) continue;
+    const ni = cols.findIndex(c => NAME_COLS.includes(c));
+    if (ni < 0) continue;
+    delim = d; nameCol = ni;
+    for (const want of QTY_COLS) { const qi = cols.findIndex(c => c === want); if (qi >= 0) { qtyCol = qi; break; } }
+    if (qtyCol < 0) qtyCol = cols.findIndex(c => /(quantity|qty|count)/.test(c) && !/(trade|tradelist|wish)/.test(c));
+    break;
+  }
+  const map = new Map(); let n = 0, skipped = 0;
+  const add = (name, q) => {
+    name = String(name || '').trim(); q = Math.max(1, Math.min(9999, Math.round(q) || 1));
+    const k = ownKey(name); if (!name || !k) { skipped++; return; }
+    const cur = map.get(k); if (cur) cur.q = Math.min(9999, cur.q + q); else if (map.size < COLL_MAX) map.set(k, { k, n: name, q });
+  };
+  if (delim) {
+    for (let i = i0 + 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue; n++;
+      const c = csvSplit(lines[i], delim), name = c[nameCol];
+      if (!name) { skipped++; continue; }
+      add(name, qtyCol >= 0 ? parseInt(c[qtyCol], 10) || 1 : 1);
+    }
+  } else {
+    for (const raw of lines) {
+      const p = parseLine(raw); if (!p) continue; n++;
+      if (p.ignored) { skipped++; continue; }
+      add(p.name, p.qty);
+    }
+  }
+  const items = [...map.values()];
+  return { items, lines: n, skipped, format: delim ? 'csv' : 'text', copies: items.reduce((a, x) => a + x.q, 0) };
+}
+
+/** Fusionne des cartes dans une collection (objet clé → { n, q, … }). mode : 'add' (somme) · 'replace' (remplace le reste, garde les infos Scryfall déjà lues). Retourne la nouvelle collection. */
+function mergeColl(base, add, mode) {
+  const out = mode === 'replace' ? {} : { ...base };
+  for (const it of add) {
+    const prev = base[it.k], cur = out[it.k];
+    out[it.k] = { ...(prev || {}), n: (prev && prev.n) || it.n, q: Math.min(9999, (cur ? cur.q : 0) + it.q) };
+  }
+  return out;
+}
+/** Texte compact d'une collection (une carte par ligne, « 3 Sol Ring ») pour le cloud, et son inverse. */
+const collToText = coll => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).map(x => x.q + ' ' + x.n).join('\n');
+const collFromText = text => { const o = {}; for (const it of parseCollection(text).items) o[it.k] = { n: it.n, q: it.q }; return o; };
+
+/** Union de deux collections (première connexion : appareil + compte) : pour chaque carte, la plus grande quantité. */
+function unionColl(a, b) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b || {})) { const cur = out[k]; out[k] = cur ? { ...v, ...cur, q: Math.max(cur.q, v.q) } : { ...v }; }
+  return out;
+}
+/** Deux collections contiennent-elles la même chose (clés et quantités) ? */
+function sameColl(a, b) {
+  const ka = Object.keys(a || {}), kb = Object.keys(b || {});
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (!b[k] || b[k].q !== a[k].q) return false;
+  return true;
+}
+
+/** Pose sur chaque carte de la liste : own (déjà possédées, au plus la quantité demandée) et need (à acheter). owned : clé de carte → exemplaires, ou null. */
+function applyOwned(cards, owned) {
+  for (const c of cards) {
+    const o = owned ? Math.max(0, Math.floor(Number(owned(ownKey(c.key))) || 0)) : 0;
+    c.own = Math.min(o, c.qty); c.need = c.qty - c.own;
+  }
+  return cards;
+}
+
+/* ── Filtres : recherche texte, couleurs, famille, coût (viewer du deck et collection) ───────── */
+const BASIC_COLOR = { plains: 'W', island: 'U', swamp: 'B', mountain: 'R', forest: 'G' };
+const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'];
+/** Couleurs d'une carte du viewer (« WU »), '' si incolore ; les terrains de base ont la couleur de leur mana. */
+const itemColors = i => (i.s === 'basic' ? BASIC_COLOR[String(i.k).replace(/^snow covered /, '')] || '' : i.cl || '');
+const itemType = i => (i.s === 'basic' ? 'Terrains' : typeBucket(i.tl));
+const hasMeta = i => i.s === 'basic' || i.tl != null || i.cm != null;
+/** f : { q:texte, colors:Set('W','U',… ,'C'), type:'Créatures'…, cmc:0..7 (7 = 7 et plus) } — champ absent ou vide = pas de filtre. */
+function filterItems(items, f) {
+  if (!f) return items;
+  const q = normPart(f.q || ''), colors = f.colors && f.colors.size ? f.colors : null, type = f.type || '', cmc = f.cmc === '' || f.cmc == null ? null : Number(f.cmc);
+  if (!q && !colors && !type && cmc == null) return items;
+  return items.filter(i => {
+    if (q && !normPart(i.n).includes(q)) return false;
+    if (colors || type || cmc != null) {
+      if (!hasMeta(i)) return false;
+      if (colors) { const c = itemColors(i); if (c ? ![...c].some(x => colors.has(x)) : !colors.has('C')) return false; }
+      if (type && itemType(i) !== type) return false;
+      if (cmc != null && Math.min(i.cm ?? 0, 7) !== cmc) return false;
+    }
+    return true;
+  });
+}
+const filterActive = f => !!f && !!((f.q || '').trim() || (f.colors && f.colors.size) || f.type || (f.cmc !== '' && f.cmc != null));
+
+/* ── Statistiques de la collection ─────────────────────────────────────────────────────────── */
+/** items : [{ k, n, q, cm, tl, cl, eu }] (cm/tl/cl/eu absents tant que Scryfall n'a pas répondu). */
+function collStats(items) {
+  const st = { unique: items.length, copies: 0, known: 0, unknown: 0, lands: 0, spells: 0, value: 0, valued: 0, curve: new Array(8).fill(0), colors: { W: 0, U: 0, B: 0, R: 0, G: 0, M: 0, C: 0 }, types: {}, top: [] };
+  for (const t of TYPE_ORDER) st.types[t] = 0;
+  const valued = [];
+  for (const i of items) {
+    st.copies += i.q;
+    if (i.tl == null && i.cm == null) { st.unknown++; continue; }
+    st.known++;
+    const t = typeBucket(i.tl); st.types[t] += i.q;
+    if (Number.isFinite(i.eu) && i.eu > 0) { st.value += i.eu * i.q; st.valued++; valued.push(i); }
+    if (t === 'Terrains') { st.lands += i.q; continue; }
+    st.spells += i.q;
+    st.curve[Math.min(i.cm ?? 0, 7)] += i.q;
+    const c = i.cl || ''; if (!c) st.colors.C += i.q; else if (c.length > 1) st.colors.M += i.q; else if (st.colors[c] != null) st.colors[c] += i.q; else st.colors.C += i.q;
+  }
+  st.top = valued.sort((a, b) => b.eu - a.eu || a.n.localeCompare(b.n)).slice(0, 10);
+  return st;
+}
+
+/* ── Reconnaissance d'un nom de carte dans un texte lu par OCR ───────────────────────────────── */
+/** Distance de Levenshtein bornée : retourne max + 1 dès qu'elle dépasse max. */
+function lev(a, b, max) {
+  if (a === b) return 0;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  if (!la) return lb; if (!lb) return la;
+  let prev = new Array(lb + 1), cur = new Array(lb + 1);
+  for (let j = 0; j <= lb; j++) prev[j] = j;
+  for (let i = 1; i <= la; i++) {
+    cur[0] = i; let rowMin = i; const ca = a.charCodeAt(i - 1);
+    for (let j = 1; j <= lb; j++) {
+      let v = prev[j - 1] + (ca === b.charCodeAt(j - 1) ? 0 : 1);
+      const del = prev[j] + 1, ins = cur[j - 1] + 1;
+      if (del < v) v = del; if (ins < v) v = ins;
+      cur[j] = v; if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    const t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+/** Index des noms de cartes : { list:[{k, n}], by: Map(k → n) } ; k = première face normalisée. */
+function nameIndex(names) {
+  const by = new Map(), list = [];
+  for (const n of names || []) { const k = frontName(n); if (k.length >= 2 && !by.has(k)) { by.set(k, n); list.push({ k, n }); } }
+  return { list, by };
+}
+/** Variantes d'une ligne lue par OCR : la ligne, puis sans les petits mots parasites de fin (coût de mana lu comme du texte) ou de début. */
+function lineVariants(raw) {
+  const clean = String(raw || '').replace(/[|_~=<>{}\[\]\\\/@#*•·®©™]+/g, ' '), key = normPart(clean), t = key.split(' ').filter(Boolean), out = [];
+  if (!t.length) return out;
+  const last = (clean.trim().split(/\s+/).pop() || '');
+  out.push({ key: t.join(' '), penalty: 0 });
+  if (t.length > 1 && t[t.length - 1].length <= 2) out.push({ key: t.slice(0, -1).join(' '), penalty: 0.03 });
+  else if (t.length > 1 && /^[A-Z0-9]{3,4}$/.test(last)) out.push({ key: t.slice(0, -1).join(' '), penalty: 0.04 });   // coût de mana lu comme un mot en capitales (« LLB », « RHO », « WUBG »)
+  if (t.length > 2 && t[t.length - 1].length <= 3 && t[t.length - 2].length <= 3) out.push({ key: t.slice(0, -2).join(' '), penalty: 0.05 });
+  if (t.length > 2 && t[0].length <= 2) out.push({ key: t.slice(1).join(' '), penalty: 0.03 });
+  return out;
+}
+/** Meilleur nom de carte pour une ligne : { name, score (0..1), key } ou null. ≥ 0.84 fiable · ≥ 0.72 à vérifier. */
+function matchName(raw, idx, minScore = 0.72) {
+  let best = null;
+  for (const v of lineVariants(raw)) {
+    if (v.key.length < 3) continue;
+    let name = idx.by.get(v.key), d = 0, k = v.key;
+    if (name === undefined) {
+      let limit = Math.max(1, Math.floor(v.key.length * 0.3)), bn = null;
+      if (minScore > 0.8) limit = Math.max(1, Math.min(limit, Math.floor((1 - minScore) * v.key.length) + 1));   // seuil exigeant : on écarte tôt les noms trop différents
+      for (const e of idx.list) {
+        if (limit < 0) break;
+        if (Math.abs(e.k.length - v.key.length) > limit) continue;
+        const dd = lev(v.key, e.k, limit);
+        if (dd <= limit) { bn = e; d = dd; limit = dd - 1; }
+      }
+      if (!bn) continue;
+      name = bn.n; k = bn.k;
+    }
+    const score = 1 - d / Math.max(v.key.length, k.length) - v.penalty;
+    if (score >= minScore && (!best || score > best.score)) best = { name, score: Math.round(score * 1000) / 1000, key: ownKey(name) };
+  }
+  return best;
+}
+/** Plusieurs noms sur une même ligne (cartes côte à côte) : groupes de mots reconnus (≥ 0.9), sans chevauchement, dans l'ordre de lecture. */
+function spanMatches(text, idx, minScore = 0.9) {
+  const w = String(text || '').replace(/[|_~=<>{}\[\]\\\/@#*•·®©™]+/g, ' ').split(/\s+/).filter(Boolean);
+  if (w.length < 2 || w.length > 16) return [];
+  const found = [];
+  for (let i = 0; i < w.length; i++) for (let j = Math.min(w.length, i + 7); j > i; j--) {
+    const sp = w.slice(i, j).join(' '); if (sp.length < 5 || !/[A-Za-zÀ-ÿ]{3}/.test(sp)) continue;          // « Opt », « Fog » : trop courts pour être sûrs au milieu d'une ligne
+    const m = matchName(sp, idx, minScore); if (m) found.push({ ...m, i, j, raw: sp });
+  }
+  found.sort((a, b) => b.score - a.score || (b.j - b.i) - (a.j - a.i));
+  const used = new Array(w.length).fill(false), out = [];
+  for (const f of found) { let free = true; for (let k = f.i; k < f.j; k++) if (used[k]) { free = false; break; } if (!free) continue; for (let k = f.i; k < f.j; k++) used[k] = true; out.push(f); }
+  return out.sort((a, b) => a.i - b.i).map(({ i, j, ...m }) => m);
+}
+/** Lignes lues par OCR [{ text, y }] → cartes reconnues [{ name, key, score, q, raw }] (une même carte lue deux fois = 2 exemplaires).
+ *  spans : une ligne peut contenir plusieurs noms (photo de plusieurs cartes côte à côte). */
+function ocrMatches(lines, idx, spans = false) {
+  const out = [], seen = new Map();
+  for (const l of lines || []) {
+    const text = String(l.text || '').trim(); if (text.length < 3 || text.length > (spans ? 140 : 60)) continue;
+    const letters = (text.match(/[A-Za-zÀ-ÿ]/g) || []).length; if (letters < text.length * 0.6) continue;
+    const one = matchName(text, idx);
+    let ms = one ? [one] : [];
+    if (spans && (!one || one.score < 0.84)) { const sp = spanMatches(text, idx); if (sp.length) ms = sp; }
+    for (const m of ms) {
+      const cur = seen.get(m.key);
+      if (cur) { cur.q++; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw || text; } } else { const e = { ...m, q: 1, raw: m.raw || text }; seen.set(m.key, e); out.push(e); }
+    }
+  }
+  return out;
+}
+
+/** Meilleure carte reconnue parmi des lignes lues : { name, key, score, raw } ou null. */
+function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b) => b.score - a.score)[0] || null; }
+/** Rectangle d'écran (x, y, w, h) dans un conteneur cw×ch qui affiche une vidéo vw×vh en « object-fit: cover » → rectangle en pixels de la vidéo. */
+function coverMap(cw, ch, vw, vh, r) {
+  const s = Math.max(cw / vw, ch / vh), ox = (cw - vw * s) / 2, oy = (ch - vh * s) / 2;
+  const x = Math.max(0, (r.x - ox) / s), y = Math.max(0, (r.y - oy) / s);
+  return { x: Math.round(x), y: Math.round(y), w: Math.round(Math.max(1, Math.min(vw - x, r.w / s))), h: Math.round(Math.max(1, Math.min(vh - y, r.h / s))) };
+}
+/** Évite de compter deux fois la même carte tenue devant l'objectif : elle n'est ajoutée de nouveau qu'après `gap` lectures sans elle. feed(clé | null) → true : ajouter. */
+function makeGate(gap = 3) {
+  let key = null, absent = 0;
+  return { feed(k) { if (!k) { absent++; return false; } if (k === key && absent < gap) { absent = 0; return false; } key = k; absent = 0; return true; }, reset() { key = null; absent = 0; } };
+}
+
+/* ── Partage vers l'app (Web Share Target) ───────────────────────────────────────────────────── */
+const URL_RE = /https?:\/\/[^\s<>"')]+/gi;
+/** Paramètres reçus (title, text, url) → { text, urls } : le texte est gardé s'il ressemble à une decklist (3 cartes ou plus), les liens sont listés. */
+function extractShared(p) {
+  const text0 = String((p && p.text) || ''), urls = [];
+  for (const part of [text0, (p && p.url) || '', (p && p.title) || '']) for (const m of String(part).matchAll(URL_RE)) { const u = m[0].replace(/[.,;:!?]+$/, ''); if (!urls.includes(u)) urls.push(u); }
+  const body = text0.replace(URL_RE, '').trim();
+  return { text: parseDeck(body).cards.length >= 3 ? body : '', urls };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
-    sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX };
+    sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
+    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
+    ownKey, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
+    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeGate, extractShared };
 }
 
 
@@ -1340,6 +1913,11 @@ function makeCloud(m) {
     newId: uid => m.fs.doc(col(uid)).id,
     save: (uid, id, data) => m.fs.setDoc(m.fs.doc(col(uid), id), data),
     remove: (uid, id) => m.fs.deleteDoc(m.fs.doc(col(uid), id)),
+    /** Collection possédée : un seul document users/{uid}/meta/collection { text, count, updatedAt }. */
+    watchColl(uid, onData, onErr) {
+      return m.fs.onSnapshot(m.fs.doc(db, 'users', uid, 'meta', 'collection'), { includeMetadataChanges: true }, s => onData(s.exists() ? s.data() : null, s.metadata.hasPendingWrites), onErr);
+    },
+    saveColl: (uid, data) => m.fs.setDoc(m.fs.doc(db, 'users', uid, 'meta', 'collection'), data),
     saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
   };
 }
@@ -1364,7 +1942,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE
 
 /* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
 
-const CTX = { proxy: false, needsKey: false, needsLogin: false, jobs: false, token: '', appKey: '', idToken: null };
+const CTX = { proxy: false, needsKey: false, needsLogin: false, jobs: false, vapid: "", token: '', appKey: '', idToken: null };
 
 const sleep = (ms, signal) => new Promise((res, rej) => {
   if (signal && signal.aborted) return rej(abortErr());
@@ -1498,6 +2076,7 @@ const DAY = 86400000;
 const imgOf = c => (c.image_uris && c.image_uris.small) || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris && c.card_faces[0].image_uris.small) || null;
 
 /** Données de la carte (communes à toutes ses impressions) : coût converti, coût de mana, type, couleurs — pour le deck viewer. */
+const eurOf = c => ({ eu: eurCents(c.prices && c.prices.eur), ef: eurCents(c.prices && c.prices.eur_foil) });   // prix de référence Cardmarket (euros → centimes), null si Scryfall n'en a pas
 const metaOf = c => { const f0 = (c.card_faces && c.card_faces[0]) || {}; return { cmc: Number.isFinite(c.cmc) ? c.cmc : 0, mc: String(c.mana_cost || f0.mana_cost || '').slice(0, 60), tl: String(c.type_line || '').slice(0, 120), cl: (c.colors || f0.colors || []).join('') }; };
 
 async function scryPrints(name, signal, exactDone = false) { // exactDone : la recherche exacte a déjà eu lieu dans un lot réussi → inutile de la refaire
@@ -1511,7 +2090,7 @@ async function scryPrints(name, signal, exactDone = false) { // exactDone : la r
       catch (e) { if (e.code === '404') return out; throw e; }
       for (const c of j.data || []) {
         if (c.oversized || c.set_type === 'memorabilia') continue;
-        out.push({ id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...metaOf(c) });
+        out.push({ id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...eurOf(c), ...metaOf(c) });
       }
       url = j.has_more ? j.next_page : null;
     }
@@ -1550,7 +2129,7 @@ async function scryPrintsBatch(cards, signal) {
     catch (e) { if (e.code === '404') break; throw e; }
     for (const c of j.data || []) {
       if (c.oversized || c.set_type === 'memorabilia') continue;
-      const pr = { id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...metaOf(c) };
+      const pr = { id: c.id, set: c.set, setName: c.set_name, num: c.collector_number, img: imgOf(c), name: c.name, ...eurOf(c), ...metaOf(c) };
       for (const k of keysOf(c.name)) { let a = got.get(k); if (!a) got.set(k, a = []); if (a.length < 600) a.push(pr); }
     }
     url = j.has_more ? j.next_page : null;
@@ -1587,6 +2166,38 @@ async function scryImage({ set, num, lang }, signal) {
   if (!r && sl !== 'en') { r = await get('en'); if (r) r.missing = sl; }
   if (r) await Cache.set(key, r);
   return r;
+}
+
+/** Infos Scryfall d'une liste de cartes par leur nom (75 par requête) : Map(clé de collection → { cm, mc, tl, cl, im, eu } | null si inconnue). */
+async function scryCollection(names, signal, onProgress) {
+  const out = new Map(), uniq = [...new Map(names.map(n => [ownKey(n), n])).entries()];
+  for (let i = 0; i < uniq.length; i += 75) {
+    const chunk = uniq.slice(i, i + 75);
+    const body = JSON.stringify({ identifiers: chunk.map(([, n]) => ({ name: String(n).split('//')[0].trim() })) });
+    const j = await httpJson(limScry, 'https://api.scryfall.com/cards/collection', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body }, signal);
+    for (const c of j.data || []) { const m = metaOf(c); out.set(ownKey(c.name), { cm: m.cmc, mc: m.mc, tl: m.tl, cl: m.cl, im: imgOf(c) || '', eu: eurCents(c.prices && c.prices.eur) }); }
+    for (const [k] of chunk) if (!out.has(k)) out.set(k, null);
+    if (onProgress) onProgress(Math.min(uniq.length, i + 75), uniq.length);
+  }
+  return out;
+}
+/** Tous les noms de cartes (anglais) : sert à reconnaître un nom lu par OCR. Gardé 14 jours sur l'appareil (~1 Mo). */
+async function scryCatalogNames(signal) {
+  const hit = await Cache.get('sc:names', 14 * DAY); if (hit && hit.length > 1000) return hit;
+  const j = await httpJson(limScry, 'https://api.scryfall.com/catalog/card-names', SCRY_JSON, signal);
+  const list = Array.isArray(j && j.data) ? j.data.filter(x => typeof x === 'string') : [];
+  if (list.length > 1000) await Cache.set('sc:names', list);
+  return list;
+}
+/** Cartes imprimées en langue `lang` dont le nom contient ces mots (2 au plus, lettres seules) : [{ name (anglais), printed }]. Expérimental : sert aux cartes françaises. */
+async function scryForeign(words, lang, signal) {
+  const w = (words || []).map(x => String(x).replace(/[^\p{L}]/gu, '')).filter(x => x.length >= 3).slice(0, 2);
+  if (!w.length) return [];
+  const q = 'lang:' + lang + ' ' + w.map(x => 'name:' + x).join(' ');
+  let j;
+  try { j = await httpJson(limScry, 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards&order=name', SCRY_JSON, signal); }
+  catch (e) { if (e.code === '404') return []; throw e; }
+  return (j.data || []).slice(0, 30).map(c => ({ name: c.name, printed: c.printed_name || c.name }));
 }
 
 /* ── CardTrader ───────────────────────────────────────────────────────────────────────────── */
@@ -1643,7 +2254,7 @@ function mapBlueprints(card, prints, exps, bpIndex) {
     const idx = eid && bpIndex.get(eid); if (!idx) continue;
     const direct = idx.byScry.get(p.id);
     const hits = direct ? [direct] : (idx.byName.get(front) || []);
-    for (const b of hits) if (!out.has(b.id)) out.set(b.id, { id: b.id, set: p.set, setName: p.setName, num: p.num, img: p.img });
+    for (const b of hits) if (!out.has(b.id)) out.set(b.id, { id: b.id, set: p.set, setName: p.setName, num: p.num, img: p.img, eu: p.eu ?? null, ef: p.ef ?? null });
   }
   return [...out.values()];
 }
@@ -1662,13 +2273,13 @@ async function fetchBpOffers(bp, lang, foil, signal) { return (await fetchBpRaw(
  * la boucle continue même si l'application passe en arrière-plan ou se ferme, et un cache court évite de relire deux fois.
  * Relancer la même recherche se rattache à la tâche en cours (ou terminée). onItem({bp, products|error}) · onInfo(état de la tâche).
  */
-async function jobOffers(ids, lang, foil, { fresh = false, signal, onItem, onInfo }) {
+async function jobOffers(ids, lang, foil, { fresh = false, signal, onItem, onInfo, push = null }) {
   const want = new Set(ids), kill = id => { ct('jobs/' + id, { method: 'DELETE', lim: limJob }).catch(() => {}); };
   const down = (e, why) => Object.assign(netErr('jobs', why || 'Tâches du serveur indisponibles', { cause: e }), { jobsDown: true });
   for (let attempt = 0; want.size; attempt++) {
     if (attempt >= 3) throw down(null, 'Recherche serveur interrompue à plusieurs reprises');
     let st;
-    try { st = await ct('jobs', { method: 'POST', body: { type: 'offers', lang: lang || '', foil: foil === 'no' || foil === 'yes' ? foil : 'any', bps: [...want], fresh: !!fresh && attempt === 0 }, signal, lim: limJob }); }
+    try { st = await ct('jobs', { method: 'POST', body: { type: 'offers', lang: lang || '', foil: foil === 'no' || foil === 'yes' ? foil : 'any', bps: [...want], fresh: !!fresh && attempt === 0, push: push || undefined }, signal, lim: limJob }); }
     catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e; throw down(e); }   // 404 (désactivées) · 429 (serveur occupé) · 400 : on retombe sur la lecture depuis l'appareil
     const onAbort = () => kill(st.id); signal && signal.addEventListener('abort', onAbort, { once: true });
     let from = 0, lost = false, bad = 0;
@@ -1712,7 +2323,7 @@ async function offersPass(entries, lang, opts, signal, onCard, onTick) {
   if (total && CTX.proxy && CTX.jobs) {
     try {
       mode = 'job';
-      await jobOffers(ids, lang, opts.foil, { fresh: opts.fresh, signal, onItem: it => { got(it.bp, it.error ? null : it.products); },
+      await jobOffers(ids, lang, opts.foil, { fresh: opts.fresh, push: opts.push, signal, onItem: it => { got(it.bp, it.error ? null : it.products); },
         onInfo: (r, attached) => {
           // Âge des prix servis « d'avance » : cache lu au lancement ; ou, si on se rattache à une tâche existante, âge de ses données à cet instant (relevé une seule fois).
           const a = attached ? (firstInfo ? r.dataAge : 0) : r.cacheAge; firstInfo = false; cacheAge = Math.max(cacheAge, a || 0);
@@ -1761,8 +2372,8 @@ async function runLive(cards, opts, hooks, signal) {
     })());
   };
   try {
-    // 1) cache (7 jours) · 2) recherche groupée par lots · 3) carte par carte pour les absentes (nom approximatif, lot en échec)
-    await pool(cards, 6, async c => { const pr = await Cache.get('sc:' + c.key, 7 * DAY); if (pr && pr.length && pr[0].cmc !== undefined) { printsOf[c.key] = pr; done++; } });   // anciennes entrées sans coût de mana : relues une fois
+    // 1) cache (3 jours) · 2) recherche groupée par lots · 3) carte par carte pour les absentes (nom approximatif, lot en échec)
+    await pool(cards, 6, async c => { const pr = await Cache.get('sc:' + c.key, 3 * DAY); if (pr && pr.length && pr[0].cmc !== undefined && pr[0].eu !== undefined) { printsOf[c.key] = pr; done++; } });   // 3 jours (les prix de référence bougent) ; anciennes entrées sans coût de mana ou sans prix : relues une fois
     hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
     const single = [];
     for (const chunk of scryChunks(cards.filter(c => !printsOf[c.key]))) {
@@ -1789,8 +2400,9 @@ async function runLive(cards, opts, hooks, signal) {
 
   hooks.step('catalog', 'run', 'Extensions…');
   const exps = await getExpansions(signal);
+  const skip = opts.skip || new Set();                     // cartes déjà possédées en totalité : on lit leurs impressions (image, coût) mais pas leurs offres
   const needed = new Set();
-  for (const c of cards) for (const p of printsOf[c.key]) {
+  for (const c of cards) if (!skip.has(c.key)) for (const p of printsOf[c.key]) {
     const eid = exps.byCode.get(p.set) || exps.byName.get(normPart(p.setName)); if (eid) needed.add(eid);
   }
   const bpIndex = new Map(); let bd = 0; const ids = [...needed];
@@ -1805,6 +2417,7 @@ async function runLive(cards, opts, hooks, signal) {
   for (const { c, bps } of plan) {
     const p0 = printsOf[c.key][0] || {}, img = p0.img || null, meta = p0.cmc !== undefined ? { cm: p0.cmc, mc: p0.mc, tl: p0.tl, cl: p0.cl } : null;
     if (!printsOf[c.key].length) { hooks.card(c.key, { offers: [], bps: [], img, notFound: true }); continue; }
+    if (skip.has(c.key)) { hooks.card(c.key, { offers: [], bps: [], img, meta, skipped: true }); continue; }
     store[c.key] = { bps, img }; entries.push({ c, bps, img, meta });
   }
   const reqTotal = entries.reduce((a, e) => a + e.bps.length, 0) || 1, t0 = performance.now();
@@ -1852,8 +2465,10 @@ async function runDemo(cards, opts, hooks, signal) {
   hooks.step('catalog', 'done', nExp + ' extensions');
   hooks.step('offers', 'run', '0 / ' + total);
   let reqs = 0; const t0 = performance.now();
+  const skip = opts.skip || new Set();
   for (let i = 0; i < total; i++) {
     const c = cards[i];
+    if (skip.has(c.key)) { hooks.card(c.key, { offers: [], bps: [], img: null, skipped: true }); hooks.step('offers', 'run', (i + 1) + ' / ' + total); hooks.progress(0.4 + 0.55 * (i + 1) / total); continue; }
     await sleep(38 + (hash32(c.key + 'z') % 70), signal);
     reqs += 4 + (hash32(c.key) % 7);
     hooks.card(c.key, { offers: makeDemoOffers(c, opts.lang), bps: [{ id: 1 }], img: null });
@@ -1863,7 +2478,7 @@ async function runDemo(cards, opts, hooks, signal) {
   }
   hooks.step('offers', 'done', reqs + ' requêtes simulées');
   if (opts.fallbackEn && opts.lang !== 'en') {
-    const miss = cards.filter(c => hooks.needsEn(c.key));
+    const miss = cards.filter(c => !skip.has(c.key) && hooks.needsEn(c.key));
     if (miss.length) {
       hooks.step('fallback', 'run', '0 / ' + miss.length);
       for (let i = 0; i < miss.length; i++) {
@@ -2126,14 +2741,20 @@ const S = {
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
-  enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [],
+  enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [], useColl: true, push: false,
 };
 let runSeq = 0;
+/** Critères qui fixent les prix lus : s'ils changent après la recherche, les prix gardés ne correspondent plus. */
+const critSig = () => [S.opts.lang, S.opts.cond, S.opts.foil].join('|');
+const ownSig = () => { const n = S.deck.cards.reduce((a, c) => a + (c.own || 0), 0); return n ? '|o' + n : ''; };
+/** Signature d'une recherche pour comparer l'historique : critères + cartes déjà possédées (le total change si la collection change). */
+const curSig = () => critSig() + ownSig();
+const deckLabel = () => { const d = findDeck(S.deckId); return d ? d.name : suggestName($('#deckText').value); };
 
 function loadStore() { try { return JSON.parse(localStorage.getItem('deckdeal:v1') || '{}'); } catch (e) { return {}; } }
 function saveStore() {
   try {
-    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, haptic: S.haptic, sort: S.sort, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
+    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, haptic: S.haptic, sort: S.sort, useColl: S.useColl, push: S.push, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
   } catch (e) { /* stockage indisponible */ }
 }
 
@@ -2254,17 +2875,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheets.len
 let draftT;
 function refreshDeck() {
   const d = parseDeck($('#deckText').value); S.deck = d;
+  applyOwned(d.cards, S.useColl ? collQty : null);
+  const buy = d.cards.filter(c => c.need > 0).length, owned = d.cards.length - buy;
   const chips = [];
   const dk = findDeck(S.deckId);
   if (dk) chips.push(`<span class="stat deckchip"><b>${esc(dk.name)}</b><button class="stat-x" type="button" data-act="detach" aria-label="Détacher ce deck"><svg class="i"><use href="#i-close"/></svg></button></span>`);
   if (S.isSample) chips.push('<span class="stat accent"><b>Exemple</b> liste de démonstration</span>');
-  if (d.cards.length) chips.push(`<span class="stat"><b>${d.cards.length}</b> cartes à chercher</span>`);
+  if (d.cards.length) chips.push(`<span class="stat"><b>${buy}</b> carte${buy > 1 ? 's' : ''} à chercher</span>`);
+  if (owned) chips.push(`<span class="stat good"><b>${owned}</b> déjà possédée${owned > 1 ? 's' : ''}</span>`);
   if (d.basicCopies) chips.push(`<span class="stat"><b>${d.basicCopies}</b> terrains de base à part</span>`);
   if (d.ignored) chips.push(`<span class="stat warn"><b>${d.ignored}</b> ligne${d.ignored > 1 ? 's' : ''} ignorée${d.ignored > 1 ? 's' : ''}</span>`);
   $('#deckStats').innerHTML = chips.join('');
   const n = d.cards.length;
-  $('#btnRunLabel').textContent = n ? `Chercher les offres · ${n} cartes` : 'Colle une liste pour commencer';
-  $('#btnRun').disabled = !n;
+  $('#btnRunLabel').textContent = !n ? 'Colle une liste pour commencer' : buy ? `Chercher les offres · ${buy} carte${buy > 1 ? 's' : ''}` : 'Tout est dans ta collection';
+  $('#btnRun').disabled = !buy;
+  paintCollSwitch();
   updateSaveButtons();
   clearTimeout(draftT); draftT = setTimeout(saveStore, 400);
 }
@@ -2323,7 +2948,7 @@ function makeRow(c, i) {
 }
 function buildList() {
   const list = $('#list'); list.innerHTML = ''; list.classList.remove('settled'); clearTimeout(list._settle); list._order = null;
-  S.deck.cards.forEach((c, i) => { const rw = makeRow(c, i); list.appendChild(rw); updateRow($('.row', rw), c, { s: 'loading' }, null); });
+  S.deck.cards.forEach((c, i) => { const rw = makeRow(c, i); list.appendChild(rw); updateRow($('.row', rw), c, c.need === 0 ? { s: 'own' } : { s: 'loading' }, null); });
   list._settle = setTimeout(() => list.classList.add('settled'), 1700); // l'entrée en cascade ne doit pas rejouer quand on réordonne
   const bs = S.deck.basics;
   const note = $('#basicsNote');
@@ -2333,11 +2958,12 @@ function buildList() {
 }
 
 /* ── Liste : tri, filtres, retrait d'une carte ────────────────────────────────────────────────── */
-const FILTERS = [['all', 'Toutes'], ['none', 'Sans offre'], ['lang', 'Autre langue'], ['manual', 'Choix manuel']];
+const FILTERS = [['all', 'Toutes'], ['none', 'Sans offre'], ['lang', 'Autre langue'], ['manual', 'Choix manuel'], ['own', 'Possédées']];
 function filterMatch(f, c, v) {
   if (f === 'none') return v.s === 'none' || v.s === 'nohub' || v.s === 'notfound';
   if (f === 'lang') return v.s === 'ok' && v.pick.parts.some(p => p.offer.lang && p.offer.lang !== S.opts.lang);
   if (f === 'manual') return !!S.overrides[c.key];
+  if (f === 'own') return c.own > 0;
   return true;
 }
 /** Anime un changement d'ordre ou de contenu de la liste : chaque ligne glisse de son ancienne place à la nouvelle (FLIP). */
@@ -2425,13 +3051,14 @@ async function startRun(fresh) {
   fresh = fresh === true;                                    // true : « Actualiser les prix » (ignore le cache du serveur)
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
+  if (!cards.some(c => c.need > 0)) { toast('Tout est déjà dans ta collection'); return; }
   if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
   if (!S.demo && CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast('Connecte-toi pour lancer la recherche'); openAccount(); return; }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
   if (S.run && S.run.task) S.run.task.remove();
   if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
   saveStore();
-  const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: [S.opts.lang, S.opts.cond, S.opts.foil].join('|') };
+  const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: curSig(), crit: critSig() };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
   S.run = run; S.overrides = {}; S.gone = new Set(); S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null; S.removed = []; S.filter = 'all'; paintUndo();
   run.frac = 0; run.step = ''; run.cacheAge = 0;
@@ -2447,6 +3074,10 @@ async function startRun(fresh) {
   showView('results'); lockScreen();
 
   const alive = () => !run.ctrl.signal.aborted && S.run === run;
+  const skip = new Set(cards.filter(c => c.need === 0).map(c => c.key));              // cartes possédées en totalité : pas d'offres à lire
+  const push = await pushPayload(deckLabel());                                         // notification de fin si tu quittes l'app (null si désactivée)
+  if (S.run !== run) return;
+  pendingSave(push && !S.demo ? { text: run.text, opts: { ...S.opts }, deckId: S.deckId, at: Date.now() } : null);   // pour reprendre depuis la notification si l'app est fermée entre-temps
   const hooks = {
     step: (id, st, d) => { if (alive()) setStep(id, st, d); },
     progress: f => { if (alive()) setProgress(f); },
@@ -2455,7 +3086,7 @@ async function startRun(fresh) {
     cacheAge: a => { if (alive() && a > run.cacheAge) run.cacheAge = a; },             // âge (s) du plus vieux prix servi par le cache du serveur
     card: (key, p) => {
       if (!alive()) return; const st = run.cards[key]; if (!st) return;
-      st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img; if (p.meta) st.meta = p.meta;
+      st.fetched = true; st.offers = p.fellBack ? st.offers.concat(p.offers || []) : (p.offers || []); st.bps = p.bps || st.bps; st.notFound = !!p.notFound; st.img = p.img || st.img; if (p.meta) st.meta = p.meta; if (p.skipped) st.skipped = true;
       if (p.fellBack) st.fellBack = true;
       scheduleRecompute();
     },
@@ -2463,7 +3094,7 @@ async function startRun(fresh) {
     needsEn: key => { const st = run.cards[key]; return !!st && needsEnglish(st.offers, S.opts); },
   };
   try {
-    await (S.demo ? runDemo : runLive)(cards, { ...S.opts, fresh }, hooks, run.ctrl.signal);
+    await (S.demo ? runDemo : runLive)(cards, { ...S.opts, fresh, skip, push }, hooks, run.ctrl.signal);
     if (S.run === run) run.status = 'done';
   } catch (e) {
     if (S.run !== run) return;
@@ -2480,8 +3111,9 @@ async function startRun(fresh) {
     }
   } finally {
     if (S.run === run) {
+      pendingSave(null);
       unlockScreen(); scheduleRecompute(true);
-      if (run.status === 'done') recordRun();
+      if (run.status === 'done') { run.doneAt = Date.now(); recordRun(); }
       $('#heroPartial').hidden = true; $('#btnCancel').hidden = true; $('#progHint').hidden = true;
       $('#btnViewer').disabled = run.status !== 'done' || !run.live;
       if (run.status === 'done') {
@@ -2491,7 +3123,7 @@ async function startRun(fresh) {
       updateAlerts(); updateDock();
       haptic(run.status === 'done' ? (S.deck.cards.some(c => /^(none|nohub|notfound)$/.test(cardView(c).s)) ? 'warn' : 'ok') : run.status === 'error' ? 'bad' : 'tap');
       const t = run.task;
-      if (run.status === 'done') { const n = S.deck.cards.length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish('Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} avec offre`); }
+      if (run.status === 'done') { const n = S.deck.cards.filter(c => c.need > 0).length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish('Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} avec offre`); }
       else if (run.status === 'cancelled') t.remove();
       else t.finish('Recherche interrompue', 'bad', run.error ? run.error.msg : '');
     }
@@ -2509,13 +3141,14 @@ function recompute() {
   if (!S.run) return;
   const demand = [], byZ = {}, byD = {}; S.fo = {};
   for (const c of S.deck.cards) {
+    if (c.need === 0) continue;                                   // déjà possédée : rien à acheter
     const st = S.run.cards[c.key]; if (!st || !st.fetched || st.notFound) continue;
     const list = st.offers.filter(o => passes(o, S.opts) && !S.gone.has(o.productId)); S.fo[c.key] = list;
     if (!list.length) continue;
     if (!S.cur || S.cur === 'EUR') S.cur = list[0].cur || 'EUR';
     // Langue demandée prioritaire dans chaque mode : une offre anglaise ne masque jamais une offre française (sauf choix manuel).
     const keep = !!S.overrides[c.key];
-    demand.push({ key: c.key, qty: c.qty });
+    demand.push({ key: c.key, qty: c.need });
     byZ[c.key] = forMode(list, 'zero', S.opts.lang, keep); byD[c.key] = forMode(list, 'direct', S.opts.lang, keep);
   }
   S.res = { zero: optimize(demand, byZ, { mode: 'zero', forced: S.overrides }), direct: optimize(demand, byD, { mode: 'direct', ship: S.opts.ship, forced: S.overrides }) };
@@ -2538,7 +3171,7 @@ function updateHero() {
   const running = S.run && S.run.status === 'running';
   tween($('#heroAmt'), totalOf(r));
   $('#heroLabel').textContent = S.opts.mode === 'zero' ? 'Total articles' : 'Total estimé, port inclus';
-  $('#heroCount').textContent = `${foundCount(r)} / ${S.deck.cards.length} cartes`;
+  $('#heroCount').textContent = `${foundCount(r)} / ${S.deck.cards.filter(c => c.need > 0).length} cartes`;
   $('#heroSellers').textContent = S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
   const sv = $('#heroSave'), diff = S.opts.mode === 'direct' ? r.baseline.total - r.total : 0;
   sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = `Économie de ${fmt(diff)} avec le regroupement`;
@@ -2555,8 +3188,10 @@ function updateDock() {
 
 /* ── Rendu : lignes ───────────────────────────────────────────────────────────────────────── */
 function cardView(c) {
+  if (c.need === 0) return { s: 'own' };
   const st = S.run.cards[c.key];
   if (!st || !st.fetched) return { s: 'loading' };
+  if (st.skipped) return { s: 'stale' };                     // possédée au lancement (offres non lues), plus entièrement depuis : à relancer
   if (st.notFound) return { s: 'notfound' };
   const list = S.fo[c.key] || [];
   if (!list.length) return { s: 'none' };
@@ -2571,8 +3206,8 @@ function updateRows() {
   });
 }
 function updateRow(el, c, v, st) {
-  const pick = v.pick;
-  const sig = v.s + '|' + (pick ? pick.parts.map(p => p.offer.id + ':' + p.n).join(',') : '') + '|' + (st && st.fellBack ? 1 : 0) + '|' + S.opts.lang + '|' + S.cur;
+  const pick = v.pick, ri = pick ? refInfo(pick.parts, st && st.bps) : null;
+  const sig = v.s + '|' + (pick ? pick.parts.map(p => p.offer.id + ':' + p.n).join(',') : '') + '|' + (st && st.fellBack ? 1 : 0) + '|' + S.opts.lang + '|' + S.cur + '|' + (c.own || 0) + '|' + c.need + '|' + (ri ? ri.ref + ri.level : '') + '|' + (st && st.img ? 1 : 0);
   if (el._sig === sig) return; el._sig = sig;
   const rw = el.parentNode; if (rw && rw.classList && rw.classList.contains('rw')) rw.classList.toggle('scanned', v.s !== 'loading');
   const prevCost = el._cost; el._cost = v.s === 'ok' ? pick.cost : null;
@@ -2580,11 +3215,15 @@ function updateRow(el, c, v, st) {
   const top = pick && pick.parts[0] ? pick.parts[0].offer : null;
   const img = (top && top.img) || (st && st.img);
   const thumb = `<span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
-  const qty = c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : '';
+  const qty = c.need > 1 ? `<span class="tag accent">× ${c.need}</span>` : '';
+  const ownTag = c.own > 0 && c.need > 0 ? `<span class="tag good">${c.own} possédée${c.own > 1 ? 's' : ''}</span>` : '';
   const langName = LANGS[S.opts.lang] || S.opts.lang;
   el.classList.toggle('is-missing', v.s === 'none' || v.s === 'notfound' || v.s === 'nohub');
+  el.classList.toggle('is-own', v.s === 'own');
   if (v.s === 'loading') {
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
+  } else if (v.s === 'own') {
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">Dans ta collection</span></span></span><span class="row-price"><span class="tag good">Possédée</span></span>`;
   } else if (v.s === 'ok') {
     const tags = [];
     tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
@@ -2593,14 +3232,16 @@ function updateRow(el, c, v, st) {
     if (top.foil) tags.push('<span class="tag accent">Foil</span>');
     if (pick.parts.length > 1) tags.push(`<span class="tag">+${pick.parts.length - 1} offre${pick.parts.length > 2 ? 's' : ''}</span>`);
     if (pick.short > 0) tags.push(`<span class="tag warn">Il en manque ${pick.short}</span>`);
+    if (ri) tags.push(`<span class="tag ref ${ri.level}" title="Prix de référence Cardmarket par exemplaire (donné par Scryfall) : ${esc(fmt(ri.ref))}. Ton prix : ${esc(fmt(ri.unit))}.">CM ${esc(fmt(ri.ref))}${ri.level === 'warn' ? ' · +' + ri.pct + ' %' : ''}</span>`);
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
     const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
     const msg = v.s === 'notfound' ? 'Nom introuvable, vérifie l\'orthographe'
+      : v.s === 'stale' ? 'Collection modifiée : relance la recherche'
       : v.s === 'nohub' ? 'Aucune offre compatible Zero'
         : (st && st.fellBack ? 'Aucune offre, même en anglais' : `Aucune offre en ${langName}`);
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-miss">${esc(msg)}</span></span><span class="row-price"><span class="tag">${v.s === 'notfound' ? 'Erreur' : 'Voir'}</span></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span>${ownTag ? `<span class="row-meta">${ownTag}</span>` : ''}<span class="row-miss">${esc(msg)}</span></span><span class="row-price">${v.s === 'stale' ? '' : `<span class="tag">${v.s === 'notfound' ? 'Erreur' : 'Voir'}</span>`}</span>`;
   }
 }
 
@@ -2623,14 +3264,15 @@ function updateAlerts() {
   if (S.run.status === 'cancelled') items.push({ k: '', html: 'Recherche arrêtée : les résultats sont partiels.' });
   if (S.run.status === 'done' && S.run.cacheAge >= 90) { const m = Math.round(S.run.cacheAge / 60), ago = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''); items.push({ k: '', html: `Prix lus il y a ${ago} (cache du serveur). <button type="button" data-act="refresh">Actualiser les prix</button>` }); }
   if (S.run.status !== 'running') {
-    let none = 0, nohub = 0, nf = [], short = 0, enNone = 0, enHub = 0;
+    let none = 0, nohub = 0, nf = [], short = 0, enNone = 0, enHub = 0, stale = 0;
     for (const c of S.deck.cards) {
       const v = cardView(c), st = S.run.cards[c.key], cand = S.opts.lang !== 'en' && !!st && !st.fellBack && !S.enBusy; // repli anglais encore possible
       if (v.s === 'none') { none++; if (cand) enNone++; } else if (v.s === 'nohub') { nohub++; if (cand) enHub++; }
-      else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'ok' && v.pick.short > 0) short++;
+      else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'stale') stale++; else if (v.s === 'ok' && v.pick.short > 0) short++;
     }
     const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en' ? ' ni en anglais' : '';
     const enBtn = n => n ? ' <button type="button" data-act="en-all">Trouver en anglais</button>' : '';
+    if (stale) items.push({ k: '', html: `${stale} carte${stale > 1 ? 's' : ''} ${stale > 1 ? 'ne sont plus' : 'n\'est plus'} dans ta collection : prix à chercher. <button type="button" data-act="rerun">Relancer la recherche</button>` });
     if (S.enBusy) items.push({ k: '', html: `Recherche en anglais · ${S.enBusy.done} / ${S.enBusy.total}…` });
     if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>${enBtn(enNone)}` });
     if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>${enBtn(enHub)}` });
@@ -2677,7 +3319,8 @@ async function findEnglishAll() {
 function updateRecap() {
   const host = $('#recap'); if (!host) return;
   if (!S.run || !S.deck.cards.length) { host.hidden = true; return; }
-  const items = S.deck.cards.map(c => {
+  const own = S.deck.cards.filter(c => c.need === 0).length;
+  const items = S.deck.cards.filter(c => c.need > 0).map(c => {
     const v = cardView(c);
     return { state: v.s, qty: c.qty, short: v.pick ? v.pick.short : 0, parts: v.pick ? v.pick.parts.map(p => ({ lang: p.offer.lang, n: p.n })) : [] };
   });
@@ -2685,6 +3328,7 @@ function updateRecap() {
   const langs = Object.keys(r.byLang).sort((a, b) => (b === S.opts.lang) - (a === S.opts.lang) || r.byLang[b].cards - r.byLang[a].cards);
   const chip = (cls, html) => `<span class="rchip ${cls}">${html}</span>`;
   const chips = langs.filter(l => r.byLang[l].cards > 0 || r.byLang[l].copies > 0).map(l => chip(l === S.opts.lang ? '' : 'warn', `${flag(l)}<b>${r.byLang[l].cards}</b> ${esc(LANGS[l] || l)}`));
+  if (own) chips.push(chip('good', `<b>${own}</b> possédée${own > 1 ? 's' : ''}`));
   if (r.none) chips.push(chip('warn', `<b>${r.none}</b> sans offre`));
   if (r.nohub) chips.push(chip('warn', `<b>${r.nohub}</b> hors Zero`));
   if (r.partial) chips.push(chip('warn', `<b>${r.partial}</b> incomplète${r.partial > 1 ? 's' : ''}`));
@@ -2707,6 +3351,14 @@ function openCardSheet(key) {
   const mode = S.opts.mode;
   const list = (S.fo[key] || []).filter(o => mode !== 'zero' || o.hub).slice().sort((a, b) => a.price - b.price).slice(0, 14);
   const chosen = new Set((curRes().picks[key] || { parts: [] }).parts.map(p => p.offer.id));
+  const ri = refInfo((curRes().picks[key] || { parts: [] }).parts, st.bps), need0 = c.need;
+  const ownBtn = api => {
+    if (!need0) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'link-btn link-inline ownbtn';
+    b.textContent = need0 > 1 ? `Je possède déjà ces ${need0} exemplaires` : 'Je possède déjà cette carte';
+    b.onclick = () => { collBump(ownKey(c.name), c.name, need0); api.close(); haptic('ok'); scheduleRecompute(true); toast(`${c.name} ajoutée à ta collection`, { label: 'Annuler', fn: () => { collBump(ownKey(c.name), c.name, -need0); scheduleRecompute(true); } }); };
+    api.body.appendChild(b);
+  };
   openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
     if (!list.length) {
       const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
@@ -2717,6 +3369,7 @@ function openCardSheet(key) {
         api.setFoot(`<button class="btn ghost" type="button" id="btnDirect">Passer en Direct</button>${canEn ? '<button class="btn" type="button" id="btnEn">Chercher en anglais</button>' : ''}`);
         $('#btnDirect', api.foot).onclick = () => { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); api.close(); };
       } else if (canEn) api.setFoot('<button class="btn" type="button" id="btnEn">Chercher en anglais</button>');
+      ownBtn(api);
       if (canEn) {
         $('#btnEn', api.foot).onclick = async e => {
           e.target.disabled = true; e.target.textContent = 'Recherche…';
@@ -2733,7 +3386,9 @@ function openCardSheet(key) {
     api.body.innerHTML = `<div class="offers">${list.map(o => `<div class="offer-row"><button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
       <span class="o-who">${esc(o.seller)}${o.country ? `<i>${esc(o.country)}</i>` : ''}</span><span class="o-price">${fmt(o.price, o.cur)}</span>
       <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>${link(o)}</div>`).join('')}</div>
+      ${ri ? `<p class="hint refline" data-l="${ri.level}"><b>Réf. Cardmarket ${esc(fmt(ri.ref))}</b> par exemplaire (prix Scryfall) · ton prix ${esc(fmt(ri.unit))}${ri.diff === 0 ? '' : ` (${ri.pct > 0 ? '+' : '−'}${Math.abs(ri.pct)} %)`}</p>` : ''}
       ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}${S.run.live ? '<p class="hint">Touche ↗ pour voir la carte et ses vendeurs sur CardTrader.</p>' : ''}`;
+    ownBtn(api);
     api.body.onclick = e => {
       const b = e.target.closest('.offer'); if (!b) return;
       const id = list.find(o => String(o.id) === b.dataset.id); if (!id) return;
@@ -2882,6 +3537,8 @@ function openSettings() {
       <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
         <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
       <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>
+      <div class="sec-title">Notifications</div>
+      <div id="pushBox" class="installbox"></div>
       <div class="sec-title">Application</div>
       <div id="appBox" class="installbox"></div>
       <div class="sec-title">Panier CardTrader</div>
@@ -2902,6 +3559,7 @@ function openSettings() {
       const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
     };
     const off = PWA.on(paintApp); paintApp();
+    paintPushBox($('#pushBox', b));
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b);
       if (S.demo) { st.dataset.ok = '0'; m.textContent = 'Démo active. Désactive-la pour chercher de vraies offres.'; }
@@ -2990,7 +3648,7 @@ async function detectProxy() {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; S.proxy = true; if (S.demoPref == null) S.demo = false; }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.vapid = typeof j.push === 'string' ? j.push : ''; S.proxy = true; if (S.demoPref == null) S.demo = false; }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
@@ -2998,13 +3656,15 @@ async function detectProxy() {
 /* ── Récap à copier ───────────────────────────────────────────────────────────────────────── */
 function recapText() {
   const r = curRes(), lines = [`Deck Deal · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
-  const miss = [];
+  const miss = [], own = [];
   for (const c of S.deck.cards) {
+    if (c.need === 0) { own.push(c.name); continue; }
     const p = r.picks[c.key];
     if (!p || !p.parts.length) { miss.push(c.name); continue; }
     for (const x of p.parts) { const o = x.offer; lines.push(`${x.n} ${c.name} · ${fmt(o.price * x.n, o.cur)} · ${o.seller} (${o.country}) · ${(o.set || '').toUpperCase()}${o.num ? ' ' + o.num : ''} · ${COND_SHORT[o.cond] || o.cond} · ${(o.lang || '').toUpperCase()}`); }
   }
   if (miss.length) lines.push('', 'Sans offre : ' + miss.join(', '));
+  if (own.length) lines.push('', 'Déjà possédées : ' + own.join(', '));
   return lines.join('\n');
 }
 
@@ -3014,6 +3674,7 @@ function init() {
   if (saved.opts) Object.assign(S.opts, saved.opts);
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.address = saved.address || {}; S.theme = saved.theme || 'auto';
   S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null;
+  S.useColl = saved.useColl !== false; S.push = saved.push === true;
   S.haptic = saved.haptic !== false; S.sort = ['deck', 'price-desc', 'price-asc', 'name'].includes(saved.sort) ? saved.sort : 'deck';
   S.demo = S.demoPref == null ? !S.token : S.demoPref;
   syncCTX(); applyTheme();
@@ -3037,8 +3698,11 @@ function init() {
     try { const t = await navigator.clipboard.readText(); if (!t) throw new Error('vide'); ta.value = t; S.isSample = false; refreshDeck(); toast('Liste collée'); }
     catch (e) { ta.focus(); toast('Colle la liste dans le champ avec un appui long'); }
   };
+  collInit();
   initDecks();
   refreshDeck();
+  $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
+  $('#btnColl').onclick = () => openCollection();
 
   $('#btnRun').onclick = startRun;
   $('#btnBack').onclick = () => { if (S.run && S.run.status === 'running') S.run.ctrl.abort(); showView('input'); };
@@ -3064,6 +3728,7 @@ function init() {
     else if (b.dataset.act === 'account') openAccount();
     else if (b.dataset.act === 'en-all') findEnglishAll();
     else if (b.dataset.act === 'refresh') startRun(true);
+    else if (b.dataset.act === 'rerun') startRun();
     else if (b.dataset.act === 'direct') { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); }
     else if (b.dataset.act === 'goto') {
       if (S.tab !== 'cards') { $('#segTab').setValue('cards'); S.tab = 'cards'; $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true; }
@@ -3072,7 +3737,112 @@ function init() {
     }
   });
   initInstall();
-  detectProxy();
+  detectProxy().then(() => { pushInit(); handleLaunch(); });
+  keepStorage();
+}
+
+/** Demande au navigateur de ne pas effacer les données du site (collection, relevés, images) quand l'espace manque. Sans effet visible. */
+function keepStorage() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignore */ } }
+
+/* ── Ouverture par un partage ou une notification ─────────────────────────────────────────────── */
+const PENDING_KEY = 'deckdeal:pending';
+function pendingSave(info) { try { if (info) localStorage.setItem(PENDING_KEY, JSON.stringify(info)); else localStorage.removeItem(PENDING_KEY); } catch (e) { /* ignore */ } }
+function pendingRead() { try { const p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); return p && typeof p.text === 'string' && Date.now() - p.at < 6 * 3600e3 ? p : null; } catch (e) { return null; } }
+/** Notification touchée : si la recherche est encore là on y revient, sinon on la relance (le serveur la rend en quelques secondes grâce à son cache). */
+function resumeRun() {
+  if (S.run && S.run.status !== 'cancelled') { if (S.view !== 'results') showView('results'); return; }
+  const p = pendingRead(); if (!p) { toast('Recherche terminée : relance-la pour voir les prix'); return; }
+  $('#deckText').value = p.text; S.isSample = false; S.deckId = p.deckId && findDeck(p.deckId) ? p.deckId : null;
+  if (p.opts) applyOpts({ ...S.opts, ...p.opts });
+  refreshDeck(); toast('Prix prêts, chargement…'); startRun();
+}
+function handleLaunch() {
+  let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (![...q.keys()].length) return;
+  const resume = q.has('resume'), shared = q.has('text') || q.has('url') || q.has('title');
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+  if (resume) resumeRun();
+  else if (shared) onShared(extractShared({ title: q.get('title'), text: q.get('text'), url: q.get('url') }));
+}
+/** Contenu reçu du menu « Partager » : une decklist en texte, ou un lien (EDHREC, Archidekt, Moxfield) lu par le serveur. */
+async function onShared(sh) {
+  const ta = $('#deckText');
+  const put = (text, name) => { ta.value = text; S.isSample = false; S.deckId = null; S.removed = []; if (S.view !== 'input') showView('input'); refreshDeck(); toast(`${name ? name + ' · ' : ''}${S.deck.cards.length} cartes reçues`); window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' }); };
+  if (sh.text) return put(sh.text);
+  if (!sh.urls.length) { toast('Rien à importer dans ce partage'); return; }
+  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Deck Deal'); return; }
+  toast('Lecture de la liste…');
+  try { const r = await ct('import', { params: { url: sh.urls[0] } }); if (r && r.text) put(r.text, r.name); else throw new Error('vide'); }
+  catch (e) { toast(e && e.code === 'auth' ? authHint(e).msg : 'Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici'); }
+}
+/** Interrupteur « Déduire ma collection » de la page de saisie. */
+function paintCollSwitch() {
+  const row = $('#collRow'); if (!row) return;
+  const n = collCount(); row.hidden = !n; if (!n) return;
+  $('#optColl').checked = S.useColl;
+  const own = S.deck.cards.filter(c => collQty(ownKey(c.key)) > 0).length;
+  $('#collHint').textContent = !S.useColl ? 'Désactivé : toutes les cartes sont cherchées.'
+    : own ? `${own} carte${own > 1 ? 's' : ''} de cette liste ${own > 1 ? 'sont' : 'est'} dans ta collection : non cherchée${own > 1 ? 's' : ''}.` : 'Aucune carte de cette liste n\'est dans ta collection.';
+}
+
+
+/* ── filters.js : recherche + filtres couleur / famille / coût (deck viewer et collection) ───────────────────── */
+const COLOR_DEF = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert'], ['C', 'Incolore']];
+const newFilter = () => ({ q: '', colors: new Set(), type: '', cmc: '' });
+const filterCount = f => (f.colors.size ? 1 : 0) + (f.type ? 1 : 0) + (f.cmc !== '' && f.cmc != null ? 1 : 0);
+
+/** Symboles de mana « {2}{W}{U} » → pastilles colorées (hybride : première couleur, Phyrexian et X : lettre). */
+function manaHtml(mc) {
+  const out = [];
+  for (const m of String(mc || '').matchAll(/\{([^}]+)\}/g)) {
+    const t = m[1].toUpperCase(), c = (t.match(/[WUBRG]/) || [])[0];
+    out.push(`<i class="mc mc-${/^\d+$/.test(t) || t === 'X' || t === 'C' || t === 'S' ? 'n' : (c || 'n').toLowerCase()}">${esc(/^\d+$/.test(t) || t === 'X' ? t : (c || t[0] || ''))}</i>`);
+  }
+  return out.join('');
+}
+
+/**
+ * Monte la barre dans root : champ de recherche, bouton « Filtres » (pastille = nombre de filtres actifs) et panneau
+ * (couleurs, familles, coût). f est modifié en place ; onChange() suit chaque changement (la saisie est lissée à 120 ms).
+ * Retourne { paint, reset }.
+ */
+function mountFilters(root, f, onChange, opts = {}) {
+  root.className = 'fbar';
+  root.innerHTML = `<div class="fbar-row">
+      <label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(opts.placeholder || 'Rechercher une carte')}" aria-label="Rechercher une carte"><button type="button" class="fclear" aria-label="Effacer la recherche" hidden><svg class="i"><use href="#i-close"/></svg></button></label>
+      <button class="fbtn" type="button" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg><span>Filtres</span><b hidden></b></button></div>
+    <div class="fpanel" hidden>
+      <div class="fgrp"><span class="fgl">Couleur</span><div class="fcols" role="group" aria-label="Couleurs">${COLOR_DEF.map(([c, n]) => `<button type="button" class="fcol mc-${c.toLowerCase()}" data-c="${c}" aria-pressed="false" aria-label="${n}" title="${n}">${c}</button>`).join('')}</div></div>
+      <div class="fgrp"><span class="fgl">Famille</span><div class="fopts" role="group" aria-label="Familles">${TYPE_ORDER.map(t => `<button type="button" class="fopt" data-t="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join('')}</div></div>
+      <div class="fgrp"><span class="fgl">Coût de mana</span><div class="fopts cmcs" role="group" aria-label="Coût converti">${[0, 1, 2, 3, 4, 5, 6, 7].map(m => `<button type="button" class="fopt" data-m="${m}" aria-pressed="false">${m === 7 ? '7+' : m}</button>`).join('')}</div></div>
+      <button class="link-btn link-inline freset" type="button">Effacer les filtres</button></div>`;
+  const inp = root.querySelector('input'), clr = root.querySelector('.fclear'), btn = root.querySelector('.fbtn'), panel = root.querySelector('.fpanel'), badge = btn.querySelector('b');
+  let t = 0;
+  const paint = () => {
+    const n = filterCount(f);
+    badge.hidden = !n; badge.textContent = n; btn.classList.toggle('on', n > 0);
+    clr.hidden = !inp.value;
+    for (const b of root.querySelectorAll('.fcol')) b.setAttribute('aria-pressed', String(f.colors.has(b.dataset.c)));
+    for (const b of root.querySelectorAll('[data-t]')) b.setAttribute('aria-pressed', String(f.type === b.dataset.t));
+    for (const b of root.querySelectorAll('[data-m]')) b.setAttribute('aria-pressed', String(f.cmc !== '' && f.cmc != null && Number(b.dataset.m) === f.cmc));
+    root.querySelector('.freset').hidden = !n;
+  };
+  const fire = () => { paint(); onChange(); };
+  inp.addEventListener('input', () => { f.q = inp.value; clr.hidden = !inp.value; clearTimeout(t); t = setTimeout(onChange, 120); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+  clr.onclick = () => { inp.value = ''; f.q = ''; fire(); inp.focus(); };
+  btn.onclick = () => { const open = panel.hidden; panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); haptic('tap'); };
+  panel.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.c) { if (f.colors.has(b.dataset.c)) f.colors.delete(b.dataset.c); else f.colors.add(b.dataset.c); }
+    else if (b.dataset.t) f.type = f.type === b.dataset.t ? '' : b.dataset.t;
+    else if (b.dataset.m) { const m = Number(b.dataset.m); f.cmc = f.cmc === m ? '' : m; }
+    else if (b.classList.contains('freset')) { f.colors.clear(); f.type = ''; f.cmc = ''; }
+    else return;
+    haptic('tap'); fire();
+  });
+  paint();
+  return { paint, reset() { f.q = ''; f.colors.clear(); f.type = ''; f.cmc = ''; inp.value = ''; paint(); } };
 }
 
 
@@ -3145,10 +3915,9 @@ const newIdFor = () => (cloudOn() ? D.cloud.newId(D.user.uid) : newDeckId());
 /** Relevé de prix de la dernière recherche, s'il correspond bien à la liste courante et à de vraies offres. */
 function snapshotEntry() {
   if (S.demo || !S.run || S.run.status !== 'done' || !S.run.live || !S.res) return null;
-  const sig = [S.opts.lang, S.opts.cond, S.opts.foil].join('|');
-  if (sig !== S.run.sig) return null;   // critères modifiés depuis la recherche : le prix ne correspondrait plus
+  if (critSig() !== S.run.crit) return null;   // critères modifiés depuis la recherche : le prix ne correspondrait plus
   const r = curRes(), found = foundCount(r); if (!found) return null;
-  return { at: Date.now(), total: totalOf(r), mode: S.opts.mode, found, count: S.deck.cards.length, sig };
+  return { at: S.run.doneAt || Date.now(), total: totalOf(r), mode: S.opts.mode, found, count: S.deck.cards.length, sig: curSig() };
 }
 
 /** Enregistre la liste courante : met à jour le deck rattaché, ou en crée un. */
@@ -3306,17 +4075,18 @@ function chartSvg(values, w) {
 function openDeckSheet(id) {
   const d = findDeck(id); if (!d) return;
   openSheet(d.name, `${d.cards} carte${d.cards > 1 ? 's' : ''} · modifié ${relTime(d.updatedAt)}`, api => {
-    const series = priceSeries(d.history);
-    const rows = d.history.slice().reverse().slice(0, 6).map((e, i, arr) => {
+    const series = priceSeries(d.history), lastE = d.history[d.history.length - 1], same = lastE ? d.history.filter(e => sameKind(e, lastE)) : [];
+    const rows = d.history.slice().reverse().slice(0, 14).map((e, i, arr) => {
       const p = arr.slice(i + 1).find(x => sameKind(x, e)); const df = p ? e.total - p.total : null;
       const when = new Date(e.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       return `<span class="d">${esc(when)} · ${e.mode === 'zero' ? 'Zero' : 'Direct'}</span><span class="delta ${df == null || df === 0 ? 'flat' : df < 0 ? 'down' : 'up'}">${df == null || df === 0 ? '' : (df < 0 ? '−' : '+') + fmt(Math.abs(df))}</span><span class="t">${fmt(e.total)}</span>`;
     }).join('');
     api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">Nom</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
       <div class="sec-title">Historique des prix</div>
-      ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) : ''}
+      ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${series.length} relevés · de ${esc(fmt(Math.min(...series)))} à ${esc(fmt(Math.max(...series)))}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
       ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.</p>'}
-      <button class="link-btn link-inline" type="button" id="dkDup">Dupliquer ce deck</button>`;
+      <button class="link-btn link-inline" type="button" id="dkDup">Dupliquer ce deck</button>
+      <button class="link-btn link-inline" type="button" id="dkOwn">Ajouter ses cartes à ma collection</button>`;
     api.setFoot('<button class="btn ghost-danger" type="button" id="dkDel">Supprimer</button><button class="btn" type="button" id="dkOpen">Ouvrir</button>');
     const name = $('#dkName', api.body);
     name.onchange = () => {
@@ -3325,6 +4095,13 @@ function openDeckSheet(id) {
     };
     name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } };
     $('#dkOpen', api.foot).onclick = () => { api.close(); loadDeck(id); };
+    $('#dkOwn', api.body).onclick = () => {
+      const cur = findDeck(id) || d, cards = parseDeck(cur.text).cards; if (!cards.length) return;
+      const before = COLL.map, n = cards.reduce((a, c) => a + c.qty, 0);
+      collAdd(cards.map(c => ({ k: ownKey(c.name), n: c.name, q: c.qty })), 'add'); api.close(); haptic('ok');
+      toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection (terrains de base exclus)`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+      collEnrich();
+    };
     $('#dkDup', api.body).onclick = () => {
       const cur = findDeck(id) || d, nid = newIdFor();
       putDeck(nid, deckDoc({ ...cur, name: (cur.name + ' (copie)').slice(0, 120), history: [], createdAt: Date.now() }));
@@ -3446,6 +4223,7 @@ function onUser(user) {
     });
   }
   renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
+  collUser(user);
   if (!user && prev) updateHeroDelta();
 }
 async function connectCloud() {
@@ -3563,7 +4341,7 @@ function openCardViewer(items, index) {
     if (multi) { countEl.textContent = (n + 1) + ' / ' + items.length; prevB.disabled = n === 0; nextB.disabled = n === items.length - 1; }
     (async () => {
       let r = null;
-      if (!scryLeft()) { try { r = await scryImage({ set: it.set, num: it.num, lang }, my.signal); } catch (e) { if (e.name === 'AbortError') return; } }
+      if (!it.plain && it.set && !scryLeft()) { try { r = await scryImage({ set: it.set, num: it.num, lang }, my.signal); } catch (e) { if (e.name === 'AbortError') return; } }   // plain : image seule (collection), pas de lecture Scryfall
       if (imgView !== api || it !== mine) return;
       if (r && r.urls.length) {
         urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
@@ -3594,30 +4372,48 @@ function openCardViewer(items, index) {
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, prevFocus: null, flat: [] };
+const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
+
+/** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
+function commandersOf(text, cards, metaOf) {
+  const ks = commanderKeys(text).filter(k => cards.some(c => c.key === k));
+  if (!ks.length && cards[0]) { const m = metaOf(cards[0]); if (m && canLead(m.tl)) ks.push(cards[0].key); }
+  return new Set(ks);
+}
 
 /** Relevé de la recherche en cours, carte par carte (null si pas de vraie recherche terminée). */
 function buildSnap() {
   if (S.demo || !S.run || S.run.status !== 'done' || !S.run.live || !S.res) return null;
-  const sig = [S.opts.lang, S.opts.cond, S.opts.foil].join('|');
-  if (sig !== S.run.sig) return null;                        // critères modifiés depuis la recherche : les prix ne correspondraient plus
+  if (critSig() !== S.run.crit) return null;                 // critères modifiés depuis la recherche : les prix ne correspondraient plus
+  const at = S.run.doneAt || Date.now(), cmd = commandersOf(S.run.text, S.deck.cards, c => (S.run.cards[c.key] || {}).meta);
   const items = [];
   for (const c of S.deck.cards) {
     const st = S.run.cards[c.key] || {}, v = cardView(c), m = st.meta || {}, bp = (st.bps || [])[0] || {};
-    const it = { k: c.key, n: c.name, q: c.qty, s: v.s === 'ok' ? 'ok' : v.s === 'notfound' ? 'nf' : v.s === 'nohub' ? 'nohub' : 'none' };
+    if (v.s === 'stale') return null;                        // collection modifiée depuis la recherche : prix incomplets, rien à garder
+    const it = { k: c.key, n: c.name, q: c.qty, s: v.s === 'ok' ? 'ok' : v.s === 'own' ? 'own' : v.s === 'notfound' ? 'nf' : v.s === 'nohub' ? 'nohub' : 'none' };
     if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
     const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null;
     it.im = (o && o.img) || st.img || bp.img || '';
+    if (c.own > 0) it.ow = c.own;
+    if (cmd.has(c.key)) it.cmd = 1;
     if (o) {
       it.c = v.pick.cost; it.l = o.lang || ''; it.d = COND_SHORT[o.cond] || ''; it.st = o.sset || o.set || ''; it.nu = o.num || ''; it.sn = o.setName || ''; it.sl = o.seller + (o.country ? ' · ' + o.country : '');
       if (st.fellBack && o.lang === 'en') it.fb = 1;
       if (v.pick.short > 0) it.sh = v.pick.short;
+      const ri = refInfo(v.pick.parts, st.bps); if (ri) it.rf = ri.ref;
     } else { it.st = bp.set || ''; it.nu = bp.num || ''; it.sn = bp.setName || ''; }
     items.push(it);
   }
   for (const b of S.deck.basics || []) items.push({ k: b.key, n: b.name, q: b.qty, s: 'basic' });
-  return sanitizeSnap({ at: Date.now(), mode: S.opts.mode, lang: S.opts.lang, sig, items });
+  const snap = { at, mode: S.opts.mode, lang: S.opts.lang, sig: curSig(), items };
+  // Évolution : les prix unitaires du relevé précédent de ce deck (jamais celui de la même recherche : un deuxième « Enregistrer » ne doit pas effacer l'écart).
+  const prev = snapOf(findDeck(S.deckId));
+  if (prev) {
+    if (prev.at === at) { if (prev.pv) { snap.pv = prev.pv; snap.pa = prev.pa; } }
+    else if (prev.at < at && prev.lang === snap.lang) { const pv = pvOf(prev); if (pv) { snap.pv = pv; snap.pa = prev.at; } }
+  }
+  return sanitizeSnap(snap);
 }
 
 /* Relevés gardés sur cet appareil (toujours) ; ils sont aussi dans le document du deck quand le compte l'accepte (règles Firestore à jour). */
@@ -3635,53 +4431,111 @@ const snapOf = d => (d ? newestSnap(d.snap, sanitizeSnap(snapsRead()[d.id])) : n
 
 const dvImg = it => (it.im ? it.im.replace('/small/', '/normal/') : '');
 const dvLetter = it => esc((it.n.trim()[0] || '?').toUpperCase());
-function dvTile(it, i, snap) {
-  const hue = hash32(it.k) % 360, art = dvImg(it);
-  const tag = it.s === 'ok' ? `<span class="dvc-p">${esc(fmt(it.c))}</span>`
+/** Écart notable d'une carte (≥ 5 % ou ≥ 0,20 € par exemplaire) : flèche sur la vignette. */
+const dvMoved = d => !!d && (Math.abs(d.diff) >= 20 || Math.abs(d.diff) >= d.prev * 0.05);
+function dvTile(it, i, snap, dl) {
+  const hue = hash32(it.k) % 360, art = dvImg(it), d = dl && dl.get(it.k), mv = dvMoved(d) ? `<em class="${d.diff < 0 ? 'dn' : 'up'}" aria-hidden="true">${d.diff < 0 ? '▼' : '▲'}</em>` : '';
+  const tag = it.s === 'ok' ? `<span class="dvc-p">${esc(fmt(it.c))}${mv}</span>`
+    : it.s === 'own' ? '<span class="dvc-p own">Possédée</span>'
     : it.s === 'nf' ? '<span class="dvc-p bad">Introuvable</span>' : it.s === 'basic' ? '' : '<span class="dvc-p warn">Aucune offre</span>';
   const en = it.s === 'ok' && it.l && snap.lang && it.l !== snap.lang ? `<span class="dvc-l">${esc(it.l.toUpperCase())}</span>` : '';
   const q = it.q > 1 ? `<span class="dvc-q">×${it.q}</span>` : '';
-  const label = `${it.n}${it.q > 1 ? ', ×' + it.q : ''}${it.s === 'ok' ? ', ' + fmt(it.c) : it.s === 'nf' ? ', introuvable' : it.s === 'basic' ? '' : ', aucune offre'}`;
+  const label = `${it.n}${it.q > 1 ? ', ×' + it.q : ''}${it.s === 'ok' ? ', ' + fmt(it.c) : it.s === 'own' ? ', dans ta collection' : it.s === 'nf' ? ', introuvable' : it.s === 'basic' ? '' : ', aucune offre'}${d && dvMoved(d) ? (d.diff < 0 ? ', en baisse' : ', en hausse') : ''}`;
   return `<button type="button" class="dvc" data-s="${it.s}" data-i="${i}" aria-label="${esc(label)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>${q}${en}${tag}</button>`;
 }
-function dvCurve(items) {
-  const c = curveOf(items), max = Math.max(1, ...c);
-  return `<div class="dv-curve" role="img" aria-label="Courbe de mana : ${c.map((n, m) => n + ' carte' + (n > 1 ? 's' : '') + ' à ' + (m === 7 ? '7 et plus' : m)).join(', ')}">${c.map((n, m) => `<button type="button" class="dv-bar" data-m="${m}" ${n ? '' : 'disabled'} aria-label="Coût ${m === 7 ? '7 et plus' : m} : ${n}"><span class="dv-n">${n || ''}</span><span class="dv-col"><i style="height:${Math.round(n / max * 100)}%"></i></span><span class="dv-x">${m === 7 ? '7+' : m}</span></button>`).join('')}</div>`;
+/** Courbe de mana : c = exemplaires par coût (0 à 7+). interactive : barres cliquables (le viewer saute au groupe). */
+function curveBars(c, interactive) {
+  const max = Math.max(1, ...c), tag = interactive ? 'button type="button"' : 'div', end = interactive ? 'button' : 'div';
+  return `<div class="dv-curve" role="img" aria-label="Courbe de mana : ${c.map((n, m) => n + ' carte' + (n > 1 ? 's' : '') + ' à ' + (m === 7 ? '7 et plus' : m)).join(', ')}">${c.map((n, m) => `<${tag} class="dv-bar" data-m="${m}" ${interactive && !n ? 'disabled' : ''} ${interactive ? `aria-label="Coût ${m === 7 ? '7 et plus' : m} : ${n}"` : ''}><span class="dv-n">${n || ''}</span><span class="dv-col"><i style="height:${Math.round(n / max * 100)}%"></i></span><span class="dv-x">${m === 7 ? '7+' : m}</span></${end}>`).join('')}</div>`;
 }
-function dvRender() {
-  const snap = DV.snap, el = DV.el; if (!el) return;
-  const scroller = $('.dv-scroll', el), keep = scroller ? scroller.scrollTop : 0;
-  if (!snap) {
-    $('.dv-body', el).innerHTML = `<div class="dv-empty"><b>Aucun prix gardé pour ce deck</b><p>Lance une recherche : les prix, les cartes et leur coût de mana seront gardés ici pour les revoir sans attendre.</p>${DV.deckId ? '<button class="btn" type="button" data-act="refresh">Chercher les prix</button>' : ''}</div>`;
-    $('.dv-title span', el).textContent = ''; $('.dv-foot', el).hidden = !DV.deckId; return;
-  }
-  const items = snap.items, found = items.filter(i => i.s === 'ok'), total = found.reduce((a, i) => a + i.c, 0);
-  const copies = items.reduce((a, i) => a + i.q, 0), miss = items.filter(i => i.s === 'nf').length, none = items.filter(i => i.s === 'none' || i.s === 'nohub').length;
-  const groups = groupSnap(items, DV.sort); DV.flat = []; let n = 0;
+const dvCurve = items => curveBars(curveOf(items), true);
+
+/** Commandant mis en avant : grande carte, coût de mana, prix. */
+function dvHero(it, idx, snap, dl) {
+  const art = dvImg(it), hue = hash32(it.k) % 360, d = dl && dl.get(it.k);
+  const price = it.s === 'ok' ? `<b>${esc(fmt(it.c))}</b>${it.rf ? `<span class="cmd-ref">Réf. Cardmarket ${esc(fmt(it.rf))}</span>` : ''}${d && dvMoved(d) ? `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(d.tot)))}</span>` : ''}`
+    : it.s === 'own' ? '<b class="own">Dans ta collection</b>' : it.s === 'nf' ? '<b class="bad">Introuvable</b>' : '<b class="warn">Aucune offre</b>';
+  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
+    <span class="cmd-t"><small>${/planeswalker/i.test(it.tl || '') ? 'Planeswalker commandant' : 'Commandant'}</small><strong>${esc(it.n)}</strong>${it.tl ? `<span class="cmd-tl">${esc(it.tl)}</span>` : ''}${it.mc ? `<span class="cmd-mc">${manaHtml(it.mc)}</span>` : ''}<span class="cmd-p">${price}</span></span></button>`;
+}
+
+/** Évolution depuis le relevé précédent : écart total et plus fortes variations. */
+function dvEvolution(snap, dl) {
+  if (!snap.pv || !snap.pa || !dl.size) return '';
+  let total = 0; for (const d of dl.values()) total += d.tot;
+  const mv = topMovers(snap.items, dl, 3), same = new Date(snap.pa).toDateString() === new Date(snap.at).toDateString();
+  const row = (x, cls) => `<button type="button" class="mv ${cls}" data-k="${esc(x.item.k)}"><span>${esc(x.item.n)}</span><i>${esc(fmt(x.prev))} → ${esc(fmt(x.unit))}</i><b>${x.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(x.tot)))}</b></button>`;
+  return `<div class="dv-evo"><div class="dv-evo-h"><span>Depuis ${same ? 'la recherche de ' + new Date(snap.pa).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'le ' + esc(dateShort(snap.pa))}</span><b class="${total === 0 ? 'flat' : total < 0 ? 'down' : 'up'}">${total === 0 ? 'Inchangé' : (total < 0 ? '▼ −' : '▲ +') + esc(fmt(Math.abs(total)))}</b></div>
+    ${mv.down.length || mv.up.length ? `<div class="dv-mv">${mv.down.map(x => row(x, 'down')).join('')}${mv.up.map(x => row(x, 'up')).join('')}</div>` : ''}</div>`;
+}
+/** Total payé face au prix de référence Cardmarket des mêmes cartes. */
+function dvRefLine(items) {
+  const t = refTotals(items); if (t.cards < 3) return '';
+  const lvl = t.pct <= 5 ? 'good' : t.pct >= 40 ? 'warn' : '';
+  return `<div class="dv-ref ${lvl}"><span>Réf. Cardmarket pour les mêmes cartes : <b>${esc(fmt(t.ref))}</b></span><b>${t.pct === 0 ? 'identique' : (t.pct < 0 ? '−' : '+') + Math.abs(t.pct) + ' %'}</b></div>`;
+}
+
+/** Cadre du viewer : résumé, bascule de tri, filtres. Reconstruit seulement quand le relevé change (la saisie ne doit pas perdre le focus). */
+function dvFrame(snap) {
+  const el = DV.el, items = snap.items, found = items.filter(i => i.s === 'ok'), total = found.reduce((a, i) => a + i.c, 0);
+  const copies = items.reduce((a, i) => a + i.q, 0), miss = items.filter(i => i.s === 'nf').length, none = items.filter(i => i.s === 'none' || i.s === 'nohub').length, own = items.filter(i => i.s === 'own').length;
   const old = !DV.live && snapAge(snap) === 'old';
   const crit = [LANGS[snap.lang] || snap.lang, snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
   const when = DV.live ? 'Prix de la recherche en cours' : `Prix du ${dateShort(snap.at)} · ${relTime(snap.at)}`;
-  $('.dv-title span', el).textContent = `${copies} carte${copies > 1 ? 's' : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}`;
+  DV.dl = snapDeltas(items, snap.pv);
+  $('.dv-title span', el).textContent = `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
       <div class="dv-total"><span class="dv-eur">${esc(fmt(total))}</span><span class="dv-crit">Articles · ${esc(crit)}</span></div>
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
+      ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
     </section>
+    <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
-    <div class="dv-groups">${groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + esc(fmt(g.cost)) : ''}</small></h3><div class="dv-grid">${g.items.map(it => { DV.flat.push(it); return dvTile(it, n++, snap); }).join('')}</div></section>`).join('')}</div>`;
+    <div id="dvF"></div>
+    <div class="dv-groups"></div>`;
   mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: 'Prix' }, { v: 'type', label: 'Type' }], DV.sort, v => {
-    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); dvRender();
-    const g = $('.dv-groups', DV.el); if (g && scroller) scroller.scrollTop = Math.min(scroller.scrollTop, g.offsetTop - 8);
+    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); dvGroups();
+    const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
   });
   $('#dvSeg', el).setValue(DV.sort);
+  DV.fb = mountFilters($('#dvF', el), DV.f, () => dvGroups(), { placeholder: 'Rechercher dans le deck' });
+}
+/** Commandant + groupes de cartes, d'après le tri et les filtres. */
+function dvGroups() {
+  const snap = DV.snap, el = DV.el; if (!snap || !el) return;
+  const sc = $('.dv-scroll', el), keep = sc ? sc.scrollTop : 0;
+  const all = snap.items, filtered = filterItems(all, DV.f), act = filterActive(DV.f);
+  const cmds = filtered.filter(i => i.cmd), rest = filtered.filter(i => !i.cmd), dl = DV.dl;
+  DV.flat = [];
+  const flat = it => DV.flat.push(it) - 1;
+  $('#dvCmd', el).innerHTML = cmds.length ? `<div class="dv-cmds">${cmds.map(c => dvHero(c, flat(c), snap, dl)).join('')}</div>` : '';
+  const groups = groupSnap(rest, DV.sort); let n = DV.flat.length;
+  const hidden = (DV.f.colors.size || DV.f.type || DV.f.cmc !== '') ? all.filter(i => !hasMeta(i)).length : 0;
+  $('.dv-groups', el).innerHTML = (act ? `<p class="hint dv-fcount">${filtered.length} carte${filtered.length > 1 ? 's' : ''} sur ${all.length}${hidden ? ` · ${hidden} sans infos de type ou de coût (prix gardés avant cette version) : relance la recherche` : ''}</p>` : '')
+    + (groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + esc(fmt(g.cost)) : ''}</small></h3><div class="dv-grid">${g.items.map(it => { flat(it); return dvTile(it, n++, snap, dl); }).join('')}</div></section>`).join('')
+      || (cmds.length ? '' : '<p class="hint listempty">Aucune carte ne correspond.</p>'));
+  if (sc) sc.scrollTop = keep;
+}
+function dvRender() {
+  const snap = DV.snap, el = DV.el; if (!el) return;
+  if (!snap) {
+    DV.framed = null;
+    $('.dv-body', el).innerHTML = `<div class="dv-empty"><b>Aucun prix gardé pour ce deck</b><p>Lance une recherche : les prix, les cartes et leur coût de mana seront gardés ici pour les revoir sans attendre.</p>${DV.deckId ? '<button class="btn" type="button" data-act="refresh">Chercher les prix</button>' : ''}</div>`;
+    $('.dv-title span', el).textContent = ''; $('.dv-foot', el).hidden = !DV.deckId; return;
+  }
+  if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
+  dvGroups();
   $('.dv-foot', el).hidden = false; $('.dv-foot [data-act="edit"]', el).hidden = DV.live || !DV.deckId; $('.dv-foot [data-act="refresh"]', el).hidden = DV.live || !DV.deckId;
   $('.dv-foot [data-act="close"]', el).hidden = !DV.live;
-  if (scroller) scroller.scrollTop = keep;
 }
 function dvItemFor(it) {
   if (it.s === 'basic' || it.s === 'nf' || !it.im) return null;
-  const extra = it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + it.q : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') : 'Aucune offre avec tes critères';
-  return { key: it.k, name: it.n, small: it.im, lang: it.l || 'en', set: it.st, num: it.nu, setName: it.sn, extra };
+  const dl = DV.dl && DV.dl.get(it.k), mv = dl && dvMoved(dl) ? ` · ${dl.diff < 0 ? '▼ −' : '▲ +'}${fmt(Math.abs(dl.diff))} par exemplaire` : '';
+  const ref = it.rf ? ` · réf. Cardmarket ${fmt(it.rf)}` : '';
+  const extra = it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + (it.q - (it.ow || 0)) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') + (it.ow ? ` · ${it.ow} possédée${it.ow > 1 ? 's' : ''}` : '') + ref + mv
+    : it.s === 'own' ? 'Dans ta collection' : 'Aucune offre avec tes critères';
+  return { key: it.k, name: it.n, small: it.im, lang: it.l || 'en', set: it.st, num: it.nu, setName: it.sn, extra, plain: it.s === 'own' && !it.st };
 }
 function dvOpenCard(i) {
   const list = [], at = new Map();
@@ -3694,7 +4548,7 @@ function openDeckViewer({ id, live } = {}) {
   closeDeckViewer(); closeCardImage();
   const d = id ? findDeck(id) : null;
   DV.live = !!live; DV.deckId = id || (live ? S.deckId : null) || null;
-  DV.snap = live ? buildSnap() : snapOf(d);
+  DV.snap = live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
   DV.name = d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
   if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
   const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Deck viewer · ' + DV.name);
@@ -3703,7 +4557,7 @@ function openDeckViewer({ id, live } = {}) {
     <div class="dv-scroll"><div class="dv-body"></div></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">Modifier la liste</button><button class="btn" type="button" data-act="refresh">Actualiser</button><button class="btn" type="button" data-act="close">Fermer</button></footer>`;
   DV.el = wrap; DV.prevFocus = document.activeElement;
-  const onKey = e => { if (e.key === 'Escape' && !imgView) { e.stopPropagation(); wrap.__close(); } };
+  const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (DV.el !== wrap) return; DV.el = null; document.removeEventListener('keydown', onKey, true);
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
@@ -3713,10 +4567,11 @@ function openDeckViewer({ id, live } = {}) {
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);   // image absente : la vignette de nom reste
   wrap.addEventListener('click', e => {
-    const tile = e.target.closest('.dvc'); if (tile) return dvOpenCard(Number(tile.dataset.i));
-    const bar = e.target.closest('.dv-bar'); if (bar && !bar.disabled) {
+    const tile = e.target.closest('.dvc, .dv-cmd'); if (tile) return dvOpenCard(Number(tile.dataset.i));
+    const mv = e.target.closest('.mv'); if (mv) { const i = DV.flat.findIndex(x => x.k === mv.dataset.k); if (i >= 0) dvOpenCard(i); return; }
+    const bar = e.target.closest('button.dv-bar'); if (bar && !bar.disabled) {
       const m = bar.dataset.m; const go = () => { const g = $(`.dv-g[data-g="m${m}"]`, wrap); if (g) { $('.dv-scroll', wrap).scrollTo({ top: g.offsetTop - 56, behavior: reduceMotion() ? 'auto' : 'smooth' }); } };
-      if (DV.sort !== 'mana') { DV.sort = 'mana'; dvRender(); } haptic('tap'); return go();
+      if (DV.sort !== 'mana') { DV.sort = 'mana'; $('#dvSeg', wrap).setValue('mana'); dvGroups(); } haptic('tap'); return go();
     }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const act = b.dataset.act, deck = DV.deckId;
@@ -3737,6 +4592,648 @@ async function refreshDeckPrices(id) {
   const cur = findDeck(id), now = snapOf(cur);
   if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
 }
+
+
+/* ── collection.js : cartes possédées (stockage, compte, infos Scryfall, import, saisie, liste, stats) ─────────
+   Source de vérité : « 3 Sol Ring » ligne par ligne (localStorage, et le compte Firestore users/{uid}/meta/collection).
+   Les infos Scryfall (coût, type, couleurs, image, prix de référence) sont un cache à part : on peut le vider sans rien perdre. */
+const COLL_KEY = 'deckdeal:coll:v1', COLL_META_KEY = 'coll:meta', COLL_PAGE = 120;
+const COLL = { map: {}, meta: {}, u: 0, s: '', cloud: 'off', err: '', unsub: null, el: null, tab: 'list', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0 };
+const collCount = () => Object.keys(COLL.map).length;
+const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
+/** Exemplaires possédés d'une carte (k = ownKey du nom). */
+const collQty = k => (COLL.map[k] && COLL.map[k].q) || 0;
+const nf0 = n => Number(n || 0).toLocaleString('fr-FR');
+
+/* ── Stockage local ───────────────────────────────────────────────────────────────────────────── */
+function collRead() {
+  try {
+    const r = JSON.parse(localStorage.getItem(COLL_KEY) || 'null');
+    if (r && typeof r.t === 'string') { COLL.map = collFromText(r.t); COLL.u = Number(r.u) || 0; COLL.s = typeof r.s === 'string' ? r.s : ''; }
+  } catch (e) { /* illisible : on repart d'une collection vide */ }
+}
+function collWrite() {
+  try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map), u: COLL.u, s: COLL.s })); return true; }
+  catch (e) { toast('Stockage plein : la collection n\'a pas pu être enregistrée sur cet appareil'); return false; }
+}
+async function collMetaLoad() {
+  try { const m = await Cache.get(COLL_META_KEY, 60 * DAY); if (m && typeof m === 'object' && !Array.isArray(m)) { COLL.meta = { ...m, ...COLL.meta }; collPaint(); } } catch (e) { /* cache absent */ }
+}
+let metaT = 0;
+function collMetaSave() { clearTimeout(metaT); metaT = setTimeout(() => Cache.set(COLL_META_KEY, COLL.meta), 800); }
+
+/** Toute modification passe par ici : enregistre, envoie au compte, met à jour la page de saisie et la recherche en cours. */
+function collChanged(o = {}) {
+  COLL.u = Date.now(); collWrite();
+  if (o.push !== false) collPushSoon();
+  if (o.paint !== false) collPaint(); else collPaintHead();
+  paintCollSection(); refreshDeck();
+  if (S.run && S.view === 'results') scheduleRecompute(true);
+}
+function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); collChanged(); }
+/** +/− d'exemplaires d'une carte ; à 0 la carte sort de la collection. */
+function collBump(k, name, d, o) {
+  const cur = COLL.map[k], q = Math.max(0, Math.min(9999, (cur ? cur.q : 0) + d));
+  if (!q) delete COLL.map[k]; else COLL.map[k] = { ...(cur || {}), n: (cur && cur.n) || name, q };
+  collChanged(o); return q;
+}
+
+/* ── Compte (Firestore users/{uid}/meta/collection) ───────────────────────────────────────────── */
+function collPushSoon() { clearTimeout(COLL.pushT); COLL.pushT = setTimeout(collPush, 1200); }
+function collPush() {
+  clearTimeout(COLL.pushT);
+  if (!cloudOn() || !D.cloud.saveColl) return;
+  const uid = D.user.uid, text = collToText(COLL.map), u = COLL.u || Date.now();
+  if (text.length > 900000) { COLL.cloud = 'error'; COLL.err = 'Collection trop grosse pour le compte'; collPaintHead(); return; }
+  COLL.cloud = 'sync'; collPaintHead();
+  D.cloud.saveColl(uid, { text, count: collCount(), updatedAt: u }).then(() => { if (D.uid === uid) { COLL.s = uid; COLL.cloud = 'ok'; COLL.err = ''; collWrite(); collPaintHead(); } })
+    .catch(err => { COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour la collection' : 'Synchronisation impossible'; collPaintHead(); });
+}
+/** Appelée à chaque changement de compte (decks.js › onUser). */
+function collUser(user) {
+  if (COLL.unsub) { try { COLL.unsub(); } catch (e) { /* ignore */ } COLL.unsub = null; }
+  COLL.cloud = 'off'; COLL.err = '';
+  if (!user || !D.cloud || !D.cloud.watchColl) { collPaintHead(); return; }
+  COLL.cloud = 'sync';
+  COLL.unsub = D.cloud.watchColl(user.uid, (data, pending) => collFromCloud(user.uid, data, pending), err => {
+    COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour la collection' : 'Synchronisation impossible'; collPaintHead();
+  });
+}
+function collFromCloud(uid, data, pending) {
+  if (pending || D.uid !== uid) return;                                   // écho de notre écriture, pas encore confirmée par le serveur
+  const remote = data && typeof data.text === 'string' ? collFromText(data.text) : null, ru = Number(data && data.updatedAt) || 0, has = collCount() > 0;
+  COLL.cloud = 'ok'; COLL.err = '';
+  if (!remote || !Object.keys(remote).length) { if (has) collPush(); else COLL.s = uid; }                      // rien dans le compte : on y envoie celle de l'appareil
+  else if (COLL.s !== uid && has && !sameColl(COLL.map, remote)) {                                              // première connexion, des cartes des deux côtés : union
+    COLL.map = unionColl(COLL.map, remote); COLL.s = uid; collChanged(); toast('Collection de l\'appareil et du compte fusionnées');
+  } else if (ru > COLL.u || !has) { COLL.map = remote; COLL.u = ru; COLL.s = uid; collWrite(); collPaint(); paintCollSection(); refreshDeck(); if (S.run && S.view === 'results') scheduleRecompute(true); }   // compte plus récent
+  else if (ru < COLL.u && !sameColl(COLL.map, remote)) collPush();                                              // appareil plus récent
+  else { COLL.s = uid; collWrite(); }
+  collPaintHead();
+}
+
+/* ── Infos Scryfall ───────────────────────────────────────────────────────────────────────────── */
+const collMissing = () => Object.keys(COLL.map).filter(k => !(k in COLL.meta));
+/** Lit sur Scryfall le coût, le type, les couleurs, l'image et le prix de référence des cartes qui n'ont pas encore ces infos (75 par requête). */
+async function collEnrich() {
+  if (COLL.enrich) return COLL.enrich.p;
+  const miss = collMissing(); if (!miss.length) return;
+  if (scryLeft() > 0) { COLL.enrichErr = 'Scryfall demande une pause : réessaie dans ' + Math.ceil(scryLeft() / 1000) + ' s'; collPaintHead(); return; }
+  const st = COLL.enrich = { done: 0, total: miss.length, ctrl: new AbortController() };
+  COLL.enrichErr = '';
+  st.p = (async () => {
+    try {
+      for (let i = 0; i < miss.length; i += 75) {
+        const chunk = miss.slice(i, i + 75), got = await scryCollection(chunk.map(k => COLL.map[k] ? COLL.map[k].n : k), st.ctrl.signal);
+        for (const k of chunk) { const g = got.get(k); COLL.meta[k] = g || null; }
+        st.done = Math.min(miss.length, i + 75); collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true);
+      }
+    } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? 'Scryfall limite les requêtes : réessaie dans une minute' : 'Scryfall injoignable : réessaie plus tard'; }
+    finally { COLL.enrich = null; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true); }
+  })();
+  collPaintHead();
+  return st.p;
+}
+
+/** Catalogue des noms de cartes (Scryfall) : saisie assistée et reconnaissance OCR. Chargé une fois, gardé 14 jours. */
+function collCatalog() {
+  if (COLL.names) return Promise.resolve(COLL.names);
+  if (!COLL.namesP) COLL.namesP = scryCatalogNames().then(list => { COLL.names = { list, idx: nameIndex(list), norm: list.map(n => normPart(n)) }; return COLL.names; }).catch(e => { COLL.namesP = null; throw e; });
+  return COLL.namesP;
+}
+/** Suggestions de noms pour un texte saisi : commence par · contient tous les mots. */
+function collSuggest(cat, text, n = 12) {
+  const q = normPart(text); if (q.length < 2) return [];
+  const words = q.split(' ').filter(Boolean), a = [], b = [];
+  for (let i = 0; i < cat.norm.length && a.length < n; i++) {
+    const s = cat.norm[i];
+    if (s.startsWith(q)) a.push(cat.list[i]); else if (b.length < n && words.every(w => s.includes(w))) b.push(cat.list[i]);
+  }
+  return a.concat(b).slice(0, n);
+}
+
+/* ── Section de la page de saisie ─────────────────────────────────────────────────────────────── */
+function paintCollSection() {
+  const sub = $('#collSub'); if (!sub) return;
+  const n = collCount();
+  sub.textContent = n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(collCopies())} exemplaire${collCopies() > 1 ? 's' : ''}` : 'Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.';
+  $('#btnColl').dataset.empty = n ? '0' : '1';
+}
+function collInit() {
+  collRead(); paintCollSection(); collMetaLoad();
+  const sec = $('#collSec'); if (sec) sec.hidden = false;
+}
+
+/* ── Écran « Ma collection » ──────────────────────────────────────────────────────────────────── */
+const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût']];
+function collItems() { return Object.entries(COLL.map).map(([k, x]) => ({ k, n: x.n, q: x.q, ...(COLL.meta[k] || {}) })); }
+function collSorted(items) {
+  const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => ((b.eu || 0) - (a.eu || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b) }[COLL.sort] || byName;
+  return items.slice().sort(by);
+}
+function crowHtml(it) {
+  const hue = hash32(it.k) % 360, letter = esc((it.n.trim()[0] || '?').toUpperCase());
+  const tags = [];
+  if (it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
+  if (it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
+  if (Number.isFinite(it.eu)) tags.push(`<span class="tag ref">CM ${esc(fmt(it.eu, 'EUR'))}</span>`);
+  return `<div class="crow" data-k="${esc(it.k)}"><span class="thumb" style="--h:${hue}">${letter}${it.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(it.im)}">` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(it.n)}</span><span class="row-meta">${tags.join('')}</span></span>
+    <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(it.n)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(it.n)}">+</button></span></div>`;
+}
+function collHeadText() {
+  const n = collCount(), c = collCopies();
+  const sync = D.user ? (COLL.cloud === 'ok' ? 'synchronisée' : COLL.cloud === 'sync' ? 'synchronisation…' : COLL.cloud === 'error' ? COLL.err : '') : 'sur cet appareil';
+  return n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(c)} exemplaire${c > 1 ? 's' : ''}${sync ? ' · ' + sync : ''}` : 'Vide pour le moment';
+}
+function collPaintHead() {
+  paintCollSection();
+  const el = COLL.el; if (!el) return;
+  $('.dv-title span', el).textContent = collHeadText();
+  const stt = $('.coll-status', el), e = COLL.enrich, miss = collMissing().length;
+  if (e) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>Lecture des cartes sur Scryfall · ${nf0(e.done)} / ${nf0(e.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * e.done / Math.max(1, e.total))}%"></span></span>`; }
+  else if (COLL.enrichErr) { stt.hidden = false; stt.dataset.k = 'err'; stt.innerHTML = `<span>${esc(COLL.enrichErr)}</span><button class="link-btn" type="button" data-act="enrich">Réessayer</button>`; }
+  else if (miss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${nf0(miss)} carte${miss > 1 ? 's' : ''} sans infos (coût, type, image)</span><button class="link-btn" type="button" data-act="enrich">Compléter</button>`; }
+  else stt.hidden = true;
+}
+function collPaint() { collPaintHead(); if (COLL.el) collPaintBody(true); }
+
+/** Barres horizontales (couleurs, familles) : rows = [[libellé html, valeur, classe]]. */
+function barsHtml(rows) {
+  const max = Math.max(1, ...rows.map(r => r[1]));
+  return `<div class="cs-bars">${rows.filter(r => r[1] > 0).map(([l, v, c]) => `<div class="cs-b"><span class="cs-l">${l}</span><span class="cs-t"><i class="${c || ''}" style="width:${Math.max(3, Math.round(v / max * 100))}%"></i></span><span class="cs-n">${nf0(v)}</span></div>`).join('')}</div>`;
+}
+function collStatsHtml(items) {
+  const st = collStats(items), miss = st.unknown;
+  const colorRows = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert']].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
+    .concat([['<i class="mc mc-m">M</i>Multicolore', st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>Incolore', st.colors.C, 'k-n']]);
+  const typeRows = TYPE_ORDER.map(t => [esc(t), st.types[t], 'k-t']);
+  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>valeur ≈ Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}</span></div></div>`;
+  const note = miss ? `<p class="hint">Stats sur ${nf0(st.known)} cartes lues ; ${nf0(miss)} sans infos pour l'instant.</p>` : '';
+  const top = st.top.length ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${st.top.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${i.q}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(i.eu, 'EUR'))}</b>${i.q > 1 ? `<small>${esc(fmt(i.eu * i.q, 'EUR'))} au total</small>` : ''}</span></div>`).join('')}</div>` : '';
+  return `${nums}${note}
+    <h3 class="cs-h">Courbe de mana <small>${nf0(st.spells)} sorts</small></h3>${curveBars(st.curve, false)}
+    <h3 class="cs-h">Couleurs <small>sorts</small></h3>${barsHtml(colorRows)}
+    <h3 class="cs-h">Familles <small>exemplaires</small></h3>${barsHtml(typeRows)}${top}`;
+}
+function collEmptyHtml() {
+  return `<div class="dv-empty"><b>Ta collection est vide</b><p>Ajoute les cartes que tu possèdes : elles ne seront plus cherchées ni comptées dans tes paniers.</p>
+    <div class="coll-cta"><button class="btn" type="button" data-act="import">Importer un fichier</button><button class="btn ghost" type="button" data-act="scan">Scanner des cartes</button><button class="btn ghost" type="button" data-act="add">Ajouter à la main</button></div>
+    <p class="hint">Pour 1 000 cartes ou plus : exporte-les en CSV depuis ManaBox, Moxfield, Archidekt, Deckbox ou Dragon Shield, puis importe le fichier.</p></div>`;
+}
+/** Remplit la liste ou les stats selon l'onglet. keep : garder la position de défilement. */
+function collPaintBody(keep) {
+  const el = COLL.el; if (!el) return;
+  const sc = $('.dv-scroll', el), pos = keep && sc ? sc.scrollTop : 0, host = $('.coll-main', el), all = collItems();
+  $('.coll-controls', el).hidden = !all.length;
+  if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
+  $('.coll-fwrap', el).hidden = COLL.tab !== 'list';
+  if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
+  else {
+    const filtered = filterItems(all, COLL.f), sorted = collSorted(filtered), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
+    const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '') && known < all.length;
+    host.innerHTML = `${act ? `<p class="hint coll-count">${nf0(filtered.length)} carte${filtered.length > 1 ? 's' : ''} sur ${nf0(all.length)}${hid ? ' · les cartes sans infos sont masquées par ces filtres' : ''}</p>` : ''}
+      ${shown.length ? `<div class="coll-list">${shown.map(crowHtml).join('')}</div>` : '<p class="hint listempty">Aucune carte ne correspond.</p>'}
+      ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
+  }
+  if (sc) sc.scrollTop = pos;
+}
+
+function closeCollection() { if (COLL.el) COLL.el.__close(); }
+/** Ouvre l'écran de la collection (tab : 'list' | 'stats'). */
+function openCollection(tab) {
+  closeCollection();
+  if (tab) COLL.tab = tab;
+  COLL.shown = COLL_PAGE;
+  const wrap = document.createElement('div'); wrap.className = 'dv coll'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Ma collection');
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer la collection"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>Ma collection</b><span></span></div>
+      <div class="coll-tools"><button class="icon-btn" type="button" data-act="add" aria-label="Ajouter une carte" title="Ajouter une carte"><svg class="i"><use href="#i-plus"/></svg></button>
+        <button class="icon-btn" type="button" data-act="scan" aria-label="Scanner des cartes" title="Scanner des cartes"><svg class="i"><use href="#i-camera"/></svg></button>
+        <button class="icon-btn" type="button" data-act="import" aria-label="Importer un fichier ou du texte" title="Importer"><svg class="i"><use href="#i-upload"/></svg></button></div></header>
+    <div class="dv-scroll"><div class="dv-body coll-body">
+      <div class="coll-status" hidden></div>
+      <div class="coll-controls"><div class="seg" id="collSeg" role="radiogroup" aria-label="Affichage"></div>
+        <div class="coll-fwrap"><div id="collF"></div><label class="sortsel coll-sort"><span>Trier</span><select id="collSort" aria-label="Trier la collection">${SORT_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label></div></div>
+      <div class="coll-main"></div></div></div>`;
+  COLL.el = wrap; const prevFocus = document.activeElement;
+  const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
+  wrap.__close = () => {
+    if (COLL.el !== wrap) return; COLL.el = null; document.removeEventListener('keydown', onKey, true);
+    wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
+    try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+  wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; });
+  mountFilters($('#collF', wrap), COLL.f, () => { COLL.shown = COLL_PAGE; collPaintBody(true); }, { placeholder: 'Rechercher dans ma collection' });
+  $('#collSort', wrap).value = COLL.sort;
+  $('#collSort', wrap).onchange = e => { COLL.sort = e.target.value; COLL.shown = COLL_PAGE; haptic('tap'); collPaintBody(false); };
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]');
+    if (b) {
+      const act = b.dataset.act;
+      if (act === 'close') wrap.__close();
+      else if (act === 'add') openCollAdd();
+      else if (act === 'scan') openScan();
+      else if (act === 'import') openCollImport();
+      else if (act === 'enrich') { COLL.enrichErr = ''; collEnrich(); }
+      else if (act === 'more') { COLL.shown += COLL_PAGE; collPaintBody(true); }
+      return;
+    }
+    const st = e.target.closest('.qstep button');
+    if (st) {
+      const row = st.closest('.crow'), k = row.dataset.k, cur = COLL.map[k]; if (!cur) return;
+      const d = Number(st.dataset.d), name = cur.n, was = cur.q; haptic('tap');
+      const q = collBump(k, name, d, { paint: false });
+      if (q) { $('b', row).textContent = q; }
+      else { row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was); } }); }
+      return;
+    }
+    const th = e.target.closest('.thumb');
+    if (th && th.querySelector('img.ok')) {
+      const row = th.closest('.crow'); if (!row) return;
+      const rows = $$('.crow', row.parentNode), list = rows.map(r => collViewItem(r.dataset.k)).filter(Boolean);
+      const i = list.findIndex(x => x.key === row.dataset.k); if (i >= 0) openCardViewer(list, i);
+    }
+  });
+  document.body.appendChild(wrap); holdApp(); collPaintHead(); collPaintBody(false);
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  haptic('tap');
+  if (collMissing().length && !COLL.enrichErr) collEnrich();
+}
+function collViewItem(k) {
+  const x = COLL.map[k], m = COLL.meta[k]; if (!x || !m || !m.im) return null;
+  return { key: k, name: x.n, small: m.im, lang: 'en', plain: true, extra: `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}` };
+}
+
+/* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
+function openCollAdd() {
+  openSheet('Ajouter une carte', 'Nom anglais ou français déjà connu de Scryfall', api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">Nom de la carte</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Sol Ring" enterkeyhint="search"></div>
+      <div class="status" id="caStatus" data-ok="0" hidden><span class="dot"></span><span></span></div>
+      <div class="ca-list" id="caList" role="listbox" aria-label="Suggestions"></div>`;
+    const inp = $('#caName', api.body), list = $('#caList', api.body), stt = $('#caStatus', api.body);
+    let cat = null, added = new Map();
+    const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
+    const paint = () => {
+      const q = inp.value.trim();
+      if (!cat) { list.innerHTML = ''; return; }
+      const sug = collSuggest(cat, q);
+      list.innerHTML = sug.map(n => { const k = ownKey(n), have = collQty(k); return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${have ? `× ${have}` : '+'}</i></button>`; }).join('')
+        || (q.length >= 2 ? '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>' : '');
+    };
+    list.onclick = e => {
+      const b = e.target.closest('.ca-opt'); if (!b) return;
+      const n = b.dataset.n, k = ownKey(n), q = collBump(k, n, 1); haptic('ok'); added.set(k, q);
+      const i = $('i', b); i.textContent = '× ' + q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+      say(`${n} · ${q} dans ta collection`, true); collEnrich();
+    };
+    inp.oninput = paint;
+    say('Chargement du catalogue (une seule fois)…', false);
+    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? 'Scryfall demande une pause, réessaie dans une minute.' : 'Catalogue Scryfall injoignable : réessaie plus tard.', false));
+    setTimeout(() => inp.focus(), 380);
+  });
+}
+
+/* ── Importer (fichier CSV, texte collé, texte partagé) ───────────────────────────────────────── */
+function openCollImport(initial) {
+  openSheet('Importer ma collection', 'ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… ou une liste « 3 Sol Ring »', api => {
+    api.body.innerHTML = `<p class="hint">Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l'appli que tu utilises, puis choisis le fichier. Les quantités d'une même carte (éditions différentes) s'additionnent.</p>
+      <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>Choisir un fichier<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
+      <div class="field-in"><label class="label" for="ciText">ou colle le texte</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Swords to Plowshares"></textarea></div>
+      <div class="ci-sum" id="ciSum" hidden></div>
+      <div class="seg" id="ciMode" role="radiogroup" aria-label="Mode d'import"></div>`;
+    mountSeg($('#ciMode', api.body), [{ v: 'add', label: 'Ajouter' }, { v: 'replace', label: 'Remplacer ma collection' }], collCount() ? 'add' : 'replace', () => paint());
+    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="ciGo" disabled>Importer</button>');
+    const ta = $('#ciText', api.body), sum = $('#ciSum', api.body), go = $('#ciGo', api.foot), mode = () => $('#ciMode', api.body)._v || 'add';
+    let parsed = null;
+    const paint = () => {
+      const t = ta.value; parsed = t.trim() ? parseCollection(t) : null;
+      sum.hidden = !parsed;
+      go.disabled = !parsed || !parsed.items.length;
+      if (!parsed) { go.textContent = 'Importer'; return; }
+      if (!parsed.items.length) { sum.className = 'ci-sum bad'; sum.textContent = parsed.format === 'csv' ? 'Aucune carte lue dans ce CSV : il faut une colonne « Name » (ou « Nom »).' : 'Aucune ligne reconnue. Une carte par ligne : « 3 Sol Ring ».'; return; }
+      const rep = mode() === 'replace' && collCount();
+      sum.className = 'ci-sum'; sum.innerHTML = `<b>${nf0(parsed.items.length)}</b> carte${parsed.items.length > 1 ? 's' : ''} différente${parsed.items.length > 1 ? 's' : ''} · <b>${nf0(parsed.copies)}</b> exemplaire${parsed.copies > 1 ? 's' : ''}<span>${parsed.format === 'csv' ? 'Fichier CSV' : 'Liste texte'}${parsed.skipped ? ` · ${nf0(parsed.skipped)} ligne${parsed.skipped > 1 ? 's' : ''} ignorée${parsed.skipped > 1 ? 's' : ''}` : ''}${rep ? ` · remplace les ${nf0(collCount())} cartes actuelles` : ''}</span>`;
+      go.textContent = `Importer ${nf0(parsed.items.length)} carte${parsed.items.length > 1 ? 's' : ''}`;
+    };
+    ta.oninput = paint;
+    $('#ciFile', api.body).onchange = async e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 8 * 1024 * 1024) { toast('Fichier trop gros (8 Mo maximum)'); return; }
+      try { ta.value = await f.text(); paint(); haptic('tap'); } catch (err) { toast('Fichier illisible'); }
+    };
+    go.onclick = () => {
+      if (!parsed || !parsed.items.length) return;
+      const before = COLL.map, m = mode(), n = parsed.items.length;
+      collAdd(parsed.items, m); api.close(); haptic('ok');
+      toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ${m === 'replace' ? 'dans ta collection' : 'ajoutée' + (n > 1 ? 's' : '')}`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+      collEnrich();
+    };
+    if (initial) { ta.value = initial; paint(); }
+  });
+}
+
+
+/* ── scan.js : reconnaître les noms de cartes par OCR (appareil photo en continu, ou photos) ─────────────────────
+   Tesseract.js est chargé à la demande depuis un CDN (≈ 3 Mo de modèle anglais, gardés ensuite par le navigateur).
+   Seul le NOM est lu (bande du titre), puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle.
+   ≥ 84 % de ressemblance = ajoutée (miniature Scryfall pour vérifier) · 72–84 % = à confirmer avec la miniature · en dessous = rien.
+   Meilleurs résultats : carte bien éclairée, nom net dans la bande du haut. Français : expérimental (recherche Scryfall des noms imprimés). */
+const TESS_V = '5.1.1', CDN = 'https://cdn.jsdelivr.net/npm/';
+const TESS = {
+  js: `${CDN}tesseract.js@${TESS_V}/dist/tesseract.min.js`, worker: `${CDN}tesseract.js@${TESS_V}/dist/worker.min.js`, core: `${CDN}tesseract.js-core@${TESS_V}`,
+  langs: { eng: `${CDN}@tesseract.js-data/eng/4.0.0_best_int`, fra: `${CDN}@tesseract.js-data/fra/4.0.0_best_int` },
+};
+const OCR = { lib: null, workers: {}, onProg: null };
+function ocrLib() {
+  if (typeof Tesseract !== 'undefined') return Promise.resolve(Tesseract);
+  if (!OCR.lib) OCR.lib = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = TESS.js; s.async = true;
+    s.onload = () => (typeof Tesseract !== 'undefined' ? res(Tesseract) : rej(Object.assign(new Error('OCR indisponible'), { code: 'cdn' })));
+    s.onerror = () => { OCR.lib = null; rej(Object.assign(new Error('OCR indisponible'), { code: 'cdn' })); };
+    document.head.appendChild(s);
+  });
+  return OCR.lib;
+}
+/** Un moteur OCR par langue (eng, fra), créé une fois : le modèle se télécharge à la première utilisation. */
+function ocrWorker(lang) {
+  if (!OCR.workers[lang]) OCR.workers[lang] = (async () => {
+    const T = await ocrLib();
+    const w = await T.createWorker(lang, 1, { workerPath: TESS.worker, corePath: TESS.core, langPath: TESS.langs[lang], logger: m => { if (OCR.onProg) OCR.onProg(m); } });
+    return w;
+  })().catch(e => { delete OCR.workers[lang]; throw e; });
+  return OCR.workers[lang];
+}
+/** Lit une image (canvas) : retourne les lignes de texte. psm : '6' bloc (bande du nom) · '11' texte épars (photo entière). */
+async function ocrLines(canvas, lang, psm) {
+  const w = await ocrWorker(lang);
+  await w.setParameters({ tessedit_pageseg_mode: psm || '6', tessedit_char_whitelist: lang === 'eng' ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,'’-:!" : '' });
+  const r = await w.recognize(canvas);
+  return String((r && r.data && r.data.text) || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
+}
+async function ocrStop() { const ws = Object.values(OCR.workers); OCR.workers = {}; for (const p of ws) { try { (await p).terminate(); } catch (e) { /* ignore */ } } }
+
+/** Découpe une zone d'une source (vidéo, image, canvas), la met à largeur utile et la convertit en niveaux de gris contrastés
+    (inversée si le fond est sombre ; pol : 1 = forcer l'inversion, 0 = ne pas inverser, absent = automatique). Le résultat porte .inv (choix fait). */
+function prepCanvas(src, r, outW, pol) {
+  const scale = Math.min(2.5, Math.max(outW / r.w, 0.4)), c = document.createElement('canvas');
+  c.width = Math.max(8, Math.round(r.w * scale)); c.height = Math.max(8, Math.round(r.h * scale));
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingQuality = 'high'; ctx.drawImage(src, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height), a = d.data, n = c.width * c.height, g = new Uint8Array(n), hist = new Uint32Array(256);
+  let sum = 0;
+  for (let i = 0, j = 0; i < n; i++, j += 4) { const v = (a[j] * 77 + a[j + 1] * 150 + a[j + 2] * 29) >> 8; g[i] = v; hist[v]++; sum += v; }
+  let lo = 0, hi = 255, acc = 0;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.02) { lo = v; break; } }
+  acc = 0; for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= n * 0.02) { hi = v; break; } }
+  const span = Math.max(48, hi - lo), inv = pol === undefined || pol === null ? sum / n < 105 : !!pol;
+  for (let i = 0, j = 0; i < n; i++, j += 4) { let v = (g[i] - lo) * 255 / span; v = v < 0 ? 0 : v > 255 ? 255 : v; if (inv) v = 255 - v; a[j] = a[j + 1] = a[j + 2] = v; a[j + 3] = 255; }
+  ctx.putImageData(d, 0, 0); c.inv = inv;
+  return c;
+}
+
+/* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', alive: false, gate: makeGate(3), sug: null, seq: 0, tickT: 0 };
+
+/** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
+const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
+function scanTotals() { let n = 0, maybe = 0; for (const e of SC.items.values()) { if (e.maybe) maybe++; else n += e.q; } return { n, maybe }; }
+function scanAdd(m, d, maybe) {
+  const cur = SC.items.get(m.key);
+  if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) cur.maybe = false; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } }
+  else SC.items.set(m.key, { key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe });
+  scanPaintList();
+}
+function scanPaintList() {
+  const el = SC.el; if (!el) return;
+  const list = $('.sc-list', el), arr = [...SC.items.values()].reverse(), t = scanTotals();
+  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}"><span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
+  list.innerHTML = miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scImg(e.name))}"><span class="sc-n"><b>${esc(e.name)}</b>${e.maybe ? `<small>À vérifier : est-ce bien cette carte ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
+      ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
+      <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
+    : miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
+  const go = $('.dv-foot [data-act="done"]', el);
+  go.disabled = !t.n; go.textContent = t.n ? `Ajouter ${nf0(t.n)} carte${t.n > 1 ? 's' : ''}` : 'Ajouter';
+  $('.sc-sub', el).textContent = SC.items.size ? `${nf0(t.n)} reconnue${t.n > 1 ? 's' : ''}${t.maybe ? ` · ${t.maybe} à vérifier` : ''}` : 'Nom de la carte dans la bande';
+}
+function scanHint(t, kind) { const h = $('.sc-hint', SC.el); if (!h) return; h.textContent = t || ''; h.dataset.k = kind || ''; h.hidden = !t; }
+function scanFlash() { const f = $('.sc-flash', SC.el); if (!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+function scanSuggest(m) {
+  SC.sug = m; const box = $('.sc-sug', SC.el); if (!box) return;
+  box.hidden = !m;
+  if (m) box.innerHTML = `<img class="sc-th" alt="" src="${esc(scImg(m.name))}"><span>Peut-être <b>${esc(m.name)}</b> ?</span><button class="btn small" type="button" data-act="sug">Ajouter</button>`;
+}
+
+/** Décide quoi faire d'une carte reconnue. live : lecture en continu (la même carte n'est comptée qu'une fois tant qu'elle reste devant l'objectif). */
+function scanGot(m, live) {
+  if (!m) { if (live) SC.gate.feed(null); return false; }
+  if (m.score >= 0.84) {
+    if (live && !SC.gate.feed(m.key)) return false;
+    scanAdd(m, 1, false); haptic('ok'); scanFlash(); scanSuggest(null); scanHint('✓ ' + m.name, 'ok'); return true;
+  }
+  if (live) { SC.gate.feed(null); scanSuggest(m); scanHint('', ''); return false; }
+  scanAdd(m, 1, true); return true;
+}
+/** Texte lu → carte reconnue (anglais : catalogue Scryfall ; français : recherche des noms imprimés). */
+async function scanMatch(lines, cat, signal) {
+  let m = bestMatch(lines, cat.idx);
+  if (SC.lang === 'fra' && (!m || m.score < 0.84)) {
+    for (const l of lines.slice(0, 3)) {
+      const words = l.text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length).slice(0, 2);
+      if (!words.length) continue;
+      let res; try { res = await scryForeign(words, 'fr', signal); } catch (e) { if (e.name === 'AbortError') throw e; continue; }
+      if (!res.length) continue;
+      const idx = nameIndex(res.map(r => r.printed)), fm = matchName(l.text, idx, 0.72);
+      if (fm) { const hit = res.find(r => frontName(r.printed) === frontName(fm.name)); if (hit && (!m || fm.score > m.score)) m = { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: l.text }; }
+      if (m && m.score >= 0.84) break;
+    }
+  }
+  return m;
+}
+
+/** Lit une zone « nom » : polarité automatique ; si rien de sûr et retry, relit en polarité inverse (texte clair sur fond mixte). */
+async function readName(src, box, outW, psm, cat, retry) {
+  const c1 = prepCanvas(src, box, outW), m1 = await scanMatch(await ocrLines(c1, SC.lang, psm), cat);
+  if (!retry || (m1 && m1.score >= 0.84) || !SC.el) return m1;
+  const m2 = await scanMatch(await ocrLines(prepCanvas(src, box, outW, c1.inv ? 0 : 1), SC.lang, psm), cat);
+  return m2 && (!m1 || m2.score > m1.score) ? m2 : m1;
+}
+/** Plusieurs cartes sur une image : lecture par bandes horizontales qui se chevauchent (un nom lisible par bande, polarité choisie bande par bande).
+    Une même carte vue dans deux bandes compte une fois ; si tu en as plusieurs exemplaires, corrige la quantité dans la liste. Noms anglais. */
+async function readMany(img, cat, prog) {
+  const W = img.naturalWidth, H = img.naturalHeight, sh = Math.round(H * 0.15), step = Math.max(1, Math.round(H * 0.075)), res = new Map();
+  for (let y = 0, i = 0; SC.el && y < H - step / 2; y += step, i++) {
+    if (prog) prog(i);
+    for (const m of ocrMatches(await ocrLines(prepCanvas(img, { x: 0, y, w: W, h: Math.min(sh, H - y) }, 1400), SC.lang, '6'), cat.idx, true)) {
+      const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); }
+    }
+  }
+  return [...res.values()];
+}
+
+/* — Appareil photo — */
+function scanBox() {
+  const v = $('.sc-video', SC.el), stage = $('.sc-stage', SC.el), g = $('.sc-guide', SC.el);
+  if (!v.videoWidth) return null;
+  const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect();
+  return coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height * 0.2 });
+}
+async function scanShot(manual) {
+  if (SC.busy || !SC.el) return;
+  const box = scanBox(); if (!box) { if (manual) toast('L\'appareil photo n\'est pas prêt'); return; }
+  SC.busy = true; const my = ++SC.seq;
+  try {
+    const cat = await collCatalog();
+    if (manual) scanHint('Lecture…', 'busy');
+    const m = await readName($('.sc-video', SC.el), box, 1100, '6', cat, !!manual);
+    if (!SC.el || my !== SC.seq) return;
+    if (manual) {
+      if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84); if (m.score >= 0.84) { haptic('ok'); scanFlash(); scanHint('✓ ' + m.name, 'ok'); } else scanHint('À vérifier : ' + m.name, 'busy'); }
+      else scanHint('Nom non reconnu : rapproche-toi, évite les reflets', 'bad');
+    } else if (!scanGot(m, true) && !m) scanHint('', '');
+  } catch (e) {
+    if (e && e.code === 'cdn') scanFail('Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.');
+    else if (e && e.code === 'rate') scanHint('Scryfall demande une pause…', 'busy');
+    else scanFail('Lecture impossible' + (e && e.message ? ' : ' + e.message : '') + '.');
+  } finally { SC.busy = false; }
+}
+function scanLoop() {
+  clearTimeout(SC.tickT);
+  if (!SC.alive || !SC.el) return;
+  const next = (ms) => { SC.tickT = setTimeout(scanLoop, ms); };
+  if (!SC.auto || SC.busy || document.hidden || !SC.stream) return next(350);
+  scanShot(false).finally(() => next(260));
+}
+function scanFail(msg) { scanHint(msg, 'bad'); }
+async function scanCamera() {
+  const stage = $('.sc-stage', SC.el);
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint('Appareil photo indisponible ici (il demande https). Utilise « Photos ».', 'bad'); return; }
+  try {
+    SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
+    const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
+    stage.dataset.cam = 'on'; scanHint('Place le nom de la carte dans la bande', ''); scanLoop();
+    // Réchauffe le moteur et le catalogue pendant que tu cadres.
+    ocrWorker(SC.lang).catch(() => {}); collCatalog().catch(() => {});
+  } catch (e) {
+    stage.dataset.cam = 'no';
+    scanHint(e && e.name === 'NotAllowedError' ? 'Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».' : e && e.name === 'NotFoundError' ? 'Aucun appareil photo trouvé. Utilise « Photos ».' : 'Appareil photo indisponible. Utilise « Photos ».', 'bad');
+  }
+}
+
+/* — Photos — */
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Image illisible')); };
+    img.src = url;
+  });
+}
+async function scanPhotos(files) {
+  const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+  if (!list.length) return;
+  const stt = $('.sc-prog', SC.el); let ok = 0, miss = 0;
+  const lost = (i, f) => { miss++; SC.miss.push({ id: ++SC.mid, label: `Photo ${i + 1}${f && f.name && f.name.length <= 24 ? ' · ' + f.name : ''}` }); scanPaintList(); };
+  SC.busy = true; stt.hidden = false;
+  try {
+    const cat = await collCatalog();
+    for (let i = 0; i < list.length && SC.el; i++) {
+      stt.textContent = `Photo ${i + 1} / ${list.length}…`;
+      let img; try { img = await loadImage(list[i]); } catch (e) { lost(i, list[i]); continue; }
+      const W = img.naturalWidth, H = img.naturalHeight;
+      if (SC.mode === 'one') {
+        // Une carte par photo : bande du haut (le nom), puis la photo entière si rien n'est reconnu.
+        let m = await readName(img, { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) }, 1100, '6', cat, true);
+        if (!m || m.score < 0.84) { const all = await readName(img, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, true); if (all && (!m || all.score > m.score)) m = all; }
+        if (m && m.score >= 0.72) { scanGot(m, false); ok++; } else lost(i, list[i]);
+      } else {
+        const ms = (await readMany(img, cat)).filter(m => m.score >= 0.72);
+        for (const m of ms) { for (let q = 0; q < m.q; q++) scanGot(m, false); ok++; }
+        if (!ms.length) lost(i, list[i]);
+      }
+    }
+    toast(`${ok} carte${ok > 1 ? 's' : ''} reconnue${ok > 1 ? 's' : ''}${miss ? ` · ${miss} photo${miss > 1 ? 's' : ''} sans résultat` : ''}`);
+    scanPaintList();
+  } catch (e) {
+    scanFail(e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : 'Lecture impossible' + (e && e.message ? ' : ' + e.message : '') + '.');
+  } finally { SC.busy = false; stt.hidden = true; }
+}
+
+function closeScan() { if (SC.el) SC.el.__close(); }
+function openScan() {
+  closeScan();
+  const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom de la carte dans la bande</span></div></header>
+    <div class="sc-stage" data-cam="wait"><video class="sc-video" playsinline muted autoplay></video>
+      <div class="sc-guide" aria-hidden="true"><span class="sc-band"></span></div>
+      <div class="sc-flash"></div>
+      <p class="sc-hint" hidden></p><div class="sc-sug" hidden></div><p class="sc-prog" hidden></p>
+      <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ci-dessous.</p></div>
+    <div class="sc-bar">
+      <label class="sc-auto"><span class="switch"><input type="checkbox" id="scAuto" checked><i></i></span><b>Auto</b></label>
+      <button class="sc-shot" type="button" data-act="shot" aria-label="Lire la carte"><i></i></button>
+      <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label></div>
+    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Photos"></div></div>
+    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Le français et « Plusieurs / photo » (noms anglais) sont moins fiables.</p>
+    <div class="dv-scroll sc-list"></div>
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
+  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
+  const stop = () => { SC.alive = false; clearTimeout(SC.tickT); if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
+  const onKey = e => { if (e.key === 'Escape' && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
+  wrap.__close = () => {
+    if (SC.el !== wrap) return; SC.el = null; stop(); document.removeEventListener('keydown', onKey, true);
+    wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
+    try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
+  mountSeg($('#scLang', wrap), [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'En français' }], SC.lang, v => { SC.lang = v; SC.gate.reset(); ocrWorker(v).catch(() => {}); });
+  mountSeg($('#scMode', wrap), [{ v: 'one', label: '1 carte / photo' }, { v: 'many', label: 'Plusieurs / photo' }], SC.mode, v => { SC.mode = v; });
+  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); };
+  $('#scFile', wrap).onchange = async e => { const f = e.target.files; await scanPhotos(f); e.target.value = ''; };
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b) {
+      const act = b.dataset.act;
+      if (act === 'close') wrap.__close();
+      else if (act === 'shot') { haptic('tap'); scanShot(true); }
+      else if (act === 'sug' && SC.sug) { scanAdd(SC.sug, 1, false); haptic('ok'); scanFlash(); scanHint('✓ ' + SC.sug.name, 'ok'); scanSuggest(null); SC.gate.feed(SC.sug.key); }
+      else if (act === 'done') {
+        const items = [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q }));
+        if (!items.length) return;
+        const before = COLL.map, n = items.reduce((a, x) => a + x.q, 0);
+        collAdd(items, 'add'); wrap.__close(); haptic('ok');
+        toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+        collEnrich();
+      }
+      return;
+    }
+    const a = e.target.closest('[data-a]'); if (!a) return;
+    const row = a.closest('.sc-item'); if (!row) return;
+    if (row.dataset.m) {
+      haptic('tap');
+      if (a.dataset.a === 'type') openCollAdd();
+      else { SC.miss = SC.miss.filter(m => String(m.id) !== row.dataset.m); scanPaintList(); }
+      return;
+    }
+    const it = SC.items.get(row.dataset.k); if (!it) return;
+    haptic('tap');
+    if (a.dataset.a === 'inc') it.q = Math.min(999, it.q + 1);
+    else if (a.dataset.a === 'dec') { if (it.q > 1) it.q--; else SC.items.delete(it.key); }
+    else if (a.dataset.a === 'ok') it.maybe = false;
+    else if (a.dataset.a === 'del') SC.items.delete(it.key);
+    scanPaintList();
+  });
+  document.body.appendChild(wrap); holdApp(); scanPaintList();
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  haptic('tap'); scanCamera();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) SC.gate.reset(); });
 
 
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
@@ -3787,8 +5284,85 @@ const PWA = (() => {
       if (document.readyState === 'complete') reg(); else window.addEventListener('load', reg);
     }
   }
-  return { state, install, snooze, wantsBanner, on, standalone };
+  return { state, install, snooze, wantsBanner, on, standalone, ios };
 })();
+
+
+/* ── push.js : notification « recherche terminée » (Web Push) ───────────────────────────────────
+   Le navigateur crée un abonnement (clé publique VAPID du serveur) ; il l'envoie avec la recherche, le serveur la poursuit
+   en tâche de fond et, si l'app n'est plus ouverte à la fin, pousse la notification. Rien n'est stocké côté serveur.
+   Android (Chrome, Edge, Firefox) : direct. iPhone/iPad : seulement l'app installée sur l'écran d'accueil (iOS 16.4 ou plus). */
+const b64u = s => { const t = String(s || '').replace(/-/g, '+').replace(/_/g, '/'), p = '='.repeat((4 - t.length % 4) % 4), b = atob(t + p); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+
+async function pushReg() {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null;
+  try { return await Promise.race([navigator.serviceWorker.ready, sleep(2500).then(() => null)]); } catch (e) { return null; }
+}
+/** 'on' · 'off' · 'denied' · 'ios' (app à installer d'abord) · 'unsupported' · 'novapid' (serveur sans clés) · 'noproxy' · 'nosw' */
+async function pushState() {
+  if (!CTX.proxy) return 'noproxy';
+  if (!CTX.vapid) return 'novapid';
+  const api = typeof Notification !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator && typeof window !== 'undefined' && 'PushManager' in window;
+  if (!api) return PWA.ios() && !PWA.standalone() ? 'ios' : 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  const reg = await pushReg(); if (!reg) return 'nosw';
+  let sub = null; try { sub = await reg.pushManager.getSubscription(); } catch (e) { /* ignore */ }
+  return sub && Notification.permission === 'granted' ? 'on' : 'off';
+}
+async function pushEnable() {
+  const st = await pushState();
+  if (st === 'on') return { ok: true };
+  if (st !== 'off') return { ok: false, why: st };
+  let perm; try { perm = await Notification.requestPermission(); } catch (e) { perm = 'default'; }
+  if (perm !== 'granted') return { ok: false, why: perm === 'denied' ? 'denied' : 'dismissed' };
+  try { const reg = await pushReg(); await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(CTX.vapid) }); }
+  catch (e) { return { ok: false, why: 'error', msg: (e && e.message) || '' }; }
+  return { ok: true };
+}
+async function pushDisable() {
+  try { const reg = await pushReg(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) { /* ignore */ }
+}
+/** Charge utile envoyée avec la recherche (null si les notifications sont coupées ou indisponibles). */
+async function pushPayload(label) {
+  if (!S.push || S.demo || !CTX.proxy || !CTX.vapid || !CTX.jobs) return null;
+  try {
+    if (await pushState() !== 'on') return null;
+    const sub = (await (await pushReg()).pushManager.getSubscription()).toJSON();
+    if (!sub || !sub.endpoint || !sub.keys) return null;
+    return { sub: { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }, title: 'Recherche terminée', body: `Les offres de « ${String(label || 'ta liste').slice(0, 60)} » sont prêtes.`, url: './?resume=1' };
+  } catch (e) { return null; }
+}
+function pushInit() {
+  try { navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'resume') resumeRun(); }); } catch (e) { /* pas de service worker */ }
+  if (S.push) pushState().then(st => { if (st === 'denied') { S.push = false; saveStore(); } });
+}
+/** Réglages › Notifications. */
+async function paintPushBox(box) {
+  if (!box) return;
+  const st = await pushState(); if (!box.isConnected) return;
+  const note = (ok, t) => `<div class="status" data-ok="${ok ? 1 : 0}"><span class="dot"></span><span>${t}</span></div>`;
+  if (st === 'on' || st === 'off') {
+    box.innerHTML = `<label class="switch-row" for="setPush"><span class="t"><b>Prévenir quand la recherche est finie</b><span class="hint">Si tu quittes l'app pendant la lecture des offres, une notification arrive à la fin (le serveur continue sans toi).</span></span><span class="switch"><input type="checkbox" id="setPush" ${S.push && st === 'on' ? 'checked' : ''}><i></i></span></label><p class="hint" id="pushMsg" hidden></p>`;
+    const cb = $('#setPush', box), msg = $('#pushMsg', box);
+    cb.onchange = async () => {
+      msg.hidden = true;
+      if (cb.checked) {
+        cb.disabled = true; const r = await pushEnable(); cb.disabled = false;
+        if (r.ok) { S.push = true; saveStore(); haptic('ok'); toast('Notifications activées'); }
+        else { cb.checked = false; S.push = false; saveStore(); msg.hidden = false; msg.textContent = r.why === 'denied' ? 'Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.' : r.why === 'dismissed' ? 'Autorisation non accordée.' : 'Activation impossible' + (r.msg ? ' : ' + r.msg : '') + '.'; }
+      } else { S.push = false; saveStore(); await pushDisable(); }
+    };
+    return;
+  }
+  box.innerHTML = {
+    noproxy: '<p class="hint">Les notifications demandent le serveur Deck Deal (la recherche y continue quand tu quittes l\'app).</p>',
+    novapid: note(0, 'Le serveur n\'a pas de clés de notification. Ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT dans les variables d\'environnement (voir README).'),
+    denied: note(0, 'Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur, puis reviens ici.'),
+    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Deck Deal est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
+    unsupported: '<p class="hint">Ce navigateur ne gère pas les notifications push.</p>',
+    nosw: '<p class="hint">Le service worker n\'est pas actif (ouvre l\'app en https, puis recharge).</p>',
+  }[st] || '';
+}
 
 
 /* ── main.js : démarrage ─────────────────────────────────────────────────────────────────────── */

@@ -13,6 +13,7 @@
   "theme_color": "#0b0f1c",
   "categories": ["shopping", "games", "utilities"],
   "prefer_related_applications": false,
+  "share_target": { "action": "./", "method": "GET", "enctype": "application/x-www-form-urlencoded", "params": { "title": "title", "text": "text", "url": "url" } },
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

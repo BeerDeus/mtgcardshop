@@ -21,13 +21,25 @@ service cloud.firestore {
         && request.resource.data.text is string && request.resource.data.text.size() <= 60000
         && request.resource.data.updatedAt is number
         && (!('history' in request.resource.data)
-            || (request.resource.data.history is list && request.resource.data.history.size() <= 12))
+            || (request.resource.data.history is list && request.resource.data.history.size() <= 40))
         // Prix gardés carte par carte (deck viewer) : facultatif, borné
         && (!('snap' in request.resource.data)
             || (request.resource.data.snap is map
-                && request.resource.data.snap.keys().hasOnly(['at', 'mode', 'lang', 'sig', 'items'])
+                && request.resource.data.snap.keys().hasOnly(['at', 'mode', 'lang', 'sig', 'items', 'pv', 'pa'])
                 && request.resource.data.snap.items is list
                 && request.resource.data.snap.items.size() <= 400));
+    }
+
+    // Deck Deal : collection possédée (un seul document par compte, liste « 3 Sol Ring » une carte par ligne)
+    match /users/{uid}/meta/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && docId == 'collection'
+        && request.resource.data.keys().hasOnly(['text', 'count', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['text', 'updatedAt'])
+        && request.resource.data.text is string && request.resource.data.text.size() <= 900000
+        && request.resource.data.updatedAt is number
+        && (!('count' in request.resource.data) || request.resource.data.count is number);
     }
   }
 }

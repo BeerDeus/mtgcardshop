@@ -13,6 +13,7 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `APP_KEY` | Ancienne clé d'accès, facultative : sert de repli tant qu'elle est définie. À supprimer une fois la connexion par compte validée |
 | `HOST` | `0.0.0.0` en hébergement. Refusé si ni `APP_KEY` ni `ALLOWED_UIDS`/`ALLOWED_EMAILS` n'est défini |
 | `PORT` | Fourni par l'hébergeur (défaut 8787) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Facultatif : notifications « recherche terminée » (voir plus bas, `node gen-vapid.mjs`) |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
 
 ### Accès par compte Firebase (remplace `APP_KEY`)
@@ -74,6 +75,8 @@ Chaque recherche live d'un deck enregistré garde les prix carte par carte (cart
 - Liste « Mes decks » › **Voir** : viewer plein écran du deck, sans nouvelle recherche. Aussi dans les résultats : bouton **Viewer** (recherche en cours).
 - Tri **Mana** (colonnes par coût, terrains à part, courbe de mana cliquable), **Prix** (du plus cher au moins cher) ou **Type** ; le choix est mémorisé.
 - Toucher une carte l'ouvre en grand (langue de l'offre) ; précédent / suivant par boutons, flèches du clavier ou glissement ; prix, état et vendeur sous l'image.
+- **Commandant** mis en avant en tête ; **Réf. Cardmarket** par carte (prix de référence Scryfall, écart en % : bon prix / correct / cher) ; recherche + filtres couleur, famille, coût.
+- **Historique** de prix par deck (40 relevés max, comparés à conditions égales : mode, langue, état, foil, cartes trouvées, nombre de cartes possédées) : courbe, écart du total et écart par carte.
 - Âge des prix affiché (« Prix du 4 oct. · il y a 3 jours »), en orange après 24 h ; **Actualiser** relit tout (cache serveur ignoré) puis propose de revenir au viewer.
 
 **Règles Firestore à republier** (Firebase › Firestore › Règles, contenu de `firestore.rules`) pour synchroniser les prix entre appareils : le champ `snap` a été ajouté à la liste autorisée. Tant que ce n'est pas fait, l'app renvoie le deck sans `snap` (aucune erreur visible) et garde les prix sur l'appareil seulement.
@@ -81,6 +84,39 @@ Chaque recherche live d'un deck enregistré garde les prix carte par carte (cart
 ## Carte en grand
 
 Toucher l'image d'une carte l'affiche en grand (précédent / suivant dans l'ordre de la liste), dans la langue de l'offre retenue (Scryfall `/cards/<ext>/<n°>/<langue>`) ; si Scryfall n'a pas la version française, l'anglaise est affichée avec une mention. Cartes double face : bouton « Retourner ».
+
+## Ma collection (cartes possédées)
+
+Bouton **Ma collection** sur l'accueil. Les cartes possédées sont retirées de la recherche (« déjà possédée », aucune offre lue) et du panier ; l'option se coupe dans la liste. Sauvegarde sur l'appareil (`deckdeal:coll:v1`) et, connecté, dans Firestore (`users/<uid>/meta/collection`, le plus récent gagne ; première connexion : union des deux). Les infos des cartes (coût, type, couleurs, image, prix de réf.) viennent de Scryfall, gardées sur l'appareil.
+
+- **Importer** : fichier CSV (ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… colonnes Name/Quantity reconnues, séparateur `,` `;` ou tabulation) ou liste texte « 3 Sol Ring ». Les quantités d'une même carte (éditions différentes) s'additionnent. Mode « Ajouter » ou « Remplacer ma collection ». Pour ~2000 cartes, le plus simple reste l'export CSV de ton appli actuelle (ManaBox exporte en un geste).
+- **Ajouter à la main** : saisie assistée sur les noms Scryfall (35 000 noms, nom anglais ou français déjà connu de Scryfall).
+- **Scanner** (voir plus bas), **Stats** (nombre de cartes, valeur de réf. Cardmarket, répartition couleur / famille / coût, plus chères), **recherche + filtres** couleur / famille / coût converti (aussi dans le viewer d'un deck).
+
+**Règles Firestore à republier** (contenu de `firestore.rules`) : documents `meta/collection` et champs `snap.pv`/`snap.pa`, historique 40 relevés max par deck. Sans cela la collection reste sur l'appareil, sans erreur visible.
+
+## Scan des cartes (OCR)
+
+Collection › icône appareil photo. Seul le **nom** de la carte est lu (bande du titre), jamais le reste : le texte est comparé au catalogue Scryfall et c'est la carte officielle qui est ajoutée, avec sa miniature Scryfall pour vérifier d'un coup d'œil.
+
+- ≥ 84 % de ressemblance : ajoutée ; 72–84 % : « à vérifier » (miniature + bouton ✓, jamais ajoutée seule) ; en dessous : ligne « nom non reconnu » avec « Saisir ». Rien n'est enregistré avant « Ajouter » ; quantités et suppression corrigeables.
+- Caméra en continu (mode Auto : une carte tenue devant l'objectif n'est comptée qu'une fois), ou **Photos** : « 1 carte / photo » (le plus fiable) ou « Plusieurs / photo » (lecture par bandes, noms anglais, chaque carte comptée une fois).
+- Français expérimental : le nom imprimé est cherché chez Scryfall (`lang:fr`) puis converti en nom anglais.
+- Tesseract.js (≈ 3 Mo de modèle) est chargé depuis le CDN jsDelivr au premier scan seulement ; la lecture se fait sur l'appareil, aucune image n'est envoyée. Il faut https pour la caméra (la page « Photos » marche partout).
+
+## Notifications « recherche terminée »
+
+Notification push (Web Push chiffré, VAPID, sans dépendance) quand la lecture des offres se termine alors que l'app n'est plus ouverte ; un toucher rouvre Deck Deal et reprend la recherche. Le serveur garde l'abonnement le temps de la recherche seulement, rien n'est stocké.
+
+1. `node gen-vapid.mjs https://card.m2s-photo.fr` (affiche 3 lignes).
+2. Hostinger › variables d'environnement : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` › redéployer. La clé privée ne va jamais dans GitHub.
+3. Dans l'app : Réglages › Notifications › « Prévenir quand la recherche est finie ».
+
+Android (Chrome, Edge, Firefox) : direct. iPhone / iPad : seulement si Deck Deal est installée sur l'écran d'accueil (iOS 16.4 ou plus). Si tu changes les clés, les abonnements existants s'arrêtent : on réactive l'option. `PUSH_GRACE_MS` (défaut 4000) : délai avant d'envoyer, pour ne pas notifier si l'app est encore là.
+
+## Partage vers l'app et import de liens
+
+Une fois l'app installée, elle apparaît dans le menu Partager d'Android : partager une liste de cartes (texte) ou un lien EDHREC (decks moyens), Archidekt ou Moxfield remplit la liste. Les liens passent par `GET /api/import?url=…` sur le serveur (lecture seule, liste blanche de sites, 2 Mo max, protégé comme le reste de l'API). EDHREC est fiable ; Archidekt et Moxfield dépendent de leurs API publiques (Moxfield peut refuser les serveurs : coller la liste en texte reste possible).
 
 ## Installation (PWA)
 
@@ -91,3 +127,5 @@ Le dossier doit être déployé avec `proxy.mjs`.
 - iPhone / iPad : Apple n'autorise que Safari › Partager › « Sur l'écran d'accueil ».
 - Hors ligne : l'interface s'ouvre (mode démo utilisable) ; la recherche live a besoin du réseau. `/api/*` n'est jamais mis en cache.
 - Le service worker (`pwa/sw.js`) charge la page en réseau d'abord : un nouveau déploiement est pris au rechargement suivant.
+- Images de cartes (`cards.scryfall.io`) : gardées par le service worker (1200 max, les plus anciennes sortent d'abord), donc plus de re-téléchargement et affichables hors ligne. Ce cache est dans le stockage du site : « effacer les données du site » le vide, il se remplit de nouveau tout seul. L'app demande le stockage persistant pour que le navigateur ne le purge pas.
+- Notifications push et menu Partager : voir plus haut.
