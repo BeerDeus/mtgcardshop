@@ -1687,6 +1687,35 @@ function mergeColl(base, add, mode) {
 const collToText = coll => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).map(x => x.q + ' ' + x.n + (x.l ? ' *' + x.l.toUpperCase() + '*' : '')).join('\n');
 const collFromText = text => { const o = {}; for (const it of parseCollection(text).items) o[it.k] = it.l ? { n: it.n, q: it.q, l: it.l } : { n: it.n, q: it.q }; return o; };
 
+/** Même carte au même état (quantité, langue) ? Deux absences sont identiques. */
+const sameEntry = (a, b) => (!a && !b) || (!!a && !!b && a.q === b.q && (a.l || '') === (b.l || ''));
+/**
+ * Fusion à trois : base (dernier état connu du compte), local (cet appareil), remote (compte maintenant). Carte par carte, sans horloge :
+ * · rien de changé ici depuis la base → on prend le compte (ajouts, retraits et quantités de l'autre appareil) ;
+ * · changé seulement ici → on garde ici ;
+ * · changé pareil des deux côtés → cette valeur (rejouer une fusion ne double rien) ;
+ * · changé différemment : une modification l'emporte sur un retrait ; deux modifications de quantité s'additionnent (compte + ce qui a bougé ici), langue d'ici si elle a changé ; sans base, la plus grande quantité.
+ * Retourne une nouvelle collection (clé → { n, q, l? }).
+ */
+function merge3(base, local, remote) {
+  const out = {}, b0 = base || {}, l0 = local || {}, r0 = remote || {};
+  for (const k of new Set([...Object.keys(l0), ...Object.keys(r0)])) {
+    const b = b0[k], l = l0[k], r = r0[k];
+    let v;
+    if (sameEntry(l, b)) v = r;
+    else if (sameEntry(r, b)) v = l;
+    else if (sameEntry(l, r)) v = l;
+    else if (!l) v = r;
+    else if (!r) v = l;
+    else {
+      const q = b ? r.q + (l.q - b.q) : Math.max(l.q, r.q), lang = b ? ((l.l || '') !== (b.l || '') ? l.l : r.l) : (l.l || r.l);
+      v = q >= 1 ? { ...r, ...l, n: l.n || r.n, q: Math.min(9999, q) } : undefined;
+      if (v) { if (lang) v.l = lang; else delete v.l; }
+    }
+    if (v && v.q > 0) out[k] = { ...v };
+  }
+  return out;
+}
 /** Union de deux collections (première connexion : appareil + compte) : pour chaque carte, la plus grande quantité. */
 function unionColl(a, b) {
   const out = { ...a };
@@ -1913,7 +1942,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
-    ownKey, cardLang, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
+    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
     lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
@@ -1980,11 +2009,19 @@ function makeCloud(m) {
     newId: uid => m.fs.doc(col(uid)).id,
     save: (uid, id, data) => m.fs.setDoc(m.fs.doc(col(uid), id), data),
     remove: (uid, id) => m.fs.deleteDoc(m.fs.doc(col(uid), id)),
-    /** Collection possédée : un seul document users/{uid}/meta/collection { text, count, updatedAt }. */
+    /** Collection possédée : un seul document users/{uid}/meta/collection { text, count, updatedAt }. onData(données | null, écritureEnAttente, vientDuCache). */
     watchColl(uid, onData, onErr) {
-      return m.fs.onSnapshot(m.fs.doc(db, 'users', uid, 'meta', 'collection'), { includeMetadataChanges: true }, s => onData(s.exists() ? s.data() : null, s.metadata.hasPendingWrites), onErr);
+      return m.fs.onSnapshot(m.fs.doc(db, 'users', uid, 'meta', 'collection'), { includeMetadataChanges: true }, s => onData(s.exists() ? s.data() : null, s.metadata.hasPendingWrites, s.metadata.fromCache), onErr);
     },
     saveColl: (uid, data) => m.fs.setDoc(m.fs.doc(db, 'users', uid, 'meta', 'collection'), data),
+    /** Lecture-modification-écriture atomique : fn(données | null) retourne le nouveau document (ou null = rien à écrire). Rejouée si un autre appareil écrit entre-temps. Exige le réseau. */
+    txColl: (uid, fn) => m.fs.runTransaction(db, async tx => {
+      const ref = m.fs.doc(db, 'users', uid, 'meta', 'collection'), s = await tx.get(ref), out = fn(s.exists() ? s.data() : null);
+      if (out) tx.set(ref, out);
+      return out;
+    }),
+    /** Lecture directe sur le serveur (jamais le cache) : { data | null }. */
+    pullColl: uid => m.fs.getDocFromServer(m.fs.doc(db, 'users', uid, 'meta', 'collection')).then(s => ({ data: s.exists() ? s.data() : null })),
     saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
   };
 }
@@ -4681,8 +4718,9 @@ async function refreshDeckPrices(id) {
    Source de vérité : « 3 Sol Ring » ligne par ligne (localStorage, et le compte Firestore users/{uid}/meta/collection).
    Les infos Scryfall (coût, type, couleurs, image, prix de référence) sont un cache à part : on peut le vider sans rien perdre. */
 const COLL_KEY = 'deckdeal:coll:v1', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
+const COLL_RETRY = { off: 15000, err: 20000, live: 12000 };       // délais (ms) : nouvel essai hors ligne / en erreur, attente du serveur au démarrage
 const PX_KEY = 'deckdeal:px:v1', PX_TTL = 2 * DAY, PX_CHUNK = 40;
-const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', cloud: 'off', err: '', unsub: null, el: null, tab: 'list', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0 };
+const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0, runId: 0 };
 const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
 /** Exemplaires possédés d'une carte (k = ownKey du nom). */
@@ -4693,11 +4731,14 @@ const nf0 = n => Number(n || 0).toLocaleString('fr-FR');
 function collRead() {
   try {
     const r = JSON.parse(localStorage.getItem(COLL_KEY) || 'null');
-    if (r && typeof r.t === 'string') { COLL.map = collFromText(r.t); COLL.u = Number(r.u) || 0; COLL.s = typeof r.s === 'string' ? r.s : ''; }
+    if (r && typeof r.t === 'string') {
+      COLL.map = collFromText(r.t); COLL.u = Number(r.u) || 0; COLL.s = typeof r.s === 'string' ? r.s : '';
+      COLL.base = COLL.s && typeof r.b === 'string' ? collFromText(r.b) : null;                  // dernier état du compte connu de cet appareil (null : inconnu → fusion par union)
+    }
   } catch (e) { /* illisible : on repart d'une collection vide */ }
 }
 function collWrite() {
-  try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map), u: COLL.u, s: COLL.s })); return true; }
+  try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map), u: COLL.u, s: COLL.s, ...(COLL.base ? { b: collToText(COLL.base) } : {}) })); return true; }
   catch (e) { toast('Stockage plein : la collection n\'a pas pu être enregistrée sur cet appareil'); return false; }
 }
 async function collMetaLoad() {
@@ -4749,43 +4790,113 @@ function collBump(k, name, d, o) {
   collChanged(o); return q;
 }
 
-/* ── Compte (Firestore users/{uid}/meta/collection) ───────────────────────────────────────────── */
-function collPushSoon() { clearTimeout(COLL.pushT); COLL.pushT = setTimeout(collPush, 1200); }
-function collPush() {
-  clearTimeout(COLL.pushT);
-  if (!cloudOn() || !D.cloud.saveColl) return;
-  const uid = D.user.uid, text = collToText(COLL.map), u = COLL.u || Date.now();
-  if (text.length > 900000) { COLL.cloud = 'error'; COLL.err = 'Collection trop grosse pour le compte'; collPaintHead(); return; }
-  COLL.cloud = 'sync'; collPaintHead();
-  D.cloud.saveColl(uid, { text, count: collCount(), updatedAt: u }).then(() => { if (D.uid === uid) { COLL.s = uid; COLL.cloud = 'ok'; COLL.err = ''; collWrite(); collPaintHead(); } })
-    .catch(err => { COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour la collection' : 'Synchronisation impossible'; collPaintHead(); });
+/* ── Compte (Firestore users/{uid}/meta/collection) : plusieurs appareils, une même collection ─────────────────────
+   Pas d'horloge ni de « dernier qui écrit gagne » : chaque appareil garde BASE (le dernier état du compte qu'il a vu) et fusionne carte par carte
+   (merge3 : base · appareil · compte). Envoi = transaction (lire le compte, fusionner, écrire) : deux appareils qui envoient en même temps ne s'écrasent pas.
+   Réception = fusion avec ce qui n'est pas encore parti. Hors ligne : tout reste ici, et repart au retour du réseau. */
+const collClone = m => { const o = {}; for (const k in m) o[k] = { ...m[k] }; return o; };
+/** Cet appareil a-t-il des changements pas encore dans le compte ? */
+const collUnsynced = () => !COLL.base || !sameColl(COLL.map, COLL.base);
+const collOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+function collPushSoon() {
+  if (cloudOn() && D.cloud.txColl && COLL.cloud !== 'error') COLL.cloud = collOffline() ? 'offline' : 'sync';
+  clearTimeout(COLL.pushT); COLL.pushT = setTimeout(collPush, 700);
 }
+function collRetry(ms) { clearTimeout(COLL.retryT); COLL.retryT = setTimeout(() => { if (collUnsynced()) collPush(); else collPull(); }, ms); }
+async function collPush() {
+  clearTimeout(COLL.pushT); clearTimeout(COLL.retryT); COLL.pushT = COLL.retryT = 0;
+  if (!cloudOn() || !D.cloud.txColl) return;
+  if (COLL.pushing) { COLL.again = true; return; }
+  if (collOffline()) { COLL.cloud = 'offline'; collPaintHead(); return; }
+  const uid = D.user.uid, id = ++COLL.runId;
+  let used = null, merged = null, wrote = null;
+  COLL.pushing = id; COLL.again = false; COLL.cloud = 'sync'; COLL.err = ''; collPaintHead();
+  try {
+    await D.cloud.txColl(uid, rdoc => {
+      const remote = rdoc && typeof rdoc.text === 'string' ? collFromText(rdoc.text) : {};
+      used = collClone(COLL.map);
+      merged = merge3(rdoc && COLL.s === uid ? COLL.base : null, used, remote);
+      if (rdoc ? sameColl(merged, remote) : !Object.keys(merged).length) { wrote = null; return null; }              // le compte a déjà tout
+      wrote = { text: collToText(merged), count: Object.keys(merged).length, updatedAt: Math.max(Date.now(), (Number(rdoc && rdoc.updatedAt) || 0) + 1) };
+      if (wrote.text.length > 900000) throw Object.assign(new Error('Collection trop grosse'), { code: 'too-big' });
+      return wrote;
+    });
+    if (D.uid !== uid) return;
+    if (wrote) COLL.ru = Math.max(COLL.ru, wrote.updatedAt);
+    const before = COLL.map, next = merge3(used, before, merged);                                                       // + ce qui a été touché ici pendant l'envoi
+    COLL.s = uid; COLL.base = merged; COLL.map = next; COLL.cloud = 'ok'; COLL.err = ''; COLL.live = true; collWrite();
+    if (!sameColl(before, next)) collRemoteApplied(before, next);
+    if (collUnsynced()) COLL.again = true;
+  } catch (err) {
+    if (D.uid !== uid) return;
+    const c = err && err.code;
+    if (c === 'permission-denied') { COLL.cloud = 'error'; COLL.err = 'Règles Firestore à publier pour la collection'; }
+    else if (c === 'too-big') { COLL.cloud = 'error'; COLL.err = 'Collection trop grosse pour le compte'; }
+    else if (c === 'unavailable' || collOffline()) { COLL.cloud = 'offline'; collRetry(COLL_RETRY.off); }
+    else { COLL.cloud = 'error'; COLL.err = 'Synchronisation impossible'; collRetry(COLL_RETRY.err); }
+  } finally {
+    if (COLL.pushing === id) {
+      COLL.pushing = 0;
+      const d = COLL.deferred; COLL.deferred = null;
+      if (d && D.uid === d[0]) collFromCloud(...d);
+      if (COLL.again && COLL.cloud !== 'error' && COLL.cloud !== 'offline') collPushSoon();
+      collPaintHead();
+    }
+  }
+}
+/** Lit le compte sur le serveur maintenant (retour au premier plan, bouton Réessayer). */
+function collPull() {
+  if (!cloudOn() || !D.cloud.pullColl || collOffline()) return;
+  const uid = D.user.uid;
+  D.cloud.pullColl(uid).then(r => { if (D.uid === uid) collFromCloud(uid, r.data, false, false, true); }).catch(() => { /* hors ligne : l'écoute reprendra seule */ });
+}
+const collSyncNow = () => { collPull(); if (collUnsynced() || COLL.cloud !== 'ok') collPush(); };
 /** Appelée à chaque changement de compte (decks.js › onUser). */
 function collUser(user) {
   if (COLL.unsub) { try { COLL.unsub(); } catch (e) { /* ignore */ } COLL.unsub = null; }
-  COLL.cloud = 'off'; COLL.err = '';
+  clearTimeout(COLL.retryT); clearTimeout(COLL.liveT); clearTimeout(COLL.pushT); COLL.runId++; COLL.pushing = 0; COLL.deferred = null; COLL.again = false;
+  COLL.cloud = 'off'; COLL.err = ''; COLL.live = false; COLL.ru = 0;
   if (!user || !D.cloud || !D.cloud.watchColl) { collPaintHead(); return; }
   COLL.cloud = 'sync';
-  COLL.unsub = D.cloud.watchColl(user.uid, (data, pending) => collFromCloud(user.uid, data, pending), err => {
+  COLL.liveT = setTimeout(() => { if (!COLL.live && D.uid === user.uid && COLL.cloud === 'sync') { COLL.cloud = 'offline'; collPaintHead(); } }, COLL_RETRY.live);     // pas de réponse du serveur : hors ligne
+  COLL.unsub = D.cloud.watchColl(user.uid, (data, pending, fromCache) => collFromCloud(user.uid, data, pending, fromCache), err => {
     COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour la collection' : 'Synchronisation impossible'; collPaintHead();
   });
 }
-function collFromCloud(uid, data, pending) {
-  if (pending || D.uid !== uid) return;                                   // écho de notre écriture, pas encore confirmée par le serveur
-  const remote = data && typeof data.text === 'string' ? collFromText(data.text) : null, ru = Number(data && data.updatedAt) || 0, has = collCount() > 0;
-  COLL.cloud = 'ok'; COLL.err = '';
-  if (!remote || !Object.keys(remote).length) { if (has) collPush(); else COLL.s = uid; }                      // rien dans le compte : on y envoie celle de l'appareil
-  else if (COLL.s !== uid && has && !sameColl(COLL.map, remote)) {                                              // première connexion, des cartes des deux côtés : union
-    COLL.map = unionColl(COLL.map, remote); COLL.s = uid; collChanged(); toast('Collection de l\'appareil et du compte fusionnées');
-  } else if (ru > COLL.u || !has) {                                                                             // compte plus récent
-    const before = COLL.map, differs = has && !sameColl(before, remote);
-    COLL.map = remote; COLL.u = ru; COLL.s = uid; collWrite(); collPaint(); paintCollSection(); refreshDeck(); if (S.run && S.view === 'results') scheduleRecompute(true);
-    if (differs) toast('Collection remplacée par celle de ton compte (plus récente)', { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
-  }
-  else if (ru < COLL.u && !sameColl(COLL.map, remote)) collPush();                                              // appareil plus récent
-  else { COLL.s = uid; collWrite(); }
+/** Le compte a changé (ou premier état) : fusion avec cet appareil. fromCache : copie locale du SDK, jamais fiable pour fusionner ; pulled : lecture directe, peut arriver en retard. */
+function collFromCloud(uid, data, pending, fromCache, pulled) {
+  if (pending || D.uid !== uid) return;                                   // écho d'une écriture pas encore confirmée par le serveur
+  if (COLL.pushing) { if (!pulled) COLL.deferred = [uid, data, pending, fromCache]; return; }                   // on fusionne d'abord ce qu'on envoie
+  if (fromCache) { if (COLL.live && COLL.cloud === 'ok') { COLL.cloud = 'offline'; collPaintHead(); } return; }   // le serveur ne répond plus (ou pas encore) : on attend sa version
+  const ru = Number(data && data.updatedAt) || 0;
+  if (data && ru < COLL.ru) return;                                       // version plus ancienne que ce qu'on connaît (réponse arrivée en retard)
+  COLL.live = true; COLL.cloud = 'ok'; COLL.err = '';
+  if (data && typeof data.text === 'string') {
+    const remote = collFromText(data.text), first = COLL.s !== uid, known = !first && !!COLL.base, before = COLL.map;
+    const next = merge3(first ? null : COLL.base, before, remote);
+    COLL.ru = Math.max(COLL.ru, ru); COLL.s = uid; COLL.base = remote; COLL.map = next; collWrite();
+    if (!sameColl(before, next)) collRemoteApplied(before, next, { first: first || !known, had: Object.keys(before).length });
+    if (!sameColl(next, remote)) collPushSoon();                          // il reste ici des changements pas encore dans le compte
+  } else if (collCount()) { COLL.base = null; collPush(); }               // pas de document : on y envoie la collection de l'appareil
+  else { COLL.s = uid; COLL.base = {}; collWrite(); }
   collPaintHead();
 }
+/** La collection de cet appareil vient de changer à cause du compte (autre appareil) : repeint, lit les infos des nouvelles cartes, prévient. */
+function collRemoteApplied(before, after, o = {}) {
+  collPaint(); paintCollSection(); refreshDeck(); if (S.run && S.view === 'results') scheduleRecompute(true);
+  collEnrich();
+  let add = 0, del = 0;
+  for (const k in after) if (!before[k]) add++;
+  for (const k in before) if (!after[k]) del++;
+  const n0 = Object.keys(before).length, plural = n => n + ' carte' + (n > 1 ? 's' : '');
+  if (del >= 10 && del * 2 >= n0) toast(`${plural(del)} retirée${del > 1 ? 's' : ''} depuis un autre appareil`, { label: 'Annuler', fn: () => { COLL.map = unionColl(COLL.map, before); collChanged(); } });
+  else if (o.first && o.had) toast('Collection de l\'appareil et du compte fusionnées');
+  else if (o.first) toast('Collection de ton compte chargée : ' + plural(add));
+  else if (add || del) toast('Autre appareil : ' + [add && '+' + plural(add), del && '−' + plural(del)].filter(Boolean).join(' · '));
+}
+/** Retour au premier plan / réseau revenu : on envoie ce qui attend et on relit le compte (les navigateurs mobiles endorment la connexion en arrière-plan). */
+function collWake() { if (cloudOn()) collSyncNow(); }
+function collSleep() { if (cloudOn() && COLL.pushT) collPush(); }       // on part : envoyer sans attendre le délai
 
 /* ── Prix réels : l'offre CardTrader la moins chère de chaque carte, lue avec le moteur de la recherche ───────────
    Stockés à part (localStorage, sur cet appareil) : { clé: { p: centimes | null (aucune offre), t: date, s: critères, c: devise } }. */
@@ -4951,6 +5062,10 @@ function paintCollSection() {
 }
 function collInit() {
   collRead(); pxRead(); paintCollSection(); collMetaLoad();
+  document.addEventListener('visibilitychange', () => { if (document.hidden) collSleep(); else collWake(); });
+  window.addEventListener('online', collWake);
+  window.addEventListener('offline', () => { if (cloudOn() && COLL.cloud !== 'error') { COLL.cloud = 'offline'; collPaintHead(); } });
+  window.addEventListener('pagehide', collSleep);
   const sec = $('#collSec'); if (sec) sec.hidden = false;
 }
 
@@ -4984,6 +5099,7 @@ function collSyncInfo() {
   const exp = ['export', 'Exporter'];
   if (D.user) {
     if (COLL.cloud === 'ok') return { k: 'ok', t: 'Sauvegardée dans ton compte', acts: [exp] };
+    if (COLL.cloud === 'offline') return { k: 'warn', t: 'Hors ligne : tes changements restent sur cet appareil et partiront au retour du réseau.', acts: [['resync', 'Réessayer'], exp] };
     if (COLL.cloud === 'error') return { k: 'bad', t: 'Pas sauvegardée dans ton compte : ' + (COLL.err || 'synchronisation impossible') + '. Tes cartes ne sont que sur cet appareil.', acts: [['resync', 'Réessayer'], exp] };
     return { k: 'warn', t: 'Synchronisation avec ton compte…', acts: [] };
   }
@@ -5001,7 +5117,7 @@ function collExport() {
 }
 function collHeadText() {
   const n = collCount(), c = collCopies();
-  const sync = D.user ? (COLL.cloud === 'ok' ? 'synchronisée' : COLL.cloud === 'sync' ? 'synchronisation…' : COLL.cloud === 'error' ? COLL.err : '') : 'sur cet appareil';
+  const sync = D.user ? (COLL.cloud === 'ok' ? 'synchronisée' : COLL.cloud === 'sync' ? 'synchronisation…' : COLL.cloud === 'offline' ? 'hors ligne' : COLL.cloud === 'error' ? COLL.err : '') : 'sur cet appareil';
   return n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(c)} exemplaire${c > 1 ? 's' : ''}${sync ? ' · ' + sync : ''}` : 'Vide pour le moment';
 }
 function collPaintHead() {
@@ -5118,7 +5234,7 @@ function openCollection(tab) {
       else if (act === 'prices') openCollPrices();
       else if (act === 'login') openAccount();
       else if (act === 'export') collExport();
-      else if (act === 'resync') collPush();
+      else if (act === 'resync') collSyncNow();
       else if (act === 'pxstop') { if (COLL.pxRun) COLL.pxRun.ctrl.abort(); }
       else if (act === 'pxok') { COLL.pxMsg = null; collPaintHead(); }
       else if (act === 'more') { COLL.shown += COLL_PAGE; collPaintBody(true); }
