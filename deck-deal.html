@@ -762,7 +762,12 @@ button.sync:active{background:var(--surface-2)}
 .sc-native input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 .sc-diag{pointer-events:auto;position:absolute;left:8px;right:8px;top:8px;margin:0;padding:5px 8px;border-radius:8px;background:rgba(0,0,0,.72);color:#9bffc5;font:11px/1.35 var(--font-mono);word-break:break-word}
 .sc-diag[hidden]{display:none}
-.sc-note{flex:none;padding:6px 16px 0}
+.sc-note{flex:none;display:flex;align-items:flex-start;gap:6px;padding:6px 8px 0 16px}
+.sc-note[hidden]{display:none}
+.sc-note .hint{flex:1;min-width:0;margin:0}
+.sc-note .sc-x{flex:none;margin-top:-4px}
+.sc-help{margin-left:auto;flex:none;font-weight:700;font-size:16px}
+.sc-help[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .sc-list{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
 .sc-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 8px 8px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
 .sc-item.maybe{border-color:var(--warn);background:var(--warn-soft)}
@@ -5023,6 +5028,9 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
+const scNoteOff = () => { try { return localStorage.getItem('deckdeal:scnote') === 'off'; } catch (e) { return false; } };      // aide fermée : retenu d'un scan à l'autre
+const scNoteSet = off => { try { if (off) localStorage.setItem('deckdeal:scnote', 'off'); else localStorage.removeItem('deckdeal:scnote'); } catch (e) { /* ignore */ } };
+function scNoteShow(on) { const n = $('.sc-note', SC.el), h = $('.sc-help', SC.el); if (n) n.hidden = !on; if (h) h.setAttribute('aria-pressed', String(on)); scNoteSet(!on); }
 const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, pref: 'eng', alive: false, hintT: 0, watch: null, fpsMin: 10, fps: 0, fixed: false, gen: 0, rbusy: false, rf: { n: 0, at: 0 }, restarts: 0, workEnd: 0, slowN: 0, ms: 0, diagT: 0, lt: [] };
 const camSlow = () => { try { return localStorage.getItem('deckdeal:cam2') === 'slow'; } catch (e) { return false; } };      // 'cam2' : l'ancien indicateur (posé quand la lecture tournait pendant l'aperçu) est abandonné
 const camSetSlow = on => { try { localStorage.removeItem('deckdeal:cam'); if (on) localStorage.setItem('deckdeal:cam2', 'slow'); else localStorage.removeItem('deckdeal:cam2'); } catch (e) { /* ignore */ } };
@@ -5278,7 +5286,7 @@ function openScan() {
   closeScan();
   const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom et mana dans la bande</span></div></header>
+      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom et mana dans la bande</span></div><button class="icon-btn sc-help" type="button" data-act="note" aria-label="Afficher l'aide" aria-pressed="false">?</button></header>
     <div class="sc-stage" data-cam="wait"><video class="sc-video" playsinline muted autoplay></video>
       <div class="sc-guide" aria-hidden="true"><span class="sc-cap">Nom · mana</span></div>
       <div class="sc-flash"></div>
@@ -5288,7 +5296,7 @@ function openScan() {
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
       <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>
-    <p class="hint sc-note">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p>
+    <div class="sc-note"><p class="hint">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p><button class="sc-x" type="button" data-act="note" aria-label="Fermer l'aide"><svg class="i"><use href="#i-close"/></svg></button></div>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
   SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; const prevFocus = document.activeElement;
@@ -5310,6 +5318,7 @@ function openScan() {
       const act = b.dataset.act;
       if (act === 'close') wrap.__close();
       else if (act === 'shot') scanCapture();
+      else if (act === 'note') scNoteShow($('.sc-note', wrap).hidden);
       else if (act === 'done') {
         const items = [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q }));
         if (!items.length) return;
@@ -5336,6 +5345,7 @@ function openScan() {
     else if (a.dataset.a === 'del') SC.items.delete(it.key);
     scanPaintList();
   });
+  scNoteShow(!scNoteOff());      // aide affichée sauf si elle a été fermée (état retenu)
   document.body.appendChild(wrap); holdApp(); scanPaintList();
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); scanCamera();
