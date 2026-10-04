@@ -735,50 +735,47 @@ button.sync:active{background:var(--surface-2)}
 
 /* ── Scan des cartes ──────────────────────────────────────────────────────────────────────────── */
 .scan{background:var(--bg)}
-.sc-stage{position:relative;flex:none;height:min(34dvh,340px);background:#05070f;overflow:hidden}
+.sc-stage{position:relative;flex:none;height:min(28dvh,280px);background:#05070f;overflow:hidden}
 .sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:90%;aspect-ratio:63/88;max-width:92%;border:2px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 50vw rgba(5,7,15,.42);pointer-events:none}
-.sc-stage[data-mode="many"] .sc-guide{aspect-ratio:auto;width:96%;max-width:none;height:86%;border-radius:10px}
-.sc-stage[data-mode="many"] .sc-band{height:32%;border-radius:8px 8px 0 0}
-.sc-stage[data-mode="many"][data-rows="2"] .sc-band{height:28%}
-.sc-stage[data-mode="many"][data-rows="2"] .sc-band2{display:block;top:50%;border-radius:0}
-.sc-stage[data-mode="many"][data-rows="2"]{height:min(42dvh,400px)}
-.sc-band2{display:none}
-.sc-band{position:absolute;left:0;right:0;top:0;height:20%;border-radius:10px 10px 0 0;background:rgba(146,156,255,.22);border-bottom:2px dashed rgba(255,255,255,.85)}
+.sc-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:94%;aspect-ratio:5.4/1;border:2px solid rgba(255,255,255,.85);border-radius:10px;box-shadow:0 0 0 50vw rgba(5,7,15,.5);pointer-events:none;background:rgba(146,156,255,.12)}
+.sc-cap{position:absolute;left:8px;bottom:calc(100% + 6px);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 .sc-flash{position:absolute;inset:0;background:#7be8b4;opacity:0;pointer-events:none}
 .sc-flash.go{animation:scflash .5s ease-out}
 @keyframes scflash{0%{opacity:.5}100%{opacity:0}}
 .sc-hint{position:absolute;left:12px;right:12px;bottom:10px;margin:0;padding:8px 12px;border-radius:12px;background:rgba(10,14,30,.8);color:#fff;font-size:13.5px;font-weight:600;text-align:center;text-wrap:balance}
 .sc-hint[data-k="ok"]{background:rgba(11,138,94,.92)}.sc-hint[data-k="bad"]{background:rgba(194,58,75,.92)}.sc-hint[data-k="busy"]{background:rgba(58,70,214,.85)}
-.sc-hint[hidden],.sc-sug[hidden],.sc-prog[hidden]{display:none}
-.sc-sug{position:absolute;left:12px;right:12px;bottom:56px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:14px;background:rgba(242,180,65,.96);color:#2a1c00;font-size:14px}
-.sc-sug span{flex:1;min-width:0}.sc-sug .btn{height:34px;padding:0 14px;background:#2a1c00;color:#fff;box-shadow:none}
+.sc-hint[hidden],.sc-prog[hidden]{display:none}
 .sc-prog{position:absolute;top:10px;left:50%;transform:translateX(-50%);margin:0;padding:6px 14px;border-radius:99px;background:rgba(10,14,30,.84);color:#fff;font-size:13px;font-weight:600;font-family:var(--font-mono)}
 .sc-nocam{display:none;position:absolute;inset:0;place-items:center;padding:20px;margin:0;color:#fff;text-align:center;font-size:14px}
 .sc-stage[data-cam="no"] .sc-nocam{display:grid}
 .sc-stage[data-cam="no"]{height:min(24dvh,190px)}
 .sc-stage[data-cam="no"] .sc-video,.sc-stage[data-cam="no"] .sc-guide{display:none}
 .sc-bar{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px}
-.sc-auto{display:inline-flex;align-items:center;gap:9px;justify-self:start;font-size:13.5px;cursor:pointer}
 .sc-shot{width:60px;height:60px;border-radius:50%;border:3px solid var(--ink);background:transparent;padding:4px;display:grid;place-items:center;transition:transform .15s}
 .sc-shot i{display:block;width:100%;height:100%;border-radius:50%;background:var(--accent)}
 .sc-shot:active{transform:scale(.92)}
-.sc-photo{position:relative;justify-self:end;cursor:pointer;gap:6px}
+.sc-photo{position:relative;justify-self:start;cursor:pointer;gap:6px}
 .sc-photo input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
-.sc-opts{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
-.sc-opts .seg-opt{min-height:36px;font-size:12.5px}
-.sc-opts #scRows{grid-column:1/-1}
-.sc-opts [hidden]{display:none}
+.sc-native{position:relative;justify-self:end;cursor:pointer;gap:6px}
+.sc-native.hot{background:var(--accent);color:#fff;border-color:transparent;animation:scpulse 1.6s ease-in-out infinite}
+@keyframes scpulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 28%,transparent)}}
+.sc-native input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.sc-diag{pointer-events:auto;position:absolute;left:8px;right:8px;top:8px;margin:0;padding:5px 8px;border-radius:8px;background:rgba(0,0,0,.72);color:#9bffc5;font:11px/1.35 var(--font-mono);word-break:break-word}
+.sc-diag[hidden]{display:none}
 .sc-note{flex:none;padding:6px 16px 0}
 .sc-list{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
 .sc-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 8px 8px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
 .sc-item.maybe{border-color:var(--warn);background:var(--warn-soft)}
 .sc-item .qstep button{width:34px;height:36px}.sc-item .qstep b{min-width:24px}
-.sc-item.miss{grid-template-columns:minmax(0,1fr) auto auto;padding-left:12px;border-style:dashed}
+.sc-item.miss{border-style:dashed}
+.sc-item.miss{grid-template-columns:auto minmax(0,1fr) auto auto}
+.sc-item.pend{grid-template-columns:auto minmax(0,1fr) auto;border-style:dashed;opacity:.9}
+.sc-spin{width:20px;height:20px;margin-right:10px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:scspin .8s linear infinite}
+@keyframes scspin{to{transform:rotate(360deg)}}
 .sc-th{width:36px;height:50px;flex:none;border-radius:4px;object-fit:cover;background:var(--line);transition:opacity .2s}
 .sc-th.bad{opacity:0}
+.sc-item.pend .sc-th,.sc-item.miss .sc-th{width:auto;height:auto;min-width:36px;min-height:28px;max-width:112px;max-height:52px;object-fit:contain;background:var(--line)}
 .sc-item.maybe .sc-th{width:52px;height:72px;border-radius:5px}
-.sc-sug .sc-th{width:28px;height:39px;border-radius:3px}
 .sc-n{display:flex;flex-direction:column;min-width:0}
 .sc-n b{font-weight:620;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}
 .sc-n small{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -786,7 +783,7 @@ button.sync:active{background:var(--surface-2)}
 .sc-ok{background:var(--good);color:#fff}
 .sc-x:active{background:var(--bad-soft);color:var(--bad)}
 .sc-empty{text-align:center;padding:20px 8px}
-@media (prefers-reduced-motion:reduce){.sc-flash.go{animation:none}}
+@media (prefers-reduced-motion:reduce){.sc-flash.go,.sc-spin,.sc-native.hot{animation:none}}
 </style>
 </head>
 <body>
@@ -1824,21 +1821,6 @@ function ocrMatches(lines, idx, spans = false) {
   return out;
 }
 
-/** Mots lus avec leur position [{ text, x0, x1, y0, y1 }] → groupes de mots voisins sur une même ligne (un nom de carte chacun) :
- *  un trou plus large que `gap` × la hauteur des lettres coupe le groupe. Retourne [{ text, x0, x1 }] dans l'ordre de lecture. */
-function wordClusters(words, gap = 1.3) {
-  const ws = (words || []).filter(w => w && String(w.text || '').trim()).slice().sort((a, b) => ((a.y0 + a.y1) / 2 - (b.y0 + b.y1) / 2) || a.x0 - b.x0), rows = [];
-  for (const w of ws) {
-    const cy = (w.y0 + w.y1) / 2, h = Math.max(1, w.y1 - w.y0), r = rows.find(r => Math.abs(r.cy - cy) < Math.max(r.h, h) * 0.6);
-    if (r) { r.w.push(w); r.cy = (r.cy * (r.w.length - 1) + cy) / r.w.length; r.h = Math.max(r.h, h); } else rows.push({ cy, h, w: [w] });
-  }
-  const out = [];
-  for (const r of rows) {
-    r.w.sort((a, b) => a.x0 - b.x0); let cur = null;
-    for (const w of r.w) { if (cur && w.x0 - cur.x1 <= gap * r.h) { cur.t.push(String(w.text).trim()); cur.x1 = Math.max(cur.x1, w.x1); } else { cur = { t: [String(w.text).trim()], x0: w.x0, x1: w.x1 }; out.push(cur); } }
-  }
-  return out.map(c => ({ text: c.t.join(' '), x0: c.x0, x1: c.x1 }));
-}
 /** Meilleure carte reconnue parmi des lignes lues : { name, key, score, raw } ou null. */
 function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b) => b.score - a.score)[0] || null; }
 /** Rectangle d'écran (x, y, w, h) dans un conteneur cw×ch qui affiche une vidéo vw×vh en « object-fit: cover » → rectangle en pixels de la vidéo. */
@@ -1849,62 +1831,24 @@ function coverMap(cw, ch, vw, vh, r) {
 }
 /** Mots utiles d'un nom lu (≥ 4 lettres, le trait d'union et l'apostrophe séparent), les plus longs d'abord : sert à chercher le nom imprimé chez Scryfall. */
 const frWords = text => [...new Set(String(text || '').replace(/[^\p{L}\s'’-]/gu, ' ').split(/[\s'’-]+/).filter(w => w.length >= 4))].sort((a, b) => b.length - a.length);
-/** Écart moyen (0–255) entre deux signatures d'image (vignettes grises) ; 255 si elles ne sont pas comparables. */
-function sigDiff(a, b) {
-  if (!a || !b || a.length !== b.length || !a.length) return 255;
-  let t = 0; for (let i = 0; i < a.length; i++) t += Math.abs(a[i] - b[i]);
-  return t / a.length;
-}
-/** Économie de batterie et de fluidité : quand l'image ne bouge plus, inutile de relancer l'OCR en boucle.
- *  feed(signature) → true : lire. Une image qui change (écart ≥ tol par rapport à la dernière lue) est toujours lue ; ensuite `maxSame` relectures
- *  identiques (confirmations), puis on saute, avec une lecture de contrôle toutes les `beat` images sautées. */
-function makeStill(maxSame = 2, tol = 4, beat = 12) {
-  let base = null, same = 0, skips = 0;
+/** Fluidité de l'aperçu caméra : feed(date en ms de chaque image affichée) → { fps, low }.
+ *  low = true (une seule fois, puis la mesure repart) quand il y a moins de `min` images/s pendant `hold` ms de suite. Une pause de plus de 5 s (onglet masqué) remet à zéro. */
+function makeFpsWatch(min = 14, hold = 3000, win = 2000) {
+  let t = [], lowSince = 0, last = 0;
   return {
-    feed(sig) {
-      if (!base || sigDiff(base, sig) >= tol) { base = sig; same = 0; skips = 0; return true; }
-      same++; if (same <= maxSame) return true;
-      if (++skips >= beat) { skips = 0; return true; }
-      return false;
+    feed(now) {
+      if (last && now - last > 5000) { t = []; lowSince = 0; }
+      last = now; t.push(now); while (t.length && now - t[0] > win) t.shift();
+      const span = now - t[0]; if (t.length < 3 || span < win * 0.75) return { fps: 0, low: false };
+      const fps = (t.length - 1) * 1000 / span;
+      if (fps >= min) { lowSince = 0; return { fps, low: false }; }
+      if (!lowSince) lowSince = now;
+      if (now - lowSince >= hold) { lowSince = 0; t = []; return { fps, low: true }; }
+      return { fps, low: false };
     },
-    reset() { base = null; same = 0; skips = 0; }
+    reset() { t = []; lowSince = 0; last = 0; }
   };
 }
-/** Évite de compter deux fois la même carte tenue devant l'objectif : elle n'est ajoutée de nouveau qu'après `gap` lectures sans elle. feed(clé | null) → true : ajouter. */
-function makeGate(gap = 3) {
-  let key = null, absent = 0;
-  return { feed(k) { if (!k) { absent++; return false; } if (k === key && absent < gap) { absent = 0; return false; } key = k; absent = 0; return true; }, reset() { key = null; absent = 0; } };
-}
-
-/** Même idée pour plusieurs cartes côte à côte. Chaque lecture donne les cartes sûres [{ key, q }] et les douteuses [key] :
- *  une carte sûre est ajoutée à sa première lecture (puis seulement si on en voit davantage), tant qu'elle reste dans le cadre elle ne recompte pas,
- *  et elle ne peut être recomptée qu'après `gap` lectures sans elle ; une douteuse n'est proposée (« à vérifier ») qu'après `confirm` lectures de suite.
- *  feed(sûres, douteuses) → { add: [{ key, d }] (d = exemplaires en plus, 0 = simple confirmation), maybe: [key] }. */
-function makeMultiGate(gap = 3, confirm = 2) {
-  const seen = new Map(), pend = new Map();
-  return {
-    feed(sure, maybe) {
-      const add = [], out = [], now = new Set();
-      for (const { key, q } of sure) {
-        now.add(key); const n = Math.max(1, q | 0), t = seen.get(key);
-        if (!t) { seen.set(key, { n, absent: 0, maybe: false }); add.push({ key, d: n }); pend.delete(key); }
-        else { t.absent = 0; if (t.maybe) { t.maybe = false; add.push({ key, d: 0 }); } if (n > t.n) { add.push({ key, d: n - t.n }); t.n = n; } }
-      }
-      for (const [k, t] of seen) if (!now.has(k) && !(maybe || []).includes(k)) { if (++t.absent >= gap) seen.delete(k); }
-      const cand = new Set();
-      for (const key of maybe || []) {
-        if (now.has(key)) continue; cand.add(key);
-        const t = seen.get(key); if (t) { t.absent = 0; continue; }
-        const c = (pend.get(key) || 0) + 1; pend.set(key, c);
-        if (c >= confirm) { seen.set(key, { n: 1, absent: 0, maybe: true }); pend.delete(key); out.push(key); }
-      }
-      for (const k of [...pend.keys()]) if (!cand.has(k)) pend.delete(k);
-      return { add, maybe: out };
-    },
-    reset() { seen.clear(); pend.clear(); },
-  };
-}
-
 /* ── Partage vers l'app (Web Share Target) ───────────────────────────────────────────────────── */
 const URL_RE = /https?:\/\/[^\s<>"')]+/gi;
 /** Paramètres reçus (title, text, url) → { text, urls } : le texte est gardé s'il ressemble à une decklist (3 cartes ou plus), les liens sont listés. */
@@ -1922,7 +1866,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
-    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, wordClusters, bestMatch, coverMap, frWords, sigDiff, makeStill, makeGate, makeMultiGate, extractShared };
+    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
 
@@ -5012,11 +4956,13 @@ function openCollImport(initial) {
 }
 
 
-/* ── scan.js : reconnaître les noms de cartes par OCR (appareil photo en continu, ou photos) ─────────────────────
-   Tesseract.js est chargé à la demande depuis un CDN (≈ 3 Mo de modèle anglais, gardés ensuite par le navigateur).
+/* ── scan.js : reconnaître les noms de cartes par OCR ──────────────────────────────────────────────────────────
+   L'aperçu de l'appareil photo ne lance AUCUN calcul : un appui sur le cercle prend la photo (la carte dans le cadre), et la lecture se fait en arrière-plan
+   pendant que l'aperçu continue ; on peut enchaîner les cartes, une file d'attente les lit une par une. La langue (anglais, puis français si rien de sûr) est devinée toute seule.
    Seul le NOM est lu (bande du titre), puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle.
    ≥ 84 % de ressemblance = ajoutée (miniature Scryfall pour vérifier) · 72–84 % = à confirmer avec la miniature · en dessous = rien.
-   Meilleurs résultats : carte bien éclairée, nom net dans la bande du haut. Français : expérimental (recherche Scryfall des noms imprimés). */
+   Les photos ne sont jamais enregistrées : elles restent en mémoire le temps de la lecture, puis sont vidées (il ne reste qu'une vignette de ~4 Ko pour reconnaître une carte non lue).
+   Tesseract.js est chargé à la demande depuis un CDN (≈ 3 Mo de modèle anglais, gardés ensuite par le navigateur ; le français seulement si l'anglais ne trouve rien). */
 const TESS_V = '5.1.1', CDN = 'https://cdn.jsdelivr.net/npm/';
 const TESS = {
   js: `${CDN}tesseract.js@${TESS_V}/dist/tesseract.min.js`, worker: `${CDN}tesseract.js@${TESS_V}/dist/worker.min.js`, core: `${CDN}tesseract.js-core@${TESS_V}`,
@@ -5044,17 +4990,14 @@ function ocrWorker(lang) {
   })().catch(e => { delete OCR.workers[lang]; throw e; });
   return OCR.workers[lang];
 }
-/** Lit une image (canvas) : { lines: [{ text }], words: [{ text, x0, x1, y0, y1 }] }. psm : '6' bloc (bande du nom) · '11' texte épars (photo entière). */
-async function ocrRead(canvas, lang, psm, needWords) {
+/** Lit une image (canvas) : lignes de texte [{ text }]. psm : '6' bloc (bande du nom) · '11' texte épars (carte entière). Seul le texte est demandé (pas de hocr/tsv/blocs). */
+async function ocrLines(canvas, lang, psm) {
   const w = await ocrWorker(lang), mode = psm || '6';
   if (w.__psm !== mode) { await w.setParameters({ tessedit_pageseg_mode: mode, tessedit_char_whitelist: LETTERS[lang] || '' }); w.__psm = mode; }
-  const r = await w.recognize(canvas, {}, needWords ? { text: true, blocks: true } : { text: true }), d = (r && r.data) || {};   // sans hocr/tsv/blocs inutiles : bien moins de calcul par lecture
+  const r = await w.recognize(canvas, {}, { text: true }), d = (r && r.data) || {};
   if ((w.__cnt = (w.__cnt || 0) + 1) >= 300 && OCR.workers[lang]) { delete OCR.workers[lang]; Promise.resolve(w.terminate()).catch(() => {}); }   // moteur recréé de temps en temps : la mémoire de WebAssembly ne fait que grossir
-  const lines = String(d.text || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
-  const words = (d.words || []).filter(x => x && x.bbox && String(x.text || '').trim()).map(x => ({ text: String(x.text).trim(), x0: x.bbox.x0, x1: x.bbox.x1, y0: x.bbox.y0, y1: x.bbox.y1 }));
-  return { lines, words };
+  return String(d.text || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
 }
-async function ocrLines(canvas, lang, psm) { return (await ocrRead(canvas, lang, psm)).lines; }
 async function ocrStop() { const ws = Object.values(OCR.workers); OCR.workers = {}; for (const p of ws) { try { (await p).terminate(); } catch (e) { /* ignore */ } } }
 
 /** Découpe une zone d'une source (vidéo, image, canvas), la met à largeur utile et la convertit en niveaux de gris contrastés
@@ -5079,7 +5022,9 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
-const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, busy: false, auto: true, lang: 'eng', mode: 'one', rows: 1, alive: false, gate: makeGate(3), mgate: makeMultiGate(3, 2), sug: null, seq: 0, tickT: 0, still: makeStill(2, 4, 12), skipped: 0 };
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, pref: 'eng', alive: false, hintT: 0, watch: null, fpsMin: 14, fps: 0, slowN: 0, ms: 0, diagT: 0, lt: [] };
+const camSlow = () => { try { return localStorage.getItem('deckdeal:cam') === 'slow'; } catch (e) { return false; } };
+const camSetSlow = on => { try { if (on) localStorage.setItem('deckdeal:cam', 'slow'); else localStorage.removeItem('deckdeal:cam'); } catch (e) { /* ignore */ } };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
@@ -5093,33 +5038,25 @@ function scanAdd(m, d, maybe) {
 function scanPaintList() {
   const el = SC.el; if (!el) return;
   const list = $('.sc-list', el), arr = [...SC.items.values()].reverse(), t = scanTotals();
-  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}"><span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
-  list.innerHTML = miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scImg(e.name))}"><span class="sc-n"><b>${esc(e.name)}</b>${e.maybe ? `<small>À vérifier : est-ce bien cette carte ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
+  const th = u => (u ? `<img class="sc-th" alt="" src="${esc(u)}">` : '<span class="sc-th"></span>');
+  const pend = SC.pend.map((p, k) => `<div class="sc-item pend" data-p="${p.id}">${th(p.thumb)}<span class="sc-n"><b>Lecture…</b><small>${esc(p.label)}${k ? ` · ${k} avant` : ''}</small></span><span class="sc-spin" aria-hidden="true"></span></div>`).join('');
+  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
+  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scImg(e.name))}"><span class="sc-n"><b>${esc(e.name)}</b>${e.maybe ? `<small>À vérifier : est-ce bien cette carte ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
       ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
       <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
-    : miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
+    : pend || miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
   const go = $('.dv-foot [data-act="done"]', el);
   go.disabled = !t.n; go.textContent = t.n ? `Ajouter ${nf0(t.n)} carte${t.n > 1 ? 's' : ''}` : 'Ajouter';
-  $('.sc-sub', el).textContent = SC.items.size ? `${nf0(t.n)} reconnue${t.n > 1 ? 's' : ''}${t.maybe ? ` · ${t.maybe} à vérifier` : ''}` : 'Nom de la carte dans la bande';
+  $('.sc-sub', el).textContent = SC.items.size ? `${nf0(t.n)} reconnue${t.n > 1 ? 's' : ''}${t.maybe ? ` · ${t.maybe} à vérifier` : ''}` : 'Nom et mana dans la bande';
+  const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = `Lecture : ${SC.pend.length} en attente`;
 }
-function scanHint(t, kind) { const h = $('.sc-hint', SC.el); if (!h) return; h.textContent = t || ''; h.dataset.k = kind || ''; h.hidden = !t; }
+function scanHint(t, kind) {
+  const h = $('.sc-hint', SC.el); if (!h) return; clearTimeout(SC.hintT);
+  h.textContent = t || ''; h.dataset.k = kind || ''; h.hidden = !t;
+  if (t && kind === 'ok') SC.hintT = setTimeout(() => { if (SC.el && h.textContent === t) { h.hidden = true; h.textContent = ''; } }, 2500);
+}
 function scanFlash() { const f = $('.sc-flash', SC.el); if (!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
-function scanSuggest(m) {
-  SC.sug = m; const box = $('.sc-sug', SC.el); if (!box) return;
-  box.hidden = !m;
-  if (m) box.innerHTML = `<img class="sc-th" alt="" src="${esc(scImg(m.name))}"><span>Peut-être <b>${esc(m.name)}</b> ?</span><button class="btn small" type="button" data-act="sug">Ajouter</button>`;
-}
 
-/** Décide quoi faire d'une carte reconnue. live : lecture en continu (la même carte n'est comptée qu'une fois tant qu'elle reste devant l'objectif). */
-function scanGot(m, live) {
-  if (!m) { if (live) SC.gate.feed(null); return false; }
-  if (m.score >= 0.84) {
-    if (live && !SC.gate.feed(m.key)) return false;
-    scanAdd(m, 1, false); haptic('ok'); scanFlash(); scanSuggest(null); scanHint('✓ ' + m.name, 'ok'); return true;
-  }
-  if (live) { SC.gate.feed(null); scanSuggest(m); scanHint('', ''); return false; }
-  scanAdd(m, 1, true); return true;
-}
 /** Recherches Scryfall de noms français déjà faites (mots → résultats) : une carte qui reste dans le cadre ne relance pas de requête. */
 const FR_CACHE = new Map();
 async function frSearch(words, signal) {
@@ -5139,153 +5076,139 @@ async function frenchName(text, signal) {
   const hit = res.find(r => frontName(r.printed) === frontName(fm.name));
   return hit ? { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: text } : null;
 }
-/** Texte lu → carte reconnue (anglais : catalogue Scryfall ; français : recherche des noms imprimés). */
-async function scanMatch(lines, cat, signal) {
+/** Texte lu → carte reconnue (anglais : catalogue Scryfall ; français : recherche des noms imprimés chez Scryfall). */
+async function scanMatch(lines, cat, lang) {
   let m = bestMatch(lines, cat.idx);
-  if (SC.lang === 'fra' && (!m || m.score < 0.84)) {
+  if (lang === 'fra' && (!m || m.score < 0.84)) {
     for (const l of lines.slice(0, 3)) {
-      const fm = await frenchName(l.text, signal);
+      const fm = await frenchName(l.text);
       if (fm && (!m || fm.score > m.score)) m = fm;
       if (m && m.score >= 0.84) break;
     }
   }
   return m;
 }
-
-/** Lit une zone « nom » : polarité automatique ; si rien de sûr et retry, relit en polarité inverse (texte clair sur fond mixte). */
-async function readName(src, box, outW, psm, cat, retry) {
-  const c1 = prepCanvas(src, box, outW), m1 = await scanMatch(await ocrLines(c1, SC.lang, psm), cat);
-  if (!retry || (m1 && m1.score >= 0.84) || !SC.el) return m1;
-  const m2 = await scanMatch(await ocrLines(prepCanvas(src, box, outW, c1.inv ? 0 : 1), SC.lang, psm), cat);
-  return m2 && (!m1 || m2.score > m1.score) ? m2 : m1;
-}
-/** Une image prête (canvas) → cartes reconnues [{ name, key, score, raw, q }]. Français : les mots sont regroupés par proximité (un groupe = un nom probable)
- *  puis cherchés chez Scryfall ; budget.n = recherches neuves encore permises (les noms déjà cherchés sont en cache). pad : marge où les mots coupés sont ignorés. */
-async function readCanvas(c, cat, budget, pad = 0) {
-  const r = await ocrRead(c, SC.lang, '3', SC.lang === 'fra'), ms = ocrMatches(r.lines, cat.idx, true);      // '3' : Tesseract découpe lui-même la page ; '6' (un seul bloc) se perd dès qu'il y a plusieurs cartes
-  if (SC.lang !== 'fra') return ms;
-  const known = new Set(ms.filter(m => m.score >= 0.84).map(m => normPart(m.raw)));
-  for (const g of wordClusters(r.words.filter(w => w.x0 > pad && w.x1 < c.width - pad))) {
-    if (!SC.el || g.text.length < 5 || known.has(normPart(g.text))) continue;
-    const key = frWords(g.text).slice(0, 2).map(w => w.toLowerCase()).join(' ');
-    if (!key) continue;
-    if (!FR_CACHE.has(key)) { if (budget.n <= 0) continue; budget.n--; }
-    const fm = await frenchName(g.text); if (fm) ms.push({ ...fm, q: 1 });
+/** Lit une zone « nom » sans connaître la langue : anglais puis français (ou l'inverse si la dernière carte reconnue était en français),
+ *  polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr. */
+async function readNameAuto(src, box, outW, psm, cat, retry) {
+  const langs = SC.pref === 'fra' ? ['fra', 'eng'] : ['eng', 'fra'];
+  let best = null, inv;
+  for (let pass = 0; pass < (retry ? 2 : 1); pass++) {
+    const c = prepCanvas(src, box, outW, pass ? (inv ? 0 : 1) : undefined); if (!pass) inv = c.inv;
+    try {
+      for (const lang of langs) {
+        if (!SC.el) return best;
+        const m = await scanMatch(await ocrLines(c, lang, psm), cat, lang);
+        if (m && (!best || m.score > best.score)) { best = m; best.lang = lang; }
+        if (best && best.score >= 0.84) { SC.pref = best.lang; return best; }
+      }
+    } finally { c.width = c.height = 0; }
   }
-  return ms;
+  return best;
 }
-const mergeInto = (res, ms) => { for (const m of ms) { const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); } } };
-
-/** Plusieurs cartes sur une image : lecture par bandes horizontales qui se chevauchent (un nom lisible par bande, polarité choisie bande par bande).
-    Une même carte vue dans deux bandes compte une fois ; si tu en as plusieurs exemplaires, corrige la quantité dans la liste. */
-async function readMany(img, cat) {
-  const W = img.naturalWidth, H = img.naturalHeight, sh = Math.round(H * 0.15), step = Math.max(1, Math.round(H * 0.075)), res = new Map(), budget = { n: 40 };
-  for (let y = 0; SC.el && y < H - step / 2; y += step) mergeInto(res, await readCanvas(prepCanvas(img, { x: 0, y, w: W, h: Math.min(sh, H - y) }, 1400), cat, budget));
-  return [...res.values()];
-}
-
-/** Cartes côte à côte : toute la bande des noms est lue d'un coup (segmentation automatique de Tesseract). Si aucun nom sûr, relecture en polarité inverse. */
-async function readBand(src, box, cat) {
-  const c1 = prepCanvas(src, box, 2000), budget = { n: 6 }, pad = c1.width * 0.01;
-  let ms = await readCanvas(c1, cat, budget, pad);
-  if (!ms.some(m => m.score >= 0.84) && SC.el) ms = ms.concat(await readCanvas(prepCanvas(src, box, 2000, c1.inv ? 0 : 1), cat, budget, pad));
-  const res = new Map(); mergeInto(res, ms); return [...res.values()];
-}
-/** Plusieurs lignes de cartes : une bande de noms par ligne (SC.rows), lues l'une après l'autre ; une carte vue dans deux bandes = deux exemplaires. */
-async function readBands(shots, cat) {
-  const all = new Map();
-  for (const sh of shots) {
-    if (!SC.el) break;
-    for (const m of await readBand(sh.src, sh.box, cat)) { const c = all.get(m.key); if (!c) all.set(m.key, { ...m }); else { c.q += m.q; if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } } }
-  }
-  return [...all.values()];
-}
-/** Lecture en continu de plusieurs cartes : sûres ajoutées une fois chacune, douteuses proposées après deux lectures concordantes. */
-function scanGotMany(ms) {
-  const by = new Map(ms.map(m => [m.key, m])), sure = ms.filter(m => m.score >= 0.84), maybe = ms.filter(m => m.score < 0.84 && m.score >= 0.72);
-  const out = SC.mgate.feed(sure.map(m => ({ key: m.key, q: Math.min(m.q, 4) })), maybe.map(m => m.key));
-  const fresh = out.add.filter(a => a.d > 0).map(a => by.get(a.key).name);
-  for (const a of out.add) scanAdd(by.get(a.key), a.d, false);
-  for (const k of out.maybe) scanAdd(by.get(k), 1, true);
-  if (fresh.length) { haptic('ok'); scanFlash(); scanHint('✓ ' + fresh.slice(0, 3).join(', ') + (fresh.length > 3 ? ` +${fresh.length - 3}` : ''), 'ok'); }
-  else if (out.maybe.length) scanHint('À vérifier : ' + by.get(out.maybe[0]).name, 'busy');
+/** Une capture → meilleure lecture. Caméra : la capture EST la bande « nom + mana » (on la lit entière ; les symboles de mana sont ignorés), puis en texte épars si rien de sûr.
+ *  Photo d'une carte entière (galerie, « Appareil ») : bande du titre en haut, puis la carte entière si rien de sûr. */
+async function readCard(src, cat, strip) {
+  const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height;
+  const top = strip ? { x: 0, y: 0, w: W, h: H } : { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) };
+  let m = await readNameAuto(src, top, strip ? 1400 : 1100, '6', cat, true);
+  if ((!m || m.score < 0.84) && SC.el) { const all = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, false); if (all && (!m || all.score > m.score)) m = all; }
+  return m;
 }
 
-/* — Appareil photo — */
-const BAND_H = { 1: 0.32, 2: 0.28 };    // hauteur d'une bande de noms, en part du cadre (1 ligne : 32 % ; 2 lignes : 28 % en haut de chaque moitié)
-const scanRows = () => (SC.mode === 'many' ? SC.rows : 1);
-/** Bandes de noms, en pixels de la vidéo : une seule pour « 1 carte », une par ligne pour « plusieurs côte à côte ». */
-function scanBoxes() {
-  const v = $('.sc-video', SC.el), stage = $('.sc-stage', SC.el), g = $('.sc-guide', SC.el);
-  if (!v.videoWidth) return null;
-  const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect(), n = scanRows(), bh = SC.mode === 'many' ? BAND_H[n] : 0.2, out = [];
-  for (let i = 0; i < n; i++) out.push(coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top + r.height * i / n, w: r.width, h: r.height * bh }));
-  return out;
-}
-const manyHint = () => SC.rows > 1 ? `Pose les cartes sur ${SC.rows} lignes, noms en haut de chaque ligne` : 'Pose les cartes côte à côte, noms dans la bande du haut';
-/** Bandes à lire, dans l'image de la vidéo. (Découpées directement dans la vidéo : un essai avec createImageBitmap donnait des pixels un peu différents, donc des lectures moins sûres.) */
-const grabShots = (v, boxes) => boxes.map(b => ({ src: v, box: b }));
-/** Signature des bandes : vignettes 32×8 en gris, bout à bout. */
-function shotSig(shots) {
-  const c = SC.sigCv || (SC.sigCv = document.createElement('canvas')); c.width = 32; c.height = 8;
-  const x = c.getContext('2d', { willReadFrequently: true }), sig = new Uint8Array(shots.length * 256);
-  shots.forEach((sh, k) => {
-    x.drawImage(sh.src, sh.box.x, sh.box.y, sh.box.w, sh.box.h, 0, 0, 32, 8);
-    const a = x.getImageData(0, 0, 32, 8).data;
-    for (let i = 0, j = 0; i < 256; i++, j += 4) sig[k * 256 + i] = (a[j] * 77 + a[j + 1] * 150 + a[j + 2] * 29) >> 8;
-  });
-  return sig;
-}
-async function scanShot(manual) {
-  if (SC.busy || !SC.el) return;
-  const boxes = scanBoxes(), box = boxes && boxes[0]; if (!box) { if (manual) toast('L\'appareil photo n\'est pas prêt'); return; }
-  SC.busy = true; const my = ++SC.seq; let shots = []; SC.idle = false;
+/* — File d'attente : les photos sont lues une par une en arrière-plan — */
+/** Vignette minuscule (≈ 4 Ko) pour reconnaître une photo dans la liste. */
+function thumbOf(src) {
   try {
-    shots = grabShots($('.sc-video', SC.el), boxes);
-    if (!manual && !SC.still.feed(shotSig(shots))) { SC.skipped++; SC.idle = true; return; }       // image inchangée : on ne relance pas l'OCR en boucle
-    const cat = await collCatalog();
-    if (manual) scanHint('Lecture…', 'busy');
-    if (SC.mode === 'many') {
-      const ms = await readBands(shots, cat);
-      if (!SC.el || my !== SC.seq) return;
-      if (manual) {
-        const ok = ms.filter(m => m.score >= 0.72); for (const m of ok) for (let q = 0; q < m.q; q++) scanAdd(m, 1, m.score < 0.84);
-        if (ok.length) { haptic('ok'); scanFlash(); scanHint(ok.length + ' carte' + (ok.length > 1 ? 's' : '') + ' lue' + (ok.length > 1 ? 's' : ''), 'ok'); }
-        else scanHint('Aucun nom reconnu : rapproche-toi, évite les reflets', 'bad');
-      } else scanGotMany(ms);
-      return;
-    }
-    const m = await readName(shots[0].src, shots[0].box, 1100, '6', cat, !!manual);
-    if (!SC.el || my !== SC.seq) return;
-    if (manual) {
-      if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84); if (m.score >= 0.84) { haptic('ok'); scanFlash(); scanHint('✓ ' + m.name, 'ok'); } else scanHint('À vérifier : ' + m.name, 'busy'); }
-      else scanHint('Nom non reconnu : rapproche-toi, évite les reflets', 'bad');
-    } else if (!scanGot(m, true) && !m) scanHint('', '');
-  } catch (e) {
-    if (e && e.code === 'cdn') scanFail('Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.');
-    else if (e && e.code === 'rate') scanHint('Scryfall demande une pause…', 'busy');
-    else scanFail('Lecture impossible' + (e && e.message ? ' : ' + e.message : '') + '.');
-  } finally { SC.busy = false; }
+    const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, k = Math.min(100 / H, 140 / W), c = document.createElement('canvas');
+    c.width = Math.max(8, Math.round(W * k)); c.height = Math.max(8, Math.round(H * k)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    const u = c.toDataURL('image/jpeg', 0.55); c.width = c.height = 0; return u;
+  } catch (e) { return ''; }
 }
-function scanLoop() {
-  clearTimeout(SC.tickT);
-  if (!SC.alive || !SC.el) return;
-  const next = (ms) => { SC.tickT = setTimeout(scanLoop, ms); };
-  if (!SC.auto || SC.busy || document.hidden || !SC.stream) return next(350);
-  const t0 = performance.now();       // pause proportionnelle à la durée de lecture : le téléphone souffle entre deux lectures
-  scanShot(false).finally(() => next(SC.idle ? 500 : Math.max(260, Math.min(1200, 0.8 * (performance.now() - t0)))));
+/** Libère la mémoire d'une photo lue (canvas vidé, image détachée) : rien n'est gardé. */
+function scanFree(src) {
+  try { if (!src) return; if (src.getContext) src.width = src.height = 0; else if (src.removeAttribute) src.removeAttribute('src'); } catch (e) { /* ignore */ }
+}
+/** job : { label, src | file, thumb } (src : canvas déjà prêt ; file : image à décoder au moment de la lire, pour ne pas garder 20 photos en mémoire). */
+function scanEnqueue(job) {
+  job.id = ++SC.mid; job.s = SC.session;
+  SC.pend.push({ id: job.id, label: job.label, thumb: job.thumb || '' }); SC.queue.push(job); scanPaintList(); scanWork();
+}
+async function scanWork() {
+  if (SC.working) return; SC.working = true;
+  try {
+    while (SC.queue.length && SC.el) {
+      const job = SC.queue.shift(), t0 = performance.now(); let m = null, fail = '';
+      try {
+        if (!job.src && job.file) { const img = await loadImage(job.file); job.src = img; job.thumb = thumbOf(img); }
+        m = await readCard(job.src, await collCatalog(), job.strip);
+      } catch (e) { fail = e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : e && e.code === 'rate' ? 'Scryfall demande une pause…' : ''; }
+      scanFree(job.src); job.src = null; job.file = null;
+      if (!SC.el || job.s !== SC.session) continue;
+      SC.ms = performance.now() - t0; SC.pend = SC.pend.filter(p => p.id !== job.id);
+      if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84); haptic('ok'); scanHint((m.score >= 0.84 ? '✓ ' : 'À vérifier : ') + m.name, m.score >= 0.84 ? 'ok' : 'busy'); }
+      else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
+    }
+  } finally { SC.working = false; }
+}
+
+/* — Appareil photo : aperçu simple, le cercle prend la photo — */
+/** Bande « nom + mana » (le guide à l'écran) en pixels de la vidéo. */
+function scanGuideBox() {
+  const v = $('.sc-video', SC.el), stage = $('.sc-stage', SC.el), g = $('.sc-guide', SC.el);
+  if (!v || !v.videoWidth) return null;
+  const s = stage.getBoundingClientRect(), r = g.getBoundingClientRect();
+  return coverMap(s.width, s.height, v.videoWidth, v.videoHeight, { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height });
+}
+function scanCapture() {
+  if (!SC.el) return;
+  const box = scanGuideBox(); if (!box) { toast('L\'appareil photo n\'est pas prêt : utilise « Photos » ou « Appareil »'); return; }
+  if (SC.queue.length >= 12) { toast('Patiente un instant : 12 cartes sont déjà en attente de lecture'); return; }
+  const c = document.createElement('canvas'); c.width = box.w; c.height = box.h;
+  c.getContext('2d').drawImage($('.sc-video', SC.el), box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+  haptic('tap'); scanFlash(); scanHint('', '');
+  scanEnqueue({ label: `Carte ${++SC.cap}`, src: c, strip: true, thumb: thumbOf(c) });
 }
 function scanFail(msg) { scanHint(msg, 'bad'); }
+/** Aperçu lent (téléphone dont la caméra du navigateur peine) : 1re alerte → qualité réduite ; 2e alerte → conseil « Appareil » (l'appareil photo du téléphone). */
+function scanWatch(v) {
+  if (window.__noFpsWatch || !v.requestVideoFrameCallback) return;
+  const el = SC.el, w = SC.watch = makeFpsWatch(SC.fpsMin, 3000, 2000); SC.fps = 0; SC.slowN = 0;
+  const tick = now => { if (SC.el !== el || !SC.stream) return; const r = w.feed(now); SC.fps = r.fps; if (r.low) scanSlow(); v.requestVideoFrameCallback(tick); };
+  v.requestVideoFrameCallback(tick);
+}
+async function scanSlow() {
+  if (!SC.el) return;
+  const tr = SC.stream && SC.stream.getVideoTracks()[0]; SC.slowN++;
+  if (SC.slowN === 1) {
+    camSetSlow(true);
+    try { if (tr) await tr.applyConstraints({ width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 20, max: 24 } }); } catch (e) { /* ignore */ }
+    scanHint('Caméra lente : qualité réduite', 'busy');
+  } else {
+    const n = $('.sc-native', SC.el); if (n) n.classList.add('hot');
+    scanHint('La caméra du navigateur est lente sur cet appareil : utilise « Appareil » (appareil photo du téléphone)', 'bad');
+  }
+}
+/** Écran de diagnostic (5 appuis sur le titre) : fluidité de l'aperçu, résolution réelle, durée de la dernière lecture, tâches longues du navigateur. */
+function scanDiag(on) {
+  const box = $('.sc-diag', SC.el); if (!box) return; clearInterval(SC.diagT); box.hidden = !on; if (!on) return;
+  if (!SC.ltObs && typeof PerformanceObserver !== 'undefined') { try { SC.ltObs = new PerformanceObserver(l => { for (const e of l.getEntries()) SC.lt.push(performance.now()); }); SC.ltObs.observe({ type: 'longtask', buffered: false }); } catch (e) { SC.ltObs = null; } }
+  const paint = () => {
+    const tr = SC.stream && SC.stream.getVideoTracks()[0], st = (tr && tr.getSettings && tr.getSettings()) || {}, now = performance.now(); SC.lt = SC.lt.filter(t => now - t < 10000);
+    box.textContent = [`aperçu ${SC.fps ? SC.fps.toFixed(0) : '–'} i/s`, `${st.width || '?'}×${st.height || '?'}${st.frameRate ? ' @' + Math.round(st.frameRate) : ''}`, `dernière lecture ${SC.ms ? Math.round(SC.ms) : '–'} ms`, `tâches longues ${SC.lt.length}/10 s`, camSlow() ? 'mode lent (toucher ici : retour au mode normal)' : '', tr && tr.label ? tr.label : ''].filter(Boolean).join(' · ');
+  };
+  box.onclick = () => { camSetSlow(false); paint(); };
+  paint(); SC.diagT = setInterval(paint, 500);
+}
 async function scanCamera() {
   const stage = $('.sc-stage', SC.el);
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint('Appareil photo indisponible ici (il demande https). Utilise « Photos ».', 'bad'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».', 'bad'); return; }
   try {
-    SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    const slow = camSlow();      // appareil déjà repéré comme lent : on repart en 720p, 24 images/s max
+    SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: slow ? 1280 : 1920 }, height: { ideal: slow ? 720 : 1080 }, frameRate: slow ? { ideal: 20, max: 24 } : { ideal: 24, max: 30 } }, audio: false });
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
     const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
-    stage.dataset.cam = 'on'; scanHint(SC.mode === 'many' ? manyHint() : 'Place le nom de la carte dans la bande', ''); scanLoop();
-    // Réchauffe le moteur et le catalogue pendant que tu cadres.
-    ocrWorker(SC.lang).catch(() => {}); collCatalog().catch(() => {});
+    stage.dataset.cam = 'on'; scanHint('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner', ''); scanWatch(v);      // aucun calcul pendant l'aperçu : le moteur de lecture ne démarre qu'au premier appui
   } catch (e) {
     stage.dataset.cam = 'no';
     scanHint(e && e.name === 'NotAllowedError' ? 'Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».' : e && e.name === 'NotFoundError' ? 'Aucun appareil photo trouvé. Utilise « Photos ».' : 'Appareil photo indisponible. Utilise « Photos ».', 'bad');
@@ -5301,34 +5224,9 @@ function loadImage(file) {
     img.src = url;
   });
 }
-async function scanPhotos(files) {
+function scanPhotos(files) {
   const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
-  if (!list.length) return;
-  const stt = $('.sc-prog', SC.el); let ok = 0, miss = 0;
-  const lost = (i, f) => { miss++; SC.miss.push({ id: ++SC.mid, label: `Photo ${i + 1}${f && f.name && f.name.length <= 24 ? ' · ' + f.name : ''}` }); scanPaintList(); };
-  SC.busy = true; stt.hidden = false;
-  try {
-    const cat = await collCatalog();
-    for (let i = 0; i < list.length && SC.el; i++) {
-      stt.textContent = `Photo ${i + 1} / ${list.length}…`;
-      let img; try { img = await loadImage(list[i]); } catch (e) { lost(i, list[i]); continue; }
-      const W = img.naturalWidth, H = img.naturalHeight;
-      if (SC.mode === 'one') {
-        // Une carte par photo : bande du haut (le nom), puis la photo entière si rien n'est reconnu.
-        let m = await readName(img, { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) }, 1100, '6', cat, true);
-        if (!m || m.score < 0.84) { const all = await readName(img, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, true); if (all && (!m || all.score > m.score)) m = all; }
-        if (m && m.score >= 0.72) { scanGot(m, false); ok++; } else lost(i, list[i]);
-      } else {
-        const ms = (await readMany(img, cat)).filter(m => m.score >= 0.72);
-        for (const m of ms) { for (let q = 0; q < m.q; q++) scanGot(m, false); ok++; }
-        if (!ms.length) lost(i, list[i]);
-      }
-    }
-    toast(`${ok} carte${ok > 1 ? 's' : ''} reconnue${ok > 1 ? 's' : ''}${miss ? ` · ${miss} photo${miss > 1 ? 's' : ''} sans résultat` : ''}`);
-    scanPaintList();
-  } catch (e) {
-    scanFail(e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : 'Lecture impossible' + (e && e.message ? ' : ' + e.message : '') + '.');
-  } finally { SC.busy = false; stt.hidden = true; }
+  list.forEach((f, i) => scanEnqueue({ label: `Photo ${i + 1}${f.name && f.name.length <= 24 ? ' · ' + f.name : ''}`, file: f }));
 }
 
 function closeScan() { if (SC.el) SC.el.__close(); }
@@ -5336,22 +5234,21 @@ function openScan() {
   closeScan();
   const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom de la carte dans la bande</span></div></header>
-    <div class="sc-stage" data-cam="wait" data-mode="${SC.mode}" data-rows="${SC.rows}"><video class="sc-video" playsinline muted autoplay></video>
-      <div class="sc-guide" aria-hidden="true"><span class="sc-band"></span><span class="sc-band sc-band2"></span></div>
+      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom et mana dans la bande</span></div></header>
+    <div class="sc-stage" data-cam="wait"><video class="sc-video" playsinline muted autoplay></video>
+      <div class="sc-guide" aria-hidden="true"><span class="sc-cap">Nom · mana</span></div>
       <div class="sc-flash"></div>
-      <p class="sc-hint" hidden></p><div class="sc-sug" hidden></div><p class="sc-prog" hidden></p>
-      <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ci-dessous.</p></div>
+      <p class="sc-hint" hidden></p><p class="sc-prog" hidden></p><p class="sc-diag" hidden></p>
+      <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.</p></div>
     <div class="sc-bar">
-      <label class="sc-auto"><span class="switch"><input type="checkbox" id="scAuto" checked><i></i></span><b>Auto</b></label>
-      <button class="sc-shot" type="button" data-act="shot" aria-label="Lire la carte"><i></i></button>
-      <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label></div>
-    <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Nombre de cartes"></div><div class="seg" id="scRows" role="radiogroup" aria-label="Lignes de cartes"></div></div>
-    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : cartes alignées par le haut ; « 2 lignes » lit le haut de chaque moitié du cadre (les photos lisent toute l'image). Le français demande Scryfall pour chaque nom : un peu plus lent.</p>
+      <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
+      <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
+      <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>
+    <p class="hint sc-note">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone, « Photos » ta galerie.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
-  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); SC.skipped = 0; SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
-  const stop = () => { SC.alive = false; clearTimeout(SC.tickT); if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
+  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.alive = true; const prevFocus = document.activeElement;
+  const stop = () => { SC.alive = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
   const onKey = e => { if (e.key === 'Escape' && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (SC.el !== wrap) return; SC.el = null; stop(); document.removeEventListener('keydown', onKey, true);
@@ -5360,26 +5257,15 @@ function openScan() {
   };
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
-  const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap), segRows = $('#scRows', wrap);
-  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); ocrWorker(v).catch(() => {}); });
-  mountSeg(segMode, [{ v: 'one', label: '1 carte à la fois' }, { v: 'many', label: 'Plusieurs côte à côte' }], SC.mode, v => {
-    SC.mode = v; SC.seq++; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); $('.sc-stage', wrap).dataset.mode = v; segRows.hidden = v !== 'many';
-    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? manyHint() : 'Place le nom de la carte dans la bande', '');
-  });
-  segRows.hidden = SC.mode !== 'many';
-  mountSeg(segRows, [{ v: '1', label: '1 ligne' }, { v: '2', label: '2 lignes' }], String(SC.rows), v => {
-    SC.rows = +v; SC.seq++; SC.mgate.reset(); SC.still.reset(); $('.sc-stage', wrap).dataset.rows = v;
-    if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(manyHint(), '');
-  });
-  $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); };
-  $('#scFile', wrap).onchange = async e => { const f = e.target.files; await scanPhotos(f); e.target.value = ''; };
+  $('#scFile', wrap).onchange = e => { scanPhotos(e.target.files); e.target.value = ''; };
+  $('#scCam', wrap).onchange = e => { scanPhotos(e.target.files); e.target.value = ''; };
+  { let taps = 0, t0 = 0; $('.dv-title', wrap).onclick = () => { const n = performance.now(); taps = n - t0 < 2500 ? taps + 1 : 1; t0 = n; if (taps >= 5) { taps = 0; scanDiag($('.sc-diag', wrap).hidden); } }; }
   wrap.addEventListener('click', e => {
     const b = e.target.closest('[data-act]');
     if (b) {
       const act = b.dataset.act;
       if (act === 'close') wrap.__close();
-      else if (act === 'shot') { haptic('tap'); scanShot(true); }
-      else if (act === 'sug' && SC.sug) { scanAdd(SC.sug, 1, false); haptic('ok'); scanFlash(); scanHint('✓ ' + SC.sug.name, 'ok'); scanSuggest(null); SC.gate.feed(SC.sug.key); }
+      else if (act === 'shot') scanCapture();
       else if (act === 'done') {
         const items = [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q }));
         if (!items.length) return;
@@ -5410,7 +5296,7 @@ function openScan() {
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); scanCamera();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el) { SC.gate.reset(); SC.mgate.reset(); SC.still.reset(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el && SC.watch) SC.watch.reset(); });
 
 
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
