@@ -1818,6 +1818,21 @@ function ocrMatches(lines, idx, spans = false) {
   return out;
 }
 
+/** Mots lus avec leur position [{ text, x0, x1, y0, y1 }] → groupes de mots voisins sur une même ligne (un nom de carte chacun) :
+ *  un trou plus large que `gap` × la hauteur des lettres coupe le groupe. Retourne [{ text, x0, x1 }] dans l'ordre de lecture. */
+function wordClusters(words, gap = 1.3) {
+  const ws = (words || []).filter(w => w && String(w.text || '').trim()).slice().sort((a, b) => ((a.y0 + a.y1) / 2 - (b.y0 + b.y1) / 2) || a.x0 - b.x0), rows = [];
+  for (const w of ws) {
+    const cy = (w.y0 + w.y1) / 2, h = Math.max(1, w.y1 - w.y0), r = rows.find(r => Math.abs(r.cy - cy) < Math.max(r.h, h) * 0.6);
+    if (r) { r.w.push(w); r.cy = (r.cy * (r.w.length - 1) + cy) / r.w.length; r.h = Math.max(r.h, h); } else rows.push({ cy, h, w: [w] });
+  }
+  const out = [];
+  for (const r of rows) {
+    r.w.sort((a, b) => a.x0 - b.x0); let cur = null;
+    for (const w of r.w) { if (cur && w.x0 - cur.x1 <= gap * r.h) { cur.t.push(String(w.text).trim()); cur.x1 = Math.max(cur.x1, w.x1); } else { cur = { t: [String(w.text).trim()], x0: w.x0, x1: w.x1 }; out.push(cur); } }
+  }
+  return out.map(c => ({ text: c.t.join(' '), x0: c.x0, x1: c.x1 }));
+}
 /** Meilleure carte reconnue parmi des lignes lues : { name, key, score, raw } ou null. */
 function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b) => b.score - a.score)[0] || null; }
 /** Rectangle d'écran (x, y, w, h) dans un conteneur cw×ch qui affiche une vidéo vw×vh en « object-fit: cover » → rectangle en pixels de la vidéo. */
@@ -1878,7 +1893,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
-    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeGate, makeMultiGate, extractShared };
+    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, wordClusters, bestMatch, coverMap, makeGate, makeMultiGate, extractShared };
 }
 
 
@@ -4979,6 +4994,8 @@ const TESS = {
   langs: { eng: `${CDN}@tesseract.js-data/eng/4.0.0_best_int`, fra: `${CDN}@tesseract.js-data/fra/4.0.0_best_int` },
 };
 const OCR = { lib: null, workers: {}, onProg: null };
+/** Lettres admises dans un nom de carte : écarte les symboles de mana, filets et bruits que Tesseract prendrait pour du texte. */
+const LETTERS = { eng: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,'’-:!", fra: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆàâäçéèêëîïôöùûüÿœæ ,'’-:!" };
 function ocrLib() {
   if (typeof Tesseract !== 'undefined') return Promise.resolve(Tesseract);
   if (!OCR.lib) OCR.lib = new Promise((res, rej) => {
@@ -4998,13 +5015,16 @@ function ocrWorker(lang) {
   })().catch(e => { delete OCR.workers[lang]; throw e; });
   return OCR.workers[lang];
 }
-/** Lit une image (canvas) : retourne les lignes de texte. psm : '6' bloc (bande du nom) · '11' texte épars (photo entière). */
-async function ocrLines(canvas, lang, psm) {
+/** Lit une image (canvas) : { lines: [{ text }], words: [{ text, x0, x1, y0, y1 }] }. psm : '6' bloc (bande du nom) · '11' texte épars (photo entière). */
+async function ocrRead(canvas, lang, psm) {
   const w = await ocrWorker(lang);
-  await w.setParameters({ tessedit_pageseg_mode: psm || '6', tessedit_char_whitelist: lang === 'eng' ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,'’-:!" : '' });
-  const r = await w.recognize(canvas);
-  return String((r && r.data && r.data.text) || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
+  await w.setParameters({ tessedit_pageseg_mode: psm || '6', tessedit_char_whitelist: LETTERS[lang] || '' });
+  const r = await w.recognize(canvas), d = (r && r.data) || {};
+  const lines = String(d.text || '').split(/\r?\n/).map(t => ({ text: t.trim() })).filter(l => l.text);
+  const words = (d.words || []).filter(x => x && x.bbox && String(x.text || '').trim()).map(x => ({ text: String(x.text).trim(), x0: x.bbox.x0, x1: x.bbox.x1, y0: x.bbox.y0, y1: x.bbox.y1 }));
+  return { lines, words };
 }
+async function ocrLines(canvas, lang, psm) { return (await ocrRead(canvas, lang, psm)).lines; }
 async function ocrStop() { const ws = Object.values(OCR.workers); OCR.workers = {}; for (const p of ws) { try { (await p).terminate(); } catch (e) { /* ignore */ } } }
 
 /** Découpe une zone d'une source (vidéo, image, canvas), la met à largeur utile et la convertit en niveaux de gris contrastés
@@ -5022,8 +5042,10 @@ function prepCanvas(src, r, outW, pol) {
   acc = 0; for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= n * 0.02) { hi = v; break; } }
   const span = Math.max(48, hi - lo), inv = pol === undefined || pol === null ? sum / n < 105 : !!pol;
   for (let i = 0, j = 0; i < n; i++, j += 4) { let v = (g[i] - lo) * 255 / span; v = v < 0 ? 0 : v > 255 ? 255 : v; if (inv) v = 255 - v; a[j] = a[j + 1] = a[j + 2] = v; a[j + 3] = 255; }
-  ctx.putImageData(d, 0, 0); c.inv = inv;
-  return c;
+  ctx.putImageData(d, 0, 0);
+  const m = 18, o = document.createElement('canvas'); o.width = c.width + 2 * m; o.height = c.height + 2 * m;     // marge blanche : Tesseract lit mal un texte collé au bord de l'image
+  const ox = o.getContext('2d'); ox.fillStyle = '#fff'; ox.fillRect(0, 0, o.width, o.height); ox.drawImage(c, m, m); o.inv = inv;
+  return o;
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
@@ -5068,17 +5090,32 @@ function scanGot(m, live) {
   if (live) { SC.gate.feed(null); scanSuggest(m); scanHint('', ''); return false; }
   scanAdd(m, 1, true); return true;
 }
+/** Recherches Scryfall de noms français déjà faites (mots → résultats) : une carte qui reste dans le cadre ne relance pas de requête. */
+const FR_CACHE = new Map();
+async function frSearch(words, signal) {
+  const k = words.map(w => w.toLowerCase()).join(' ');
+  if (FR_CACHE.has(k)) return FR_CACHE.get(k);
+  let res = []; try { res = await scryForeign(words, 'fr', signal); } catch (e) { if (e.name === 'AbortError') throw e; return []; }   // erreur réseau : pas mise en cache
+  if (FR_CACHE.size > 400) FR_CACHE.clear(); FR_CACHE.set(k, res); return res;
+}
+/** Un texte lu (nom français probable) → { name (anglais), key, score, raw } ou null : mots longs cherchés chez Scryfall, puis nom imprimé comparé. */
+async function frenchName(text, signal) {
+  const words = text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length);
+  if (!words.length) return null;
+  let res = await frSearch(words.slice(0, 2), signal);
+  if (!res.length && words.length > 1) res = await frSearch(words.slice(0, 1), signal);
+  if (!res.length) return null;
+  const fm = matchName(text, nameIndex(res.map(r => r.printed)), 0.72); if (!fm) return null;
+  const hit = res.find(r => frontName(r.printed) === frontName(fm.name));
+  return hit ? { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: text } : null;
+}
 /** Texte lu → carte reconnue (anglais : catalogue Scryfall ; français : recherche des noms imprimés). */
 async function scanMatch(lines, cat, signal) {
   let m = bestMatch(lines, cat.idx);
   if (SC.lang === 'fra' && (!m || m.score < 0.84)) {
     for (const l of lines.slice(0, 3)) {
-      const words = l.text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length).slice(0, 2);
-      if (!words.length) continue;
-      let res; try { res = await scryForeign(words, 'fr', signal); } catch (e) { if (e.name === 'AbortError') throw e; continue; }
-      if (!res.length) continue;
-      const idx = nameIndex(res.map(r => r.printed)), fm = matchName(l.text, idx, 0.72);
-      if (fm) { const hit = res.find(r => frontName(r.printed) === frontName(fm.name)); if (hit && (!m || fm.score > m.score)) m = { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: l.text }; }
+      const fm = await frenchName(l.text, signal);
+      if (fm && (!m || fm.score > m.score)) m = fm;
       if (m && m.score >= 0.84) break;
     }
   }
@@ -5092,26 +5129,37 @@ async function readName(src, box, outW, psm, cat, retry) {
   const m2 = await scanMatch(await ocrLines(prepCanvas(src, box, outW, c1.inv ? 0 : 1), SC.lang, psm), cat);
   return m2 && (!m1 || m2.score > m1.score) ? m2 : m1;
 }
-/** Plusieurs cartes sur une image : lecture par bandes horizontales qui se chevauchent (un nom lisible par bande, polarité choisie bande par bande).
-    Une même carte vue dans deux bandes compte une fois ; si tu en as plusieurs exemplaires, corrige la quantité dans la liste. Noms anglais. */
-async function readMany(img, cat, prog) {
-  const W = img.naturalWidth, H = img.naturalHeight, sh = Math.round(H * 0.15), step = Math.max(1, Math.round(H * 0.075)), res = new Map();
-  for (let y = 0, i = 0; SC.el && y < H - step / 2; y += step, i++) {
-    if (prog) prog(i);
-    for (const m of ocrMatches(await ocrLines(prepCanvas(img, { x: 0, y, w: W, h: Math.min(sh, H - y) }, 1400), SC.lang, '6'), cat.idx, true)) {
-      const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); }
-    }
+/** Une image prête (canvas) → cartes reconnues [{ name, key, score, raw, q }]. Français : les mots sont regroupés par proximité (un groupe = un nom probable)
+ *  puis cherchés chez Scryfall ; budget.n = recherches neuves encore permises (les noms déjà cherchés sont en cache). pad : marge où les mots coupés sont ignorés. */
+async function readCanvas(c, cat, budget, pad = 0) {
+  const r = await ocrRead(c, SC.lang, '3'), ms = ocrMatches(r.lines, cat.idx, true);      // '3' : Tesseract découpe lui-même la page ; '6' (un seul bloc) se perd dès qu'il y a plusieurs cartes
+  if (SC.lang !== 'fra') return ms;
+  const known = new Set(ms.filter(m => m.score >= 0.84).map(m => normPart(m.raw)));
+  for (const g of wordClusters(r.words.filter(w => w.x0 > pad && w.x1 < c.width - pad))) {
+    if (!SC.el || g.text.length < 5 || known.has(normPart(g.text))) continue;
+    const key = g.text.replace(/[^\p{L}\s'’-]/gu, ' ').split(/\s+/).filter(w => w.length >= 4).sort((a, b) => b.length - a.length).slice(0, 2).map(w => w.toLowerCase()).join(' ');
+    if (!key) continue;
+    if (!FR_CACHE.has(key)) { if (budget.n <= 0) continue; budget.n--; }
+    const fm = await frenchName(g.text); if (fm) ms.push({ ...fm, q: 1 });
   }
+  return ms;
+}
+const mergeInto = (res, ms) => { for (const m of ms) { const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); } } };
+
+/** Plusieurs cartes sur une image : lecture par bandes horizontales qui se chevauchent (un nom lisible par bande, polarité choisie bande par bande).
+    Une même carte vue dans deux bandes compte une fois ; si tu en as plusieurs exemplaires, corrige la quantité dans la liste. */
+async function readMany(img, cat) {
+  const W = img.naturalWidth, H = img.naturalHeight, sh = Math.round(H * 0.15), step = Math.max(1, Math.round(H * 0.075)), res = new Map(), budget = { n: 40 };
+  for (let y = 0; SC.el && y < H - step / 2; y += step) mergeInto(res, await readCanvas(prepCanvas(img, { x: 0, y, w: W, h: Math.min(sh, H - y) }, 1400), cat, budget));
   return [...res.values()];
 }
 
-/** Cartes côte à côte devant l'objectif : toute la bande des noms est lue, chaque nom retrouvé est traité séparément. retry : relit en polarité inverse (lecture manuelle). */
-async function readBand(src, box, cat, retry) {
-  const res = new Map();
-  const take = ms => { for (const m of ms) { const c = res.get(m.key); if (!c) res.set(m.key, { ...m }); else { if (m.score > c.score) { c.score = m.score; c.raw = m.raw; } c.q = Math.max(c.q, m.q); } } };
-  const c1 = prepCanvas(src, box, 2000); take(ocrMatches(await ocrLines(c1, SC.lang, '6'), cat.idx, true));
-  if (retry && SC.el) take(ocrMatches(await ocrLines(prepCanvas(src, box, 2000, c1.inv ? 0 : 1), SC.lang, '6'), cat.idx, true));
-  return [...res.values()];
+/** Cartes côte à côte : toute la bande des noms est lue d'un coup (segmentation automatique de Tesseract). Si aucun nom sûr, relecture en polarité inverse. */
+async function readBand(src, box, cat) {
+  const c1 = prepCanvas(src, box, 2000), budget = { n: 6 }, pad = c1.width * 0.01;
+  let ms = await readCanvas(c1, cat, budget, pad);
+  if (!ms.some(m => m.score >= 0.84) && SC.el) ms = ms.concat(await readCanvas(prepCanvas(src, box, 2000, c1.inv ? 0 : 1), cat, budget, pad));
+  const res = new Map(); mergeInto(res, ms); return [...res.values()];
 }
 /** Lecture en continu de plusieurs cartes : sûres ajoutées une fois chacune, douteuses proposées après deux lectures concordantes. */
 function scanGotMany(ms) {
@@ -5139,7 +5187,7 @@ async function scanShot(manual) {
     const cat = await collCatalog();
     if (manual) scanHint('Lecture…', 'busy');
     if (SC.mode === 'many') {
-      const ms = await readBand($('.sc-video', SC.el), box, cat, !!manual);
+      const ms = await readBand($('.sc-video', SC.el), box, cat);
       if (!SC.el || my !== SC.seq) return;
       if (manual) {
         const ok = ms.filter(m => m.score >= 0.72); for (const m of ok) for (let q = 0; q < m.q; q++) scanAdd(m, 1, m.score < 0.84);
@@ -5239,7 +5287,7 @@ function openScan() {
       <button class="sc-shot" type="button" data-act="shot" aria-label="Lire la carte"><i></i></button>
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label></div>
     <div class="sc-opts"><div class="seg" id="scLang" role="radiogroup" aria-label="Langue des cartes"></div><div class="seg" id="scMode" role="radiogroup" aria-label="Nombre de cartes"></div></div>
-    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : noms anglais, cartes alignées par le haut. Le français est expérimental.</p>
+    <p class="hint sc-note">Seul le nom est lu, puis retrouvé dans Scryfall : vérifie la miniature. Plusieurs côte à côte : cartes alignées par le haut. Le français demande Scryfall pour chaque nom : un peu plus lent.</p>
     <div class="dv-scroll sc-list"></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
   SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.busy = false; SC.auto = true; SC.alive = true; SC.gate.reset(); SC.mgate.reset(); SC.sug = null; SC.seq = 0; const prevFocus = document.activeElement;
@@ -5253,13 +5301,9 @@ function openScan() {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('error', e => { if (e.target && e.target.classList && e.target.classList.contains('sc-th')) e.target.classList.add('bad'); }, true);
   const segLang = $('#scLang', wrap), segMode = $('#scMode', wrap);
-  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'En français' }], SC.lang, v => {
-    SC.lang = v; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {});
-    if (v === 'fra' && SC.mode === 'many') { SC.mode = 'one'; segMode.setValue('one'); $('.sc-stage', wrap).dataset.mode = 'one'; toast('Plusieurs côte à côte : anglais seulement'); }
-  });
+  mountSeg(segLang, [{ v: 'eng', label: 'Cartes en anglais' }, { v: 'fra', label: 'Cartes en français' }], SC.lang, v => { SC.lang = v; SC.gate.reset(); SC.mgate.reset(); ocrWorker(v).catch(() => {}); });
   mountSeg(segMode, [{ v: 'one', label: '1 carte à la fois' }, { v: 'many', label: 'Plusieurs côte à côte' }], SC.mode, v => {
     SC.mode = v; SC.gate.reset(); SC.mgate.reset(); $('.sc-stage', wrap).dataset.mode = v;
-    if (v === 'many' && SC.lang === 'fra') { SC.lang = 'eng'; segLang.setValue('eng'); ocrWorker('eng').catch(() => {}); toast('Plusieurs côte à côte : noms anglais'); }
     if ($('.sc-stage', wrap).dataset.cam === 'on') scanHint(v === 'many' ? 'Pose les cartes côte à côte, noms dans la bande du haut' : 'Place le nom de la carte dans la bande', '');
   });
   $('#scAuto', wrap).onchange = e => { SC.auto = e.target.checked; SC.gate.reset(); SC.mgate.reset(); };
