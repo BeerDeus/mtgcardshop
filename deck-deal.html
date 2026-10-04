@@ -5022,9 +5022,9 @@ function prepCanvas(src, r, outW, pol) {
 }
 
 /* ── Écran de scan ────────────────────────────────────────────────────────────────────────────── */
-const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, pref: 'eng', alive: false, hintT: 0, watch: null, fpsMin: 14, fps: 0, slowN: 0, ms: 0, diagT: 0, lt: [] };
-const camSlow = () => { try { return localStorage.getItem('deckdeal:cam') === 'slow'; } catch (e) { return false; } };
-const camSetSlow = on => { try { if (on) localStorage.setItem('deckdeal:cam', 'slow'); else localStorage.removeItem('deckdeal:cam'); } catch (e) { /* ignore */ } };
+const SC = { el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, pref: 'eng', alive: false, hintT: 0, watch: null, fpsMin: 10, fps: 0, fixed: false, slowN: 0, ms: 0, diagT: 0, lt: [] };
+const camSlow = () => { try { return localStorage.getItem('deckdeal:cam2') === 'slow'; } catch (e) { return false; } };      // 'cam2' : l'ancien indicateur (posé quand la lecture tournait pendant l'aperçu) est abandonné
+const camSetSlow = on => { try { localStorage.removeItem('deckdeal:cam'); if (on) localStorage.setItem('deckdeal:cam2', 'slow'); else localStorage.removeItem('deckdeal:cam2'); } catch (e) { /* ignore */ } };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
@@ -5182,7 +5182,7 @@ async function scanSlow() {
   const tr = SC.stream && SC.stream.getVideoTracks()[0]; SC.slowN++;
   if (SC.slowN === 1) {
     camSetSlow(true);
-    try { if (tr) await tr.applyConstraints({ width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 20, max: 24 } }); } catch (e) { /* ignore */ }
+    if (tr) { const r = { width: { ideal: 1280 }, height: { ideal: 720 } }; try { await tr.applyConstraints({ ...r, frameRate: { min: 24, ideal: 30 } }); } catch (e) { try { await tr.applyConstraints({ ...r, frameRate: { ideal: 30 } }); } catch (e2) { /* ignore */ } } }
     scanHint('Caméra lente : qualité réduite', 'busy');
   } else {
     const n = $('.sc-native', SC.el); if (n) n.classList.add('hot');
@@ -5195,17 +5195,26 @@ function scanDiag(on) {
   if (!SC.ltObs && typeof PerformanceObserver !== 'undefined') { try { SC.ltObs = new PerformanceObserver(l => { for (const e of l.getEntries()) SC.lt.push(performance.now()); }); SC.ltObs.observe({ type: 'longtask', buffered: false }); } catch (e) { SC.ltObs = null; } }
   const paint = () => {
     const tr = SC.stream && SC.stream.getVideoTracks()[0], st = (tr && tr.getSettings && tr.getSettings()) || {}, now = performance.now(); SC.lt = SC.lt.filter(t => now - t < 10000);
-    box.textContent = [`aperçu ${SC.fps ? SC.fps.toFixed(0) : '–'} i/s`, `${st.width || '?'}×${st.height || '?'}${st.frameRate ? ' @' + Math.round(st.frameRate) : ''}`, `dernière lecture ${SC.ms ? Math.round(SC.ms) : '–'} ms`, `tâches longues ${SC.lt.length}/10 s`, camSlow() ? 'mode lent (toucher ici : retour au mode normal)' : '', tr && tr.label ? tr.label : ''].filter(Boolean).join(' · ');
+    box.textContent = [`aperçu ${SC.fps ? SC.fps.toFixed(0) : '–'} i/s`, `${st.width || '?'}×${st.height || '?'}${st.frameRate ? ' @' + Math.round(st.frameRate) : ''}`, SC.fixed ? 'plancher 24 i/s' : 'i/s libre', `dernière lecture ${SC.ms ? Math.round(SC.ms) : '–'} ms`, `tâches longues ${SC.lt.length}/10 s`, camSlow() ? 'mode lent (toucher ici : retour au mode normal)' : '', tr && tr.label ? tr.label : ''].filter(Boolean).join(' · ');
   };
   box.onclick = () => { camSetSlow(false); paint(); };
   paint(); SC.diagT = setInterval(paint, 500);
+}
+/** Ouvre la caméra avec un plancher de 24 i/s : en lumière faible, l'exposition automatique ralentit sinon l'image (15 i/s ou moins sur certains téléphones). Si l'appareil refuse ce plancher, simple préférence de 30 i/s. */
+async function camOpen(slow) {
+  const base = { facingMode: { ideal: 'environment' }, width: { ideal: slow ? 1280 : 1920 }, height: { ideal: slow ? 720 : 1080 } };
+  let err;
+  for (const fr of [{ min: 24, ideal: 30 }, { ideal: 30 }]) {
+    try { const s = await navigator.mediaDevices.getUserMedia({ video: { ...base, frameRate: fr }, audio: false }); SC.fixed = !!fr.min; return s; }
+    catch (e) { err = e; if (e && /^(NotAllowed|NotFound|Security|Abort|NotReadable)/.test(e.name)) throw e; }
+  }
+  throw err;
 }
 async function scanCamera() {
   const stage = $('.sc-stage', SC.el);
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».', 'bad'); return; }
   try {
-    const slow = camSlow();      // appareil déjà repéré comme lent : on repart en 720p, 24 images/s max
-    SC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: slow ? 1280 : 1920 }, height: { ideal: slow ? 720 : 1080 }, frameRate: slow ? { ideal: 20, max: 24 } : { ideal: 24, max: 30 } }, audio: false });
+    SC.stream = await camOpen(camSlow());      // appareil déjà repéré comme lent : on repart en 720p
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
     const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
     stage.dataset.cam = 'on'; scanHint('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner', ''); scanWatch(v);      // aucun calcul pendant l'aperçu : le moteur de lecture ne démarre qu'au premier appui
