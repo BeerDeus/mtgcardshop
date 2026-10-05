@@ -1,4 +1,4 @@
-#edh	1	2026-10-05T15:06:37Z
+#edh	1	2026-10-05T16:30:14Z
 C	yshtola-nights-blessed	55977	WUB	Y'shtola, Night's Blessed
 I	yshtola-nights-blessed	front/c/7/c7f2c2d5-e052-49e8-b5de-712858c2ea78.jpg
 C	edgar-markov	51456	WBR	Edgar Markov
@@ -5995,6 +5995,59 @@ C	alpharael-dreaming-acolyte	166	UB	Alpharael, Dreaming Acolyte
 I	alpharael-dreaming-acolyte	front/3/4/349a2211-2b23-418d-a1ef-1c72ad2e171d.jpg
 C	iwamori-of-the-open-fist	165	G	Iwamori of the Open Fist
 I	iwamori-of-the-open-fist	front/9/c/9c05f3bf-5785-4a53-9c34-cffd7783d107.jpg
+G	Ad Nauseam
+G	Ancient Tomb
+G	Aura Shards
+G	Biorhythm
+G	Bolas's Citadel
+G	Braids, Cabal Minion
+G	Chrome Mox
+G	Coalition Victory
+G	Consecrated Sphinx
+G	Crop Rotation
+G	Cyclonic Rift
+G	Demonic Tutor
+G	Drannith Magistrate
+G	Enlightened Tutor
+G	Farewell
+G	Field of the Dead
+G	Fierce Guardianship
+G	Force of Will
+G	Gaea's Cradle
+G	Gamble
+G	Gifts Ungiven
+G	Glacial Chasm
+G	Grand Arbiter Augustin IV
+G	Grim Monolith
+G	Humility
+G	Imperial Seal
+G	Intuition
+G	Jeska's Will
+G	Lion's Eye Diamond
+G	Mana Vault
+G	Mishra's Workshop
+G	Mox Diamond
+G	Mystical Tutor
+G	Narset, Parter of Veils
+G	Natural Order
+G	Necropotence
+G	Notion Thief
+G	Opposition Agent
+G	Orcish Bowmasters
+G	Panoptic Mirror
+G	Rhystic Study
+G	Seedborn Muse
+G	Serra's Sanctum
+G	Smothering Tithe
+G	Survival of the Fittest
+G	Teferi's Protection
+G	Tergrid, God of Fright
+G	Thassa's Oracle
+G	The One Ring
+G	The Tabernacle at Pendrell Vale
+G	Underworld Breach
+G	Vampiric Tutor
+G	Worldly Tutor
 D	yshtola-nights-blessed	edhrec	Deck moyen	https://edhrec.com/average-decks/yshtola-nights-blessed
 K	1	Arcane Signet
 K	1	Archaeomancer's Map
@@ -6086,7 +6139,7 @@ K	1	Risky Shortcut
 K	1	Syphon Mind
 K	1	Toxic Deluge
 K	1	Vindicate
-D	yshtola-nights-blessed	archidekt	Scions & Spellcraft - Final Fantasy Commander · 135 737 vues	https://archidekt.com/decks/13107116
+D	yshtola-nights-blessed	archidekt	Scions & Spellcraft - Final Fantasy Commander · 135 754 vues	https://archidekt.com/decks/13107116
 K	1	Sol Ring
 K	1	Alisaie Leveilleur
 K	1	Alphinaud Leveilleur
@@ -6178,7 +6231,7 @@ K	1	Void Rend
 K	1	White Auracite
 K	4	Swamp
 K	1	Arcane Signet
-D	yshtola-nights-blessed	archidekt	FFXIV Scions & Spellcraft | $30 Upgrade · 38 287 vues	https://archidekt.com/decks/13546643
+D	yshtola-nights-blessed	archidekt	FFXIV Scions & Spellcraft | $30 Upgrade · 38 289 vues	https://archidekt.com/decks/13546643
 K	1	Staff of Compleation
 K	1	Deny the Witch
 K	1	Papalymo Totolymo
@@ -6271,7 +6324,7 @@ K	1	Waterlogged Teachings // Inundated Archive
 K	1	Liesa, Shroud of Dusk
 K	1	Talion, the Kindly Lord
 K	1	Fellwar Stone
-D	yshtola-nights-blessed	archidekt	Fractal Y'shtola, Copy Cat ~🐱🪞✨️ · 26 079 vues	https://archidekt.com/decks/11453507
+D	yshtola-nights-blessed	archidekt	Fractal Y'shtola, Copy Cat ~🐱🪞✨️ · 26 081 vues	https://archidekt.com/decks/11453507
 K	1	Force of Negation
 K	1	Dismember
 K	1	Adarkar Wastes
@@ -6455,7 +6508,7 @@ K	1	New Blood
 K	1	Olivia's Wrath
 K	1	Pact of the Serpent
 K	1	Ruinous Ultimatum
-D	edgar-markov	archidekt	Upping the Average - Edgar Markov Redux · 62 652 vues	https://archidekt.com/decks/2073351
+D	edgar-markov	archidekt	Upping the Average - Edgar Markov Redux · 62 653 vues	https://archidekt.com/decks/2073351
 K	1	Clifftop Retreat
 K	1	Isolated Chapel
 K	1	Forerunner of the Legion
@@ -6546,7 +6599,7 @@ K	1	Pact of the Serpent
 K	1	Minions' Murmurs
 K	1	Night's Whisper
 K	1	Mirror Entity
-D	edgar-markov	archidekt	Edgar Markov (Aggro/Combo) Vampire Tribal · 38 035 vues	https://archidekt.com/decks/59349
+D	edgar-markov	archidekt	Edgar Markov (Aggro/Combo) Vampire Tribal · 38 036 vues	https://archidekt.com/decks/59349
 K	1	Dark Ritual
 K	1	Vampire Socialite
 K	1	Haunted Ridge
@@ -6636,7 +6689,7 @@ K	1	Teferi's Protection
 K	1	Reconnaissance
 K	1	Patriarch's Bidding
 K	1	Boros Charm
-D	edgar-markov	archidekt	Vampiric Bloodlust - Commander 2017 · 30 903 vues	https://archidekt.com/decks/2209128
+D	edgar-markov	archidekt	Vampiric Bloodlust - Commander 2017 · 30 905 vues	https://archidekt.com/decks/2209128
 K	1	Blood Artist
 K	1	Blood Baron of Vizkopa
 K	1	Bloodhusk Ritualist
@@ -6820,7 +6873,7 @@ K	1	Farseek
 K	1	Kodama's Reach
 K	1	Nature's Lore
 K	1	Three Visits
-D	the-ur-dragon	archidekt	Upping the Average - The Ur-Dragon Redux · 75 957 vues	https://archidekt.com/decks/3062146
+D	the-ur-dragon	archidekt	Upping the Average - The Ur-Dragon Redux · 75 959 vues	https://archidekt.com/decks/3062146
 K	1	Ancient Copper Dragon
 K	1	Ancient Gold Dragon
 K	1	Ancient Silver Dragon
@@ -6917,7 +6970,7 @@ K	1	Watery Grave
 K	1	Wooded Foothills
 K	1	Zagoth Triome
 K	1	Ziatora's Proving Ground
-D	the-ur-dragon	archidekt	Upping the Average - The Ur-Dragon · 30 088 vues	https://archidekt.com/decks/854121
+D	the-ur-dragon	archidekt	Upping the Average - The Ur-Dragon · 30 089 vues	https://archidekt.com/decks/854121
 K	1	Kindred Discovery
 K	1	Crucible of Fire
 K	1	Dragon Tempest
@@ -7013,7 +7066,7 @@ K	1	Terramorphic Expanse
 K	1	Kodama's Reach
 K	1	Return of the Wildspeaker
 K	1	Bladewing the Risen
-D	the-ur-dragon	archidekt	Draconic Domination - Commander 2017 · 29 984 vues	https://archidekt.com/decks/2209123
+D	the-ur-dragon	archidekt	Draconic Domination - Commander 2017 · 29 986 vues	https://archidekt.com/decks/2209123
 K	1	Atarka, World Render
 K	1	Bladewing the Risen
 K	1	Boneyard Scourge
@@ -7192,7 +7245,7 @@ K	1	Nature's Lore
 K	1	Phyresis Outbreak
 K	1	Tezzeret's Gambit
 K	1	Unnatural Restoration
-D	atraxa-praetors-voice	archidekt	Upping the Average - Atraxa Infect · 62 704 vues	https://archidekt.com/decks/3949764
+D	atraxa-praetors-voice	archidekt	Upping the Average - Atraxa Infect · 62 711 vues	https://archidekt.com/decks/3949764
 K	1	Phyrexian Swarmlord
 K	1	Plague Stinger
 K	1	Anguished Unmaking
@@ -7286,7 +7339,7 @@ K	1	Contaminant Grafter
 K	1	Bloated Contaminator
 K	1	Myr Convert
 K	1	Vishgraz, the Doomhive
-D	atraxa-praetors-voice	archidekt	Poison Poison Everywhere · 42 448 vues	https://archidekt.com/decks/5422181
+D	atraxa-praetors-voice	archidekt	Poison Poison Everywhere · 42 450 vues	https://archidekt.com/decks/5422181
 K	4	Forest
 K	4	Swamp
 K	1	Bloated Contaminator
@@ -7374,7 +7427,7 @@ K	1	Assassin's Trophy
 K	1	Anguished Unmaking
 K	1	Court of Garenbrig
 K	1	Lightning Greaves
-D	atraxa-praetors-voice	archidekt	Upping the Average - Atraxa Superfriends · 37 954 vues	https://archidekt.com/decks/3948982
+D	atraxa-praetors-voice	archidekt	Upping the Average - Atraxa Superfriends · 37 956 vues	https://archidekt.com/decks/3948982
 K	1	Ajani, Sleeper Agent
 K	1	Anguished Unmaking
 K	1	Arcane Signet
@@ -7543,7 +7596,7 @@ K	1	Goblin War Strike
 K	1	Hordeling Outburst
 K	1	Krenko's Command
 K	1	Vandalblast
-D	krenko-mob-boss	archidekt	Krenko · 26 172 vues	https://archidekt.com/decks/3349441
+D	krenko-mob-boss	archidekt	Krenko · 26 186 vues	https://archidekt.com/decks/3349441
 K	1	Imperial Recruiter
 K	1	Brightstone Ritual
 K	1	Champion's Helm
@@ -7619,7 +7672,7 @@ K	1	Powerbalance
 K	1	Blasphemous Act
 K	1	Gempalm Incinerator
 K	1	Phyrexian Altar
-D	krenko-mob-boss	archidekt	Krenko, Mob Boss · 24 875 vues	https://archidekt.com/decks/3047743
+D	krenko-mob-boss	archidekt	Krenko, Mob Boss · 24 887 vues	https://archidekt.com/decks/3047743
 K	1	Sting, the Glinting Dagger
 K	1	Burn at the Stake
 K	1	Goblin Recruiter
@@ -7692,7 +7745,7 @@ K	1	Lightning Greaves
 K	1	Hexing Squelcher
 K	29	Mountain
 K	1	War Room
-D	krenko-mob-boss	archidekt	Gobs of Goblins · 19 063 vues	https://archidekt.com/decks/60036
+D	krenko-mob-boss	archidekt	Gobs of Goblins · 19 065 vues	https://archidekt.com/decks/60036
 K	1	Kiki-Jiki, Mirror Breaker
 K	1	Warren Instigator
 K	1	Vanquisher's Banner
@@ -7857,7 +7910,7 @@ K	1	Rite of Flame
 K	1	Serum Visions
 K	1	Strike It Rich
 K	1	Windfall
-D	vivi-ornitier	archidekt	Vivi Ornitier, semi-budget EDH · 60 095 vues	https://archidekt.com/decks/13765265
+D	vivi-ornitier	archidekt	Vivi Ornitier, semi-budget EDH · 60 100 vues	https://archidekt.com/decks/13765265
 K	1	Marvin, Murderous Mimic
 K	1	Ojer Axonil, Deepest Might // Temple of Power
 K	1	Snap
@@ -7947,7 +8000,7 @@ K	1	Veyran, Voice of Duality
 K	1	Rhystic Study
 K	8	Island
 K	6	Mountain
-D	vivi-ornitier	archidekt	Bracket 2 Base & Budget Vivi · 33 877 vues	https://archidekt.com/decks/13686965
+D	vivi-ornitier	archidekt	Bracket 2 Base & Budget Vivi · 33 880 vues	https://archidekt.com/decks/13686965
 K	1	An Offer You Can't Refuse
 K	1	Archmage Emeritus
 K	1	Big Score
@@ -8026,7 +8079,7 @@ K	1	Veyran, Voice of Duality
 K	1	Volcanic Vision
 K	1	Wayfarer's Bauble
 K	1	Whir of Invention
-D	vivi-ornitier	archidekt	Vivi - Hyperfixation · 30 661 vues	https://archidekt.com/decks/4582739
+D	vivi-ornitier	archidekt	Vivi - Hyperfixation · 30 667 vues	https://archidekt.com/decks/4582739
 K	1	Curiosity
 K	1	Archmage Emeritus
 K	1	Imperial Recruiter
@@ -8278,7 +8331,7 @@ K	1	Summons of Saruman
 K	1	Toxic Deluge
 K	1	Treason of Isengard
 K	1	Victimize
-D	sauron-the-dark-lord	archidekt	$100 Sauron, The Dark Lord Spellslinger B2/B3 · 74 147 vues	https://archidekt.com/decks/7817483
+D	sauron-the-dark-lord	archidekt	$100 Sauron, The Dark Lord Spellslinger B2/B3 · 74 163 vues	https://archidekt.com/decks/7817483
 K	1	Arcane Denial
 K	1	Chandra's Ignition
 K	1	Command Tower
@@ -8363,7 +8416,7 @@ K	1	The Black Gate
 K	1	Molten Collapse
 K	1	Mystical Teachings
 K	1	Artful Dodge
-D	sauron-the-dark-lord	archidekt	Jacob's Sauron Deck | Game Knights #62 · 69 391 vues	https://archidekt.com/decks/4749224
+D	sauron-the-dark-lord	archidekt	Jacob's Sauron Deck | Game Knights #62 · 69 394 vues	https://archidekt.com/decks/4749224
 K	1	Call of the Ring
 K	1	Ash Barrens
 K	1	Black Market Connections
@@ -8456,7 +8509,7 @@ K	1	In the Darkness Bind Them
 K	1	Saruman, the White Hand
 K	1	Stormcarved Coast
 K	1	Thraximundar
-D	sauron-the-dark-lord	archidekt	Sauron the Dark Lord · 34 397 vues	https://archidekt.com/decks/4634959
+D	sauron-the-dark-lord	archidekt	Sauron the Dark Lord · 34 402 vues	https://archidekt.com/decks/4634959
 K	1	Claim the Precious
 K	1	Lightning Greaves
 K	1	Swiftfoot Boots
@@ -8626,7 +8679,7 @@ K	1	Demonic Tutor
 K	1	Night's Whisper
 K	1	Reanimate
 K	1	Ruinous Ultimatum
-D	kaalia-of-the-vast	archidekt	Upping the Average - Kaalia of the Vast · 82 249 vues	https://archidekt.com/decks/696285
+D	kaalia-of-the-vast	archidekt	Upping the Average - Kaalia of the Vast · 82 254 vues	https://archidekt.com/decks/696285
 K	1	Clifftop Retreat
 K	1	Demonlord Belzenlok
 K	1	Isolated Chapel
@@ -8715,7 +8768,7 @@ K	1	Lightning Greaves
 K	1	Avacyn, Angel of Hope
 K	1	Ash Barrens
 K	1	Animate Dead
-D	kaalia-of-the-vast	archidekt	Kaalia Beast mode · 25 623 vues	https://archidekt.com/decks/2293977
+D	kaalia-of-the-vast	archidekt	Kaalia Beast mode · 25 624 vues	https://archidekt.com/decks/2293977
 K	1	City of Brass
 K	1	Arid Mesa
 K	1	Red Elemental Blast
@@ -8866,7 +8919,7 @@ K	1	Herald of Eternal Dawn
 K	1	Deadly Rollick
 K	1	Redirect Lightning
 K	1	Soul Immolation
-D	kaalia-of-the-vast	archidekt	Jimmy's Kaalia | Game Knights #38 · 23 461 vues	https://archidekt.com/decks/4663886
+D	kaalia-of-the-vast	archidekt	Jimmy's Kaalia | Game Knights #38 · 23 462 vues	https://archidekt.com/decks/4663886
 K	1	Rakdos, Lord of Riots
 K	1	Rakdos, the Showstopper
 K	1	Disciple of Bolas
@@ -9046,7 +9099,7 @@ K	1	Reanimate
 K	1	Victimize
 K	1	Welcome the Dead
 K	1	Will of the Sultai
-D	teval-the-balanced-scale	archidekt	Sultai Arisen - Tarkir: Dragonstorm Commander · 109 369 vues	https://archidekt.com/decks/12028998
+D	teval-the-balanced-scale	archidekt	Sultai Arisen - Tarkir: Dragonstorm Commander · 109 391 vues	https://archidekt.com/decks/12028998
 K	1	Kotis, Sibsig Champion
 K	1	Necropolis Fiend
 K	1	Floral Evoker
@@ -9134,7 +9187,7 @@ K	1	Forbidden Alchemy
 K	1	Harrow
 K	1	Grisly Salvage
 K	1	Grapple with the Past
-D	teval-the-balanced-scale	archidekt	JLK's Teval | Game Knights #77 · 49 426 vues	https://archidekt.com/decks/11044517
+D	teval-the-balanced-scale	archidekt	JLK's Teval | Game Knights #77 · 49 430 vues	https://archidekt.com/decks/11044517
 K	1	Urborg, Tomb of Yawgmoth
 K	1	Tormod, the Desecrator
 K	1	Amzu, Swarm's Hunger
@@ -9234,7 +9287,7 @@ K	1	Kishla Skimmer
 K	1	Floral Evoker
 K	1	Auroral Procession
 K	1	Death Begets Life
-D	teval-the-balanced-scale	archidekt	Sultai Arisen - Upgraded · 45 023 vues	https://archidekt.com/decks/12041145
+D	teval-the-balanced-scale	archidekt	Sultai Arisen - Upgraded · 45 026 vues	https://archidekt.com/decks/12041145
 K	1	Harrow
 K	1	Opulent Palace
 K	1	Grapple with the Past
@@ -9426,7 +9479,7 @@ K	1	Demonic Tutor
 K	1	Jeska's Will
 K	1	Mana Geyser
 K	1	Sozin's Comet
-D	fire-lord-azula	archidekt	Fire Nation Attacks (Fire Lord Azula LOST PRECON) · 106 372 vues	https://archidekt.com/decks/17193994
+D	fire-lord-azula	archidekt	Fire Nation Attacks (Fire Lord Azula LOST PRECON) · 106 381 vues	https://archidekt.com/decks/17193994
 K	1	Frantic Search
 K	1	Withering Torment
 K	1	Unleash Fury
@@ -9516,7 +9569,7 @@ K	1	Sozin's Comet
 K	1	Chaos Warp
 K	1	Scarring Memories
 K	1	The Blue Spirit
-D	fire-lord-azula	archidekt	BDD's BUDGET Bracket 4 Azula Combo List · 56 527 vues	https://archidekt.com/decks/17869907
+D	fire-lord-azula	archidekt	BDD's BUDGET Bracket 4 Azula Combo List · 56 534 vues	https://archidekt.com/decks/17869907
 K	1	Sol Ring
 K	1	Abandon Attachments
 K	1	Waterlogged Teachings // Inundated Archive
@@ -9604,7 +9657,7 @@ K	1	Comet Storm
 K	1	Pyretic Ritual
 K	1	Lightning Bolt
 K	1	Bolt Bend
-D	fire-lord-azula	archidekt	BDD's Bracket 4 Azula Combo List · 25 300 vues	https://archidekt.com/decks/18108426
+D	fire-lord-azula	archidekt	BDD's Bracket 4 Azula Combo List · 25 312 vues	https://archidekt.com/decks/18108426
 K	1	Talisman of Indulgence
 K	1	Arcane Signet
 K	1	Sol Ring
@@ -9790,7 +9843,7 @@ K	1	Secret Rendezvous
 K	1	Tempt with Bunnies
 K	1	Tempt with Discovery
 K	1	Wear Down
-D	ms-bumbleflower	archidekt	Peace Offering - Bloomburrow Commander · 104 430 vues	https://archidekt.com/decks/8460469
+D	ms-bumbleflower	archidekt	Peace Offering - Bloomburrow Commander · 104 440 vues	https://archidekt.com/decks/8460469
 K	1	Chasm Skulker
 K	1	Coveted Jewel
 K	1	Sol Ring
@@ -9881,7 +9934,7 @@ K	1	Swords to Plowshares
 K	1	Razorverge Thicket
 K	1	Reliquary Tower
 K	1	Seachrome Coast
-D	ms-bumbleflower	archidekt	JLK's Ms. Bumbleflower | Game Knights #72 · 90 709 vues	https://archidekt.com/decks/7754713
+D	ms-bumbleflower	archidekt	JLK's Ms. Bumbleflower | Game Knights #72 · 90 717 vues	https://archidekt.com/decks/7754713
 K	1	Aboleth Spawn
 K	1	Avacyn's Pilgrim
 K	1	Bala Ged Recovery // Bala Ged Sanctuary
@@ -9976,7 +10029,7 @@ K	1	Into the Flood Maw
 K	1	Peerless Recycling
 K	1	Pollywog Prodigy
 K	1	Jackdaw Savior
-D	ms-bumbleflower	archidekt	CZ 621 | "Peace Offering" Precon Upgrade · 33 638 vues	https://archidekt.com/decks/8529843
+D	ms-bumbleflower	archidekt	CZ 621 | "Peace Offering" Precon Upgrade · 33 639 vues	https://archidekt.com/decks/8529843
 K	1	Chasm Skulker
 K	1	Sol Ring
 K	1	Thought Vessel
@@ -10168,7 +10221,7 @@ K	1	Rampant Growth
 K	1	Rishkar's Expertise
 K	1	Savage Order
 K	1	Thunderherd Migration
-D	pantlaza-sun-favored	archidekt	Veloci-Ramp-Tor - The Lost Caverns of Ixalan Commander · 85 776 vues	https://archidekt.com/decks/5775250
+D	pantlaza-sun-favored	archidekt	Veloci-Ramp-Tor - The Lost Caverns of Ixalan Commander · 85 779 vues	https://archidekt.com/decks/5775250
 K	1	Akroma's Will
 K	1	Arcane Signet
 K	1	Bronzebeak Foragers
@@ -10255,7 +10308,7 @@ K	1	Thriving Heath
 K	1	Thunderherd Migration
 K	1	Thundering Spineback
 K	1	Topiary Stomper
-D	pantlaza-sun-favored	archidekt	Voxy's Pantlaza | Game Knights #66 · 73 578 vues	https://archidekt.com/decks/5485783
+D	pantlaza-sun-favored	archidekt	Voxy's Pantlaza | Game Knights #66 · 73 579 vues	https://archidekt.com/decks/5485783
 K	1	Arcane Signet
 K	1	Arid Mesa
 K	1	Atzocan Seer
@@ -10351,7 +10404,7 @@ K	1	Sunfrill Imitator
 K	1	Contest of Claws
 K	1	Intrepid Paleontologist
 K	1	Pugnacious Hammerskull
-D	pantlaza-sun-favored	archidekt	CZ 572 | "Veloci-Ramp-tor" Precon Upgrade · 51 336 vues	https://archidekt.com/decks/5823682
+D	pantlaza-sun-favored	archidekt	CZ 572 | "Veloci-Ramp-tor" Precon Upgrade · 51 338 vues	https://archidekt.com/decks/5823682
 K	1	Elemental Bond
 K	1	Akroma's Will
 K	1	Invasion of Ikoria // Zilortha, Apex of Ikoria
@@ -10522,7 +10575,7 @@ K	1	Cleansing Nova
 K	1	Entreat the Angels
 K	1	Farewell
 K	1	Wrath of God
-D	giada-font-of-hope	archidekt	Upping the Average - Giada, Font of Hope · 59 842 vues	https://archidekt.com/decks/2706304
+D	giada-font-of-hope	archidekt	Upping the Average - Giada, Font of Hope · 59 845 vues	https://archidekt.com/decks/2706304
 K	1	Lyra Dawnbringer
 K	1	Luminarch Ascension
 K	1	Angelic Accord
@@ -10598,7 +10651,7 @@ K	1	Lightning Greaves
 K	1	Arcane Signet
 K	1	Emeria, the Sky Ruin
 K	1	Speaker of the Heavens
-D	giada-font-of-hope	archidekt	Upping the Average - Giada, Font of Hope · 31 481 vues	https://archidekt.com/decks/2685760
+D	giada-font-of-hope	archidekt	Upping the Average - Giada, Font of Hope · 31 487 vues	https://archidekt.com/decks/2685760
 K	25	Plains
 K	1	Brave the Elements
 K	1	Empyrial Storm
@@ -10674,7 +10727,7 @@ K	1	Marble Diamond
 K	1	Roadside Reliquary
 K	1	Commander's Sphere
 K	1	Speaker of the Heavens
-D	giada-font-of-hope	archidekt	Angels: Bracket 3 (Updated) · 28 492 vues	https://archidekt.com/decks/11650077
+D	giada-font-of-hope	archidekt	Angels: Bracket 3 (Updated) · 28 495 vues	https://archidekt.com/decks/11650077
 K	1	Karmic Guide
 K	22	Plains
 K	1	Emeria Shepherd
@@ -10835,7 +10888,7 @@ K	1	Harvest Season
 K	1	Kindred Dominance
 K	1	Pact of the Serpent
 K	1	Shamanic Revelation
-D	lathril-blade-of-the-elves	archidekt	Upping the Average - Lathril, Blade of the Elves · 60 462 vues	https://archidekt.com/decks/1173110
+D	lathril-blade-of-the-elves	archidekt	Upping the Average - Lathril, Blade of the Elves · 60 463 vues	https://archidekt.com/decks/1173110
 K	1	Woodland Cemetery
 K	1	Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun
 K	1	Ezuri, Renegade Leader
@@ -10916,7 +10969,7 @@ K	1	Elvish Visionary
 K	1	Harmonize
 K	1	Harald, King of Skemfar
 K	1	Skemfar Avenger
-D	lathril-blade-of-the-elves	archidekt	🧝‍♀️ It came from the woods | Lathril, Blade of the Elves · 53 683 vues	https://archidekt.com/decks/15073736
+D	lathril-blade-of-the-elves	archidekt	🧝‍♀️ It came from the woods | Lathril, Blade of the Elves · 53 684 vues	https://archidekt.com/decks/15073736
 K	1	Allosaurus Shepherd
 K	1	Assassin's Trophy
 K	1	Beast Whisperer
@@ -11009,7 +11062,7 @@ K	1	Tyvar Kell
 K	1	Freyalise, Llanowar's Fury
 K	1	Coat of Arms
 K	1	Sylvan Library
-D	lathril-blade-of-the-elves	archidekt	Elven Empire - Kaldheim Commander · 32 394 vues	https://archidekt.com/decks/2209067
+D	lathril-blade-of-the-elves	archidekt	Elven Empire - Kaldheim Commander · 32 395 vues	https://archidekt.com/decks/2209067
 K	1	Abomination of Llanowar
 K	1	Beast Whisperer
 K	1	Canopy Tactician
@@ -11172,7 +11225,7 @@ K	1	Nature's Lore
 K	1	Nuclear Fallout
 K	1	Rampant Growth
 K	1	Reanimate
-D	the-wise-mothman	archidekt	Mutant Menace - Fallout · 92 158 vues	https://archidekt.com/decks/6834477
+D	the-wise-mothman	archidekt	Mutant Menace - Fallout · 92 164 vues	https://archidekt.com/decks/6834477
 K	1	Find // Finality
 K	1	Cathedral Acolyte
 K	1	Darkwater Catacombs
@@ -11260,7 +11313,7 @@ K	1	Viridescent Bog
 K	1	Marcus, Mutant Mayor
 K	1	Screeching Scorchbeast
 K	1	Mariposa Military Base
-D	the-wise-mothman	archidekt	The Wise Mothman · 30 685 vues	https://archidekt.com/decks/5736500
+D	the-wise-mothman	archidekt	The Wise Mothman · 30 707 vues	https://archidekt.com/decks/5736500
 K	1	Corpsejack Menace
 K	1	The Everflowing Well // The Myriad Pools
 K	1	Squirming Emergence
@@ -11357,7 +11410,7 @@ K	1	Quilled Greatwurm
 K	1	Helm of the Host
 K	1	Colossal Grave-Reaver
 K	1	Meren of Clan Nel Toth
-D	the-wise-mothman	archidekt	Mutant Menance | Precon Upgrade · 27 757 vues	https://archidekt.com/decks/6895024
+D	the-wise-mothman	archidekt	Mutant Menance | Precon Upgrade · 27 758 vues	https://archidekt.com/decks/6895024
 K	1	Ruin Crab
 K	1	Cankerbloom
 K	1	Thrummingbird
@@ -11533,7 +11586,7 @@ K	1	Hour of Revelation
 K	1	Nature's Lore
 K	1	Rockalanche
 K	1	Seismic Sense
-D	toph-the-first-metalbender	archidekt	The Earth Bending Machine · 31 186 vues	https://archidekt.com/decks/16258887
+D	toph-the-first-metalbender	archidekt	The Earth Bending Machine · 31 193 vues	https://archidekt.com/decks/16258887
 K	1	Arid Mesa
 K	1	Reconstruct History
 K	1	Yavimaya, Cradle of Growth
@@ -11620,7 +11673,7 @@ K	1	Sensei's Divining Top
 K	1	Toph, Hardheaded Teacher
 K	1	Scourglass
 K	1	Harrow
-D	toph-the-first-metalbender	archidekt	Toph, the First Metalbender · 20 788 vues	https://archidekt.com/decks/5996567
+D	toph-the-first-metalbender	archidekt	Toph, the First Metalbender · 20 791 vues	https://archidekt.com/decks/5996567
 K	1	Verdant Catacombs
 K	1	Scalding Tarn
 K	1	Stomping Ground
@@ -11711,7 +11764,7 @@ K	1	The Mind Stone
 K	1	Urborg, Tomb of Yawgmoth
 K	1	Arcane Signet
 K	1	Esper Sentinel
-D	toph-the-first-metalbender	archidekt	ATLA Book 2: Earth aka Toph Finally Gets Her Lifechanging Field Trip with Zuko · 19 875 vues	https://archidekt.com/decks/17368282
+D	toph-the-first-metalbender	archidekt	ATLA Book 2: Earth aka Toph Finally Gets Her Lifechanging Field Trip with Zuko · 19 876 vues	https://archidekt.com/decks/17368282
 K	1	The Last Agni Kai
 K	1	Redirect Lightning
 K	1	Twin Blades
@@ -11879,7 +11932,7 @@ K	1	Nature's Lore
 K	1	Primevals' Glorious Rebirth
 K	1	Three Visits
 K	1	Urza's Ruinous Blast
-D	jodah-the-unifier	archidekt	Upping the Average - Jodah, the Unifier · 43 360 vues	https://archidekt.com/decks/3245172
+D	jodah-the-unifier	archidekt	Upping the Average - Jodah, the Unifier · 43 362 vues	https://archidekt.com/decks/3245172
 K	1	Arvad the Cursed
 K	1	Bloom Tender
 K	1	Cadric, Soul Kindler
@@ -11977,7 +12030,7 @@ K	1	Drizzt Do'Urden
 K	1	Teshar, Ancestor's Apostle
 K	1	Linvala, Shield of Sea Gate
 K	1	Hofri Ghostforge
-D	jodah-the-unifier	archidekt	Jodah the Unifier 5-Color Legendary Human Kindred High Power EDH · 25 033 vues	https://archidekt.com/decks/3361540
+D	jodah-the-unifier	archidekt	Jodah the Unifier 5-Color Legendary Human Kindred High Power EDH · 25 038 vues	https://archidekt.com/decks/3361540
 K	1	Samut, Voice of Dissent
 K	1	Urza's Ruinous Blast
 K	1	Saskia the Unyielding
@@ -12074,7 +12127,7 @@ K	1	Smellerbee, Rebel Fighter
 K	1	Dreamroot Cascade
 K	1	Bilbo's Gambit
 K	1	Taskmaster, Mercenary Mimic
-D	jodah-the-unifier	archidekt	Jodah Brings his Friends · 18 542 vues	https://archidekt.com/decks/1772559
+D	jodah-the-unifier	archidekt	Jodah Brings his Friends · 18 543 vues	https://archidekt.com/decks/1772559
 K	1	Thriving Moor
 K	1	Lagrella, the Magpie
 K	1	Garruk's Uprising
@@ -12245,7 +12298,7 @@ K	1	Wheel of Fortune
 K	1	Whispering Madness
 K	1	Windfall
 K	1	Winds of Change
-D	nekusar-the-mindrazer	archidekt	Upping the Average - Nekusar, the Mindrazer · 50 228 vues	https://archidekt.com/decks/689005
+D	nekusar-the-mindrazer	archidekt	Upping the Average - Nekusar, the Mindrazer · 50 229 vues	https://archidekt.com/decks/689005
 K	1	Reforge the Soul
 K	1	Sulfur Falls
 K	1	Raiders' Wake
@@ -12333,7 +12386,7 @@ K	1	Terramorphic Expanse
 K	1	Fell Specter
 K	1	Blasphemous Act
 K	1	Cyclonic Rift
-D	nekusar-the-mindrazer	archidekt	Let's draw some cards everyone! · 21 505 vues	https://archidekt.com/decks/11364791
+D	nekusar-the-mindrazer	archidekt	Let's draw some cards everyone! · 21 513 vues	https://archidekt.com/decks/11364791
 K	1	Niv-Mizzet, Parun
 K	1	Terminate
 K	1	Psychosis Crawler
@@ -12419,7 +12472,7 @@ K	1	Fate Unraveler
 K	4	Swamp
 K	1	Talisman of Creativity
 K	1	Sweltering Suns
-D	nekusar-the-mindrazer	archidekt	Nekusar, The Mindrazer · 21 318 vues	https://archidekt.com/decks/5245
+D	nekusar-the-mindrazer	archidekt	Nekusar, The Mindrazer · 21 320 vues	https://archidekt.com/decks/5245
 K	1	Witch's Clinic
 K	1	Sheoldred, the Apocalypse
 K	1	Training Center
@@ -12606,7 +12659,7 @@ K	1	Steelshaper's Gift
 K	1	Unfinished Business
 K	1	Vandalblast
 K	1	Vanquish the Horde
-D	cloud-ex-soldier	archidekt	Limit Break - Final Fantasy Commander · 138 780 vues	https://archidekt.com/decks/13106990
+D	cloud-ex-soldier	archidekt	Limit Break - Final Fantasy Commander · 138 794 vues	https://archidekt.com/decks/13106990
 K	1	Aerith, Last Ancient
 K	1	Armory Automaton
 K	1	Ash Barrens
@@ -12700,7 +12753,7 @@ K	1	Wrecking Ball Arm
 K	1	Yuffie, Materia Hunter
 K	1	Zack Fair
 K	3	Plains
-D	cloud-ex-soldier	archidekt	FFVII Limit Break | $30 Upgrade · 40 111 vues	https://archidekt.com/decks/13195893
+D	cloud-ex-soldier	archidekt	FFVII Limit Break | $30 Upgrade · 40 113 vues	https://archidekt.com/decks/13195893
 K	1	Zack Fair
 K	1	Bugenhagen, Wise Elder
 K	1	Cid, Freeflier Pilot
@@ -12795,7 +12848,7 @@ K	1	Kellan, the Fae-Blooded // Birthright Boon
 K	1	Open the Armory
 K	1	Hero's Blade
 K	1	Bureau Headmaster
-D	cloud-ex-soldier	archidekt	Cloud, EX-Soldier · 20 740 vues	https://archidekt.com/decks/11450866
+D	cloud-ex-soldier	archidekt	Cloud, EX-Soldier · 20 742 vues	https://archidekt.com/decks/11450866
 K	1	Mountain
 K	1	The Lonely Mountain
 K	1	Thornspire Verge
@@ -12977,7 +13030,7 @@ K	1	Scapeshift
 K	1	Skyshroud Claim
 K	1	Splendid Reclamation
 K	1	Worldsoul's Rage
-D	hearthhull-the-worldseed	archidekt	Hearthhull the Worldseed · 13 234 vues	https://archidekt.com/decks/14776329
+D	hearthhull-the-worldseed	archidekt	Hearthhull the Worldseed · 13 235 vues	https://archidekt.com/decks/14776329
 K	1	Horizon Explorer
 K	1	Scouring Swarm
 K	1	Baloth Prime
@@ -13074,7 +13127,7 @@ K	1	Smoldering Marsh
 K	1	Valakut Exploration
 K	1	Sylvan Library
 K	1	Retreat to Hagra
-D	hearthhull-the-worldseed	archidekt	Hearthhull - Landlord · 11 626 vues	https://archidekt.com/decks/17037622
+D	hearthhull-the-worldseed	archidekt	Hearthhull - Landlord · 11 629 vues	https://archidekt.com/decks/17037622
 K	1	Rootpath Purifier
 K	1	Three Visits
 K	1	Ziatora's Proving Ground
@@ -13177,7 +13230,7 @@ K	1	Lotus Field
 K	1	Toxic Deluge
 K	1	Sabotender
 K	1	Roiling Canopy
-D	hearthhull-the-worldseed	archidekt	Terraforming the Edge -EoE themed deck · 8 152 vues	https://archidekt.com/decks/14401330
+D	hearthhull-the-worldseed	archidekt	Terraforming the Edge -EoE themed deck · 8 153 vues	https://archidekt.com/decks/14401330
 K	1	Warping Wail
 K	1	Terrain Generator
 K	1	Echoing Deeps
@@ -13444,7 +13497,7 @@ K	1	Sea Gate Restoration
 K	1	Temporal Mastery
 K	1	Temporal Trespass
 K	1	Treasure Cruise
-D	yuriko-the-tigers-shadow	archidekt	Upping the Average - Yuriko, the Tiger's Shadow · 42 910 vues	https://archidekt.com/decks/639285
+D	yuriko-the-tigers-shadow	archidekt	Upping the Average - Yuriko, the Tiger's Shadow · 42 912 vues	https://archidekt.com/decks/639285
 K	1	Karn's Temporal Sundering
 K	1	Tetsuko Umezawa, Fugitive
 K	1	Arcane Adaptation
@@ -13527,7 +13580,7 @@ K	6	Swamp
 K	13	Island
 K	1	Dismal Backwater
 K	1	Gingerbrute
-D	yuriko-the-tigers-shadow	archidekt	Murph's Yuriko | Game Knights #55 · 26 947 vues	https://archidekt.com/decks/4664115
+D	yuriko-the-tigers-shadow	archidekt	Murph's Yuriko | Game Knights #55 · 26 950 vues	https://archidekt.com/decks/4664115
 K	1	Devastation Tide
 K	1	Ponder
 K	1	Alora, Merry Thief
@@ -13613,7 +13666,7 @@ K	1	Clearwater Pathway // Murkwater Pathway
 K	1	Command Tower
 K	1	Darkwater Catacombs
 K	1	Dimir Aqueduct
-D	yuriko-the-tigers-shadow	archidekt	Yuriko, the Tiger's Shadow · 25 035 vues	https://archidekt.com/decks/4386
+D	yuriko-the-tigers-shadow	archidekt	Yuriko, the Tiger's Shadow · 25 036 vues	https://archidekt.com/decks/4386
 K	1	Command Tower
 K	1	Sensei's Divining Top
 K	1	Ornithopter
@@ -13798,7 +13851,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Tempt with Discovery
 K	1	Three Visits
-D	kenrith-the-returned-king	archidekt	Upping the Average - Kenrith, the Returned King · 31 314 vues	https://archidekt.com/decks/664751
+D	kenrith-the-returned-king	archidekt	Upping the Average - Kenrith, the Returned King · 31 321 vues	https://archidekt.com/decks/664751
 K	1	Angelic Accord
 K	1	Sanguine Bond
 K	1	Rout
@@ -13893,7 +13946,7 @@ K	2	Island
 K	2	Plains
 K	4	Forest
 K	1	Emiel the Blessed
-D	kenrith-the-returned-king	archidekt	Mitch's Kenrith | Extra Turns #04 · 21 739 vues	https://archidekt.com/decks/4663864
+D	kenrith-the-returned-king	archidekt	Mitch's Kenrith | Extra Turns #04 · 21 750 vues	https://archidekt.com/decks/4663864
 K	1	Defiant Bloodlord
 K	1	Archon of Absolution
 K	1	Baird, Steward of Argive
@@ -13973,7 +14026,7 @@ K	1	Glaring Spotlight
 K	1	Heartstone
 K	1	Swiftfoot Boots
 K	1	Wayfarer's Bauble
-D	kenrith-the-returned-king	archidekt	Dockside Consultation · 18 451 vues	https://archidekt.com/decks/239801
+D	kenrith-the-returned-king	archidekt	Dockside Consultation · 18 452 vues	https://archidekt.com/decks/239801
 K	1	Pact of Negation
 K	1	Notion Thief
 K	1	Flusterstorm
@@ -14233,7 +14286,7 @@ K	1	Damn
 K	1	Farewell
 K	1	Ruinous Ultimatum
 K	1	Vandalblast
-D	isshin-two-heavens-as-one	archidekt	Upping the Average - Isshin, Two Heavens as One · 53 480 vues	https://archidekt.com/decks/2468303
+D	isshin-two-heavens-as-one	archidekt	Upping the Average - Isshin, Two Heavens as One · 53 492 vues	https://archidekt.com/decks/2468303
 K	1	Clifftop Retreat
 K	1	Isolated Chapel
 K	1	Captain Lannery Storm
@@ -14321,7 +14374,7 @@ K	1	Command Tower
 K	1	Chaos Warp
 K	1	Arcane Signet
 K	1	Sophina, Spearsage Deserter
-D	isshin-two-heavens-as-one	archidekt	Isshin, Two Heavens as One · 36 859 vues	https://archidekt.com/decks/2753504
+D	isshin-two-heavens-as-one	archidekt	Isshin, Two Heavens as One · 36 860 vues	https://archidekt.com/decks/2753504
 K	1	Captain Lannery Storm
 K	1	Glint-Sleeve Siphoner
 K	1	Ankle Shanker
@@ -14407,7 +14460,7 @@ K	1	Sundown Pass
 K	4	Swamp
 K	1	Path to Exile
 K	1	Artisan of Kozilek
-D	isshin-two-heavens-as-one	archidekt	Upping the Average - Isshin, Two Heavens as One · 34 793 vues	https://archidekt.com/decks/2425068
+D	isshin-two-heavens-as-one	archidekt	Upping the Average - Isshin, Two Heavens as One · 34 795 vues	https://archidekt.com/decks/2425068
 K	1	Spectator Seating
 K	1	Caves of Koilos
 K	1	Battlefield Forge
@@ -14581,7 +14634,7 @@ K	1	Grab the Prize
 K	1	Sadistic Shell Game
 K	1	Sign in Blood
 K	1	Toxic Deluge
-D	valgavoth-harrower-of-souls	archidekt	Endless Punishment - Duskmourn: House of Horror Commander · 138 249 vues	https://archidekt.com/decks/9189744
+D	valgavoth-harrower-of-souls	archidekt	Endless Punishment - Duskmourn: House of Horror Commander · 138 258 vues	https://archidekt.com/decks/9189744
 K	1	Talisman of Indulgence
 K	1	Thought Vessel
 K	1	Florian, Voldaren Scion
@@ -14667,7 +14720,7 @@ K	1	Feed the Swarm
 K	1	Vial Smasher the Fierce
 K	1	Witch's Clinic
 K	1	Sol Ring
-D	valgavoth-harrower-of-souls	archidekt	CZ 630 | "Endless Punishment" Precon Upgrade · 25 963 vues	https://archidekt.com/decks/9234495
+D	valgavoth-harrower-of-souls	archidekt	CZ 630 | "Endless Punishment" Precon Upgrade · 25 964 vues	https://archidekt.com/decks/9234495
 K	1	Talisman of Indulgence
 K	1	Thought Vessel
 K	1	Florian, Voldaren Scion
@@ -14764,7 +14817,7 @@ K	1	Chandra, Awakened Inferno
 K	1	Roiling Vortex
 K	1	Tibalt's Trickery
 K	1	Emberwilde Captain
-D	valgavoth-harrower-of-souls	archidekt	Valgavoth Harrower of Souls · 18 211 vues	https://archidekt.com/decks/9230205
+D	valgavoth-harrower-of-souls	archidekt	Valgavoth Harrower of Souls · 18 212 vues	https://archidekt.com/decks/9230205
 K	1	All Will Be One
 K	1	Ankh of Mishra
 K	1	Arcane Signet
@@ -14920,7 +14973,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Season of the Burrow
 K	1	Three Visits
-D	baylen-the-haymaker	archidekt	Bracket 4- Baylen · 32 532 vues	https://archidekt.com/decks/8533377
+D	baylen-the-haymaker	archidekt	Bracket 4- Baylen · 32 535 vues	https://archidekt.com/decks/8533377
 K	1	Tempt with Bunnies
 K	1	Agate Instigator
 K	1	Ainok Strike Leader
@@ -15006,7 +15059,7 @@ K	1	Kutzil, Malamet Exemplar
 K	1	Oakhollow Village
 K	1	Ajani, Strength of the Pride
 K	1	Fountainport
-D	baylen-the-haymaker	archidekt	Haymaking Tokens · 23 030 vues	https://archidekt.com/decks/11363735
+D	baylen-the-haymaker	archidekt	Haymaking Tokens · 23 032 vues	https://archidekt.com/decks/11363735
 K	1	Castle Embereth
 K	1	Anointed Procession
 K	1	Legion Warboss
@@ -15084,7 +15137,7 @@ K	1	Song of Totentanz
 K	6	Mountain
 K	7	Forest
 K	1	Retreat to Emeria
-D	baylen-the-haymaker	archidekt	Bunny Fun Time · 21 228 vues	https://archidekt.com/decks/9319084
+D	baylen-the-haymaker	archidekt	Bunny Fun Time · 21 229 vues	https://archidekt.com/decks/9319084
 K	1	Academy Manufactor
 K	1	Akroma's Will
 K	1	Anointed Procession
@@ -15256,7 +15309,7 @@ K	1	Kodama's Reach
 K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Three Visits
-D	miirym-sentinel-wyrm	archidekt	Upping the Average - Miirym, Sentinel Wyrm · 54 954 vues	https://archidekt.com/decks/2935156
+D	miirym-sentinel-wyrm	archidekt	Upping the Average - Miirym, Sentinel Wyrm · 54 956 vues	https://archidekt.com/decks/2935156
 K	1	Ancient Copper Dragon
 K	1	Ancient Silver Dragon
 K	1	Balefire Dragon
@@ -15344,7 +15397,7 @@ K	1	Glasspool Mimic // Glasspool Shore
 K	1	Cursed Mirror
 K	1	Lurking Predators
 K	1	Bower Passage
-D	miirym-sentinel-wyrm	archidekt	Upping the Average - Miirym, Sentinel Wyrm · 38 059 vues	https://archidekt.com/decks/2891830
+D	miirym-sentinel-wyrm	archidekt	Upping the Average - Miirym, Sentinel Wyrm · 38 060 vues	https://archidekt.com/decks/2891830
 K	1	Unclaimed Territory
 K	1	Mosswort Bridge
 K	1	Glasspool Mimic // Glasspool Shore
@@ -15432,7 +15485,7 @@ K	1	Temple of the Dragon Queen
 K	3	Island
 K	7	Mountain
 K	5	Forest
-D	miirym-sentinel-wyrm	archidekt	Craig's Miirym, Sentinel Wyrm · 26 609 vues	https://archidekt.com/decks/4948730
+D	miirym-sentinel-wyrm	archidekt	Craig's Miirym, Sentinel Wyrm · 26 610 vues	https://archidekt.com/decks/4948730
 K	1	Alchemist's Refuge
 K	1	Ancient Bronze Dragon
 K	1	Bower Passage
@@ -15617,7 +15670,7 @@ K	1	Rampant Growth
 K	1	Rootcast Apprenticeship
 K	1	Shamanic Revelation
 K	1	Swarmyard Massacre
-D	chatterfang-squirrel-general	archidekt	Upping the Average - Chatterfang, Squirrel General · 42 668 vues	https://archidekt.com/decks/2181391
+D	chatterfang-squirrel-general	archidekt	Upping the Average - Chatterfang, Squirrel General · 42 669 vues	https://archidekt.com/decks/2181391
 K	1	Chatter of the Squirrel
 K	1	Sol Ring
 K	1	Overgrown Tomb
@@ -15701,7 +15754,7 @@ K	1	Dig Up
 K	1	The Meathook Massacre
 K	1	Nature's Lore
 K	1	Jadar, Ghoulcaller of Nephalia
-D	chatterfang-squirrel-general	archidekt	Upping the Average - Chatterfang, Squirrel General · 24 932 vues	https://archidekt.com/decks/2173234
+D	chatterfang-squirrel-general	archidekt	Upping the Average - Chatterfang, Squirrel General · 24 933 vues	https://archidekt.com/decks/2173234
 K	1	Gilded Goose
 K	1	Nadier's Nightblade
 K	1	Ivy Lane Denizen
@@ -15782,7 +15835,7 @@ K	1	Bojuka Bog
 K	1	Deathcap Glade
 K	1	Blood Artist
 K	1	Arcane Signet
-D	chatterfang-squirrel-general	archidekt	Chatterfang, Squirrel General · 24 651 vues	https://archidekt.com/decks/3188140
+D	chatterfang-squirrel-general	archidekt	Chatterfang, Squirrel General · 24 654 vues	https://archidekt.com/decks/3188140
 K	1	Undergrowth Stadium
 K	1	Verdant Catacombs
 K	1	Overgrown Tomb
@@ -15972,7 +16025,7 @@ K	1	Ancient Stirrings
 K	1	Rise of the Eldrazi
 K	1	Rishkar's Expertise
 K	1	Selective Obliteration
-D	ulalek-fused-atrocity	archidekt	Eldrazi Incursion - Modern Horizons 3 Commander · 99 853 vues	https://archidekt.com/decks/7858209
+D	ulalek-fused-atrocity	archidekt	Eldrazi Incursion - Modern Horizons 3 Commander · 99 861 vues	https://archidekt.com/decks/7858209
 K	1	Command Tower
 K	1	Azlask, the Swelling Scourge
 K	1	Crib Swap
@@ -16072,7 +16125,7 @@ K	1	Idol of Oblivion
 K	1	Herald's Horn
 K	1	Ugin, the Ineffable
 K	1	Hideous Taskmaster
-D	ulalek-fused-atrocity	archidekt	Jimmy's Ulalek | Game Knights #70 · 49 572 vues	https://archidekt.com/decks/7127442
+D	ulalek-fused-atrocity	archidekt	Jimmy's Ulalek | Game Knights #70 · 49 576 vues	https://archidekt.com/decks/7127442
 K	1	All Is Dust
 K	1	Bala Ged Recovery // Bala Ged Sanctuary
 K	1	Endbringer
@@ -16170,7 +16223,7 @@ K	1	Path of Annihilation
 K	1	Sowing Mycospawn
 K	1	Eldrazi Confluence
 K	1	Drowner of Truth // Drowned Jungle
-D	ulalek-fused-atrocity	archidekt	CZ 612 | "Eldrazi Incursion" Precon Upgrade · 29 364 vues	https://archidekt.com/decks/7916495
+D	ulalek-fused-atrocity	archidekt	CZ 612 | "Eldrazi Incursion" Precon Upgrade · 29 365 vues	https://archidekt.com/decks/7916495
 K	1	Swiftfoot Boots
 K	1	Conduit of Ruin
 K	1	Mutated Cultist
@@ -16371,7 +16424,7 @@ K	1	Demonic Tutor
 K	1	Reanimate
 K	1	Victimize
 K	1	Windfall
-D	hashaton-scarabs-fist	archidekt	Rachel's Hashaton | Game Knights #76 · 37 376 vues	https://archidekt.com/decks/10874739
+D	hashaton-scarabs-fist	archidekt	Rachel's Hashaton | Game Knights #76 · 37 381 vues	https://archidekt.com/decks/10874739
 K	1	Agadeem's Awakening // Agadeem, the Undercrypt
 K	1	Alabaster Host Intercessor
 K	1	Ancient Brass Dragon
@@ -16463,7 +16516,7 @@ K	1	Monument to Endurance
 K	1	Rhet-Tomb Mystic
 K	1	Riptide Gearhulk
 K	1	Shefet Archfiend
-D	hashaton-scarabs-fist	archidekt	Hashaton - Drawfee · 13 872 vues	https://archidekt.com/decks/14962123
+D	hashaton-scarabs-fist	archidekt	Hashaton - Drawfee · 13 873 vues	https://archidekt.com/decks/14962123
 K	1	Caves of Koilos
 K	1	Isolated Chapel
 K	1	Adarkar Wastes
@@ -16549,7 +16602,7 @@ K	1	Bitter Triumph
 K	1	Psychic Frog
 K	1	An Offer You Can't Refuse
 K	1	Arcane Denial
-D	hashaton-scarabs-fist	archidekt	Anti anthem - v5 · 8 789 vues	https://archidekt.com/decks/4136164
+D	hashaton-scarabs-fist	archidekt	Anti anthem - v5 · 8 790 vues	https://archidekt.com/decks/4136164
 K	1	Gideon, Ally of Zendikar
 K	1	Toxrill, the Corrosive
 K	1	Plague Engineer
@@ -16732,7 +16785,7 @@ K	1	Night's Whisper
 K	1	Revive the Shire
 K	1	The Battle of Bywater
 K	1	Toxic Deluge
-D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Food and Fellowship - Tales of Middle-earth Commander · 75 186 vues	https://archidekt.com/decks/4693977
+D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Food and Fellowship - Tales of Middle-earth Commander · 75 195 vues	https://archidekt.com/decks/4693977
 K	1	Sol Ring
 K	4	Swamp
 K	4	Plains
@@ -16818,7 +16871,7 @@ K	1	Well of Lost Dreams
 K	1	Woodfall Primus
 K	1	Woodland Cemetery
 K	1	Path to Exile
-D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Josh's LOTR Frodo & Sam | Extra Turns #47 · 34 745 vues	https://archidekt.com/decks/6539768
+D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Josh's LOTR Frodo & Sam | Extra Turns #47 · 34 746 vues	https://archidekt.com/decks/6539768
 K	1	Bilbo, Birthday Celebrant
 K	1	Access Tunnel
 K	1	Anguished Unmaking
@@ -16907,7 +16960,7 @@ K	1	Trading Post
 K	1	Treebeard, Gracious Host
 K	1	War of the Last Alliance
 K	1	Woodland Cemetery
-D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Second Breakfast - Hobbits and Food · 32 052 vues	https://archidekt.com/decks/4807732
+D	frodo-adventurous-hobbit-sam-loyal-attendant	archidekt	Second Breakfast - Hobbits and Food · 32 053 vues	https://archidekt.com/decks/4807732
 K	1	Gwaihir, Greatest of the Eagles
 K	1	Gandalf the White
 K	1	Courageous Resolve
@@ -17094,7 +17147,7 @@ K	1	Distant Melody
 K	1	Farseek
 K	1	Haunting Voyage
 K	1	Kodama's Reach
-D	ashling-the-limitless	archidekt	Dance of the Elements - Lorwyn Eclipsed Commander Deck · 93 822 vues	https://archidekt.com/decks/18744843
+D	ashling-the-limitless	archidekt	Dance of the Elements - Lorwyn Eclipsed Commander Deck · 93 833 vues	https://archidekt.com/decks/18744843
 K	1	Impulsivity
 K	1	Elemental Spectacle
 K	1	Fellwar Stone
@@ -17183,7 +17236,7 @@ K	1	Flamebraider
 K	1	Eclipsed Flamekin
 K	1	Shimmercreep
 K	1	Command Tower
-D	ashling-the-limitless	archidekt	JLK's Ashling | Game Knights #83 · 33 249 vues	https://archidekt.com/decks/17456365
+D	ashling-the-limitless	archidekt	JLK's Ashling | Game Knights #83 · 33 254 vues	https://archidekt.com/decks/17456365
 K	1	Sol Ring
 K	1	Mulldrifter
 K	1	Ashling, Rekindled // Ashling, Rimebound
@@ -17277,7 +17330,7 @@ K	1	Risen Reef
 K	1	Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight
 K	1	Omnath, Locus of Rage
 K	1	Otawara, Soaring City
-D	ashling-the-limitless	archidekt	BDD's Ashling, The Limitless Combo - Non Budget Bracket 3 · 20 247 vues	https://archidekt.com/decks/19195170
+D	ashling-the-limitless	archidekt	BDD's Ashling, The Limitless Combo - Non Budget Bracket 3 · 20 249 vues	https://archidekt.com/decks/19195170
 K	1	Earthquake Dragon
 K	1	Yargle and Multani
 K	1	Omnath, Locus of Rage
@@ -17457,7 +17510,7 @@ K	1	Explore
 K	1	Farseek
 K	1	Nature's Lore
 K	1	Rampant Growth
-D	bello-bard-of-the-brambles	archidekt	Animated Army - Bloomburrow Commander · 112 779 vues	https://archidekt.com/decks/8497473
+D	bello-bard-of-the-brambles	archidekt	Animated Army - Bloomburrow Commander · 112 789 vues	https://archidekt.com/decks/8497473
 K	1	Berserkers' Onslaught
 K	1	Big Score
 K	1	Alchemist's Talent
@@ -17541,7 +17594,7 @@ K	1	Wooded Ridgeline
 K	1	Gratuitous Violence
 K	1	Tendershoot Dryad
 K	1	Prosperous Bandit
-D	bello-bard-of-the-brambles	archidekt	CZ 622 | "Animated Army" Precon Upgrade · 35 045 vues	https://archidekt.com/decks/8529946
+D	bello-bard-of-the-brambles	archidekt	CZ 622 | "Animated Army" Precon Upgrade · 35 046 vues	https://archidekt.com/decks/8529946
 K	1	Bootleggers' Stash
 K	1	Burnished Hart
 K	1	Etali, Primal Storm
@@ -17635,7 +17688,7 @@ K	1	Aligned Hedron Network
 K	1	Molten Echoes
 K	1	Gimli's Reckless Might
 K	1	Glorious Sunrise
-D	bello-bard-of-the-brambles	archidekt	"Bello There." - Raccooni Kenobi · 28 496 vues	https://archidekt.com/decks/8820287
+D	bello-bard-of-the-brambles	archidekt	"Bello There." - Raccooni Kenobi · 28 519 vues	https://archidekt.com/decks/8820287
 K	1	Three Visits
 K	1	Llanowar Elves
 K	1	Utopia Sprawl
@@ -17901,7 +17954,7 @@ K	1	Kodama's Reach
 K	1	Raise the Palisade
 K	1	Ravenform
 K	1	Wave Goodbye
-D	hakbal-of-the-surging-soul	archidekt	Prof's Hakbal | Game Knights #66 · 87 638 vues	https://archidekt.com/decks/5485798
+D	hakbal-of-the-surging-soul	archidekt	Prof's Hakbal | Game Knights #66 · 87 641 vues	https://archidekt.com/decks/5485798
 K	1	Arcane Denial
 K	1	Barkchannel Pathway // Tidechannel Pathway
 K	1	Beast Within
@@ -17984,7 +18037,7 @@ K	1	Topography Tracker
 K	1	Tributary Instructor
 K	1	Nicanzil, Current Conductor
 K	1	Deeproot Historian
-D	hakbal-of-the-surging-soul	archidekt	Explorers of the Deep - The Lost Caverns of Ixalan Commander · 74 417 vues	https://archidekt.com/decks/5775230
+D	hakbal-of-the-surging-soul	archidekt	Explorers of the Deep - The Lost Caverns of Ixalan Commander · 74 425 vues	https://archidekt.com/decks/5775230
 K	1	Commit // Memory
 K	1	Aetherize
 K	1	Arcane Signet
@@ -18066,7 +18119,7 @@ K	1	Tishana, Voice of Thunder
 K	1	Unclaimed Territory
 K	1	Vineglimmer Snarl
 K	1	Vorel of the Hull Clade
-D	hakbal-of-the-surging-soul	archidekt	CZ 573 | "Explorers of the Deep" Precon Upgrade · 34 883 vues	https://archidekt.com/decks/5823771
+D	hakbal-of-the-surging-soul	archidekt	CZ 573 | "Explorers of the Deep" Precon Upgrade · 34 885 vues	https://archidekt.com/decks/5823771
 K	1	Cold-Eyed Selkie
 K	1	Command Tower
 K	1	Deeproot Elite
@@ -18246,7 +18299,7 @@ K	1	Farseek
 K	1	Life from the Loam
 K	1	Reanimate
 K	1	Victimize
-D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide Redux · 44 480 vues	https://archidekt.com/decks/2223923
+D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide Redux · 44 481 vues	https://archidekt.com/decks/2223923
 K	1	Swiftfoot Boots
 K	1	Wayfarer's Bauble
 K	1	High Market
@@ -18336,7 +18389,7 @@ K	1	World Shaper
 K	1	Pernicious Deed
 K	1	Woodland Cemetery
 K	1	Hinterland Harbor
-D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide Redux · 24 682 vues	https://archidekt.com/decks/2217026
+D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide Redux · 24 683 vues	https://archidekt.com/decks/2217026
 K	1	Hinterland Harbor
 K	1	Woodland Cemetery
 K	1	Pernicious Deed
@@ -18425,7 +18478,7 @@ K	1	Rod of Absorption
 K	1	Sunken Hollow
 K	1	Windfall
 K	1	Command Tower
-D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide · 20 970 vues	https://archidekt.com/decks/477878
+D	muldrotha-the-gravetide	archidekt	Upping the Average - Muldrotha, the Gravetide · 20 971 vues	https://archidekt.com/decks/477878
 K	1	Hinterland Harbor
 K	1	Phyrexian Scriptures
 K	1	Woodland Cemetery
@@ -18599,7 +18652,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Shamanic Revelation
 K	1	Three Visits
-D	rin-and-seri-inseparable	archidekt	Raining Cats and Dogs - Secret Lair Drop · 59 214 vues	https://archidekt.com/decks/6584319
+D	rin-and-seri-inseparable	archidekt	Raining Cats and Dogs - Secret Lair Drop · 59 218 vues	https://archidekt.com/decks/6584319
 K	1	Alms Collector
 K	1	Animal Sanctuary
 K	1	Arcane Signet
@@ -18680,7 +18733,7 @@ K	1	Anointed Procession
 K	1	Sol Ring
 K	10	Plains
 K	7	Forest
-D	rin-and-seri-inseparable	archidekt	Upping the Average - Rin and Seri, Inseparable · 53 348 vues	https://archidekt.com/decks/653916
+D	rin-and-seri-inseparable	archidekt	Upping the Average - Rin and Seri, Inseparable · 53 349 vues	https://archidekt.com/decks/653916
 K	1	Whitemane Lion
 K	1	Rootbound Crag
 K	1	Sunpetal Grove
@@ -18771,7 +18824,7 @@ K	1	Camaraderie
 K	1	Felidar Retreat
 K	1	Austere Command
 K	1	Cleansing Nova
-D	rin-and-seri-inseparable	archidekt	Olivia's Rin and Seri | Extra Turns #36 · 29 791 vues	https://archidekt.com/decks/4793200
+D	rin-and-seri-inseparable	archidekt	Olivia's Rin and Seri | Extra Turns #36 · 29 793 vues	https://archidekt.com/decks/4793200
 K	1	Adorned Pouncer
 K	1	Aetherflux Reservoir
 K	1	Alms Collector
@@ -18944,7 +18997,7 @@ K	1	Rampant Growth
 K	1	Reanimate
 K	1	Three Visits
 K	1	Toxic Deluge
-D	glarb-calamitys-augur	archidekt	JLK's Glarb | Game Knights Live: Gen Con 2024 · 21 599 vues	https://archidekt.com/decks/7856702
+D	glarb-calamitys-augur	archidekt	JLK's Glarb | Game Knights Live: Gen Con 2024 · 21 605 vues	https://archidekt.com/decks/7856702
 K	1	Bala Ged Recovery // Bala Ged Sanctuary
 K	1	Lumra, Bellow of the Woods
 K	1	Ponder
@@ -19035,7 +19088,7 @@ K	1	Wonder
 K	1	Dig Through Time
 K	1	Fecund Greenshell
 K	1	Twenty-Toed Toad
-D	glarb-calamitys-augur	archidekt	Fully Fledged Froggos [Bracket 3] · 12 152 vues	https://archidekt.com/decks/13386645
+D	glarb-calamitys-augur	archidekt	Fully Fledged Froggos [Bracket 3] · 12 154 vues	https://archidekt.com/decks/13386645
 K	1	Yavimaya Coast
 K	1	Three Tree Scribe
 K	1	Psychic Frog
@@ -19130,7 +19183,7 @@ K	1	Dark Ritual
 K	1	Assassin's Trophy
 K	1	Rapid Hybridization
 K	1	Fortune Teller's Talent
-D	glarb-calamitys-augur	archidekt	Glarb in all his Glory [Bracket 4] · 10 990 vues	https://archidekt.com/decks/13372945
+D	glarb-calamitys-augur	archidekt	Glarb in all his Glory [Bracket 4] · 10 992 vues	https://archidekt.com/decks/13372945
 K	1	Reanimate
 K	1	Vampiric Tutor
 K	1	Consecrated Sphinx
@@ -19316,7 +19369,7 @@ K	1	Cultivate
 K	1	Farseek
 K	1	Kodama's Reach
 K	1	Rampant Growth
-D	animar-soul-of-elements	archidekt	Eldrazi POPS - Animar · 24 389 vues	https://archidekt.com/decks/63860
+D	animar-soul-of-elements	archidekt	Eldrazi POPS - Animar · 24 391 vues	https://archidekt.com/decks/63860
 K	1	Llanowar Elves
 K	1	Consecrated Sphinx
 K	1	Mana Drain
@@ -19445,7 +19498,7 @@ K	1	Birds of Paradise
 K	1	Ugin's Conjurant
 K	1	Terrasymbiosis
 K	1	Fauna Shaman
-D	animar-soul-of-elements	archidekt	$100 Budget Artifact Creature Storm - BathroomBrews · 20 741 vues	https://archidekt.com/decks/4376583
+D	animar-soul-of-elements	archidekt	$100 Budget Artifact Creature Storm - BathroomBrews · 20 742 vues	https://archidekt.com/decks/4376583
 K	4	Island
 K	7	Forest
 K	1	Abundance
@@ -19535,7 +19588,7 @@ K	1	Fabricate
 K	1	Foundry Inspector
 K	1	Frontier Bivouac
 K	2	Mountain
-D	animar-soul-of-elements	archidekt	Jimmy's Animar-Morph | Game Knights #16 · 14 067 vues	https://archidekt.com/decks/4663797
+D	animar-soul-of-elements	archidekt	Jimmy's Animar-Morph | Game Knights #16 · 14 070 vues	https://archidekt.com/decks/4663797
 K	1	Ainok Survivalist
 K	1	Akroma, Angel of Fury
 K	1	Birds of Paradise
@@ -19715,7 +19768,7 @@ K	1	Rampant Growth
 K	1	Supreme Verdict
 K	1	Taunt from the Rampart
 K	1	Three Visits
-D	aragorn-the-uniter	archidekt	Aragorn, The Uniter Spellslinger Deck Bracket 2/3 · 32 270 vues	https://archidekt.com/decks/12909909
+D	aragorn-the-uniter	archidekt	Aragorn, The Uniter Spellslinger Deck Bracket 2/3 · 32 274 vues	https://archidekt.com/decks/12909909
 K	1	Annie Joins Up
 K	1	Arcane Infusion
 K	1	Arid Mesa
@@ -19815,7 +19868,7 @@ K	1	Keen Sense
 K	1	Vivi Ornitier
 K	1	Spider Manifestation
 K	1	Boros Charm
-D	aragorn-the-uniter	archidekt	2 Fast 2 Furious · 18 240 vues	https://archidekt.com/decks/10500914
+D	aragorn-the-uniter	archidekt	2 Fast 2 Furious · 18 241 vues	https://archidekt.com/decks/10500914
 K	1	Adeline, Resplendent Cathar
 K	1	Akroma's Will
 K	1	Alistair, the Brigadier
@@ -19902,7 +19955,7 @@ K	1	Three Visits
 K	1	Trace of Abundance
 K	1	Warleader's Call
 K	1	Wooded Foothills
-D	aragorn-the-uniter	archidekt	Aragorn, the Uniter (LotR Only) · 15 115 vues	https://archidekt.com/decks/4852540
+D	aragorn-the-uniter	archidekt	Aragorn, the Uniter (LotR Only) · 15 116 vues	https://archidekt.com/decks/4852540
 K	1	Tranquil Cove
 K	1	Wind-Scarred Crag
 K	1	Terramorphic Expanse
@@ -20074,7 +20127,7 @@ K	1	Farseek
 K	1	Fell the Mighty
 K	1	Rampant Growth
 K	1	Slaughter the Strong
-D	arcades-the-strategist	archidekt	Upping the Average - Arcades, the Strategist · 59 117 vues	https://archidekt.com/decks/1234196
+D	arcades-the-strategist	archidekt	Upping the Average - Arcades, the Strategist · 59 121 vues	https://archidekt.com/decks/1234196
 K	1	Hinterland Harbor
 K	1	Tetsuko Umezawa, Fugitive
 K	1	Wall of Roots
@@ -20161,7 +20214,7 @@ K	1	Sakura-Tribe Elder
 K	1	Portcullis Vine
 K	1	Arcane Signet
 K	1	Swiftfoot Boots
-D	arcades-the-strategist	archidekt	Taalia's Arcades | Extra Turns #34 · 20 550 vues	https://archidekt.com/decks/4664217
+D	arcades-the-strategist	archidekt	Taalia's Arcades | Extra Turns #34 · 20 551 vues	https://archidekt.com/decks/4664217
 K	1	Crashing Drawbridge
 K	1	Crenellated Wall
 K	1	Dragon's Eye Sentry
@@ -20257,7 +20310,7 @@ K	1	Farseek
 K	1	Retribution of the Meek
 K	1	Slaughter the Strong
 K	1	Three Visits
-D	arcades-the-strategist	archidekt	Arcades, The Strategist - Walls Aggro · 17 160 vues	https://archidekt.com/decks/5739658
+D	arcades-the-strategist	archidekt	Arcades, The Strategist - Walls Aggro · 17 161 vues	https://archidekt.com/decks/5739658
 K	1	Deep Freeze
 K	1	Perimeter Captain
 K	1	Crashing Drawbridge
@@ -20428,7 +20481,7 @@ K	1	Pest Infestation
 K	1	Rampant Growth
 K	1	Season of Gathering
 K	1	Toxic Deluge
-D	ygra-eater-of-all	archidekt	Cat Food · 14 788 vues	https://archidekt.com/decks/8345111
+D	ygra-eater-of-all	archidekt	Cat Food · 14 789 vues	https://archidekt.com/decks/8345111
 K	1	Bojuka Bog
 K	1	Phyrexian Tower
 K	1	Witch's Oven
@@ -20518,7 +20571,7 @@ K	1	Season of Gathering
 K	1	Primal Growth
 K	10	Swamp
 K	1	Rampant Growth
-D	ygra-eater-of-all	archidekt	Snackrifice - Ygra, Eater of All Deck - Midnight Snack · 13 300 vues	https://archidekt.com/decks/8959885
+D	ygra-eater-of-all	archidekt	Snackrifice - Ygra, Eater of All Deck - Midnight Snack · 13 304 vues	https://archidekt.com/decks/8959885
 K	1	Academy Manufactor
 K	1	Arcbound Ravager
 K	1	Bane of Progress
@@ -20605,7 +20658,7 @@ K	1	Verdant Catacombs
 K	1	Witch's Clinic
 K	1	Woodland Cemetery
 K	1	Yavimaya, Cradle of Growth
-D	ygra-eater-of-all	archidekt	Ygra, Eater of All - Creature Control · 13 115 vues	https://archidekt.com/decks/8460360
+D	ygra-eater-of-all	archidekt	Ygra, Eater of All - Creature Control · 13 117 vues	https://archidekt.com/decks/8460360
 K	1	Rogue's Passage
 K	1	Fleshbag Marauder
 K	1	Season of Gathering
@@ -20793,7 +20846,7 @@ K	1	Reckless Endeavor
 K	1	Recruitment Drive
 K	1	Ruinous Ultimatum
 K	1	Thunderwave
-D	mr-house-president-and-ceo	archidekt	House Always Wins · 183 020 vues	https://archidekt.com/decks/7097093
+D	mr-house-president-and-ceo	archidekt	House Always Wins · 183 038 vues	https://archidekt.com/decks/7097093
 K	1	Academy Manufactor
 K	1	Arcane Signet
 K	1	Ash Barrens
@@ -20882,7 +20935,7 @@ K	1	Windbrisk Heights
 K	1	Wyll, Blade of Frontiers
 K	1	Wyll's Reversal
 K	1	Xorn
-D	mr-house-president-and-ceo	archidekt	BYOP Mr House · 63 058 vues	https://archidekt.com/decks/7097104
+D	mr-house-president-and-ceo	archidekt	BYOP Mr House · 63 061 vues	https://archidekt.com/decks/7097104
 K	1	Arcane Signet
 K	1	Ash Barrens
 K	1	Attempted Murder
@@ -20970,7 +21023,7 @@ K	1	Vexing Puzzlebox
 K	1	Wyll, Blade of Frontiers
 K	1	Wyll's Reversal
 K	1	Xenosquirrels
-D	mr-house-president-and-ceo	archidekt	Cut-Rate Commander | Mr. House, President and CEO · 25 884 vues	https://archidekt.com/decks/7007979
+D	mr-house-president-and-ceo	archidekt	Cut-Rate Commander | Mr. House, President and CEO · 25 885 vues	https://archidekt.com/decks/7007979
 K	1	Brazen Dwarf
 K	1	Dockside Chef
 K	1	Lightfoot Rogue
@@ -21139,7 +21192,7 @@ K	1	Nature's Lore
 K	1	Notorious Throng
 K	1	Stolen by the Fae
 K	1	Three Visits
-D	maralen-fae-ascendant	archidekt	Maralen, Fae Ascendant - Budget · 15 161 vues	https://archidekt.com/decks/18831181
+D	maralen-fae-ascendant	archidekt	Maralen, Fae Ascendant - Budget · 15 164 vues	https://archidekt.com/decks/18831181
 K	1	Obyra, Dreaming Duelist
 K	1	Llanowar Elves
 K	1	Maraleaf Pixie
@@ -21223,7 +21276,7 @@ K	1	Run Away Together
 K	1	Champions of the Perfect
 K	1	Flitterwing Nuisance
 K	1	Exotic Orchard
-D	maralen-fae-ascendant	archidekt	Maralen: Elf & Faerie Tribal · 11 113 vues	https://archidekt.com/decks/5311494
+D	maralen-fae-ascendant	archidekt	Maralen: Elf & Faerie Tribal · 11 115 vues	https://archidekt.com/decks/5311494
 K	1	Archmage of Echoes
 K	1	Glen Elendra Archmage
 K	1	Kindred Discovery
@@ -21326,7 +21379,7 @@ K	1	Selvala, Heart of the Wilds
 K	1	Gwenna, Eyes of Gaea
 K	1	Moonshae Pixie // Pixie Dust
 K	3	Pirate
-D	maralen-fae-ascendant	archidekt	Maralen, Fae Ascendant · 7 641 vues	https://archidekt.com/decks/5551557
+D	maralen-fae-ascendant	archidekt	Maralen, Fae Ascendant · 7 642 vues	https://archidekt.com/decks/5551557
 K	1	Reliquary Tower
 K	1	Arcane Signet
 K	1	Command Tower
@@ -21509,7 +21562,7 @@ K	1	Sevinne's Reclamation
 K	1	Splendid Reclamation
 K	1	Three Visits
 K	1	Toxic Deluge
-D	the-necrobloom	archidekt	Necrobloomin’ that Gitrog Pack · 15 613 vues	https://archidekt.com/decks/7710340
+D	the-necrobloom	archidekt	Necrobloomin’ that Gitrog Pack · 15 614 vues	https://archidekt.com/decks/7710340
 K	1	Splendid Reclamation
 K	1	The Gitrog Monster
 K	1	Realms Uncharted
@@ -21607,7 +21660,7 @@ K	1	Damn
 K	1	Clever Concealment
 K	1	Azusa, Lost but Seeking
 K	1	Mirari's Wake
-D	the-necrobloom	archidekt	The Necrobloom · 15 373 vues	https://archidekt.com/decks/7785854
+D	the-necrobloom	archidekt	The Necrobloom · 15 374 vues	https://archidekt.com/decks/7785854
 K	1	Druid Class
 K	1	Lotus Cobra
 K	1	Azusa, Lost but Seeking
@@ -21709,7 +21762,7 @@ K	1	Scapeshift
 K	1	Assassin's Trophy
 K	1	Vesuva
 K	1	Ob Nixilis, the Fallen
-D	the-necrobloom	archidekt	Plant Parenthood · 12 886 vues	https://archidekt.com/decks/9052559
+D	the-necrobloom	archidekt	Plant Parenthood · 12 888 vues	https://archidekt.com/decks/9052559
 K	2	Treasure
 K	2	Food
 K	1	Sevinne's Reclamation
@@ -21908,7 +21961,7 @@ K	1	Heroic Reinforcements
 K	1	Hour of Reckoning
 K	1	Martial Coup
 K	1	Ruinous Ultimatum
-D	caesar-legions-emperor	archidekt	Hail, Caesar - Fallout · 78 591 vues	https://archidekt.com/decks/6821707
+D	caesar-legions-emperor	archidekt	Hail, Caesar - Fallout · 78 599 vues	https://archidekt.com/decks/6821707
 K	1	Ash Barrens
 K	1	Bastion of Remembrance
 K	1	Battle of Hoover Dam
@@ -21997,7 +22050,7 @@ K	1	Memorial to Glory
 K	1	Nomad Outpost
 K	1	Path of Ancestry
 K	1	Anguished Unmaking
-D	caesar-legions-emperor	archidekt	Hail, Caesar | Precon Upgrade · 28 881 vues	https://archidekt.com/decks/6843594
+D	caesar-legions-emperor	archidekt	Hail, Caesar | Precon Upgrade · 28 883 vues	https://archidekt.com/decks/6843594
 K	1	Gary Clone
 K	1	General's Enforcer
 K	1	Elas il-Kor, Sadistic Pilgrim
@@ -22086,7 +22139,7 @@ K	1	Loyal Apprentice
 K	1	Path to Exile
 K	1	Cruel Celebrant
 K	1	Horn of Gondor
-D	caesar-legions-emperor	archidekt	Caesar's Gang · 25 552 vues	https://archidekt.com/decks/15498342
+D	caesar-legions-emperor	archidekt	Caesar's Gang · 25 555 vues	https://archidekt.com/decks/15498342
 K	1	Solphim, Mayhem Dominus
 K	1	Torbran, Thane of Red Fell
 K	1	Falkenrath Noble
@@ -22254,7 +22307,7 @@ K	1	Rampant Growth
 K	1	Strike It Rich
 K	1	Summer Bloom
 K	1	Three Visits
-D	flubs-the-fool	archidekt	Ten Mana · 36 367 vues	https://archidekt.com/decks/15114910
+D	flubs-the-fool	archidekt	Ten Mana · 36 369 vues	https://archidekt.com/decks/15114910
 K	1	Shivan Reef
 K	1	Frontier Bivouac
 K	1	Yavimaya Coast
@@ -22328,7 +22381,7 @@ K	1	Ulamog, the Infinite Gyre
 K	1	Bountiful Landscape
 K	1	Sheltered Thicket
 K	1	Lonely Sandbar
-D	flubs-the-fool	archidekt	Where am I going, and how don't I get there? · 27 552 vues	https://archidekt.com/decks/11363581
+D	flubs-the-fool	archidekt	Where am I going, and how don't I get there? · 27 557 vues	https://archidekt.com/decks/11363581
 K	1	Lotus Cobra
 K	1	Mind Stone
 K	1	Talisman of Impulse
@@ -22401,7 +22454,7 @@ K	1	Sabotender
 K	1	Omnath, Locus of Rage
 K	1	Chocobo Racetrack
 K	1	Craterhoof Behemoth
-D	flubs-the-fool	archidekt	Flubs the Fool · 22 661 vues	https://archidekt.com/decks/8364353
+D	flubs-the-fool	archidekt	Flubs the Fool · 22 665 vues	https://archidekt.com/decks/8364353
 K	1	Exploration
 K	1	Azusa, Lost but Seeking
 K	1	Anje's Ravager
@@ -22577,7 +22630,7 @@ K	1	Reanimate
 K	1	Toxic Deluge
 K	1	Victimize
 K	1	Zombie Apocalypse
-D	wilhelt-the-rotcleaver	archidekt	Upping the Average - Wilhelt, the Rotcleaver · 90 123 vues	https://archidekt.com/decks/1904544
+D	wilhelt-the-rotcleaver	archidekt	Upping the Average - Wilhelt, the Rotcleaver · 90 124 vues	https://archidekt.com/decks/1904544
 K	1	Vengeful Dead
 K	1	Noosegraf Mob
 K	1	Lazotep Plating
@@ -22659,7 +22712,7 @@ K	1	Temple of Deceit
 K	1	Unclaimed Territory
 K	1	Ghouls' Night Out
 K	1	Poppet Stitcher // Poppet Factory
-D	wilhelt-the-rotcleaver	archidekt	Wilhelter Skelter · 82 472 vues	https://archidekt.com/decks/1909492
+D	wilhelt-the-rotcleaver	archidekt	Wilhelter Skelter · 82 479 vues	https://archidekt.com/decks/1909492
 K	1	Dimir Aqueduct
 K	1	Path of Ancestry
 K	1	Drowned Catacomb
@@ -22753,7 +22806,7 @@ K	1	Deadly Dispute
 K	1	Night's Whisper
 K	1	Midgar, City of Mako // Reactor Raid
 K	3	Island
-D	wilhelt-the-rotcleaver	archidekt	Wilhelt, the Rotcleaver Bracket 4 Optimized Zombie Tribal Deck - Arthas Mijo [Primer] · 45 231 vues	https://archidekt.com/decks/5072301
+D	wilhelt-the-rotcleaver	archidekt	Wilhelt, the Rotcleaver Bracket 4 Optimized Zombie Tribal Deck - Arthas Mijo [Primer] · 45 236 vues	https://archidekt.com/decks/5072301
 K	1	Culling the Weak
 K	1	Unholy Grotto
 K	1	Sol Ring
@@ -23018,7 +23071,7 @@ K	1	Farewell
 K	1	Fumigate
 K	1	Supreme Verdict
 K	1	Toxic Deluge
-D	oloro-ageless-ascetic	archidekt	Oloro · 19 427 vues	https://archidekt.com/decks/77022
+D	oloro-ageless-ascetic	archidekt	Oloro · 19 431 vues	https://archidekt.com/decks/77022
 K	1	Isolated Chapel
 K	1	Drowned Catacomb
 K	1	Prairie Stream
@@ -23109,7 +23162,7 @@ K	1	Indulging Patrician
 K	1	Laboratory Maniac
 K	1	Drogskol Reaver
 K	1	Starscape Cleric
-D	oloro-ageless-ascetic	archidekt	Eternal Bargain - Commander 2013 · 17 085 vues	https://archidekt.com/decks/2209161
+D	oloro-ageless-ascetic	archidekt	Eternal Bargain - Commander 2013 · 17 087 vues	https://archidekt.com/decks/2209161
 K	1	Ajani's Pridemate
 K	1	Augury Adept
 K	1	Azorius Herald
@@ -23188,7 +23241,7 @@ K	1	Springjack Pasture
 K	9	Swamp
 K	1	Temple of the False God
 K	1	Transguild Promenade
-D	oloro-ageless-ascetic	archidekt	Gaurav's Oloro | Extra Turns #20 · 13 018 vues	https://archidekt.com/decks/4664056
+D	oloro-ageless-ascetic	archidekt	Gaurav's Oloro | Extra Turns #20 · 13 019 vues	https://archidekt.com/decks/4664056
 K	3	Swamp
 K	1	Command Tower
 K	1	Dismal Backwater
@@ -23373,7 +23426,7 @@ K	1	Fabricate
 K	1	Organic Extinction
 K	1	Thoughtcast
 K	1	Wake the Past
-D	breya-etherium-shaper	archidekt	Secret Commander - Cosmanut Marcus · 31 935 vues	https://archidekt.com/decks/4486418
+D	breya-etherium-shaper	archidekt	Secret Commander - Cosmanut Marcus · 31 936 vues	https://archidekt.com/decks/4486418
 K	1	Sol Ring
 K	2	Swamp
 K	1	Watery Grave
@@ -23462,7 +23515,7 @@ K	1	Flamewar, Brash Veteran // Flamewar, Streetwise Operative
 K	1	Talisman of Hierarchy
 K	1	Cultivator's Caravan
 K	1	Reverse Engineer
-D	breya-etherium-shaper	archidekt	Breya 2.0 · 30 227 vues	https://archidekt.com/decks/5844763
+D	breya-etherium-shaper	archidekt	Breya 2.0 · 30 228 vues	https://archidekt.com/decks/5844763
 K	1	Efficient Construction
 K	1	Emry, Lurker of the Loch
 K	1	Enlightened Tutor
@@ -23562,7 +23615,7 @@ K	1	Scourglass
 K	1	Sculpting Steel
 K	1	Sea of Clouds
 K	1	Seat of the Synod
-D	breya-etherium-shaper	archidekt	Breya Living in a Thopter Paradise · 22 363 vues	https://archidekt.com/decks/3802180
+D	breya-etherium-shaper	archidekt	Breya Living in a Thopter Paradise · 22 364 vues	https://archidekt.com/decks/3802180
 K	1	Spectator Seating
 K	1	Command Tower
 K	1	Glacial Fortress
@@ -23750,7 +23803,7 @@ K	1	Migration Path
 K	1	Nature's Lore
 K	1	Selvala's Stampede
 K	1	Will of the Temur
-D	ureni-of-the-unwritten	archidekt	CZ 665 | "Temur Roar" Precon Upgrade · 20 294 vues	https://archidekt.com/decks/12128297
+D	ureni-of-the-unwritten	archidekt	CZ 665 | "Temur Roar" Precon Upgrade · 20 296 vues	https://archidekt.com/decks/12128297
 K	1	Deceptive Frostkite
 K	1	Hammerhead Tyrant
 K	1	Will of the Temur
@@ -23849,7 +23902,7 @@ K	1	Dragonhawk, Fate's Tempest
 K	1	Cavern-Hoard Dragon
 K	1	Kiora, Behemoth Beckoner
 K	1	Lightning Greaves
-D	ureni-of-the-unwritten	archidekt	Ureni dragon tribal · 14 182 vues	https://archidekt.com/decks/12004291
+D	ureni-of-the-unwritten	archidekt	Ureni dragon tribal · 14 190 vues	https://archidekt.com/decks/12004291
 K	1	Talisman of Creativity
 K	1	Temur Battlecrier
 K	4	Dragon
@@ -23950,7 +24003,7 @@ K	1	Lathliss, Dragon Queen
 K	3	Forest
 K	1	Commercial District
 K	1	Bonders' Enclave
-D	ureni-of-the-unwritten	archidekt	Ureni, Harbinger of Dragons · 11 278 vues	https://archidekt.com/decks/12524511
+D	ureni-of-the-unwritten	archidekt	Ureni, Harbinger of Dragons · 11 279 vues	https://archidekt.com/decks/12524511
 K	1	Atarka, World Render
 K	1	Goldspan Dragon
 K	1	Hinterland Harbor
@@ -24122,7 +24175,7 @@ K	1	Reanimate
 K	1	Rise of the Witch-king
 K	1	Toxic Deluge
 K	1	Victimize
-D	meren-of-clan-nel-toth	archidekt	Death is the Only Way to Live · 107 589 vues	https://archidekt.com/decks/4033
+D	meren-of-clan-nel-toth	archidekt	Death is the Only Way to Live · 107 592 vues	https://archidekt.com/decks/4033
 K	1	Merciless Executioner
 K	1	Zulaport Cutthroat
 K	1	Darkbore Pathway // Slitherbore Pathway
@@ -24210,7 +24263,7 @@ K	1	Foundation Breaker
 K	1	Druid of Purification
 K	1	Fell Stinger
 K	1	Liquimetal Torque
-D	meren-of-clan-nel-toth	archidekt	Upping the Average - Meren of Clan Nel Toth · 47 651 vues	https://archidekt.com/decks/1017047
+D	meren-of-clan-nel-toth	archidekt	Upping the Average - Meren of Clan Nel Toth · 47 653 vues	https://archidekt.com/decks/1017047
 K	1	Woodland Cemetery
 K	1	Living Death
 K	1	Journey to Eternity // Atzal, Cave of Eternity
@@ -24294,7 +24347,7 @@ K	1	Beast Within
 K	1	Reclamation Sage
 K	6	Forest
 K	1	Animate Dead
-D	meren-of-clan-nel-toth	archidekt	Meren of Clan Nel Toth - Bracket 3 · 25 261 vues	https://archidekt.com/decks/9298397
+D	meren-of-clan-nel-toth	archidekt	Meren of Clan Nel Toth - Bracket 3 · 25 265 vues	https://archidekt.com/decks/9298397
 K	1	Icetill Explorer
 K	1	Umbral Collar Zealot
 K	1	Wight of the Reliquary
@@ -24466,7 +24519,7 @@ K	1	Hordeling Outburst
 K	1	Raise the Past
 K	1	Song of Totentanz
 K	1	The Battle of Bywater
-D	arabella-abandoned-doll	archidekt	Uncommon Fear · 49 138 vues	https://archidekt.com/decks/9464414
+D	arabella-abandoned-doll	archidekt	Uncommon Fear · 49 140 vues	https://archidekt.com/decks/9464414
 K	1	Loreseeker's Stone
 K	1	Valorous Stance
 K	1	Conclave Tribunal
@@ -24543,7 +24596,7 @@ K	1	Deserter's Disciple
 K	1	Team Avatar
 K	1	Borrowed Knowledge
 K	1	Weftstalker Ardent
-D	arabella-abandoned-doll	archidekt	Arabella, Abandoned Doll - Conjuring an Army · 14 592 vues	https://archidekt.com/decks/9250499
+D	arabella-abandoned-doll	archidekt	Arabella, Abandoned Doll - Conjuring an Army · 14 593 vues	https://archidekt.com/decks/9250499
 K	1	Access Tunnel
 K	1	Akroma's Will
 K	1	Anim Pakal, Thousandth Moon
@@ -24625,7 +24678,7 @@ K	1	Wand of the Worldsoul
 K	1	Welcoming Vampire
 K	1	White Sun's Twilight
 K	9	Mountain
-D	arabella-abandoned-doll	archidekt	Arabella, Abandoned Doll · 13 425 vues	https://archidekt.com/decks/9144492
+D	arabella-abandoned-doll	archidekt	Arabella, Abandoned Doll · 13 427 vues	https://archidekt.com/decks/9144492
 K	1	Loyal Apprentice
 K	1	Esper Sentinel
 K	1	Deserter's Disciple
@@ -24797,7 +24850,7 @@ K	1	Finale of Devastation
 K	1	Green Sun's Zenith
 K	1	Nature's Rhythm
 K	1	Transmute Artifact
-D	kinnan-bonder-prodigy	archidekt	Higher's cEDH Kinnan | Extra Turns #46 · 25 810 vues	https://archidekt.com/decks/6541122
+D	kinnan-bonder-prodigy	archidekt	Higher's cEDH Kinnan | Extra Turns #46 · 25 813 vues	https://archidekt.com/decks/6541122
 K	1	Kogla, the Titan Ape
 K	1	Ancient Tomb
 K	1	Apex Altisaur
@@ -24897,7 +24950,7 @@ K	1	Waterlogged Grove
 K	1	Worldly Tutor
 K	1	Yavimaya Coast
 K	1	Tropical Island
-D	kinnan-bonder-prodigy	archidekt	Kinnan - Knuckle Train to Fist Planet - Primal Surge. · 11 451 vues	https://archidekt.com/decks/1454339
+D	kinnan-bonder-prodigy	archidekt	Kinnan - Knuckle Train to Fist Planet - Primal Surge. · 11 452 vues	https://archidekt.com/decks/1454339
 K	1	Arcane Signet
 K	1	Fellwar Stone
 K	1	Flooded Grove
@@ -24972,7 +25025,7 @@ K	1	Silverback Elder
 K	1	Saryth, the Viper's Fang
 K	1	Flayer of Loyalties
 K	1	Destiny Spinner
-D	kinnan-bonder-prodigy	archidekt	The Top 5 cEDH Decks for Beginners - Kinnan, Bonder Prodigy by TwAnG · 7 833 vues	https://archidekt.com/decks/6676577
+D	kinnan-bonder-prodigy	archidekt	The Top 5 cEDH Decks for Beginners - Kinnan, Bonder Prodigy by TwAnG · 7 834 vues	https://archidekt.com/decks/6676577
 K	1	Aboleth Spawn
 K	1	Birds of Paradise
 K	1	Bloom Tender
@@ -25155,7 +25208,7 @@ K	1	Reanimate
 K	1	Rite of Oblivion
 K	1	Toxic Deluge
 K	1	Victimize
-D	teysa-karlov	archidekt	Upping the Average - Teysa Karlov · 43 574 vues	https://archidekt.com/decks/618507
+D	teysa-karlov	archidekt	Upping the Average - Teysa Karlov · 43 575 vues	https://archidekt.com/decks/618507
 K	1	Isolated Chapel
 K	1	Pitiless Plunderer
 K	1	Tainted Field
@@ -25237,7 +25290,7 @@ K	6	Plains
 K	1	Blood Artist
 K	14	Swamp
 K	1	Falkenrath Noble
-D	teysa-karlov	archidekt	Teysa Karlov · 29 691 vues	https://archidekt.com/decks/4244878
+D	teysa-karlov	archidekt	Teysa Karlov · 29 692 vues	https://archidekt.com/decks/4244878
 K	1	Bleachbone Verge
 K	1	Hallowed Spiritkeeper
 K	1	Teysa, Orzhov Scion
@@ -25330,7 +25383,7 @@ K	1	Victimize
 K	1	Midnight Reaper
 K	1	Emeritus of Woe // Demonic Tutor
 K	1	The One Ring
-D	teysa-karlov	archidekt	Teysa Karlov · 25 673 vues	https://archidekt.com/decks/2753281
+D	teysa-karlov	archidekt	Teysa Karlov · 25 675 vues	https://archidekt.com/decks/2753281
 K	1	Helm of the Host
 K	1	Isolated Chapel
 K	1	Whisper, Blood Liturgist
@@ -25506,7 +25559,7 @@ K	1	Farewell
 K	1	Farseek
 K	1	Promise of Loyalty
 K	1	Three Visits
-D	tidus-yunas-guardian	archidekt	Counter Blitz - Final Fantasy Commander · 128 665 vues	https://archidekt.com/decks/13107079
+D	tidus-yunas-guardian	archidekt	Counter Blitz - Final Fantasy Commander · 128 680 vues	https://archidekt.com/decks/13107079
 K	1	Altered Ego
 K	1	An Offer You Can't Refuse
 K	1	Arcane Signet
@@ -25600,7 +25653,7 @@ K	1	Yuna, Grand Summoner
 K	1	Sol Ring
 K	3	Island
 K	3	Plains
-D	tidus-yunas-guardian	archidekt	FFX Counter Blitz | $30 Upgrade · 29 813 vues	https://archidekt.com/decks/13327814
+D	tidus-yunas-guardian	archidekt	FFX Counter Blitz | $30 Upgrade · 29 826 vues	https://archidekt.com/decks/13327814
 K	1	Walking Ballista
 K	1	Grateful Apparition
 K	1	Gyre Sage
@@ -25694,7 +25747,7 @@ K	1	District Mascot
 K	1	Ingenious Prodigy
 K	1	Guildpact Informant
 K	1	Crystalline Giant
-D	tidus-yunas-guardian	archidekt	Tidus · 29 569 vues	https://archidekt.com/decks/13151743
+D	tidus-yunas-guardian	archidekt	Tidus · 29 572 vues	https://archidekt.com/decks/13151743
 K	1	Yavimaya Coast
 K	1	Dreamtide Whale
 K	1	Slippery Bogbonder
@@ -25877,7 +25930,7 @@ K	1	Ugin, the Ineffable
 K	1	All Is Dust
 K	1	Calamity of the Titans
 K	1	Rise of the Eldrazi
-D	zhulodok-void-gorger	archidekt	Eldrazi Unbound - Commander Masters · 90 326 vues	https://archidekt.com/decks/4973732
+D	zhulodok-void-gorger	archidekt	Eldrazi Unbound - Commander Masters · 90 340 vues	https://archidekt.com/decks/4973732
 K	1	Abstruse Archaic
 K	1	All Is Dust
 K	1	Ancient Stone Idol
@@ -25963,7 +26016,7 @@ K	1	Warping Wail
 K	15	Wastes
 K	1	Worn Powerstone
 K	1	Phyrexian Triniform
-D	zhulodok-void-gorger	archidekt	Jimmy's Zhulodok | Extra Turns 38 · 50 781 vues	https://archidekt.com/decks/4972432
+D	zhulodok-void-gorger	archidekt	Jimmy's Zhulodok | Extra Turns 38 · 50 784 vues	https://archidekt.com/decks/4972432
 K	1	All Is Dust
 K	1	Ancient Tomb
 K	1	Arch of Orazca
@@ -26054,7 +26107,7 @@ K	1	Worn Powerstone
 K	1	Zhalfirin Void
 K	1	Flayer of Loyalties
 K	1	Rise of the Eldrazi
-D	zhulodok-void-gorger	archidekt	Your Consent Is Not Required · 42 013 vues	https://archidekt.com/decks/5081211
+D	zhulodok-void-gorger	archidekt	Your Consent Is Not Required · 42 018 vues	https://archidekt.com/decks/5081211
 K	1	Flayer of Loyalties
 K	1	Darksteel Monolith
 K	1	War Room
@@ -26262,7 +26315,7 @@ K	1	Rampant Growth
 K	1	Skyshroud Claim
 K	1	Three Visits
 K	1	Thunderherd Migration
-D	gishath-suns-avatar	archidekt	Upping the Average - Gishath, Sun's Avatar · 44 945 vues	https://archidekt.com/decks/592149
+D	gishath-suns-avatar	archidekt	Upping the Average - Gishath, Sun's Avatar · 44 946 vues	https://archidekt.com/decks/592149
 K	1	Clifftop Retreat
 K	1	Temple Altisaur
 K	1	Trapjaw Tyrant
@@ -26351,7 +26404,7 @@ K	3	Mountain
 K	3	Plains
 K	1	Evolving Wilds
 K	1	Herald's Horn
-D	gishath-suns-avatar	archidekt	Gishath, Sun's Avatar - Dinosaur Kindred · 28 829 vues	https://archidekt.com/decks/59989
+D	gishath-suns-avatar	archidekt	Gishath, Sun's Avatar - Dinosaur Kindred · 28 831 vues	https://archidekt.com/decks/59989
 K	1	Urza's Incubator
 K	1	Curious Altisaur
 K	1	Wrathful Raptors
@@ -26445,7 +26498,7 @@ K	1	Secluded Courtyard
 K	1	Abundant Countryside
 K	1	Herald's Horn
 K	1	Sunfrill Imitator
-D	gishath-suns-avatar	archidekt	Tiny Arms, I know You're The One By Tappy · 28 526 vues	https://archidekt.com/decks/3082032
+D	gishath-suns-avatar	archidekt	Tiny Arms, I know You're The One By Tappy · 28 528 vues	https://archidekt.com/decks/3082032
 K	1	Priest of the Wakening Sun
 K	1	Terminus
 K	1	Lifecrafter's Bestiary
@@ -26621,7 +26674,7 @@ K	1	Farseek
 K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Resurgent Belief
-D	tom-bombadil	archidekt	Lore Of The Rings (budget build) · 121 882 vues	https://archidekt.com/decks/4868475
+D	tom-bombadil	archidekt	Lore Of The Rings (budget build) · 121 885 vues	https://archidekt.com/decks/4868475
 K	1	Abundant Growth
 K	1	Arcane Signet
 K	1	Archon of Sun's Grace
@@ -26716,7 +26769,7 @@ K	1	The Weatherseed Treaty
 K	1	Unnatural Restoration
 K	1	Weaver of Harmony
 K	1	Yavimaya Coast
-D	tom-bombadil	archidekt	Lore Of The Rings Upgrade Build · 109 988 vues	https://archidekt.com/decks/4868553
+D	tom-bombadil	archidekt	Lore Of The Rings Upgrade Build · 109 989 vues	https://archidekt.com/decks/4868553
 K	1	Abundant Growth
 K	1	Arcane Signet
 K	1	Ash Barrens
@@ -26811,7 +26864,7 @@ K	1	There and Back Again
 K	1	Unnatural Restoration
 K	1	Weaver of Harmony
 K	1	Yavimaya Coast
-D	tom-bombadil	archidekt	Josh's Tom Bombadil | Game Knights #62 · 74 694 vues	https://archidekt.com/decks/4748258
+D	tom-bombadil	archidekt	Josh's Tom Bombadil | Game Knights #62 · 74 698 vues	https://archidekt.com/decks/4748258
 K	1	Stomping Ground
 K	1	Evolution Sage
 K	1	Ketria Triome
@@ -26994,7 +27047,7 @@ K	1	Kodama's Reach
 K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Three Visits
-D	atla-palani-nest-tender	archidekt	Upping the Average - Atla Palani, Nest Tender · 38 065 vues	https://archidekt.com/decks/1782198
+D	atla-palani-nest-tender	archidekt	Upping the Average - Atla Palani, Nest Tender · 38 066 vues	https://archidekt.com/decks/1782198
 K	1	Clifftop Retreat
 K	1	Zacama, Primal Calamity
 K	1	Rootbound Crag
@@ -27082,7 +27135,7 @@ K	1	Culling Dais
 K	1	Tibalt's Trickery
 K	1	Serra's Emissary
 K	1	Rishkar's Expertise
-D	atla-palani-nest-tender	archidekt	Atla's Carousel of Pain · 14 791 vues	https://archidekt.com/decks/12157113
+D	atla-palani-nest-tender	archidekt	Atla's Carousel of Pain · 14 792 vues	https://archidekt.com/decks/12157113
 K	1	Ancient Tomb
 K	1	Annie Joins Up
 K	1	Anointed Procession
@@ -27177,7 +27230,7 @@ K	1	Zacama, Primal Calamity
 K	1	Zopandrel, Hunger Dominus
 K	2	Mountain
 K	1	Purphoros, God of the Forge
-D	atla-palani-nest-tender	archidekt	Atla Palani, Crusher of Eggs - ARCHIVED · 13 952 vues	https://archidekt.com/decks/165958
+D	atla-palani-nest-tender	archidekt	Atla Palani, Crusher of Eggs - ARCHIVED · 13 953 vues	https://archidekt.com/decks/165958
 K	1	Evolving Wilds
 K	1	Jungle Shrine
 K	1	Rootbound Crag
@@ -27357,7 +27410,7 @@ K	1	Nature's Lore
 K	1	Reanimate
 K	1	Toxic Deluge
 K	1	Victimize
-D	korvold-fae-cursed-king	archidekt	Upping the Average - Korvold, Fae-Cursed King · 42 642 vues	https://archidekt.com/decks/725550
+D	korvold-fae-cursed-king	archidekt	Upping the Average - Korvold, Fae-Cursed King · 42 644 vues	https://archidekt.com/decks/725550
 K	1	Woodland Cemetery
 K	1	Constant Mists
 K	1	Reassembling Skeleton
@@ -27448,7 +27501,7 @@ K	1	Mazirek, Kraul Death Priest
 K	1	Avenger of Zendikar
 K	1	Lightning Greaves
 K	1	Tireless Tracker
-D	korvold-fae-cursed-king	archidekt	Korvold, Fae-Cursed King: Treasure Tyrant · 16 464 vues	https://archidekt.com/decks/7284452
+D	korvold-fae-cursed-king	archidekt	Korvold, Fae-Cursed King: Treasure Tyrant · 16 466 vues	https://archidekt.com/decks/7284452
 K	1	Lightning Greaves
 K	2	Shapeshifter
 K	1	Bottle-Cap Blast
@@ -27548,7 +27601,7 @@ K	1	Reckless Fireweaver
 K	1	Mirkwood Bats
 K	1	Sylvan Safekeeper
 K	1	Hedron Detonator
-D	korvold-fae-cursed-king	archidekt	Cedh Korvold Reanimator · 14 444 vues	https://archidekt.com/decks/7307169
+D	korvold-fae-cursed-king	archidekt	Cedh Korvold Reanimator · 14 446 vues	https://archidekt.com/decks/7307169
 K	1	Command Tower
 K	1	Plaza of Heroes
 K	1	Bloodstained Mire
@@ -27737,7 +27790,7 @@ K	1	Eliminate the Competition
 K	1	Hour of Reckoning
 K	1	Ruinous Ultimatum
 K	1	Tempt with Vengeance
-D	zurgo-stormrender	archidekt	Mardu Surge - Tarkir: Dragonstorm Commander · 99 615 vues	https://archidekt.com/decks/12020252
+D	zurgo-stormrender	archidekt	Mardu Surge - Tarkir: Dragonstorm Commander · 99 622 vues	https://archidekt.com/decks/12020252
 K	1	Neriv, Crackling Vanguard
 K	1	Ainok Strike Leader
 K	1	Ironwill Forger
@@ -27825,7 +27878,7 @@ K	1	Lingering Souls
 K	1	Beetleback Chief
 K	1	Abrade
 K	1	Bitter Triumph
-D	zurgo-stormrender	archidekt	🪦 Zurgo Tokens · 18 282 vues	https://archidekt.com/decks/12153075
+D	zurgo-stormrender	archidekt	🪦 Zurgo Tokens · 18 283 vues	https://archidekt.com/decks/12153075
 K	1	Mardu Ascendancy
 K	1	Signal Pest
 K	1	Flare of Fortitude
@@ -27919,7 +27972,7 @@ K	3	Plains
 K	1	Inspiring Vantage
 K	1	Umbral Collar Zealot
 K	3	Swamp
-D	zurgo-stormrender	archidekt	Zurgo, Stormrender: Bracket 3 · 13 802 vues	https://archidekt.com/decks/13635794
+D	zurgo-stormrender	archidekt	Zurgo, Stormrender: Bracket 3 · 13 803 vues	https://archidekt.com/decks/13635794
 K	1	Flawless Maneuver
 K	1	Skrelv, Defector Mite
 K	1	Giver of Runes
@@ -28105,7 +28158,7 @@ K	1	Fabricate
 K	1	Organic Extinction
 K	1	Supreme Verdict
 K	1	Thoughtcast
-D	shorikai-genesis-engine	archidekt	Upping the Average - Shorikai, Genesis Engine · 70 608 vues	https://archidekt.com/decks/2498709
+D	shorikai-genesis-engine	archidekt	Upping the Average - Shorikai, Genesis Engine · 70 609 vues	https://archidekt.com/decks/2498709
 K	1	Deadeye Quartermaster
 K	1	Mobile Garrison
 K	1	Manifold Key
@@ -28189,7 +28242,7 @@ K	1	Gold Myr
 K	1	Dramatic Reversal
 K	1	Supreme Verdict
 K	1	Inventors' Fair
-D	shorikai-genesis-engine	archidekt	Shorikai - Kyle Hill · 54 673 vues	https://archidekt.com/decks/3658713
+D	shorikai-genesis-engine	archidekt	Shorikai - Kyle Hill · 54 674 vues	https://archidekt.com/decks/3658713
 K	1	Anchor to Reality
 K	1	Arcane Signet
 K	1	Armed and Armored
@@ -28266,7 +28319,7 @@ K	1	Worn Powerstone
 K	1	Wrath of God
 K	12	Island
 K	12	Plains
-D	shorikai-genesis-engine	archidekt	JLK's Shorikai | Game Knights #63 · 38 981 vues	https://archidekt.com/decks/5149464
+D	shorikai-genesis-engine	archidekt	JLK's Shorikai | Game Knights #63 · 38 983 vues	https://archidekt.com/decks/5149464
 K	1	Academy Ruins
 K	1	Aetherize
 K	1	Ancient Tomb
@@ -28443,7 +28496,7 @@ K	1	Reunion of the House
 K	1	Slaughter the Strong
 K	1	Tip the Scales
 K	1	Will of the Abzan
-D	felothar-the-steadfast	archidekt	Abzan Armor - Tarkir: Dragonstorm Commander · 91 159 vues	https://archidekt.com/decks/12124776
+D	felothar-the-steadfast	archidekt	Abzan Armor - Tarkir: Dragonstorm Commander · 91 167 vues	https://archidekt.com/decks/12124776
 K	1	Indomitable Ancients
 K	1	Shalai, Voice of Plenty
 K	1	Wakestone Gargoyle
@@ -28528,7 +28581,7 @@ K	1	Path of Ancestry
 K	6	Plains
 K	5	Swamp
 K	7	Forest
-D	felothar-the-steadfast	archidekt	Eilidh's Felothar | Game Knights #77 · 30 292 vues	https://archidekt.com/decks/11026555
+D	felothar-the-steadfast	archidekt	Eilidh's Felothar | Game Knights #77 · 30 294 vues	https://archidekt.com/decks/11026555
 K	1	Behind the Scenes
 K	1	Bojuka Bog
 K	1	Bountiful Promenade
@@ -28624,7 +28677,7 @@ K	1	Ornithopter of Paradise
 K	1	Loot, Exuberant Explorer
 K	1	Rampart Architect
 K	1	Betor, Kin to All
-D	felothar-the-steadfast	archidekt	CZ 667 | "Abzan Armor" Precon Upgrade · 16 081 vues	https://archidekt.com/decks/12092496
+D	felothar-the-steadfast	archidekt	CZ 667 | "Abzan Armor" Precon Upgrade · 16 082 vues	https://archidekt.com/decks/12092496
 K	1	Rhox Faithmender
 K	1	Protector of the Wastes
 K	1	Betor, Ancestor's Voice
@@ -28818,7 +28871,7 @@ K	1	Splendid Reclamation
 K	1	Sylvan Scrying
 K	1	Tempt with Discovery
 K	1	Travel the Overworld
-D	the-wandering-minstrel	archidekt	The Wandering Minstrel - A Deck Built Completely With Bulk · 24 956 vues	https://archidekt.com/decks/13854904
+D	the-wandering-minstrel	archidekt	The Wandering Minstrel - A Deck Built Completely With Bulk · 24 958 vues	https://archidekt.com/decks/13854904
 K	1	Farseek
 K	1	Dovin's Veto
 K	1	Azusa, Lost but Seeking
@@ -28907,7 +28960,7 @@ K	1	Plains
 K	5	Island
 K	1	Mountain
 K	1	Starting Town
-D	the-wandering-minstrel	archidekt	Budget Minstrel · 7 927 vues	https://archidekt.com/decks/14323406
+D	the-wandering-minstrel	archidekt	Budget Minstrel · 7 931 vues	https://archidekt.com/decks/14323406
 K	1	Adventurer's Inn
 K	1	Balamb Garden, SeeD Academy // Balamb Garden, Airborne
 K	1	Baron, Airship Kingdom
@@ -29000,7 +29053,7 @@ K	1	Pull from Tomorrow
 K	1	Finale of Revelation
 K	1	Painful Truths
 K	1	Urban Evolution
-D	the-wandering-minstrel	archidekt	The Wandering Charbelcher · 6 638 vues	https://archidekt.com/decks/13605991
+D	the-wandering-minstrel	archidekt	The Wandering Charbelcher · 6 639 vues	https://archidekt.com/decks/13605991
 K	1	Relic of Legends
 K	1	Sevinne's Reclamation
 K	1	Magda, Brazen Outlaw
@@ -29188,7 +29241,7 @@ K	1	Disrupt Decorum
 K	1	Promise of Loyalty
 K	1	Ruinous Ultimatum
 K	1	Taunt from the Rampart
-D	queen-marchesa	archidekt	Queen Marchesa Control 1v1 · 84 821 vues	https://archidekt.com/decks/53783
+D	queen-marchesa	archidekt	Queen Marchesa Control 1v1 · 84 824 vues	https://archidekt.com/decks/53783
 K	1	Luminarch Ascension
 K	1	Swords to Plowshares
 K	1	Blightning
@@ -29285,7 +29338,7 @@ K	1	Bitterblossom
 K	1	Liliana of the Veil
 K	1	Runed Halo
 K	1	Godless Shrine
-D	queen-marchesa	archidekt	Upping the Average - Queen Marchesa · 44 811 vues	https://archidekt.com/decks/829253
+D	queen-marchesa	archidekt	Upping the Average - Queen Marchesa · 44 812 vues	https://archidekt.com/decks/829253
 K	1	Deflecting Palm
 K	1	Bloodstained Mire
 K	1	Xantcha, Sleeper Agent
@@ -29375,7 +29428,7 @@ K	1	Arcane Signet
 K	1	Boros Garrison
 K	1	Evolving Wilds
 K	1	Terramorphic Expanse
-D	queen-marchesa	archidekt	porcupines (dmg redirection deck) · 42 490 vues	https://archidekt.com/decks/4688727
+D	queen-marchesa	archidekt	porcupines (dmg redirection deck) · 42 491 vues	https://archidekt.com/decks/4688727
 K	1	Kazuul, Tyrant of the Cliffs
 K	1	Exotic Orchard
 K	1	Luxury Suite
@@ -29541,7 +29594,7 @@ K	1	Ponder
 K	1	Reshape
 K	1	Thoughtcast
 K	1	Windfall
-D	urza-lord-high-artificer	archidekt	Urza, Lord High Artificer · 41 252 vues	https://archidekt.com/decks/2743146
+D	urza-lord-high-artificer	archidekt	Urza, Lord High Artificer · 41 255 vues	https://archidekt.com/decks/2743146
 K	1	Karn, Scion of Urza
 K	1	Deadeye Navigator
 K	1	Paradox Engine
@@ -29610,7 +29663,7 @@ K	1	Myriad Landscape
 K	1	Fabricate
 K	1	Swiftfoot Boots
 K	1	Memnite
-D	urza-lord-high-artificer	archidekt	Urza cEDH · 18 382 vues	https://archidekt.com/decks/95092
+D	urza-lord-high-artificer	archidekt	Urza cEDH · 18 383 vues	https://archidekt.com/decks/95092
 K	1	Resculpt
 K	22	Island
 K	1	Counterspell
@@ -29689,7 +29742,7 @@ K	1	Echo of Eons
 K	1	Misdirection
 K	1	Tale's End
 K	1	Dig Through Time
-D	urza-lord-high-artificer	archidekt	Urza, Lord High Artificer CEDH · 16 888 vues	https://archidekt.com/decks/2565352
+D	urza-lord-high-artificer	archidekt	Urza, Lord High Artificer CEDH · 16 894 vues	https://archidekt.com/decks/2565352
 K	1	Pact of Negation
 K	33	Island
 K	1	Serum Visions
@@ -29849,7 +29902,7 @@ K	1	Extinguish All Hope
 K	1	Farseek
 K	1	Idyllic Tutor
 K	1	Resurgent Belief
-D	go-shintai-of-lifes-origin	archidekt	Upping the Average - Go-Shintai of Life's Origin · 33 703 vues	https://archidekt.com/decks/2491562
+D	go-shintai-of-lifes-origin	archidekt	Upping the Average - Go-Shintai of Life's Origin · 33 704 vues	https://archidekt.com/decks/2491562
 K	1	Zur the Enchanter
 K	1	Sphere of Safety
 K	1	Honden of Cleansing Fire
@@ -29944,7 +29997,7 @@ K	1	Exotic Orchard
 K	1	Command Tower
 K	1	Reliquary Tower
 K	1	Arcane Signet
-D	go-shintai-of-lifes-origin	archidekt	Upping the Average - Go-Shintai of Life's Origin · 26 894 vues	https://archidekt.com/decks/2472348
+D	go-shintai-of-lifes-origin	archidekt	Upping the Average - Go-Shintai of Life's Origin · 26 895 vues	https://archidekt.com/decks/2472348
 K	1	Zur the Enchanter
 K	1	Extinguish All Hope
 K	1	Mountain
@@ -30037,7 +30090,7 @@ K	1	Krosan Verge
 K	1	Swift Reconfiguration
 K	1	Prairie Stream
 K	1	Cinder Glade
-D	go-shintai-of-lifes-origin	archidekt	9th Gate Shrine · 13 449 vues	https://archidekt.com/decks/5703538
+D	go-shintai-of-lifes-origin	archidekt	9th Gate Shrine · 13 450 vues	https://archidekt.com/decks/5703538
 K	1	Crucible of Worlds
 K	1	Black Dragon Gate
 K	1	Boros Guildgate
@@ -30300,7 +30353,7 @@ K	1	Peer into the Abyss
 K	1	Reanimate
 K	1	Sign in Blood
 K	1	Toxic Deluge
-D	krrik-son-of-yawgmoth	archidekt	Krrik · 14 341 vues	https://archidekt.com/decks/5739798
+D	krrik-son-of-yawgmoth	archidekt	Krrik · 14 342 vues	https://archidekt.com/decks/5739798
 K	1	Rain of Filth
 K	1	Fellwar Stone
 K	1	Infernal Contract
@@ -30376,7 +30429,7 @@ K	1	Viscera Seer
 K	1	Crypt Ghast
 K	1	Jet Medallion
 K	4	Snow-Covered Swamp
-D	krrik-son-of-yawgmoth	archidekt	Post Malone · 14 326 vues	https://archidekt.com/decks/4072538
+D	krrik-son-of-yawgmoth	archidekt	Post Malone · 14 327 vues	https://archidekt.com/decks/4072538
 K	1	Tendrils of Agony
 K	1	Dark Petition
 K	1	March of Wretched Sorrow
@@ -30449,7 +30502,7 @@ K	1	Final Parting
 K	1	Buried Alive
 K	1	Imperial Seal
 K	1	Vampiric Tutor
-D	krrik-son-of-yawgmoth	archidekt	K'rrik, Son of Yawgmoth · 12 159 vues	https://archidekt.com/decks/3224435
+D	krrik-son-of-yawgmoth	archidekt	K'rrik, Son of Yawgmoth · 12 160 vues	https://archidekt.com/decks/3224435
 K	1	Grim Tutor
 K	1	Beseech the Queen
 K	1	Lightning Greaves
@@ -30639,7 +30692,7 @@ K	1	Farseek
 K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Three Visits
-D	helga-skittish-seer	archidekt	Helga's Brothel V3(Resilient Fun) · 25 617 vues	https://archidekt.com/decks/17560678
+D	helga-skittish-seer	archidekt	Helga's Brothel V3(Resilient Fun) · 25 623 vues	https://archidekt.com/decks/17560678
 K	1	Surrak and Goreclaw
 K	1	Food Chain
 K	1	Misthollow Griffin
@@ -30772,7 +30825,7 @@ K	1	Tundra
 K	1	Savannah
 K	1	Tropical Island
 K	1	Flickering Hound
-D	helga-skittish-seer	archidekt	Affinity for Everything! · 21 919 vues	https://archidekt.com/decks/12512977
+D	helga-skittish-seer	archidekt	Affinity for Everything! · 21 924 vues	https://archidekt.com/decks/12512977
 K	1	Rejuvenating Springs
 K	1	Reliquary Tower
 K	1	Return of the Wildspeaker
@@ -30868,7 +30921,7 @@ K	1	Vanquish the Horde
 K	1	Wasteful Harvest
 K	1	Windswept Heath
 K	1	Yavimaya, Cradle of Growth
-D	helga-skittish-seer	archidekt	Helga's Helpful House of Healthy Hugebois · 20 573 vues	https://archidekt.com/decks/8380002
+D	helga-skittish-seer	archidekt	Helga's Helpful House of Healthy Hugebois · 20 575 vues	https://archidekt.com/decks/8380002
 K	1	Noble Hierarch
 K	1	Ancient Bronze Dragon
 K	1	Farseek
@@ -31051,7 +31104,7 @@ K	1	Gysahl Greens
 K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Three Visits
-D	choco-seeker-of-paradise	archidekt	Cut-Rate Commander | Choco, Seeker of Paradise · 22 950 vues	https://archidekt.com/decks/13814013
+D	choco-seeker-of-paradise	archidekt	Cut-Rate Commander | Choco, Seeker of Paradise · 22 954 vues	https://archidekt.com/decks/13814013
 K	1	Aerial Extortionist
 K	1	Birds of Paradise
 K	1	Gilded Goose
@@ -31138,7 +31191,7 @@ K	1	Adarkar Wastes
 K	1	Skyway Robber
 K	1	Dusk // Dawn
 K	1	Nimble Obstructionist
-D	choco-seeker-of-paradise	archidekt	Jimmy's Choco | Extra Turns #60 · 19 782 vues	https://archidekt.com/decks/11727233
+D	choco-seeker-of-paradise	archidekt	Jimmy's Choco | Extra Turns #60 · 19 788 vues	https://archidekt.com/decks/11727233
 K	1	Bala Ged Recovery // Bala Ged Sanctuary
 K	1	Jackdaw Savior
 K	1	Watcher of the Spheres
@@ -31233,7 +31286,7 @@ K	1	The Goose Mother
 K	1	Urza's Saga
 K	1	Sword of Feast and Famine
 K	3	Forest
-D	choco-seeker-of-paradise	archidekt	Budget Choco · 8 503 vues	https://archidekt.com/decks/14311783
+D	choco-seeker-of-paradise	archidekt	Budget Choco · 8 504 vues	https://archidekt.com/decks/14311783
 K	1	Airborne Aid
 K	1	Bartz and Boko
 K	1	Chocobo Racetrack
@@ -31403,7 +31456,7 @@ K	1	Rampant Growth
 K	1	Three Visits
 K	1	Torment of Hailfire
 K	1	Villainous Wealth
-D	zaxara-the-exemplary	archidekt	Allie's Zaxara | Game Knights #74 · 41 921 vues	https://archidekt.com/decks/8975639
+D	zaxara-the-exemplary	archidekt	Allie's Zaxara | Game Knights #74 · 41 922 vues	https://archidekt.com/decks/8975639
 K	1	Aggressive Biomancy
 K	1	Astral Cornucopia
 K	1	Awaken the Woods
@@ -31486,7 +31539,7 @@ K	1	Watery Grave
 K	1	Woodland Chasm
 K	1	Zagoth Triome
 K	1	Polluted Delta
-D	zaxara-the-exemplary	archidekt	Jordan's Zaxara | Extra Turns #10 · 20 998 vues	https://archidekt.com/decks/4663953
+D	zaxara-the-exemplary	archidekt	Jordan's Zaxara | Extra Turns #10 · 21 004 vues	https://archidekt.com/decks/4663953
 K	1	Blighted Woodland
 K	1	Altered Ego
 K	1	Capricopian
@@ -31571,7 +31624,7 @@ K	1	Villainous Wealth
 K	1	Wildest Dreams
 K	1	Kiora, Behemoth Beckoner
 K	1	Beast Whisperer
-D	zaxara-the-exemplary	archidekt	Zaxara Stampede · 11 477 vues	https://archidekt.com/decks/1329673
+D	zaxara-the-exemplary	archidekt	Zaxara Stampede · 11 478 vues	https://archidekt.com/decks/1329673
 K	1	Misty Rainforest
 K	1	Rejuvenating Springs
 K	1	Nature's Lore
@@ -31756,7 +31809,7 @@ K	1	Ruinous Ultimatum
 K	1	Stitch Together
 K	1	Tragic Arrogance
 K	1	Victimize
-D	terra-herald-of-hope	archidekt	Revival Trance - Final Fantasy Commander · 97 239 vues	https://archidekt.com/decks/13106730
+D	terra-herald-of-hope	archidekt	Revival Trance - Final Fantasy Commander · 97 254 vues	https://archidekt.com/decks/13106730
 K	1	Shadowblood Ridge
 K	1	Demolition Field
 K	1	Angel of the Ruins
@@ -31849,7 +31902,7 @@ K	1	Command Tower
 K	1	Sol Ring
 K	3	Swamp
 K	4	Plains
-D	terra-herald-of-hope	archidekt	FFVI Revival Trance | $30 Upgrade · 24 717 vues	https://archidekt.com/decks/13722104
+D	terra-herald-of-hope	archidekt	FFVI Revival Trance | $30 Upgrade · 24 720 vues	https://archidekt.com/decks/13722104
 K	1	Stitcher's Supplier
 K	1	Accursed Marauder
 K	1	Banon, the Returners' Leader
@@ -31943,7 +31996,7 @@ K	3	Mountain
 K	1	Joshua, Phoenix's Dominant // Phoenix, Warden of Fire
 K	1	Priest of Forgotten Gods
 K	1	Redemption Choir
-D	terra-herald-of-hope	archidekt	CZ 677 | "Revival Trance" Precon Upgrade · 12 473 vues	https://archidekt.com/decks/13139894
+D	terra-herald-of-hope	archidekt	CZ 677 | "Revival Trance" Precon Upgrade · 12 475 vues	https://archidekt.com/decks/13139894
 K	1	Shadowblood Ridge
 K	1	Demolition Field
 K	1	Angel of the Ruins
@@ -32133,7 +32186,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Three Visits
 K	1	Villainous Wealth
-D	kotis-the-fangkeeper	archidekt	KOTIS GOES WHERE HE PLEASES - TIPSY GOAT · 7 916 vues	https://archidekt.com/decks/12304760
+D	kotis-the-fangkeeper	archidekt	KOTIS GOES WHERE HE PLEASES - TIPSY GOAT · 7 917 vues	https://archidekt.com/decks/12304760
 K	1	Belt of Giant Strength
 K	1	An Offer You Can't Refuse
 K	1	Arcane Denial
@@ -32230,7 +32283,7 @@ K	1	Strong Back
 K	1	Bloom Tender
 K	1	Leyline Axe
 K	1	Strionic Resonator
-D	kotis-the-fangkeeper	archidekt	Kotis Goes for Greed · 6 182 vues	https://archidekt.com/decks/12007479
+D	kotis-the-fangkeeper	archidekt	Kotis Goes for Greed · 6 183 vues	https://archidekt.com/decks/12007479
 K	1	Haunted Cloak
 K	1	Hero's Blade
 K	1	Moonsnare Prototype
@@ -32326,7 +32379,7 @@ K	1	Kusari-Gama
 K	1	Vibranium Strike Gauntlets
 K	1	Sting, Bilbo's Sword
 K	1	Sol Ring
-D	kotis-the-fangkeeper	archidekt	Kotis, non rubare! - The Brothers Wars · 5 639 vues	https://archidekt.com/decks/12913659
+D	kotis-the-fangkeeper	archidekt	Kotis, non rubare! - The Brothers Wars · 5 640 vues	https://archidekt.com/decks/12913659
 K	1	Amphibian Downpour
 K	1	An Offer You Can't Refuse
 K	1	Ancestral Mask
@@ -32501,7 +32554,7 @@ K	1	Feed the Swarm
 K	1	Nature's Lore
 K	1	Reanimate
 K	1	Toxic Deluge
-D	betor-ancestors-voice	archidekt	Betor, 4ncestors Voice · 10 379 vues	https://archidekt.com/decks/12024827
+D	betor-ancestors-voice	archidekt	Betor, 4ncestors Voice · 10 380 vues	https://archidekt.com/decks/12024827
 K	2	Swamp
 K	1	Soul Warden
 K	4	Forest
@@ -32594,7 +32647,7 @@ K	1	Temple Garden
 K	1	Godless Shrine
 K	1	Isolated Chapel
 K	1	Prize Pig
-D	betor-ancestors-voice	archidekt	Betor Rad Counters · 8 425 vues	https://archidekt.com/decks/12436006
+D	betor-ancestors-voice	archidekt	Betor Rad Counters · 8 426 vues	https://archidekt.com/decks/12436006
 K	1	Ancient Tomb
 K	1	Animate Dead
 K	1	Archon of Cruelty
@@ -32690,7 +32743,7 @@ K	1	Vilis, Broker of Blood
 K	1	Viridian Joiner
 K	1	Windswept Heath
 K	1	Witch Enchanter // Witch-Blessed Meadow
-D	betor-ancestors-voice	archidekt	Betor · 7 009 vues	https://archidekt.com/decks/11599576
+D	betor-ancestors-voice	archidekt	Betor · 7 010 vues	https://archidekt.com/decks/11599576
 K	1	Enduring Tenacity
 K	1	Three Visits
 K	1	Nature's Lore
@@ -32871,7 +32924,7 @@ K	1	Smash to Dust
 K	1	Tectonic Hazard
 K	1	Vandalblast
 K	1	Windfall
-D	ghyrson-starn-kelermorph	archidekt	Upping the Average - Ghyrson Starn, Kelermorph · 61 456 vues	https://archidekt.com/decks/3487816
+D	ghyrson-starn-kelermorph	archidekt	Upping the Average - Ghyrson Starn, Kelermorph · 61 457 vues	https://archidekt.com/decks/3487816
 K	1	Burning Earth
 K	1	Neurok Stealthsuit
 K	1	Midnight Clock
@@ -32952,7 +33005,7 @@ K	12	Mountain
 K	1	Reliquary Tower
 K	1	Basilisk Collar
 K	1	Exotic Orchard
-D	ghyrson-starn-kelermorph	archidekt	Pew Pew · 43 799 vues	https://archidekt.com/decks/4918873
+D	ghyrson-starn-kelermorph	archidekt	Pew Pew · 43 801 vues	https://archidekt.com/decks/4918873
 K	1	Arcane Denial
 K	1	Arcane Signet
 K	1	Basilisk Collar
@@ -33048,7 +33101,7 @@ K	1	Valakut Awakening // Valakut Stoneforge
 K	1	Volatile Fjord
 K	1	Vulshok Sorcerer
 K	1	Wandering Fumarole
-D	ghyrson-starn-kelermorph	archidekt	Ghyrson Starn, Kellermorph || $30 Thopterz · 11 969 vues	https://archidekt.com/decks/3511051
+D	ghyrson-starn-kelermorph	archidekt	Ghyrson Starn, Kellermorph || $30 Thopterz · 11 970 vues	https://archidekt.com/decks/3511051
 K	1	Cephalid Facetaker
 K	1	Ghirapur Gearcrafter
 K	1	Close Quarters
@@ -33302,7 +33355,7 @@ K	1	Kodama's Reach
 K	1	Nature's Lore
 K	1	Patriarch's Bidding
 K	1	Three Visits
-D	the-first-sliver	archidekt	The First Sliver · 20 435 vues	https://archidekt.com/decks/2766461
+D	the-first-sliver	archidekt	The First Sliver · 20 441 vues	https://archidekt.com/decks/2766461
 K	1	Magma Sliver
 K	1	Forbidden Orchard
 K	1	Diffusion Sliver
@@ -33403,7 +33456,7 @@ K	1	Deafening Silence
 K	1	Gemstone Caverns
 K	1	Cyclonic Rift
 K	1	The One Ring
-D	the-first-sliver	archidekt	Sliver and Gold - Bro's Deck · 13 710 vues	https://archidekt.com/decks/370708
+D	the-first-sliver	archidekt	Sliver and Gold - Bro's Deck · 13 713 vues	https://archidekt.com/decks/370708
 K	1	Ancestral Vision
 K	1	Kindred Discovery
 K	1	Kindred Dominance
@@ -33500,7 +33553,7 @@ K	1	Cultivate
 K	1	Wheel of Fate
 K	1	Mirror Entity
 K	1	Crib Swap
-D	the-first-sliver	archidekt	Slivers in SPACE!!!!!! · 12 484 vues	https://archidekt.com/decks/4114499
+D	the-first-sliver	archidekt	Slivers in SPACE!!!!!! · 12 485 vues	https://archidekt.com/decks/4114499
 K	1	Blur Sliver
 K	1	Crystalline Sliver
 K	1	Diffusion Sliver
@@ -33687,7 +33740,7 @@ K	1	Incremental Blight
 K	1	Night's Whisper
 K	1	Painful Truths
 K	1	Persist
-D	auntie-ool-cursewretch	archidekt	Blight Curse - Lorwyn Eclipsed Commander Deck · 98 108 vues	https://archidekt.com/decks/18744715
+D	auntie-ool-cursewretch	archidekt	Blight Curse - Lorwyn Eclipsed Commander Deck · 98 141 vues	https://archidekt.com/decks/18744715
 K	1	Tree of Perdition
 K	1	Vernal Fen
 K	1	Commander's Sphere
@@ -33772,7 +33825,7 @@ K	1	Lasting Tarfire
 K	1	Arcane Signet
 K	1	Puca's Covenant
 K	1	Command Tower
-D	auntie-ool-cursewretch	archidekt	CZ 722 | "Blight Curse" Precon Upgrade · 19 295 vues	https://archidekt.com/decks/18996943
+D	auntie-ool-cursewretch	archidekt	CZ 722 | "Blight Curse" Precon Upgrade · 19 297 vues	https://archidekt.com/decks/18996943
 K	1	Cankerbloom
 K	1	Obelisk Spider
 K	1	Agent Frank Horrigan
@@ -33867,7 +33920,7 @@ K	1	Ob Nixilis, Captive Kingpin
 K	1	Maha, Its Feathers Night
 K	1	Spiteful Banditry
 K	1	Mahadi, Emporium Master
-D	auntie-ool-cursewretch	archidekt	Auntie Ool · 15 528 vues	https://archidekt.com/decks/18387072
+D	auntie-ool-cursewretch	archidekt	Auntie Ool · 15 531 vues	https://archidekt.com/decks/18387072
 K	1	Necroskitter
 K	1	Spitting Dilophosaurus
 K	1	Crumbling Ashes
@@ -34048,7 +34101,7 @@ K	1	Reforge the Soul
 K	1	Three Visits
 K	1	Windfall
 K	1	Winds of Change
-D	xyris-the-writhing-storm	archidekt	Buffs by Hans · 420 737 vues	https://archidekt.com/decks/7031486
+D	xyris-the-writhing-storm	archidekt	Buffs by Hans · 420 755 vues	https://archidekt.com/decks/7031486
 K	1	Gaea's Gift
 K	1	Tyvar's Stand
 K	1	Invigorate
@@ -34129,7 +34182,7 @@ K	1	Master's Rebuke
 K	1	Blazing Crescendo
 K	1	Armed // Dangerous
 K	1	Roar of Challenge
-D	xyris-the-writhing-storm	archidekt	Xyris the Writhing Storm · 38 358 vues	https://archidekt.com/decks/4145706
+D	xyris-the-writhing-storm	archidekt	Xyris the Writhing Storm · 38 365 vues	https://archidekt.com/decks/4145706
 K	1	Three Visits
 K	1	Fiery Islet
 K	1	Misty Rainforest
@@ -34216,7 +34269,7 @@ K	1	Rogue's Passage
 K	1	Winds of Change
 K	1	Game Trail
 K	1	Rejuvenating Springs
-D	xyris-the-writhing-storm	archidekt	Craig's Xyris | Extra Turns #13 · 12 198 vues	https://archidekt.com/decks/4663987
+D	xyris-the-writhing-storm	archidekt	Craig's Xyris | Extra Turns #13 · 12 199 vues	https://archidekt.com/decks/4663987
 K	1	Academy Ruins
 K	1	Ancient Tomb
 K	1	Cascade Bluffs
@@ -34400,7 +34453,7 @@ K	1	Organic Extinction
 K	1	Tezzeret's Gambit
 K	1	Universal Surveillance
 K	1	Wake the Past
-D	kilo-apogee-mind	archidekt	Counter Intelligence - Edge of Eternities Commander Deck · 130 439 vues	https://archidekt.com/decks/14420275
+D	kilo-apogee-mind	archidekt	Counter Intelligence - Edge of Eternities Commander Deck · 130 467 vues	https://archidekt.com/decks/14420275
 K	1	Inspirit, Flagship Vessel
 K	1	Emry, Lurker of the Loch
 K	1	Cloud Key
@@ -34494,7 +34547,7 @@ K	1	Surge Conductor
 K	1	Uthros Research Craft
 K	1	Radiant Summit
 K	1	Moxite Refinery
-D	kilo-apogee-mind	archidekt	Tapping Triggers ~ EDH Bracket 3 ~ Edge of Eternities · 26 925 vues	https://archidekt.com/decks/14586723
+D	kilo-apogee-mind	archidekt	Tapping Triggers ~ EDH Bracket 3 ~ Edge of Eternities · 26 926 vues	https://archidekt.com/decks/14586723
 K	1	Freed from the Real
 K	1	Thousand-Year Elixir
 K	1	Patriar's Seal
@@ -34594,7 +34647,7 @@ K	1	Sunbaked Canyon
 K	1	Sundown Pass
 K	1	Replicating Ring
 K	1	Mystic Monastery
-D	kilo-apogee-mind	archidekt	Bosco's Kilo | Game Knights #79 · 20 230 vues	https://archidekt.com/decks/13333634
+D	kilo-apogee-mind	archidekt	Bosco's Kilo | Game Knights #79 · 20 234 vues	https://archidekt.com/decks/13333634
 K	1	Adarkar Wastes
 K	1	Ancient Den
 K	1	Anim Pakal, Thousandth Moon
@@ -34786,7 +34839,7 @@ K	1	Demonic Tutor
 K	1	Farseek
 K	1	Primevals' Glorious Rebirth
 K	1	Urza's Ruinous Blast
-D	sisay-weatherlight-captain	archidekt	[cEDH] Sisay Soprano · 26 606 vues	https://archidekt.com/decks/5662629
+D	sisay-weatherlight-captain	archidekt	[cEDH] Sisay Soprano · 26 611 vues	https://archidekt.com/decks/5662629
 K	1	Gemstone Caverns
 K	1	Cabal Ritual
 K	1	Ranger-Captain of Eos
@@ -34886,7 +34939,7 @@ K	1	Diabolic Intent
 K	1	Kinnan, Bonder Prodigy
 K	1	Manamorphose
 K	1	Birds of Paradise
-D	sisay-weatherlight-captain	archidekt	Sisay, Onion Queen · 14 873 vues	https://archidekt.com/decks/86888
+D	sisay-weatherlight-captain	archidekt	Sisay, Onion Queen · 14 874 vues	https://archidekt.com/decks/86888
 K	1	Volcanic Island
 K	1	Mana Crypt
 K	1	Flash
@@ -34986,7 +35039,7 @@ K	1	Ashiok, Dream Render
 K	1	Narset's Reversal
 K	1	Narset, Parter of Veils
 K	1	Incubation Druid
-D	sisay-weatherlight-captain	archidekt	Experience Counter Tribal · 10 860 vues	https://archidekt.com/decks/3595643
+D	sisay-weatherlight-captain	archidekt	Experience Counter Tribal · 10 862 vues	https://archidekt.com/decks/3595643
 K	1	Faeburrow Elder
 K	1	Painful Truths
 K	1	Thrummingbird
@@ -35271,7 +35324,7 @@ K	1	Open the Armory
 K	1	Resurgent Belief
 K	1	Retether
 K	1	Winds of Rath
-D	eriette-of-the-charmed-apple	archidekt	Eriette of the Charmed Apple · 45 308 vues	https://archidekt.com/decks/5259135
+D	eriette-of-the-charmed-apple	archidekt	Eriette of the Charmed Apple · 45 310 vues	https://archidekt.com/decks/5259135
 K	1	Kaya's Ghostform
 K	1	Rune of Mortality
 K	1	Unholy Indenture
@@ -35350,7 +35403,7 @@ K	1	Lord Skitter's Blessing
 K	1	Sun Titan
 K	1	Guardian Scalelord
 K	1	Generous Gift
-D	eriette-of-the-charmed-apple	archidekt	BYOP-OliviaWitch · 18 393 vues	https://archidekt.com/decks/7450024
+D	eriette-of-the-charmed-apple	archidekt	BYOP-OliviaWitch · 18 394 vues	https://archidekt.com/decks/7450024
 K	1	Chosen by Heliod
 K	1	Kor Spiritdancer
 K	1	Loran of the Third Path
@@ -35424,7 +35477,7 @@ K	1	Unholy Indenture
 K	1	Unquestioned Authority
 K	1	Wayfarer's Bauble
 K	1	Winds of Rath
-D	eriette-of-the-charmed-apple	archidekt	Eriette · 16 031 vues	https://archidekt.com/decks/7163231
+D	eriette-of-the-charmed-apple	archidekt	Eriette · 16 032 vues	https://archidekt.com/decks/7163231
 K	1	All That Glitters
 K	1	Anointed Procession
 K	1	Arcane Signet
@@ -35583,7 +35636,7 @@ K	1	Sevinne's Reclamation
 K	1	The Battle of Bywater
 K	1	Vandalblast
 K	1	Wake the Past
-D	ragost-deft-gastronaut	archidekt	Shell's Kitchen - Ragost, Deft Gastronaut by Based Deck Department · 61 786 vues	https://archidekt.com/decks/14700137
+D	ragost-deft-gastronaut	archidekt	Shell's Kitchen - Ragost, Deft Gastronaut by Based Deck Department · 61 792 vues	https://archidekt.com/decks/14700137
 K	1	Ancient Den
 K	1	Big Score
 K	1	Blacksmith's Skill
@@ -35664,7 +35717,7 @@ K	1	Spire of Industry
 K	1	Swords to Plowshares
 K	1	Talisman of Conviction
 K	1	Unexpected Windfall
-D	ragost-deft-gastronaut	archidekt	Shell's Kitchen FULL FLAVOUR - Ragost, Deft Gastronaut by Based Deck Department · 30 738 vues	https://archidekt.com/decks/14875868
+D	ragost-deft-gastronaut	archidekt	Shell's Kitchen FULL FLAVOUR - Ragost, Deft Gastronaut by Based Deck Department · 30 739 vues	https://archidekt.com/decks/14875868
 K	1	Alchemist's Vial
 K	1	Apothecary White
 K	1	Astrid Peth
@@ -35732,7 +35785,7 @@ K	1	Vault 101: Birthday Party
 K	1	Wedding Invitation
 K	1	Witch's Oven
 K	1	Smuggler's Share
-D	ragost-deft-gastronaut	archidekt	Ragost: Break a Few Eggs · 10 438 vues	https://archidekt.com/decks/14372474
+D	ragost-deft-gastronaut	archidekt	Ragost: Break a Few Eggs · 10 439 vues	https://archidekt.com/decks/14372474
 K	1	Trouble in Pairs
 K	1	Command Tower
 K	1	Clifftop Retreat
@@ -36002,7 +36055,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Reanimate
 K	1	Victimize
-D	henzie-toolbox-torre	archidekt	Henzie · 41 861 vues	https://archidekt.com/decks/5860172
+D	henzie-toolbox-torre	archidekt	Henzie · 41 863 vues	https://archidekt.com/decks/5860172
 K	4	Swamp
 K	1	Ancient Brass Dragon
 K	1	Arcane Signet
@@ -36092,7 +36145,7 @@ K	1	Whip of Erebos
 K	1	Ziatora's Envoy
 K	1	Ziatora's Proving Ground
 K	6	Forest
-D	henzie-toolbox-torre	archidekt	Upping the Average - Henzie "Toolbox" Torre · 38 081 vues	https://archidekt.com/decks/2832773
+D	henzie-toolbox-torre	archidekt	Upping the Average - Henzie "Toolbox" Torre · 38 082 vues	https://archidekt.com/decks/2832773
 K	1	Colfenor's Urn
 K	1	Vaevictis Asmadi, the Dire
 K	1	Lurking Predators
@@ -36181,7 +36234,7 @@ K	1	Chaos Warp
 K	1	Blasphemous Act
 K	1	Ravenous Chupacabra
 K	1	Avenger of Zendikar
-D	henzie-toolbox-torre	archidekt	Riveteer Rampage - New Capenna Commander · 24 014 vues	https://archidekt.com/decks/2624023
+D	henzie-toolbox-torre	archidekt	Riveteer Rampage - New Capenna Commander · 24 015 vues	https://archidekt.com/decks/2624023
 K	1	Riveteers Charm
 K	6	Forest
 K	5	Mountain
@@ -36364,7 +36417,7 @@ K	1	Distant Melody
 K	1	Organic Extinction
 K	1	Thoughtcast
 K	1	Wake the Past
-D	urtet-remnant-of-memnarch	archidekt	Upping the Average - Urtet, Remnant of Memnarch · 46 088 vues	https://archidekt.com/decks/3983904
+D	urtet-remnant-of-memnarch	archidekt	Upping the Average - Urtet, Remnant of Memnarch · 46 090 vues	https://archidekt.com/decks/3983904
 K	1	Alloy Myr
 K	1	Jhoira, Weatherlight Captain
 K	1	Brudiclad, Telchor Engineer
@@ -36460,7 +36513,7 @@ K	1	Mirror Entity
 K	1	Mechanized Production
 K	1	Crib Swap
 K	1	Shimmer Dragon
-D	urtet-remnant-of-memnarch	archidekt	JLK's Urtet | Game Knights #60 · 42 108 vues	https://archidekt.com/decks/4664186
+D	urtet-remnant-of-memnarch	archidekt	JLK's Urtet | Game Knights #60 · 42 109 vues	https://archidekt.com/decks/4664186
 K	1	Drafna, Founder of Lat-Nam
 K	1	Relic of Legends
 K	1	Guardian Project
@@ -36559,7 +36612,7 @@ K	1	Three Visits
 K	1	Vandalblast
 K	1	Jetmir, Nexus of Revels
 K	1	Canoptek Spyder
-D	urtet-remnant-of-memnarch	archidekt	Urtet remnant of memnarch · 9 681 vues	https://archidekt.com/decks/7529027
+D	urtet-remnant-of-memnarch	archidekt	Urtet remnant of memnarch · 9 683 vues	https://archidekt.com/decks/7529027
 K	1	Tezzeret, Master of the Bridge
 K	1	Raise the Palisade
 K	1	Thought Monitor
@@ -36745,7 +36798,7 @@ K	1	Scapeshift
 K	1	Skyshroud Claim
 K	1	Splendid Reclamation
 K	1	Three Visits
-D	omnath-locus-of-creation	archidekt	Upping the Average - Omnath, Locus of Creation · 49 890 vues	https://archidekt.com/decks/1066823
+D	omnath-locus-of-creation	archidekt	Upping the Average - Omnath, Locus of Creation · 49 891 vues	https://archidekt.com/decks/1066823
 K	1	Llanowar Scout
 K	1	Wayward Swordtooth
 K	1	Arid Mesa
@@ -36840,7 +36893,7 @@ K	1	Evolving Wilds
 K	1	Snow-Covered Island
 K	3	Snow-Covered Forest
 K	1	Tireless Tracker
-D	omnath-locus-of-creation	archidekt	Upping the Average - Omnath, Locus of Creation (Budget Version) · 24 873 vues	https://archidekt.com/decks/1078730
+D	omnath-locus-of-creation	archidekt	Upping the Average - Omnath, Locus of Creation (Budget Version) · 24 874 vues	https://archidekt.com/decks/1078730
 K	1	Llanowar Scout
 K	1	Emeria Angel
 K	1	Scattered Groves
@@ -36928,7 +36981,7 @@ K	1	Snow-Covered Forest
 K	1	Snow-Covered Mountain
 K	1	Snow-Covered Plains
 K	1	Tireless Tracker
-D	omnath-locus-of-creation	archidekt	Jake's Omnath | Extra Turns #25 · 22 575 vues	https://archidekt.com/decks/4664109
+D	omnath-locus-of-creation	archidekt	Jake's Omnath | Extra Turns #25 · 22 579 vues	https://archidekt.com/decks/4664109
 K	1	Apex Devastator
 K	1	Auspicious Starrix
 K	1	Azusa, Lost but Seeking
@@ -37104,7 +37157,7 @@ K	1	Mind Grind
 K	1	Psionic Ritual
 K	1	Reanimate
 K	1	Singularity Rupture
-D	captain-nghathrod	archidekt	Mind Flayarrrs - Commander Legends: Battle for Baldur's Gate · 49 886 vues	https://archidekt.com/decks/2788668
+D	captain-nghathrod	archidekt	Mind Flayarrrs - Commander Legends: Battle for Baldur's Gate · 49 887 vues	https://archidekt.com/decks/2788668
 K	1	Aboleth Spawn
 K	1	Arcane Signet
 K	1	Ash Barrens
@@ -37186,7 +37239,7 @@ K	1	Reflections of Littjara
 K	1	Pull from Tomorrow
 K	1	Extract from Darkness
 K	1	Dimir Aqueduct
-D	captain-nghathrod	archidekt	Upping the Average - Captain N'ghathrod · 39 485 vues	https://archidekt.com/decks/3151312
+D	captain-nghathrod	archidekt	Upping the Average - Captain N'ghathrod · 39 486 vues	https://archidekt.com/decks/3151312
 K	1	Sol Ring
 K	1	Extract from Darkness
 K	1	Crippling Fear
@@ -37271,7 +37324,7 @@ K	1	Kindred Discovery
 K	1	Expel from Orazca
 K	1	Irenicus's Vile Duplication
 K	1	Ash Barrens
-D	captain-nghathrod	archidekt	Pirates From Beyond · 12 833 vues	https://archidekt.com/decks/2751500
+D	captain-nghathrod	archidekt	Pirates From Beyond · 12 834 vues	https://archidekt.com/decks/2751500
 K	1	Exotic Orchard
 K	8	Island
 K	1	Nykthos, Shrine to Nyx
@@ -37440,7 +37493,7 @@ K	1	Maddening Cacophony
 K	1	Space-Time Anomaly
 K	1	Supreme Verdict
 K	1	Tasha's Hideous Laughter
-D	hope-estheim	archidekt	Hope Estheim - Abandon All Hope · 13 511 vues	https://archidekt.com/decks/14254945
+D	hope-estheim	archidekt	Hope Estheim - Abandon All Hope · 13 514 vues	https://archidekt.com/decks/14254945
 K	1	Aetherflux Reservoir
 K	1	Alhammarret's Archive
 K	1	Arcane Signet
@@ -37523,7 +37576,7 @@ K	1	White Sun's Twilight
 K	1	Will, Scion of Peace
 K	1	Y'shtola Rhul
 K	1	Delusions of Mediocrity
-D	hope-estheim	archidekt	Hope Estheim · 8 752 vues	https://archidekt.com/decks/13849197
+D	hope-estheim	archidekt	Hope Estheim · 8 757 vues	https://archidekt.com/decks/13849197
 K	1	Beacon of Immortality
 K	1	Heliod's Intervention
 K	1	The Water Crystal
@@ -37610,7 +37663,7 @@ K	9	Plains
 K	1	Evolving Wilds
 K	1	Sea of Clouds
 K	1	Fabled Passage
-D	hope-estheim	archidekt	Building an Azorius Mill Commander Deck With Hope Estheim - Tech The Deck - Hope Estheim · 6 618 vues	https://archidekt.com/decks/13898306
+D	hope-estheim	archidekt	Building an Azorius Mill Commander Deck With Hope Estheim - Tech The Deck - Hope Estheim · 6 619 vues	https://archidekt.com/decks/13898306
 K	1	Absorb
 K	1	Beacon of Immortality
 K	1	Congregate
@@ -37783,7 +37836,7 @@ K	1	Damning Verdict
 K	1	Farseek
 K	1	Nature's Lore
 K	1	Three Visits
-D	voja-jaws-of-the-conclave	archidekt	Arin's Voja | Game Knights #67 · 68 145 vues	https://archidekt.com/decks/6138800
+D	voja-jaws-of-the-conclave	archidekt	Arin's Voja | Game Knights #67 · 68 147 vues	https://archidekt.com/decks/6138800
 K	1	Mirror Entity
 K	1	Realmwalker
 K	1	Lightning Greaves
@@ -37877,7 +37930,7 @@ K	1	Warleader's Call
 K	1	Commercial District
 K	1	Elegant Parlor
 K	1	Lush Portico
-D	voja-jaws-of-the-conclave	archidekt	Upping the Average - Voja · 36 409 vues	https://archidekt.com/decks/6788602
+D	voja-jaws-of-the-conclave	archidekt	Upping the Average - Voja · 36 414 vues	https://archidekt.com/decks/6788602
 K	1	Heroic Intervention
 K	1	Hollowhenge Overlord
 K	1	Fyndhorn Elves
@@ -37968,7 +38021,7 @@ K	1	Mutavault
 K	1	Moon-Blessed Cleric
 K	1	Naya Charm
 K	1	Shields of Velis Vel
-D	voja-jaws-of-the-conclave	archidekt	Upping the Average - Voja · 20 729 vues	https://archidekt.com/decks/6774175
+D	voja-jaws-of-the-conclave	archidekt	Upping the Average - Voja · 20 730 vues	https://archidekt.com/decks/6774175
 K	1	Arbor Elf
 K	1	Arcane Signet
 K	1	Beast Within
@@ -38140,7 +38193,7 @@ K	1	Nature's Lore
 K	1	Rampant Growth
 K	1	Triumph of the Hordes
 K	1	Trystan's Command
-D	high-perfect-morcant	archidekt	High Perfect Morcant Elves · 11 867 vues	https://archidekt.com/decks/5807934
+D	high-perfect-morcant	archidekt	High Perfect Morcant Elves · 11 868 vues	https://archidekt.com/decks/5807934
 K	1	Wolverine Riders
 K	1	Elvish Archdruid
 K	1	Elvish Mystic
@@ -38213,7 +38266,7 @@ K	1	Formidable Speaker
 K	1	Arcane Signet
 K	1	Generous Patron
 K	1	Toxic Deluge
-D	high-perfect-morcant	archidekt	high mom - High Perfect Morcant - Elves · 10 036 vues	https://archidekt.com/decks/20811832
+D	high-perfect-morcant	archidekt	high mom - High Perfect Morcant - Elves · 10 037 vues	https://archidekt.com/decks/20811832
 K	1	Tyvar the Bellicose
 K	1	Eladamri, Lord of Leaves
 K	1	Sylvan Library
@@ -38299,7 +38352,7 @@ K	1	Umbral Mantle
 K	1	Wirewood Symbiote
 K	1	Necroskitter
 K	1	Royal Treatment
-D	high-perfect-morcant	archidekt	High Perfect Morcant - Budget Deck Tech · 9 340 vues	https://archidekt.com/decks/18155962
+D	high-perfect-morcant	archidekt	High Perfect Morcant - Budget Deck Tech · 9 341 vues	https://archidekt.com/decks/18155962
 K	1	Prowess of the Fair
 K	1	Immaculate Magistrate
 K	1	Dwynen, Gilt-Leaf Daen
@@ -38460,7 +38513,7 @@ K	1	Jeska's Will
 K	1	Seize the Spoils
 K	1	Sundering Eruption
 K	1	Vandalblast
-D	magda-brazen-outlaw	archidekt	Jimmy's Magda | Game Knights #42 · 21 063 vues	https://archidekt.com/decks/4663946
+D	magda-brazen-outlaw	archidekt	Jimmy's Magda | Game Knights #42 · 21 064 vues	https://archidekt.com/decks/4663946
 K	1	Steel Hellkite
 K	1	Inspiring Statuary
 K	1	Axgard Cavalry
@@ -38538,7 +38591,7 @@ K	1	Thousand-Year Elixir
 K	1	Treasure Map // Treasure Cove
 K	1	Wayfarer's Bauble
 K	1	Inventors' Fair
-D	magda-brazen-outlaw	archidekt	Budget Magda · 16 340 vues	https://archidekt.com/decks/1408689
+D	magda-brazen-outlaw	archidekt	Budget Magda · 16 341 vues	https://archidekt.com/decks/1408689
 K	31	Mountain
 K	1	Forgotten Cave
 K	1	Desert of the Fervent
@@ -38608,7 +38661,7 @@ K	1	Dwarven Patrol
 K	1	Springleaf Drum
 K	1	Stoke the Flames
 K	1	Plundering Barbarian
-D	magda-brazen-outlaw	archidekt	02 Magda - A mountain of riches · 12 835 vues	https://archidekt.com/decks/4097504
+D	magda-brazen-outlaw	archidekt	02 Magda - A mountain of riches · 12 838 vues	https://archidekt.com/decks/4097504
 K	1	Bloodfire Dwarf
 K	1	Dwarven Scorcher
 K	1	Universal Automaton
@@ -38761,7 +38814,7 @@ K	1	Distant Melody
 K	1	Kindred Dominance
 K	1	Notorious Throng
 K	1	Tegwyll's Scouring
-D	alela-cunning-conqueror	archidekt	JLK's Alela | Game Knights #64 · 139 613 vues	https://archidekt.com/decks/5280254
+D	alela-cunning-conqueror	archidekt	JLK's Alela | Game Knights #64 · 139 621 vues	https://archidekt.com/decks/5280254
 K	1	Blightwing Bandit
 K	1	Curiosity Crafter
 K	1	An Offer You Can't Refuse
@@ -38847,7 +38900,7 @@ K	1	Fabled Passage
 K	1	Prismatic Vista
 K	1	Polluted Delta
 K	1	Myriad Landscape
-D	alela-cunning-conqueror	archidekt	4. Alela, Cunning Conqueror - Faerie Trickery · 16 967 vues	https://archidekt.com/decks/5607118
+D	alela-cunning-conqueror	archidekt	4. Alela, Cunning Conqueror - Faerie Trickery · 16 979 vues	https://archidekt.com/decks/5607118
 K	7	Swamp
 K	1	Bender's Waterskin
 K	1	Perplexing Test
@@ -38934,7 +38987,7 @@ K	1	Search for Azcanta // Azcanta, the Sunken Ruin
 K	1	Waterlogged Teachings // Inundated Archive
 K	1	Demolition Field
 K	1	Bitterthorn, Nissa's Animus
-D	alela-cunning-conqueror	archidekt	Alela , Cunning Conqueror · 15 664 vues	https://archidekt.com/decks/10147321
+D	alela-cunning-conqueror	archidekt	Alela , Cunning Conqueror · 15 665 vues	https://archidekt.com/decks/10147321
 K	1	Scion of Oona
 K	1	Cyclonic Rift
 K	1	Arcane Signet
@@ -39100,7 +39153,7 @@ K	1	Feed the Swarm
 K	1	Inspiring Refrain
 K	1	Profane Tutor
 K	1	Rousing Refrain
-D	obeka-splitter-of-seconds	archidekt	JLK's Obeka | Game Knights #69 · 32 661 vues	https://archidekt.com/decks/6856302
+D	obeka-splitter-of-seconds	archidekt	JLK's Obeka | Game Knights #69 · 32 662 vues	https://archidekt.com/decks/6856302
 K	1	Blood Crypt
 K	1	Command Tower
 K	1	Exotic Orchard
@@ -39192,7 +39245,7 @@ K	1	Wayfarer's Bauble
 K	1	Whispersilk Cloak
 K	1	Wildfire Devils
 K	1	Winged Boots
-D	obeka-splitter-of-seconds	archidekt	Very Normal Bracket 2 Commander Deck · 24 721 vues	https://archidekt.com/decks/17074410
+D	obeka-splitter-of-seconds	archidekt	Very Normal Bracket 2 Commander Deck · 24 723 vues	https://archidekt.com/decks/17074410
 K	1	Braid of Fire
 K	1	Swiftfoot Boots
 K	1	Command Tower
@@ -39277,7 +39330,7 @@ K	1	Rousing Refrain
 K	1	Wheel of Fate
 K	1	Inevitable Betrayal
 K	1	Reality Strobe
-D	obeka-splitter-of-seconds	archidekt	Cut-Rate Commander | Obeka, Splitter of Seconds · 15 807 vues	https://archidekt.com/decks/7510324
+D	obeka-splitter-of-seconds	archidekt	Cut-Rate Commander | Obeka, Splitter of Seconds · 15 808 vues	https://archidekt.com/decks/7510324
 K	1	Court of Cunning
 K	1	Court of Embereth
 K	1	Ravenloft Adventurer
@@ -39446,7 +39499,7 @@ K	1	Distant Melody
 K	1	Promise of Loyalty
 K	1	Raise the Palisade
 K	1	Time Wipe
-D	sidar-jabari-of-zhalfir	archidekt	Cavalry Charge - March of the Machine Commander · 38 464 vues	https://archidekt.com/decks/4303568
+D	sidar-jabari-of-zhalfir	archidekt	Cavalry Charge - March of the Machine Commander · 38 467 vues	https://archidekt.com/decks/4303568
 K	1	Inys Haen
 K	1	Truga Jungle
 K	1	Turri Island
@@ -39540,7 +39593,7 @@ K	1	Vona, Butcher of Magan
 K	1	Wintermoor Commander
 K	1	Worthy Knight
 K	1	Xerex Strobe-Knight
-D	sidar-jabari-of-zhalfir	archidekt	Upping the Average - Sidar Jabari of Zhalfir · 33 536 vues	https://archidekt.com/decks/4471573
+D	sidar-jabari-of-zhalfir	archidekt	Upping the Average - Sidar Jabari of Zhalfir · 33 537 vues	https://archidekt.com/decks/4471573
 K	1	Acclaimed Contender
 K	1	Adeline, Resplendent Cathar
 K	1	Anguished Unmaking
@@ -39629,7 +39682,7 @@ K	1	Wintermoor Commander
 K	1	Wonder
 K	1	Worthy Knight
 K	1	Xerex Strobe-Knight
-D	sidar-jabari-of-zhalfir	archidekt	Upping the Average - Sidar Jabari · 16 801 vues	https://archidekt.com/decks/4450977
+D	sidar-jabari-of-zhalfir	archidekt	Upping the Average - Sidar Jabari · 16 805 vues	https://archidekt.com/decks/4450977
 K	1	Adeline, Resplendent Cathar
 K	1	Aryel, Knight of Windgrace
 K	1	Exsanguinator Cavalry
@@ -39807,7 +39860,7 @@ K	1	Chart a Course
 K	1	Dusk // Dawn
 K	1	Martial Coup
 K	1	Storm of Souls
-D	zinnia-valleys-voice	archidekt	Family Matters - Bloomburrow Commander · 78 725 vues	https://archidekt.com/decks/8460543
+D	zinnia-valleys-voice	archidekt	Family Matters - Bloomburrow Commander · 78 732 vues	https://archidekt.com/decks/8460543
 K	1	Boros Signet
 K	1	Fellwar Stone
 K	1	Izzet Signet
@@ -39897,7 +39950,7 @@ K	5	Plains
 K	1	Helm of the Host
 K	1	Echoing Assault
 K	4	Island
-D	zinnia-valleys-voice	archidekt	CZ 624 | "Family Matters" Precon Upgrade · 26 056 vues	https://archidekt.com/decks/8530006
+D	zinnia-valleys-voice	archidekt	CZ 624 | "Family Matters" Precon Upgrade · 26 057 vues	https://archidekt.com/decks/8530006
 K	1	Plumecreed Escort
 K	1	Castle Ardenvale
 K	1	Clifftop Retreat
@@ -39997,7 +40050,7 @@ K	1	Cayth, Famed Mechanist
 K	1	Soulherder
 K	1	Welcoming Vampire
 K	1	Oltec Matterweaver
-D	zinnia-valleys-voice	archidekt	Acetaminophen · 20 315 vues	https://archidekt.com/decks/16289379
+D	zinnia-valleys-voice	archidekt	Acetaminophen · 20 318 vues	https://archidekt.com/decks/16289379
 K	1	Adagia, Windswept Bastion
 K	1	Adarkar Wastes
 K	1	Arcane Signet
