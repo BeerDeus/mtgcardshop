@@ -105,10 +105,11 @@ export function archidektList(j) {
 
 /* ── Écriture ─────────────────────────────────────────────────────────────────────────────────── */
 const tab = s => String(s == null ? '' : s).replace(/[\t\r\n]+/g, ' ').trim();
-/** Texte du fichier (format décrit dans parseEdh de src/core.js). cmds : [{ slug, names, decks, ci }] · decks : [{ slug, src, label, url, cards }] · price : Map(nom → centimes) · img : Map(slug → chemin). */
-export function buildEdh({ at, cmds, decks, price, img }) {
+/** Texte du fichier (format décrit dans parseEdh de src/core.js). cmds : [{ slug, names, decks, ci }] · decks : [{ slug, src, label, url, cards }] · price : Map(nom → centimes) · img : Map(slug → chemin) · gc : noms des Game Changers. */
+export function buildEdh({ at, cmds, decks, price, img, gc }) {
   const L = [`#edh\t1\t${at}`];
   for (const c of cmds) { L.push(['C', c.slug, c.decks, c.ci, ...c.names.map(tab)].join('\t')); const i = img && img.get(c.slug); if (i) L.push(`I\t${c.slug}\t${i}`); }
+  for (const n of gc || []) if (tab(n)) L.push(`G\t${tab(n)}`);
   for (const d of decks) { L.push(['D', d.slug, d.src, tab(d.label), /^https:\/\//.test(d.url || '') ? d.url : ''].join('\t')); for (const [n, q] of d.cards) L.push(`K\t${q}\t${tab(n)}`); }
   for (const [n, c] of price || []) if (c > 0) L.push(`P\t${Math.round(c)}\t${tab(n)}`);
   return L.join('\n') + '\n';
@@ -119,7 +120,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const backoff = ms => (GAP == null ? ms : Math.min(ms, 20));      // tests : pas d'attente réelle entre les essais
 const log = (...a) => { const s = a.join(' '); console.log(s); if (DEBUG) { try { mkdirSync(DEBUG, { recursive: true }); appendFileSync(join(DEBUG, 'log.txt'), s + '\n'); } catch { /* ignore */ } } };
 let nSamples = 0;
-const sample = (name, data) => { if (!DEBUG || (!/^(avg|archidekt)/.test(name) && ++nSamples > 6)) return; try { mkdirSync(DEBUG, { recursive: true }); writeFileSync(join(DEBUG, name.replace(/[^\w.-]+/g, '_') + '.json'), JSON.stringify(data, null, 1).slice(0, 60000)); } catch { /* ignore */ } };
+const sample = (name, data) => { if (!DEBUG || (!/^(avg|archidekt|gc)/.test(name) && ++nSamples > 6)) return; try { mkdirSync(DEBUG, { recursive: true }); writeFileSync(join(DEBUG, name.replace(/[^\w.-]+/g, '_') + '.json'), JSON.stringify(data, null, 1).slice(0, 60000)); } catch { /* ignore */ } };
 let lastReq = 0;
 /** GET JSON poli : espacement minimal gap ms entre deux requêtes, nouvel essai sur 429/5xx/réseau. null si 404 ; erreur (avec .status) sinon. */
 async function getJson(url, { gap = 350, tries = 5, headers = {}, method = 'GET', body } = {}) {
@@ -248,8 +249,29 @@ async function scryInfo(names) {
   return { price, meta };
 }
 
+/* ── 5) Game Changers (brackets Commander) : recherche Scryfall, plusieurs écritures essayées ─────────────────── */
+const GC_QUERIES = ['is:gamechanger', 'is:gamechangers', 'is:gc'];
+/** Noms (première face) de la liste Game Changers. Vide si aucune requête ne donne un résultat plausible (20 à 150 cartes) : le bracket n'est alors pas calculé par l'appli. */
+async function gameChangers() {
+  for (const q of GC_QUERIES) {
+    const out = []; let url = SCRY + 'cards/search?q=' + encodeURIComponent(q) + '&unique=cards';
+    try {
+      while (url && out.length < 400) {
+        const j = await getJson(url, { gap: 150, tries: 2 }); if (!j) break; if (!out.length) sample('gc-' + q, j);
+        for (const c of j.data || []) if (c && c.name) out.push(String(c.name).split(' // ')[0]);
+        url = j.has_more && typeof j.next_page === 'string' && j.next_page.startsWith(SCRY) ? j.next_page : '';
+      }
+    } catch (e) { log(`  Game Changers « ${q} » : ${e.message}`); continue; }
+    log(`  Game Changers « ${q} » : ${out.length} cartes${out.length ? ' (' + out.slice(0, 6).join(', ') + '…)' : ''}`);
+    if (out.length >= 20 && out.length <= 150) return [...new Set(out)];
+  }
+  log('  Game Changers : liste indisponible (bracket non calculé)'); return [];
+}
+
 /** Sonde Archidekt : essaie plusieurs formes de requête pour un commandant connu et dit lesquelles filtrent vraiment (journal + échantillons sur la branche edh-debug). */
 async function probe() {
+  log('Sonde Game Changers'); const gc = await gameChangers(); log(`→ ${gc.length} Game Changers`);
+  if (!process.env.EDH_PROBE_ARCH) return;
   const AR = ARCH_BASE, hd = { Accept: 'application/json' }, name = 'Edgar Markov', target = normKey(name);
   const variants = [{ commanders: name }, { commanderName: name }, { commanders: name, deckFormat: '3' }, { commanders: name, formats: '3' }, { name, deckFormat: '3' }, { cards: name, deckFormat: '3' }, { commanders: edhSlug(name) }, { commanderName: name, deckFormat: '3' }, { commanders: '"' + name + '"' }];
   let i = 0;
@@ -277,12 +299,13 @@ async function main() {
   const names = new Set(); for (const c of cmds) for (const n of c.names) names.add(n); for (const d of decks) for (const [n] of d.cards) names.add(n);
   log(`Scryfall : prix de ${names.size} cartes`);
   const { price, meta } = await scryInfo([...names]);
+  const gc = await gameChangers();
   const img = new Map(), priceByName = new Map();
   for (const c of cmds) { const m = meta.get(normKey(c.names[0])); if (m) { if (m.img) img.set(c.slug, m.img); if (!c.ci && m.ci) c.ci = m.ci; } }
   const usedKeys = new Set(); for (const d of decks) for (const [n] of d.cards) usedKeys.add(normKey(n)); for (const c of cmds) for (const n of c.names) usedKeys.add(normKey(n));
   const dispName = new Map(); for (const d of decks) for (const [n] of d.cards) if (!dispName.has(normKey(n))) dispName.set(normKey(n), n); for (const c of cmds) for (const n of c.names) if (!dispName.has(normKey(n))) dispName.set(normKey(n), n);
   for (const k of usedKeys) if (price.has(k)) priceByName.set(dispName.get(k) || k, price.get(k));
-  const text = buildEdh({ at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), cmds: cmds.filter(c => c.decks > 0 || decks.some(d => d.slug === c.slug)), decks: decks.sort((a, b) => (cmds.findIndex(c => c.slug === a.slug) - cmds.findIndex(c => c.slug === b.slug)) || (a.src === b.src ? 0 : a.src === 'edhrec' ? -1 : 1)), price: priceByName, img });
+  const text = buildEdh({ at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), cmds: cmds.filter(c => c.decks > 0 || decks.some(d => d.slug === c.slug)), decks: decks.sort((a, b) => (cmds.findIndex(c => c.slug === a.slug) - cmds.findIndex(c => c.slug === b.slug)) || (a.src === b.src ? 0 : a.src === 'edhrec' ? -1 : 1)), price: priceByName, img, gc });
   if (decks.length < MIN_DECKS || cmds.length < MIN_CMDS) throw new Error(`Résultat trop maigre (${decks.length} decks, ${cmds.length} commandants) : fichier existant conservé`);
   mkdirSync(dirname(out), { recursive: true });
   const tmp = out + '.tmp'; writeFileSync(tmp, text); renameSync(tmp, out);
