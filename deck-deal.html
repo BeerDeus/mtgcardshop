@@ -1729,11 +1729,14 @@ const LANG_COLS = ['language', 'langue', 'lang', 'card language'];
 const QTY_COLS = ['quantity', 'qty', 'count', 'amount', 'quantite', 'reg qty', 'total qty', 'owned'];
 const colNorm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
+/** Repère de date d'ajout dans le texte de la collection : « 3 Sol Ring (Dh7zqkx) *FR* », secondes en base 36. Une ligne que l'ancienne version lit encore : elle y voit un code d'extension et l'ignore. */
+const DATE_MARK_RE = /\s+\(D([0-9a-z]{5,7})\)(?=(?:\s+\*[A-Za-z]+\*)?\s*$)/;
+const dateNowSec = () => Math.floor(Date.now() / 1000);
 /**
  * Lit une collection : export CSV (ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield, TCGplayer…) ou texte « 3 Sol Ring ».
- * Retourne { items:[{k, n, q, l?}] (l : langue si le fichier la donne : colonne « Language », ou « *FR* » en fin de ligne), lines, skipped, format:'csv'|'text', copies }. Les quantités d'une même carte (impressions différentes) s'additionnent.
+ * Retourne { items:[{k, n, q, l?, d?}] (l : langue si le fichier la donne : colonne « Language », ou « *FR* » en fin de ligne ; d : date d'ajout en secondes, seulement avec o.dates : repère « (Dxxxxxx) » écrit par collToText), lines, skipped, format:'csv'|'text', copies }. Les quantités d'une même carte (impressions différentes) s'additionnent.
  */
-function parseCollection(text) {
+function parseCollection(text, o) {
   const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/);
   let i0 = 0; while (i0 < lines.length && (!lines[i0].trim() || /^sep=.$/i.test(lines[i0].trim()))) i0++;
   const first = lines[i0] || '';
@@ -1749,10 +1752,10 @@ function parseCollection(text) {
     break;
   }
   const map = new Map(); let n = 0, skipped = 0;
-  const add = (name, q, l) => {
+  const add = (name, q, l, d) => {
     name = String(name || '').trim(); q = Math.max(1, Math.min(9999, Math.round(q) || 1));
     const k = ownKey(name); if (!name || !k) { skipped++; return; }
-    const cur = map.get(k); if (cur) { cur.q = Math.min(9999, cur.q + q); if (l) cur.l = l; } else if (map.size < COLL_MAX) map.set(k, l ? { k, n: name, q, l } : { k, n: name, q });
+    const cur = map.get(k); if (cur) { cur.q = Math.min(9999, cur.q + q); if (l) cur.l = l; if (d && !(cur.d <= d)) cur.d = d; } else if (map.size < COLL_MAX) map.set(k, { k, n: name, q, ...(l ? { l } : {}), ...(d ? { d } : {}) });
   };
   if (delim) {
     for (let i = i0 + 1; i < lines.length; i++) {
@@ -1762,10 +1765,12 @@ function parseCollection(text) {
       add(name, qtyCol >= 0 ? parseInt(c[qtyCol], 10) || 1 : 1, langCol >= 0 ? cardLang(c[langCol]) : '');
     }
   } else {
-    for (const raw of lines) {
+    for (let raw of lines) {
+      let d = 0;
+      if (o && o.dates) raw = raw.replace(DATE_MARK_RE, (_, t) => { d = parseInt(t, 36) || 0; return ''; });
       const p = parseLine(raw); if (!p) continue; n++;
       if (p.ignored) { skipped++; continue; }
-      add(p.name, p.qty, p.lang);
+      add(p.name, p.qty, p.lang, d);
     }
   }
   const items = [...map.values()];
@@ -1773,17 +1778,17 @@ function parseCollection(text) {
 }
 
 /** Fusionne des cartes dans une collection (objet clé → { n, q, … }). mode : 'add' (somme) · 'replace' (remplace le reste, garde les infos Scryfall déjà lues). Retourne la nouvelle collection. */
-function mergeColl(base, add, mode) {
-  const out = mode === 'replace' ? {} : { ...base };
+function mergeColl(base, add, mode, now) {
+  const out = mode === 'replace' ? {} : { ...base }, t = now || dateNowSec();
   for (const it of add) {
     const prev = base[it.k], cur = out[it.k];
-    out[it.k] = { ...(prev || {}), n: (prev && prev.n) || it.n, q: Math.min(9999, (cur ? cur.q : 0) + it.q), ...(it.l ? { l: it.l } : {}) };       // langue : la dernière lue l'emporte
+    out[it.k] = { ...(prev || {}), n: (prev && prev.n) || it.n, q: Math.min(9999, (cur ? cur.q : 0) + it.q), ...(it.l ? { l: it.l } : {}), ...(!prev && (it.d || t) ? { d: it.d || t } : {}) };       // langue : la dernière lue l'emporte ; date d'ajout : posée à la première entrée de la carte, jamais modifiée ensuite (une carte d'avant le suivi reste sans date)
   }
   return out;
 }
-/** Texte compact d'une collection (une carte par ligne, « 3 Sol Ring ») pour le cloud, et son inverse. */
-const collToText = coll => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).map(x => x.q + ' ' + x.n + (x.l ? ' *' + x.l.toUpperCase() + '*' : '')).join('\n');
-const collFromText = text => { const o = {}; for (const it of parseCollection(text).items) o[it.k] = it.l ? { n: it.n, q: it.q, l: it.l } : { n: it.n, q: it.q }; return o; };
+/** Texte compact d'une collection (une carte par ligne, « 3 Sol Ring ») pour le cloud, et son inverse. dates : ajoute la date d'ajout « (Dxxxxxx) » (stockage et compte ; pas l'export). */
+const collToText = (coll, dates) => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).map(x => x.q + ' ' + x.n + (dates && x.d > 0 ? ' (D' + Math.floor(x.d).toString(36) + ')' : '') + (x.l ? ' *' + x.l.toUpperCase() + '*' : '')).join('\n');
+const collFromText = text => { const o = {}; for (const it of parseCollection(text, { dates: true }).items) o[it.k] = { n: it.n, q: it.q, ...(it.l ? { l: it.l } : {}), ...(it.d ? { d: it.d } : {}) }; return o; };
 
 /** Même carte au même état (quantité, langue) ? Deux absences sont identiques. */
 const sameEntry = (a, b) => (!a && !b) || (!!a && !!b && a.q === b.q && (a.l || '') === (b.l || ''));
@@ -1810,7 +1815,11 @@ function merge3(base, local, remote) {
       v = q >= 1 ? { ...r, ...l, n: l.n || r.n, q: Math.min(9999, q) } : undefined;
       if (v) { if (lang) v.l = lang; else delete v.l; }
     }
-    if (v && v.q > 0) out[k] = { ...v };
+    if (v && v.q > 0) {
+      out[k] = { ...v };
+      const ds = [l, r, b].map(x => x && x.d).filter(d => d > 0);      // la date d'ajout survit à un appareil qui ne la connaît pas (ancienne version) : la plus ancienne connue
+      if (ds.length) out[k].d = Math.min(...ds);
+    }
   }
   return out;
 }
@@ -5274,7 +5283,7 @@ function collRead() {
   } catch (e) { /* illisible : on repart d'une collection vide */ }
 }
 function collWrite() {
-  try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map), u: COLL.u, s: COLL.s, ...(COLL.base ? { b: collToText(COLL.base) } : {}) })); return true; }
+  try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map, true), u: COLL.u, s: COLL.s, ...(COLL.base ? { b: collToText(COLL.base, true) } : {}) })); return true; }
   catch (e) { toast('Stockage plein : la collection n\'a pas pu être enregistrée sur cet appareil'); return false; }
 }
 async function collMetaLoad() {
@@ -5322,7 +5331,7 @@ function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); col
 /** +/− d'exemplaires d'une carte ; à 0 la carte sort de la collection. */
 function collBump(k, name, d, o) {
   const cur = COLL.map[k], q = Math.max(0, Math.min(9999, (cur ? cur.q : 0) + d));
-  if (!q) delete COLL.map[k]; else COLL.map[k] = { ...(cur || {}), n: (cur && cur.n) || name, q };
+  if (!q) delete COLL.map[k]; else COLL.map[k] = { ...(cur || {}), n: (cur && cur.n) || name, q, ...(cur ? {} : { d: (o && o.date) || dateNowSec() }) };      // date d'ajout : à l'entrée de la carte (o.date : celle qu'elle avait avant un retrait annulé)
   collChanged(o); return q;
 }
 
@@ -5353,7 +5362,7 @@ async function collPush() {
       used = collClone(COLL.map);
       merged = merge3(rdoc && COLL.s === uid ? COLL.base : null, used, remote);
       if (rdoc ? sameColl(merged, remote) : !Object.keys(merged).length) { wrote = null; return null; }              // le compte a déjà tout
-      wrote = { text: collToText(merged), count: Object.keys(merged).length, updatedAt: Math.max(Date.now(), (Number(rdoc && rdoc.updatedAt) || 0) + 1) };
+      wrote = { text: collToText(merged, true), count: Object.keys(merged).length, updatedAt: Math.max(Date.now(), (Number(rdoc && rdoc.updatedAt) || 0) + 1) };
       if (wrote.text.length > 900000) throw Object.assign(new Error('Collection trop grosse'), { code: 'too-big' });
       return wrote;
     });
@@ -5611,15 +5620,16 @@ function collInit() {
 }
 
 /* ── Écran « Ma collection » ──────────────────────────────────────────────────────────────────── */
-const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût'], ['decks', 'Decks EDHREC']];
+const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût'], ['decks', 'Decks EDHREC'], ['new', 'Ajout : récentes en haut'], ['old', 'Ajout : anciennes en haut']];
+const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
 function collItems() {
   return Object.entries(COLL.map).map(([k, x]) => {
-    const px = COLL.px[k], it = { k, n: x.n, q: x.q, l: x.l || '', ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
+    const px = COLL.px[k], it = { k, n: x.n, q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
     return Object.assign(it, cmdrClass(it, EDH.data));      // cx : 0 · 1 peut être commandant · 2 joué comme commandant (EDHREC), ed : nombre de decks
   });
 }
 function collSorted(items) {
-  const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => (((srcPrice(b, COLL.src) || {}).u || 0) - ((srcPrice(a, COLL.src) || {}).u || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b), decks: (a, b) => ((b.ed || 0) - (a.ed || 0)) || ((b.cx || 0) - (a.cx || 0)) || byName(a, b) }[COLL.sort] || byName;
+  const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => (((srcPrice(b, COLL.src) || {}).u || 0) - ((srcPrice(a, COLL.src) || {}).u || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b), decks: (a, b) => ((b.ed || 0) - (a.ed || 0)) || ((b.cx || 0) - (a.cx || 0)) || byName(a, b), new: (a, b) => ((b.d || 0) - (a.d || 0)) || byName(a, b), old: (a, b) => ((a.d || 0) - (b.d || 0)) || byName(a, b) }[COLL.sort] || byName;
   return items.slice().sort(by);
 }
 const CARD_LANG_LIST = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
@@ -5633,6 +5643,7 @@ function crowHtml(it) {
   if (it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
   if (it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
   if (COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="Commandant dans des decks EDHREC">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
+  if (isDateSort() && it.d) tags.push(`<span class="tag" title="Date d'ajout à la collection">${esc(new Date(it.d * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
   const mvv = valMove(it.k); if (mvv) tags.push(valTag(mvv));
   const px = [];      // prix : CM (tendance Cardmarket, estimation) au-dessus, CT (offre CardTrader la plus basse, lue à la demande) en dessous
   if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="Cardmarket : prix tendance"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
@@ -5736,7 +5747,8 @@ function collPaintBody(keep) {
   else {
     const filtered = filterItems(all, COLL.f), sorted = collSorted(filtered), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
     const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '' || COLL.f.cmdr) && known < all.length;
-    host.innerHTML = `${act ? `<p class="hint coll-count">${nf0(filtered.length)} carte${filtered.length > 1 ? 's' : ''} sur ${nf0(all.length)}${hid ? ' · les cartes sans infos sont masquées par ces filtres' : ''}</p>` : ''}
+    const undated = isDateSort() ? all.filter(i => !i.d).length : 0;
+    host.innerHTML = `${undated ? `<p class="hint coll-count">${nf0(undated)} carte${undated > 1 ? 's' : ''} sans date d'ajout (déjà là avant le suivi des dates) : ${COLL.sort === 'new' ? 'en bas' : 'en haut'}, par nom.</p>` : ''}${act ? `<p class="hint coll-count">${nf0(filtered.length)} carte${filtered.length > 1 ? 's' : ''} sur ${nf0(all.length)}${hid ? ' · les cartes sans infos sont masquées par ces filtres' : ''}</p>` : ''}
       ${shown.length ? `<div class="coll-list">${shown.map(crowHtml).join('')}</div>` : '<p class="hint listempty">Aucune carte ne correspond.</p>'}
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
   }
@@ -5827,7 +5839,7 @@ function openCollection(tab) {
       const d = Number(st.dataset.d), name = cur.n, was = cur.q; haptic('tap');
       const q = collBump(k, name, d, { paint: false });
       if (q) { $('.qstep b', row).textContent = q; }
-      else { row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was); } }); }
+      else { row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date: cur.d }); } }); }
       return;
     }
     const th = e.target.closest('.thumb');
