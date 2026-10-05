@@ -765,6 +765,13 @@ button.sync:active{background:var(--surface-2)}
 .cs-t i.k-w{background:#e8dfae}.cs-t i.k-u{background:#6fb1ea}.cs-t i.k-b{background:#7d7078}.cs-t i.k-r{background:#e8765a}.cs-t i.k-g{background:#5aaa74}.cs-t i.k-m{background:#d9b24a}.cs-t i.k-n{background:#a9adb9}
 .cs-n{font-family:var(--font-mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
 .cs-top{display:flex;flex-direction:column;gap:8px}
+.rc{display:flex;flex-direction:column;gap:10px}
+.rc .cs-tiles .rc-val{grid-column:1/-1}
+.rc-note{margin:-2px 2px 0}
+.rc-facts{margin:2px 0 0;display:flex;flex-direction:column}
+.rc-facts>div{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 2px;border-top:1px solid var(--line)}
+.rc-facts dt{font-size:13px;color:var(--ink-3);flex:none}
+.rc-facts dd{margin:0;font-size:13.5px;font-variant-numeric:tabular-nums;text-align:right;min-width:0;overflow-wrap:anywhere}
 .cs-top .row-price b{font-family:var(--font-mono);font-weight:600;font-size:14px}
 
 /* import + saisie */
@@ -6426,6 +6433,61 @@ function scanPaintList() {
   go.disabled = !t.n; go.textContent = t.n ? `Ajouter ${nf0(t.n)} carte${t.n > 1 ? 's' : ''}` : 'Ajouter';
   $('.sc-sub', el).textContent = SC.items.size ? `${nf0(t.n)} reconnue${t.n > 1 ? 's' : ''}${t.maybe ? ` · ${t.maybe} à vérifier` : ''}` : 'Nom et mana dans la bande';
   const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = `Lecture : ${SC.pend.length} en attente`;
+  if (SC.recap) SC.recap();
+}
+/** Fiche récap au tap sur « Ajouter » : exemplaires, valeur estimée Cardmarket, les plus chères, nouvelles / déjà possédées, langues. Suit la liste du scan en direct ; « Ajouter » dans la fiche fait l'ajout. Les prix des cartes pas encore lues par Scryfall sont lus ici (un lot). */
+function scanRecap() {
+  const live = () => [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q, l: x.l || '' }));
+  if (!live().length || sheets.some(x => x.wrap.classList.contains('rc-sheet'))) return;
+  const asked = new Set(), got = new Map(); let err = '', busy = false;
+  const info = k => (got.has(k) ? got.get(k) : COLL.meta[k]);      // undefined : pas encore lu · null : inconnue de Scryfall · objet { eu, … }
+  const api = openSheet('Ajouter', '', a => { a.wrap.classList.add('rc-sheet'); });
+  const plural = (n, w) => nf0(n) + ' ' + w + (n > 1 ? 's' : '');
+  const paint = () => {
+    if (!sheets.includes(api)) { if (SC.recap === hook) SC.recap = null; return; }
+    const items = live(); if (!items.length) { api.close(); return; }
+    const n = items.reduce((a, x) => a + x.q, 0);
+    let val = 0, priced = 0, nopx = 0, wait = 0; const rows = [];
+    for (const x of items) {
+      const m = info(x.k);
+      if (m === undefined) { if (!err) wait += x.q; else nopx += x.q; }
+      else if (m && m.eu > 0) { val += m.eu * x.q; priced += x.q; rows.push({ x, eu: m.eu }); }
+      else nopx += x.q;
+    }
+    const have = items.filter(x => collQty(x.k) > 0), haveN = have.reduce((a, x) => a + x.q, 0), langs = new Map();
+    for (const x of items) langs.set(x.l, (langs.get(x.l) || 0) + x.q);
+    rows.sort((a, b) => b.eu - a.eu || byName(a.x, b.x));
+    $('h2', api.wrap).textContent = 'Ajouter ' + plural(n, 'carte'); let sub = $('.sheet-head p', api.wrap);
+    if (!sub) { sub = document.createElement('p'); $('.sheet-head > div', api.wrap).appendChild(sub); } sub.textContent = plural(items.length, 'carte') + ' différente' + (items.length > 1 ? 's' : '');
+    const note = wait ? 'Lecture des prix…' : !nopx ? '' : err ? (priced ? 'Valeur partielle : ' : 'Prix indisponibles : ') + err + '.' : plural(nopx, 'exemplaire') + ' sans prix Cardmarket, non comptés.';
+    api.body.innerHTML = `<div class="rc"><div class="cs-tiles"><div><b>${nf0(items.length)}</b><span>carte${items.length > 1 ? 's' : ''} différente${items.length > 1 ? 's' : ''}</span></div><div><b>${nf0(n)}</b><span>exemplaire${n > 1 ? 's' : ''}</span></div><div class="rc-val"><b>${wait || (!priced && err) ? (wait ? '…' : '—') : priced ? esc(fmt(val, 'EUR')) : '—'}</b><span>valeur estimée · tendance Cardmarket</span></div></div>
+      ${note ? `<p class="hint rc-note">${esc(note)}</p>` : ''}
+      ${rows.length && !wait ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${rows.slice(0, 3).map(({ x, eu }) => `<div class="crow ro"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}<img alt="" loading="lazy" decoding="async" src="${esc(scanThumb({ key: x.k, name: x.n, l: x.l }))}"></span><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta">${x.q > 1 ? `<span class="tag accent">× ${nf0(x.q)}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(eu, 'EUR'))}</b>${x.q > 1 ? `<small>${esc(fmt(eu * x.q, 'EUR'))} le lot</small>` : ''}</span></div>`).join('')}</div>` : ''}
+      <dl class="rc-facts"><div><dt>Nouvelles dans ta collection</dt><dd>${plural(items.length - have.length, 'carte')}</dd></div>
+        <div><dt>Déjà possédées</dt><dd>${have.length ? `${plural(have.length, 'carte')} · +${nf0(haveN)} ex.` : 'aucune'}</dd></div>
+        <div><dt>Langues</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(l.toUpperCase()) : 'Langue ?'} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>Retour</button><button class="btn" type="button" data-rc="go">Ajouter ${plural(n, 'carte')}</button>`);
+  };
+  const ask = async () => {
+    if (busy || !sheets.includes(api)) return;
+    const todo = live().filter(x => info(x.k) === undefined && !asked.has(x.k)); if (!todo.length) return;
+    todo.forEach(x => asked.add(x.k));
+    if (scryLeft() > 0) { err = 'Scryfall demande une pause'; paint(); return; }
+    busy = true;
+    try { const r = await scryCollection(todo.map(x => x.n)); for (const x of todo) got.set(x.k, r.get(x.k) || null); err = ''; }
+    catch (e) { err = 'Scryfall injoignable'; }
+    busy = false; paint(); ask();
+  };
+  const hook = () => { paint(); ask(); };
+  api.foot.addEventListener('click', e => {
+    if (!e.target.closest('[data-rc="go"]')) return;
+    const items = live(); if (!items.length) return;
+    const before = COLL.map, n = items.reduce((a, x) => a + x.q, 0);
+    collAdd(items, 'add'); api.close(); SC.recap = null; if (SC.el) SC.el.__close(); haptic('ok');
+    toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+    collEnrich();
+  });
+  SC.recap = hook; hook();
 }
 function scanHint(t, kind) {
   const h = $('.sc-hint', SC.el); if (!h) return; clearTimeout(SC.hintT);
@@ -6724,7 +6786,7 @@ function openScan() {
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
       <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>`;
-  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.warm = false; try { localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } const prevFocus = document.activeElement;
+  SC.recap = null; SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.warm = false; try { localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } const prevFocus = document.activeElement;
   const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
@@ -6752,14 +6814,7 @@ function openScan() {
       else if (act === 'shot') scanCapture();
       else if (act === 'frc') frcStart(true);
       else if (act === 'note') scNoteShow($('.sc-note', wrap).hidden);
-      else if (act === 'done') {
-        const items = [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q, l: x.l || '' }));
-        if (!items.length) return;
-        const before = COLL.map, n = items.reduce((a, x) => a + x.q, 0);
-        collAdd(items, 'add'); wrap.__close(); haptic('ok');
-        toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
-        collEnrich();
-      }
+      else if (act === 'done') scanRecap();
       return;
     }
     const th = e.target.closest('.sc-item[data-k] .sc-th');                      // miniature d'une carte reconnue : en grand, et on peut passer aux autres
