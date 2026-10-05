@@ -14,10 +14,14 @@ on:
       arch:
         description: 'Decks Archidekt par commandant (0 = aucun)'
         default: '3'
+      probe:
+        description: 'Sonde Archidekt seulement (ne génère rien)'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
-  group: edhrec
+  group: edhrec-${{ inputs.probe && 'probe' || 'main' }}
   cancel-in-progress: false
 jobs:
   edhrec:
@@ -33,7 +37,7 @@ jobs:
           EDH_TOP: ${{ inputs.top || '1000' }}
           EDH_ARCH: ${{ inputs.arch || '3' }}
           EDH_DEBUG: edh-debug
-        run: node gen-edhrec.mjs 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
+        run: node gen-edhrec.mjs ${{ inputs.probe && '--probe' || '' }} 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
       - name: Erreur (dernières lignes du journal en annotation)
         if: failure()
         run: echo "::error title=gen-edhrec::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"

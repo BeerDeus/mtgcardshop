@@ -13,6 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const UA = 'DeckDeal-edhrec/1.0 (+https://github.com/BeerDeus/mtgcardshop)';
 const TOP = Math.max(1, Number(process.env.EDH_TOP) || 1000), ARCH = process.env.EDH_ARCH === undefined ? 3 : Math.max(0, Number(process.env.EDH_ARCH) || 0), ARCH_TOP = Number(process.env.EDH_ARCH_TOP) || 100;
 const DEBUG = process.env.EDH_DEBUG || '';
+const LIST_MAX = Number(process.env.EDH_LIST) || 3000, MIN_DECKS_LISTED = 10, BUDGET_MS = (Number(process.env.EDH_BUDGET) || 70) * 60000, T0 = Date.now();      // commandants gardés dans la liste (3 000 max, ≥ 10 decks) ; durée maximale de la génération
 const EDH_BASE = process.env.EDH_BASE || 'https://json.edhrec.com/pages/', SCRY = process.env.SCRY_BASE || 'https://api.scryfall.com/', ARCH_BASE = process.env.ARCH_BASE || 'https://archidekt.com/api/';
 const MIN_DECKS = process.env.EDH_MIN_DECKS === undefined ? 50 : Number(process.env.EDH_MIN_DECKS), MIN_CMDS = process.env.EDH_MIN_CMDS === undefined ? 100 : Number(process.env.EDH_MIN_CMDS);
 const GAP = process.env.EDH_GAP === undefined ? null : Number(process.env.EDH_GAP);      // tests : espacement imposé (0 = aucun)
@@ -137,27 +138,27 @@ const COLOR_NAMES = {   // identité → noms que EDHREC peut utiliser dans ses 
   WBG: ['abzan', 'wbg'], WUR: ['jeskai', 'urw'], UBG: ['sultai', 'bgu'], WBR: ['mardu', 'rwb'], URG: ['temur', 'gur'],
   WUBR: ['yore-tiller', 'wubr'], UBRG: ['glint-eye', 'ubrg'], WBRG: ['dune-brood', 'wbrg'], WURG: ['ink-treader', 'wurg'], WUBG: ['witch-maw', 'wubg'], WUBRG: ['five-color', 'wubrg'],
 };
-async function crawlList(path, out, stat) {
+async function crawlList(path, out, stat, limit = Infinity) {
   let next = path + '.json', pages = 0;
-  while (next && pages < 60) {
+  while (next && pages < 80 && out.size < limit) {
     let j; try { j = await getJson(EDH_BASE + next); } catch (e) { stat.push(`${next} → ${e.message}`); break; }
     if (!j) { stat.push(`${next} → 404`); break; }
     const list = commandersOf(j);
     if (!pages) { sample('list-' + path, j); const lists = j && j.container && j.container.json_dict && j.container.json_dict.cardlists, cv = cardviewsOf(j)[0]; stat.push(`forme : ${Object.keys(j).slice(0, 12).join(',')} · cardlists ${Array.isArray(lists) ? lists.length + ' (' + Object.keys(lists[0] || {}).join(',') + ')' : 'absent'} · carte ${cv ? Object.keys(cv).slice(0, 14).join(',') : 'aucune'}`); }
-    stat.push(`${next} → ${list.length} commandants${moreOf(j) ? ' · suite ' + moreOf(j) : ''}`);
-    let add = 0; for (const c of list) if (!out.has(c.slug)) { out.set(c.slug, c); add++; }
+    if (pages < 3 || !moreOf(j)) stat.push(`${next} → ${list.length} commandants${moreOf(j) ? ' · suite ' + moreOf(j) : ''}`);
+    let add = 0; for (const c of list) if (!out.has(c.slug) && c.decks >= MIN_DECKS_LISTED) { out.set(c.slug, c); add++; }
     pages++; const more = moreOf(j); next = more && more !== next && add ? more : '';
   }
 }
 async function discover() {
   const out = new Map(), stat = [];
-  for (const p of LISTS) { await crawlList(p, out, stat); if (out.size >= TOP) break; }
+  for (const p of LISTS) { await crawlList(p, out, stat, LIST_MAX); if (out.size >= TOP) break; }
   log(`  listes : ${out.size} commandants`); for (const s of stat) log('   ·', s);
   if (out.size < TOP) {      // la liste globale s'arrête à N : on complète couleur par couleur
     const st2 = [];
     for (const [ci, names] of Object.entries(COLOR_NAMES)) {
       const before = out.size;
-      for (const n of names) { const tmp = new Map(); await crawlList('commanders/' + n, tmp, st2); if (tmp.size) { for (const [k, c] of tmp) if (!out.has(k)) out.set(k, { ...c, ci: c.ci || ci }); break; } }
+      for (const n of names) { const tmp = new Map(); await crawlList('commanders/' + n, tmp, st2, 400); if (tmp.size) { for (const [k, c] of tmp) if (!out.has(k)) out.set(k, { ...c, ci: c.ci || ci }); break; } }
       log(`  couleur ${ci || 'incolore'} : +${out.size - before}`);
       if (out.size >= TOP * 1.6) break;
     }
@@ -181,7 +182,7 @@ async function avgDecks(cmds) {
   const decks = [], kept = [], skipped = [];
   let n = 0;
   for (const c of cmds) {
-    n++;
+    n++; if (Date.now() - T0 > BUDGET_MS * 0.7) { log('  budget de temps atteint : decks moyens arrêtés à ' + decks.length); break; }
     let j; try { j = await getJson(EDH_BASE + 'average-decks/' + c.slug + '.json'); } catch (e) { skipped.push(`${c.slug}: ${e.message}`); if (skipped.length > 40 && !decks.length) throw new Error('EDHREC ne répond pas aux decks moyens : ' + skipped.slice(-3).join(' | ')); continue; }
     if (!j) { skipped.push(c.slug + ': 404'); continue; }
     if (!decks.length) sample('avg-' + c.slug, j);
@@ -199,24 +200,29 @@ async function avgDecks(cmds) {
 async function archidekt(cmds, decks) {
   if (!ARCH) return 0;
   const AR = ARCH_BASE, hd = { Accept: 'application/json' };
-  let added = 0, fails = 0, tried = 0;
+  let added = 0, fails = 0, tried = 0, off = 0;
+  const until = Date.now() + 15 * 60000;      // au plus 15 minutes pour cette source facultative
   for (const c of cmds.slice(0, ARCH_TOP)) {
+    if (Date.now() > until || Date.now() - T0 > BUDGET_MS) { log('  Archidekt : temps imparti atteint'); break; }
     tried++;
     try {
-      const q = AR + 'decks/v3/?' + new URLSearchParams({ commanders: c.names[0], formats: '3', orderBy: '-viewCount', pageSize: String(ARCH + 2) });
-      const list = archidektList(await getJson(q, { gap: 900, headers: hd, tries: 3 })); if (!decks.some(d => d.src === 'archidekt')) sample('archidekt-search-' + c.slug, list);
+      const q = AR + 'decks/v3/?' + new URLSearchParams({ ...ARCH_QUERY, [ARCH_CMD_PARAM]: c.names[0], orderBy: '-viewCount', pageSize: String(ARCH + 2) });
+      const raw = await getJson(q, { gap: 900, headers: hd, tries: 2 }), list = archidektList(raw); if (!tried || tried === 1) sample('archidekt-search-' + c.slug, raw);
       let got = 0;
       for (const l of list) {
         if (got >= ARCH) break;
-        const d = archidektDeck(await getJson(AR + 'decks/' + l.id + '/', { gap: 900, headers: hd, tries: 3 }));
-        if (!d.cmd.some(x => c.names.some(y => normKey(x) === normKey(y))) || d.cards.reduce((a, x) => a + x[1], 0) < 60) continue;
+        const d = archidektDeck(await getJson(AR + 'decks/' + l.id + '/', { gap: 900, headers: hd, tries: 2 }));
+        if (!d.cmd.some(x => c.names.some(y => normKey(x) === normKey(y)))) { off++; if (off >= 8 && !added) throw Object.assign(new Error('la recherche ne filtre pas par commandant'), { fatal: true }); continue; }
+        if (d.cards.reduce((a, x) => a + x[1], 0) < 60) continue;
         decks.push({ slug: c.slug, src: 'archidekt', label: [d.name, d.views ? nf(d.views) + ' vues' : ''].filter(Boolean).join(' · '), url: 'https://archidekt.com/decks/' + l.id, cards: d.cards }); got++; added++;
       }
-    } catch (e) { fails++; if (fails <= 5) log('   · archidekt', c.slug, e.message); if (fails >= 6 && !added) { log('  Archidekt injoignable ou format inattendu : abandon de cette source'); break; } }
+    } catch (e) { fails++; if (fails <= 5) log('   · archidekt', c.slug, e.message); if (e.fatal || (fails >= 4 && !added)) { log('  Archidekt injoignable ou format inattendu : abandon de cette source'); break; } }
   }
   log(`  decks Archidekt : ${added} (${tried} commandants essayés, ${fails} erreurs)`); return added;
 }
 const nf = n => Number(n).toLocaleString('fr-FR');
+// paramètres de la recherche Archidekt (validés par la sonde `--probe`)
+const ARCH_QUERY = { formats: '3' }, ARCH_CMD_PARAM = 'commanders';
 
 /* ── 4) Prix et images via Scryfall (75 cartes par requête) ──────────────────────────────────────── */
 async function scryInfo(names) {
@@ -235,8 +241,24 @@ async function scryInfo(names) {
   return { price, meta };
 }
 
+/** Sonde Archidekt : essaie plusieurs formes de requête pour un commandant connu et dit lesquelles filtrent vraiment (journal + échantillons sur la branche edh-debug). */
+async function probe() {
+  const AR = ARCH_BASE, hd = { Accept: 'application/json' }, name = 'Edgar Markov', target = normKey(name);
+  const variants = [{ commanders: name }, { commanderName: name }, { commanders: name, deckFormat: '3' }, { commanders: name, formats: '3' }, { name, deckFormat: '3' }, { cards: name, deckFormat: '3' }, { commanders: edhSlug(name) }, { commanderName: name, deckFormat: '3' }, { commanders: '"' + name + '"' }];
+  let i = 0;
+  for (const base of ['decks/v3/', 'decks/v2/', 'decks/']) for (const v of variants) {
+    i++; const q = AR + base + '?' + new URLSearchParams({ ...v, orderBy: '-viewCount', pageSize: '5' });
+    try {
+      const j = await getJson(q, { gap: 1500, headers: hd, tries: 1 }); if (i <= 3) sample('archidekt-probe-' + i, j);
+      const list = archidektList(j), keys = j ? Object.keys(j).slice(0, 10).join(',') : '';
+      let hit = '?';
+      if (list.length) { const d = archidektDeck(await getJson(AR + 'decks/' + list[0].id + '/', { gap: 1500, headers: hd, tries: 1 })); hit = d.cmd.some(x => normKey(x) === target) ? 'OUI' : 'non (' + d.cmd.join(' + ') + ')'; }
+      log(`  ${base}?${new URLSearchParams(v)} → ${list.length} decks [${keys}] · premier = ${list[0] ? list[0].name : '-'} · bon commandant : ${hit}`);
+    } catch (e) { log(`  ${base}?${new URLSearchParams(v)} → ${e.message}`); }
+  }
+}
 async function main() {
-  const out = process.argv[2] || join(here, 'pwa', 'edh.tsv');
+  const out = process.argv.slice(2).find(a => !a.startsWith('--')) || join(here, 'pwa', 'edh.tsv');
   log(`Génération : top ${TOP}, Archidekt ${ARCH ? ARCH + ' deck(s) pour les ' + ARCH_TOP + ' premiers' : 'désactivé'}`);
   let cmds = await discover();
   if (cmds.length < Math.min(TOP, MIN_CMDS)) { log('  liste EDHREC insuffisante : complétée par le classement Scryfall'); const seen = new Set(cmds.map(c => c.slug)); cmds = cmds.concat((await discoverScryfall()).filter(c => !seen.has(c.slug))); }
@@ -259,4 +281,4 @@ async function main() {
   const tmp = out + '.tmp'; writeFileSync(tmp, text); renameSync(tmp, out);
   log(`${cmds.length} commandants, ${decks.length} decks, ${priceByName.size} prix → ${out} (${(text.length / 1048576).toFixed(2)} Mo)`);
 }
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main().catch(e => { log('ERREUR : ' + (e.message || e)); process.exit(1); });
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) (process.argv.includes('--probe') ? probe() : main()).catch(e => { log('ERREUR : ' + (e.message || e)); process.exit(1); });
