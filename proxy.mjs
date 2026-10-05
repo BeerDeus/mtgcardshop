@@ -32,6 +32,7 @@ const STATIC = new Map([
   ['/icons/maskable-512.png', ['icons/maskable-512.png', 'image/png', YEAR]],
   ['/icons/apple-touch-icon.png', ['icons/apple-touch-icon.png', 'image/png', YEAR]],
   ['/icons/favicon-32.png', ['icons/favicon-32.png', 'image/png', YEAR]],
+  ['/edh.tsv', ['edh.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],                  // commandants EDHREC, decks moyens et prix (généré par gen-edhrec.mjs), gzip comme le catalogue français
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
 

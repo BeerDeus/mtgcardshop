@@ -1,0 +1,62 @@
+# Commandants EDHREC, decks moyens, decks réels Archidekt et prix (pwa/edh.tsv), régénérés chaque semaine.
+# L'app (Ma collection › Decks, filtre « Joués en commandant ») le télécharge en une requête ; s'il manque, ces écrans l'indiquent et rien d'autre ne casse.
+# Lancement manuel : onglet Actions › « Commandants EDHREC » › Run workflow (top = nombre de commandants, arch = decks Archidekt par commandant, 0 = aucun).
+# Le journal et des échantillons de réponses sont poussés sur la branche « edh-debug » (même en cas d'échec) pour voir ce que les sites ont répondu.
+name: Commandants EDHREC
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      top:
+        description: 'Nombre de commandants (decks moyens)'
+        default: '1000'
+      arch:
+        description: 'Decks Archidekt par commandant (0 = aucun)'
+        default: '3'
+permissions:
+  contents: write
+concurrency:
+  group: edhrec
+  cancel-in-progress: false
+jobs:
+  edhrec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Générer pwa/edh.tsv
+        env:
+          EDH_TOP: ${{ inputs.top || '1000' }}
+          EDH_ARCH: ${{ inputs.arch || '3' }}
+          EDH_DEBUG: edh-debug
+        run: node gen-edhrec.mjs 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
+      - name: Erreur (dernières lignes du journal en annotation)
+        if: failure()
+        run: echo "::error title=gen-edhrec::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"
+      - name: Commit si le fichier a changé
+        run: |
+          git config user.name "deck-deal-bot"
+          git config user.email "deck-deal-bot@users.noreply.github.com"
+          git add pwa/edh.tsv
+          if git diff --cached --quiet; then echo "Aucun changement."; else
+            git commit -m "Commandants EDHREC : mise à jour automatique"
+            for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
+          fi
+      - name: Journal et échantillons (branche edh-debug)
+        if: always()
+        run: |
+          mkdir -p /tmp/dbg && cp -r edh-debug/. /tmp/dbg/ 2>/dev/null || true
+          cp gen.log /tmp/dbg/gen.log 2>/dev/null || true
+          ls -l pwa/edh.tsv >> /tmp/dbg/gen.log 2>&1 || true
+          git config user.name "deck-deal-bot"
+          git config user.email "deck-deal-bot@users.noreply.github.com"
+          git checkout --orphan edh-debug
+          git rm -rf --quiet . || true
+          cp -r /tmp/dbg/. .
+          git add -A -f .
+          git commit --quiet -m "Débogage EDHREC" || true
+          git push --force origin edh-debug
