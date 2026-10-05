@@ -765,6 +765,8 @@ button.sync:active{background:var(--surface-2)}
 .cs-t i.k-w{background:#e8dfae}.cs-t i.k-u{background:#6fb1ea}.cs-t i.k-b{background:#7d7078}.cs-t i.k-r{background:#e8765a}.cs-t i.k-g{background:#5aaa74}.cs-t i.k-m{background:#d9b24a}.cs-t i.k-n{background:#a9adb9}
 .cs-n{font-family:var(--font-mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
 .cs-top{display:flex;flex-direction:column;gap:8px}
+.cf-msg{margin:0;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.4;color:var(--ink-2,var(--ink))}
+.cf-msg b{font-family:var(--font-display);font-size:17px;color:var(--ink);overflow-wrap:anywhere}
 .rc{display:flex;flex-direction:column;gap:10px}
 .rc .cs-tiles .rc-val{grid-column:1/-1}
 .rc-note{margin:-2px 2px 0}
@@ -5335,6 +5337,15 @@ function collChanged(o = {}) {
   if (S.run && S.view === 'results') scheduleRecompute(true);
 }
 function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); collChanged(); }
+/** Confirmation avant de retirer un exemplaire (« − » de la liste Cartes ou du scan) : petite fiche, jamais de confirm() natif. where : 'coll' | 'scan'. */
+function confirmMinus(name, q, where, onOk) {
+  const last = q <= 1, scan = where === 'scan';
+  openSheet(last ? (scan ? 'Retirer cette carte ?' : 'Retirer de la collection ?') : 'Retirer un exemplaire ?', '', api => {
+    api.body.innerHTML = `<p class="cf-msg"><b>${esc(name)}</b>${last ? (scan ? 'Dernier exemplaire : la carte sort de la liste du scan.' : 'Dernier exemplaire : la carte sort de ta collection.') : `Il en restera ${nf0(q - 1)} sur ${nf0(q)}.`}</p>`;
+    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" data-ok>Retirer</button>');
+    api.foot.addEventListener('click', e => { if (e.target.closest('[data-ok]')) { api.close(); onOk(); } });
+  });
+}
 /** +/− d'exemplaires d'une carte ; à 0 la carte sort de la collection. */
 function collBump(k, name, d, o) {
   const cur = COLL.map[k], q = Math.max(0, Math.min(9999, (cur ? cur.q : 0) + d));
@@ -5842,11 +5853,15 @@ function openCollection(tab) {
     }
     const st = e.target.closest('.qstep button');
     if (st) {
-      const row = st.closest('.crow'), k = row.dataset.k, cur = COLL.map[k]; if (!cur) return;
-      const d = Number(st.dataset.d), name = cur.n, was = cur.q; haptic('tap');
-      const q = collBump(k, name, d, { paint: false });
-      if (q) { $('.qstep b', row).textContent = q; }
-      else { row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date: cur.d }); } }); }
+      const k = st.closest('.crow').dataset.k, cur = COLL.map[k]; if (!cur) return;
+      const d = Number(st.dataset.d); haptic('tap');
+      const step = () => {                                  // le « − » passe par une confirmation ; la ligne est retrouvée à ce moment-là (la liste a pu être repeinte)
+        const c = COLL.map[k]; if (!c) return;
+        const name = c.n, was = c.q, date = c.d, q = collBump(k, name, d, { paint: false }), row = $$('.crow', wrap).find(r => r.dataset.k === k);
+        if (q) { if (row) $('.qstep b', row).textContent = q; }
+        else { if (row) row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date }); } }); }
+      };
+      if (d < 0) confirmMinus(cur.n, cur.q, 'coll', step); else step();
       return;
     }
     const th = e.target.closest('.thumb');
@@ -6834,7 +6849,10 @@ function openScan() {
     const it = SC.items.get(row.dataset.k); if (!it) return;
     haptic('tap');
     if (a.dataset.a === 'inc') it.q = Math.min(999, it.q + 1);
-    else if (a.dataset.a === 'dec') { if (it.q > 1) it.q--; else SC.items.delete(it.key); }
+    else if (a.dataset.a === 'dec') {                       // « − » : confirmation d'abord
+      confirmMinus(it.name, it.q, 'scan', () => { const c = SC.items.get(it.key); if (!c) return; if (c.q > 1) c.q--; else SC.items.delete(c.key); scanPaintList(); });
+      return;
+    }
     else if (a.dataset.a === 'ok') { it.maybe = false; it.shot = ''; }
     else if (a.dataset.a === 'del') SC.items.delete(it.key);
     scanPaintList();
