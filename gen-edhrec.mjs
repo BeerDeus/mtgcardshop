@@ -222,7 +222,7 @@ async function archidekt(cmds, decks) {
 }
 const nf = n => Number(n).toLocaleString('fr-FR');
 // paramètres de la recherche Archidekt (validés par la sonde `--probe`)
-const ARCH_QUERY = { formats: '3' }, ARCH_CMD_PARAM = 'commanders';
+const ARCH_QUERY = { deckFormat: '3' }, ARCH_CMD_PARAM = 'commanderName';      // sonde du 5 oct. 2026 : `commanders=` est ignoré par l'API, `commanderName=` filtre ; deckFormat 3 = Commander ; pageSize ignoré (60 decks par page)
 
 /* ── 4) Prix et images via Scryfall (75 cartes par requête) ──────────────────────────────────────── */
 async function scryInfo(names) {
