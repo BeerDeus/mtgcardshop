@@ -15,7 +15,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node gen-fr-names.mjs
+      - name: Générer pwa/fr-names.tsv
+        run: node gen-fr-names.mjs 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
+      - name: Erreur (dernières lignes du journal en annotation)
+        if: failure()
+        run: echo "::error title=gen-fr-names::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"
       - name: Commit si le fichier a changé
         run: |
           git config user.name "deck-deal-bot"
