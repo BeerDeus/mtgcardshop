@@ -195,7 +195,7 @@ async function avgDecks(cmds) {
     if (!j) { skipped.push(c.slug + ': 404'); continue; }
     if (!decks.length) sample('avg-' + c.slug, j);
     const cards = avgLines(j, c.names), total = cards.reduce((a, x) => a + x[1], 0);
-    if (total < 40) { skipped.push(`${c.slug}: ${total} cartes`); continue; }
+    if (total < 40 || total > 105) { skipped.push(`${c.slug}: ${total} cartes`); continue; }      // un deck de Commander compte 100 cartes : au-delà, la liste est faussée
     decks.push({ slug: c.slug, src: 'edhrec', label: 'Deck moyen', url: 'https://edhrec.com/average-decks/' + c.slug, cards });
     kept.push(c);
     if (n % 50 === 0) log(`  decks moyens : ${decks.length} lus sur ${n} essayés`);
@@ -208,7 +208,7 @@ async function avgDecks(cmds) {
 async function archidekt(cmds, decks) {
   if (!ARCH) return 0;
   const AR = ARCH_BASE, hd = { Accept: 'application/json' };
-  let added = 0, fails = 0, tried = 0, off = 0;
+  let added = 0, fails = 0, tried = 0, off = 0, rejected = 0;
   const until = Date.now() + 15 * 60000;      // au plus 15 minutes pour cette source facultative
   for (const c of cmds.slice(0, ARCH_TOP)) {
     if (Date.now() > until || Date.now() - T0 > BUDGET_MS) { log('  Archidekt : temps imparti atteint'); break; }
@@ -221,12 +221,12 @@ async function archidekt(cmds, decks) {
         if (got >= ARCH) break;
         const d = archidektDeck(await getJson(AR + 'decks/' + l.id + '/', { gap: 900, headers: hd, tries: 2 }));
         if (!d.cmd.some(x => c.names.some(y => normKey(x) === normKey(y)))) { off++; if (off >= 8 && !added) throw Object.assign(new Error('la recherche ne filtre pas par commandant'), { fatal: true }); continue; }
-        if (d.cards.reduce((a, x) => a + x[1], 0) < 60) continue;
+        const size = d.cards.reduce((a, x) => a + x[1], 0); if (size < 90 || size > 101) { rejected++; continue; }      // deck incomplet, ou cartes en trop (jetons, sideboard mal classé) : 98 à 100 cartes hors commandant attendues
         decks.push({ slug: c.slug, src: 'archidekt', label: [d.name, d.views ? nf(d.views) + ' vues' : ''].filter(Boolean).join(' · '), url: 'https://archidekt.com/decks/' + l.id, cards: d.cards }); got++; added++;
       }
     } catch (e) { fails++; if (fails <= 5) log('   · archidekt', c.slug, e.message); if (e.fatal || (fails >= 4 && !added)) { log('  Archidekt injoignable ou format inattendu : abandon de cette source'); break; } }
   }
-  log(`  decks Archidekt : ${added} (${tried} commandants essayés, ${fails} erreurs)`); return added;
+  log(`  decks Archidekt : ${added} (${tried} commandants essayés, ${fails} erreurs, ${rejected} écartés pour leur taille)`); return added;
 }
 const nf = n => Number(n).toLocaleString('fr-FR');
 // paramètres de la recherche Archidekt (validés par la sonde `--probe`)
