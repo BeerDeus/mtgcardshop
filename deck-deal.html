@@ -601,7 +601,6 @@ button.sync:active{background:var(--surface-2)}
 .row.is-own .thumb{filter:saturate(.8)}
 .tag.ref{background:var(--surface-2);color:var(--ink-2)}
 .tag.real{background:var(--good-soft);color:var(--good)}
-.tag.ref.est{opacity:.7;text-decoration:line-through;text-decoration-thickness:1px}
 .lchip{position:relative;display:inline-flex;align-items:center;gap:5px;height:19px;padding:0 6px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);font-family:var(--font-mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
 .lchip.none{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-3)}
 .lchip select{position:absolute;inset:-9px -4px;width:calc(100% + 8px);height:calc(100% + 18px);opacity:0;cursor:pointer;font-size:16px;border:0;padding:0}
@@ -676,13 +675,23 @@ button.sync:active{background:var(--surface-2)}
 .coll-status[data-k="err"]{background:var(--warn-soft);color:var(--warn)}
 .coll-status .track{height:6px}
 .coll-list{display:flex;flex-direction:column;gap:8px}
-.crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
+.crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
+.crow.has-px{grid-template-columns:40px minmax(0,1fr) auto auto}
 .crow.ro{grid-template-columns:40px minmax(0,1fr) auto}
+.row-px{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}
+.px{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
+.px i{font-style:normal;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.04em;opacity:.8}
+.px b{font-family:var(--font-mono);font-size:14px;font-weight:650;font-variant-numeric:tabular-nums}
+.px.cm{color:var(--accent)}
+.px.ct{color:var(--good)}
+.px.none b{font-size:11.5px;font-weight:500;color:var(--ink-3)}
+.px.none i{color:var(--ink-3)}
 .crow .thumb{cursor:default}
+.crow .row-name{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.2}
 .qstep{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface-3);overflow:hidden}
-.qstep button{width:38px;height:38px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink-2);display:grid;place-items:center;padding:0}
+.qstep button{width:30px;height:36px;border:0;background:transparent;font-size:18px;line-height:1;color:var(--ink-2);display:grid;place-items:center;padding:0}
 .qstep button:active{background:var(--accent-soft);color:var(--accent)}
-.qstep b{min-width:30px;text-align:center;font-family:var(--font-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.qstep b{min-width:24px;text-align:center;font-family:var(--font-mono);font-size:14px;font-variant-numeric:tabular-nums}
 .coll-count{padding:0 2px}
 .coll-more{margin-top:4px}
 .coll-cta{display:flex;flex-direction:column;gap:8px;width:min(100%,320px)}
@@ -698,7 +707,11 @@ button.sync:active{background:var(--surface-2)}
 .cs-src{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:4px}
 .cs-sw{display:inline-flex;padding:2px;border-radius:9px;background:var(--surface-2)}
 .cs-sw i{font-style:normal;font-weight:700;font-size:11px;letter-spacing:.04em;padding:2px 9px;border-radius:7px;color:var(--ink-3)}
-.cs-sw i.on{background:var(--accent);color:var(--accent-ink)}
+.cs-sw i.on,.cs-sw button.on{background:var(--accent);color:var(--accent-ink)}
+.cs-sw button{border:0;background:transparent;font:inherit;font-weight:650;font-size:11.5px;letter-spacing:0;padding:3px 10px;border-radius:7px;color:var(--ink-3);cursor:pointer}
+.cs-sw button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cs-topnote{margin:-2px 2px 0}
+.cs-tiles+.hint{margin-top:6px}
 .cs-src small{font-size:11px;color:var(--ink-3)}
 .cs-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 2px 0;font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.01em}
 .cs-h small{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--ink-3)}
@@ -1810,7 +1823,7 @@ function srcPrice(i, src) {
 /** items : [{ k, n, q, cm, tl, cl, eu, rp }] (cm/tl/cl/eu absents tant que Scryfall n'a pas répondu ; rp : prix réel CardTrader si lu). src : 'ct' (défaut) = prix réel sinon estimation, 'cm' = estimation Cardmarket pour tout. alt = valeur de l'autre source. */
 function collStats(items, src) {
   src = src === 'cm' ? 'cm' : 'ct';
-  const st = { src, unique: items.length, copies: 0, known: 0, unknown: 0, lands: 0, spells: 0, value: 0, valued: 0, real: 0, alt: { value: 0, valued: 0 }, curve: new Array(8).fill(0), colors: { W: 0, U: 0, B: 0, R: 0, G: 0, M: 0, C: 0 }, types: {}, top: [] };
+  const st = { src, unique: items.length, copies: 0, known: 0, unknown: 0, lands: 0, spells: 0, value: 0, valued: 0, real: 0, alt: { value: 0, valued: 0 }, curve: new Array(8).fill(0), colors: { W: 0, U: 0, B: 0, R: 0, G: 0, M: 0, C: 0 }, types: {}, top: [], topUnit: [] };
   for (const t of TYPE_ORDER) st.types[t] = 0;
   const valued = [];
   for (const i of items) {
@@ -1819,14 +1832,15 @@ function collStats(items, src) {
     st.known++;
     const t = typeBucket(i.tl); st.types[t] += i.q;
     const p = srcPrice(i, src), a = srcPrice(i, src === 'cm' ? 'ct' : 'cm');
-    if (p) { st.value += p.u * i.q; st.valued++; if (p.real) st.real++; valued.push({ ...i, up: p.u, rl: p.real }); }
+    if (p) { st.value += p.u * i.q; st.valued++; if (p.real) st.real++; valued.push({ ...i, up: p.u, lot: p.u * i.q, rl: p.real }); }
     if (a) { st.alt.value += a.u * i.q; st.alt.valued++; }
     if (t === 'Terrains') { st.lands += i.q; continue; }
     st.spells += i.q;
     st.curve[Math.min(i.cm ?? 0, 7)] += i.q;
     const c = i.cl || ''; if (!c) st.colors.C += i.q; else if (c.length > 1) st.colors.M += i.q; else if (st.colors[c] != null) st.colors[c] += i.q; else st.colors.C += i.q;
   }
-  st.top = valued.sort((a, b) => b.up - a.up || a.n.localeCompare(b.n)).slice(0, 10);
+  st.top = valued.slice().sort((a, b) => b.lot - a.lot || b.up - a.up || a.n.localeCompare(b.n));           // « les plus chères » par lot (prix × exemplaires) : toutes, l'écran en affiche par tranches
+  st.topUnit = valued.sort((a, b) => b.up - a.up || b.lot - a.lot || a.n.localeCompare(b.n));                // …ou par prix de la carte
   return st;
 }
 
@@ -4874,8 +4888,8 @@ async function refreshDeckPrices(id) {
 const COLL_KEY = 'deckdeal:coll:v1', COLL_SRC_KEY = 'deckdeal:coll:src', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
 const COLL_RETRY = { off: 15000, err: 20000, live: 12000 };       // délais (ms) : nouvel essai hors ligne / en erreur, attente du serveur au démarrage
 const PX_KEY = 'deckdeal:px:v1', PX_TTL = 2 * DAY, PX_CHUNK = 40;
-const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'ct', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0, runId: 0 };
-try { if (localStorage.getItem(COLL_SRC_KEY) === 'cm') COLL.src = 'cm'; } catch (e) { /* stockage indisponible */ }
+const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'cm', topN: 10, topBy: 'lot', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0, runId: 0 };
+try { if (localStorage.getItem(COLL_SRC_KEY) === 'ct') COLL.src = 'ct'; } catch (e) { /* stockage indisponible */ }
 const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
 /** Exemplaires possédés d'une carte (k = ownKey du nom). */
@@ -5228,7 +5242,7 @@ function collInit() {
 const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût']];
 function collItems() { return Object.entries(COLL.map).map(([k, x]) => { const px = COLL.px[k]; return { k, n: x.n, q: x.q, l: x.l || '', ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) }; }); }
 function collSorted(items) {
-  const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => ((unitPrice(b) || 0) - (unitPrice(a) || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b) }[COLL.sort] || byName;
+  const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => (((srcPrice(b, COLL.src) || {}).u || 0) - ((srcPrice(a, COLL.src) || {}).u || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b) }[COLL.sort] || byName;
   return items.slice().sort(by);
 }
 const CARD_LANG_LIST = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
@@ -5241,11 +5255,13 @@ function crowHtml(it) {
   const tags = [langChip(it.k, it.l, it.n)];
   if (it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
   if (it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
-  if (Number.isFinite(it.rp)) tags.push(`<span class="tag real">CT ${esc(fmt(it.rp, it.rc || 'EUR'))}</span>`);
-  else if (it.rp === null && it.rt) tags.push('<span class="tag">CT aucune offre</span>');
-  if (Number.isFinite(it.eu)) tags.push(`<span class="tag ref${Number.isFinite(it.rp) ? ' est' : ''}">CM ${esc(fmt(it.eu, 'EUR'))}</span>`);
-  return `<div class="crow" data-k="${esc(it.k)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  const px = [];      // prix : CM (tendance Cardmarket, estimation) au-dessus, CT (offre CardTrader la plus basse, lue à la demande) en dessous
+  if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="Cardmarket : prix tendance"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
+  if (Number.isFinite(it.rp)) px.push(`<span class="px ct" title="CardTrader : offre la plus basse"><i>CT</i> <b>${esc(fmt(it.rp, it.rc || 'EUR'))}</b></span>`);
+  else if (it.rp === null && it.rt) px.push('<span class="px ct none" title="CardTrader : aucune offre"><i>CT</i> <b>aucune offre</b></span>');
+  return `<div class="crow${px.length ? ' has-px' : ''}" data-k="${esc(it.k)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(it.n)}</span><span class="row-meta">${tags.join('')}</span></span>
+    ${px.length ? `<span class="row-px">${px.join('')}</span>` : ''}
     <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(it.n)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(it.n)}">+</button></span></div>`;
 }
 /** État de la sauvegarde, en toutes lettres (le sous-titre du header est tronqué sur téléphone) : { k: 'ok'|'warn'|'bad', t, acts:[[act, label]] } ou null. */
@@ -5311,9 +5327,10 @@ function collStatsHtml(items) {
   const colorRows = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert']].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
     .concat([['<i class="mc mc-m">M</i>Multicolore', st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>Incolore', st.colors.C, 'k-n']]);
   const typeRows = TYPE_ORDER.map(t => [esc(t), st.types[t], 'k-t']);
-  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="Valeur de la collection, source ${cm ? 'Cardmarket' : 'CardTrader'} : touche pour passer à ${cm ? 'CardTrader' : 'Cardmarket'}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? `valeur · estimation Cardmarket${st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}` : st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? `${cm ? 'CT' : 'CM'} : ${esc(fmt(st.alt.value, 'EUR'))} · ` : ''}touche pour changer</small></div></div></div>`;
+  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="Valeur de la collection, source ${cm ? 'Cardmarket' : 'CardTrader'} : touche pour passer à ${cm ? 'CardTrader' : 'Cardmarket'}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? `valeur · tendance Cardmarket${st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}` : st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ tendance Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? `${cm ? 'CT' : 'CM'} : ${esc(fmt(st.alt.value, 'EUR'))} · ` : ''}touche pour changer</small></div></div></div>`;
   const note = miss ? `<p class="hint">Stats sur ${nf0(st.known)} cartes lues ; ${nf0(miss)} sans infos pour l'instant.</p>` : '';
-  const top = st.top.length ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${st.top.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${i.q}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(i.up, i.rl ? i.rc || 'EUR' : 'EUR'))}</b>${i.q > 1 ? `<small>${esc(fmt(i.up * i.q, i.rl ? i.rc || 'EUR' : 'EUR'))} au total</small>` : ''}</span></div>`).join('')}</div>` : '';
+  const byLot = COLL.topBy !== 'one', list = byLot ? st.top : st.topUnit, shown = list.slice(0, COLL.topN), cur = i => (i.rl ? i.rc || 'EUR' : 'EUR');
+  const top = list.length ? `<h3 class="cs-h">Les plus chères <span class="cs-sw" role="group" aria-label="Classer par"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">Par lot</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">Par carte</button></span></h3><p class="hint cs-topnote">${byLot ? 'Classées par valeur du lot : prix × exemplaires.' : 'Classées par prix d\'un exemplaire.'}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">Afficher ${nf0(Math.min(10, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}` : '';
   return `${nums}${note}
     <h3 class="cs-h">Courbe de mana <small>${nf0(st.spells)} sorts</small></h3>${curveBars(st.curve, false)}
     <h3 class="cs-h">Couleurs <small>sorts</small></h3>${barsHtml(colorRows)}
@@ -5402,6 +5419,8 @@ function openCollection(tab) {
       else if (act === 'pxstop') { if (COLL.pxRun) COLL.pxRun.ctrl.abort(); }
       else if (act === 'pxok') { COLL.pxMsg = null; collPaintHead(); }
       else if (act === 'more') { COLL.shown += COLL_PAGE; collPaintBody(true); }
+      else if (act === 'topmore') { COLL.topN += 10; collPaintBody(true); }
+      else if (act === 'topby') { if (COLL.topBy !== b.dataset.v) { COLL.topBy = b.dataset.v === 'one' ? 'one' : 'lot'; COLL.topN = 10; haptic('tap'); collPaintBody(true); } }
       return;
     }
     const st = e.target.closest('.qstep button');
@@ -5409,7 +5428,7 @@ function openCollection(tab) {
       const row = st.closest('.crow'), k = row.dataset.k, cur = COLL.map[k]; if (!cur) return;
       const d = Number(st.dataset.d), name = cur.n, was = cur.q; haptic('tap');
       const q = collBump(k, name, d, { paint: false });
-      if (q) { $('b', row).textContent = q; }
+      if (q) { $('.qstep b', row).textContent = q; }
       else { row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was); } }); }
       return;
     }
