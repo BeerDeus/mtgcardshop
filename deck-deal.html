@@ -579,6 +579,10 @@ button.sync:active{background:var(--surface-2)}
 .imgv-count{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 20px);left:16px;font-family:var(--font-mono);font-size:13px;font-weight:600;color:rgba(255,255,255,.8);font-variant-numeric:tabular-nums}
 .imgv-extra{display:block;margin-top:2px;font-family:var(--font-mono);font-size:12.5px;color:#fff;opacity:.92}
 .imgv-extra[hidden]{display:none}
+.imgv-shot{display:block;max-width:100%;max-height:54px;margin-top:6px;border-radius:8px;object-fit:contain;background:#0b0e1a;border:1px solid rgba(255,255,255,.25)}
+.imgv-shot[hidden]{display:none}
+.imgv.has-shot .imgv-card{width:min(88vw,calc((100dvh - 275px) * .7179),460px)}
+.sc-th{cursor:zoom-in}
 @media (max-width:520px){.imgv-nav{width:36px;height:56px;margin-top:-28px;background:rgba(255,255,255,.08)}}
 
 
@@ -686,6 +690,16 @@ button.sync:active{background:var(--surface-2)}
 .cs-tiles>div{display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);min-width:0}
 .cs-tiles b{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
 .cs-tiles span{font-size:11.5px;color:var(--ink-3);text-wrap:balance}
+.cs-tiles .cs-val{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:border-color .15s,background .15s}
+.cs-tiles .cs-val:active{background:var(--surface-2,var(--surface))}
+.cs-tiles .cs-val:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cs-tiles{grid-template-columns:1fr 1fr}
+.cs-tiles .cs-val{grid-column:1/-1}
+.cs-src{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:4px}
+.cs-sw{display:inline-flex;padding:2px;border-radius:9px;background:var(--surface-2)}
+.cs-sw i{font-style:normal;font-weight:700;font-size:11px;letter-spacing:.04em;padding:2px 9px;border-radius:7px;color:var(--ink-3)}
+.cs-sw i.on{background:var(--accent);color:var(--accent-ink)}
+.cs-src small{font-size:11px;color:var(--ink-3)}
 .cs-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 2px 0;font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.01em}
 .cs-h small{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--ink-3)}
 .cs-bars{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line)}
@@ -768,7 +782,8 @@ button.sync:active{background:var(--surface-2)}
 .sc-stage[data-cam="no"] .sc-nocam{display:grid}
 .sc-stage[data-cam="no"]{height:min(24dvh,190px)}
 .sc-stage[data-cam="no"] .sc-video,.sc-stage[data-cam="no"] .sc-guide{display:none}
-.sc-bar{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px}
+.scan .dv-foot{padding:10px 16px;border-top:0;border-bottom:1px solid var(--line)}
+.sc-bar{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--line);background:var(--bar-bg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .sc-shot{width:60px;height:60px;border-radius:50%;border:3px solid var(--ink);background:transparent;padding:4px;display:grid;place-items:center;transition:transform .15s}
 .sc-shot i{display:block;width:100%;height:100%;border-radius:50%;background:var(--accent)}
 .sc-shot:active{transform:scale(.92)}
@@ -780,6 +795,7 @@ button.sync:active{background:var(--surface-2)}
 .sc-native input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 .sc-diag{pointer-events:auto;position:absolute;left:8px;right:8px;top:8px;margin:0;padding:5px 8px;border-radius:8px;background:rgba(0,0,0,.72);color:#9bffc5;font:11px/1.35 var(--font-mono);word-break:break-word}
 .sc-diag[hidden]{display:none}
+.sc-cat{flex:none;margin:8px 16px 0}
 .sc-note{flex:none;display:flex;align-items:flex-start;gap:6px;padding:6px 8px 0 16px}
 .sc-note[hidden]{display:none}
 .sc-note .hint{flex:1;min-width:0;margin:0}
@@ -789,6 +805,9 @@ button.sync:active{background:var(--surface-2)}
 .sc-list{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
 .sc-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 8px 8px 8px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
 .sc-item.maybe{border-color:var(--warn);background:var(--warn-soft)}
+.sc-pic{grid-column:1/-1;position:relative;display:block;border-radius:8px;overflow:hidden;background:#0b0e1a}
+.sc-pic img{display:block;width:100%;max-height:92px;object-fit:contain}
+.sc-pic i{position:absolute;left:6px;top:5px;padding:1px 7px;border-radius:99px;background:rgba(10,14,30,.78);color:#fff;font-size:10.5px;font-style:normal;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .sc-item .qstep button{width:34px;height:36px}.sc-item .qstep b{min-width:24px}
 .sc-item.miss{border-style:dashed}
 .sc-item.miss{grid-template-columns:auto minmax(0,1fr) auto auto}
@@ -1015,7 +1034,7 @@ const BASIC_NAMES = new Set(['plains', 'island', 'swamp', 'mountain', 'forest', 
   'snow covered plains', 'snow covered island', 'snow covered swamp', 'snow covered mountain', 'snow covered forest', 'snow covered wastes']);
 
 function normPart(s) {
-  return String(s || '').replace(/æ/gi, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return String(s || '').replace(/æ/gi, 'ae').replace(/œ/gi, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
     .replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 function normName(s) { return String(s || '').split('//').map(normPart).filter(Boolean).join(' // '); }
@@ -1782,9 +1801,16 @@ const pxSig = (lang, o) => [lang, o.cond, o.foil, o.mode === 'direct' ? 'direct'
 const pxStale = (px, sig, now, ttl) => !px || px.s !== sig || !(now - px.t <= ttl);
 
 /* ── Statistiques de la collection ─────────────────────────────────────────────────────────── */
-/** items : [{ k, n, q, cm, tl, cl, eu, rp }] (cm/tl/cl/eu absents tant que Scryfall n'a pas répondu ; rp : prix réel CardTrader si lu). Valeur = prix réel, sinon estimation. */
-function collStats(items) {
-  const st = { unique: items.length, copies: 0, known: 0, unknown: 0, lands: 0, spells: 0, value: 0, valued: 0, real: 0, curve: new Array(8).fill(0), colors: { W: 0, U: 0, B: 0, R: 0, G: 0, M: 0, C: 0 }, types: {}, top: [] };
+/** Prix unitaire selon la source : 'ct' = prix réel CardTrader, à défaut l'estimation Cardmarket ; 'cm' = estimation Cardmarket seule. { u, real } ou null. */
+function srcPrice(i, src) {
+  if (src === 'cm') return Number.isFinite(i.eu) && i.eu > 0 ? { u: i.eu, real: false } : null;
+  const u = unitPrice(i);
+  return u == null ? null : { u, real: Number.isFinite(i.rp) && i.rp > 0 };
+}
+/** items : [{ k, n, q, cm, tl, cl, eu, rp }] (cm/tl/cl/eu absents tant que Scryfall n'a pas répondu ; rp : prix réel CardTrader si lu). src : 'ct' (défaut) = prix réel sinon estimation, 'cm' = estimation Cardmarket pour tout. alt = valeur de l'autre source. */
+function collStats(items, src) {
+  src = src === 'cm' ? 'cm' : 'ct';
+  const st = { src, unique: items.length, copies: 0, known: 0, unknown: 0, lands: 0, spells: 0, value: 0, valued: 0, real: 0, alt: { value: 0, valued: 0 }, curve: new Array(8).fill(0), colors: { W: 0, U: 0, B: 0, R: 0, G: 0, M: 0, C: 0 }, types: {}, top: [] };
   for (const t of TYPE_ORDER) st.types[t] = 0;
   const valued = [];
   for (const i of items) {
@@ -1792,8 +1818,9 @@ function collStats(items) {
     if (i.tl == null && i.cm == null) { st.unknown++; continue; }
     st.known++;
     const t = typeBucket(i.tl); st.types[t] += i.q;
-    const u = unitPrice(i);
-    if (u != null) { st.value += u * i.q; st.valued++; if (u === i.rp) st.real++; valued.push({ ...i, up: u }); }
+    const p = srcPrice(i, src), a = srcPrice(i, src === 'cm' ? 'ct' : 'cm');
+    if (p) { st.value += p.u * i.q; st.valued++; if (p.real) st.real++; valued.push({ ...i, up: p.u, rl: p.real }); }
+    if (a) { st.alt.value += a.u * i.q; st.alt.valued++; }
     if (t === 'Terrains') { st.lands += i.q; continue; }
     st.spells += i.q;
     st.curve[Math.min(i.cm ?? 0, 7)] += i.q;
@@ -1825,10 +1852,42 @@ function lev(a, b, max) {
   }
   return prev[lb];
 }
+/** Paires de lettres que l'OCR confond (stockées triées) : la substitution ne coûte que 0,5. */
+const OCR_CONF = ['il', '1i', '1l', '0o', '5s', 'ce', 'uv', 'ft', 'hn', 'gq'];
+const COST_PLAIN = new Float32Array(128 * 128).fill(1), COST_OCR = new Float32Array(128 * 128).fill(1);
+for (let i = 0; i < 128; i++) COST_PLAIN[i * 128 + i] = COST_OCR[i * 128 + i] = 0;
+for (const p of OCR_CONF) { const x = p.charCodeAt(0), y = p.charCodeAt(1); COST_OCR[x * 128 + y] = COST_OCR[y * 128 + x] = 0.5; }
+let LEVW_A = new Float32Array(256), LEVW_B = new Float32Array(256);
+/** Distance de Levenshtein bornée, pondérée pour l'OCR : lettres confondues (i/l, c/e, u/v…) et espaces ajoutés ou perdus = 0,5 (disc : false pour les mots courts, où une confusion peut changer le mot).
+ *  Textes normalisés (a-z, 0-9, espace). Retourne max + 1 dès que la distance dépasse max. */
+function levw(a, b, max, disc = true) {
+  if (a === b) return 0;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) * 0.5 > max) return max + 1;
+  if (!la) return lb; if (!lb) return la;
+  if (lb + 1 > LEVW_A.length) { LEVW_A = new Float32Array(lb + 64); LEVW_B = new Float32Array(lb + 64); }
+  const T = disc ? COST_OCR : COST_PLAIN, sg = disc ? 0.5 : 1;
+  let prev = LEVW_A, cur = LEVW_B;
+  prev[0] = 0; for (let j = 1; j <= lb; j++) prev[j] = prev[j - 1] + (b.charCodeAt(j - 1) === 32 ? sg : 1);
+  for (let i = 1; i <= la; i++) {
+    const ca = a.charCodeAt(i - 1) & 127, ga = ca === 32 ? sg : 1, row = ca * 128; cur[0] = prev[0] + ga; let rowMin = cur[0];
+    for (let j = 1; j <= lb; j++) {
+      const cb = b.charCodeAt(j - 1);
+      let v = prev[j - 1] + T[row + (cb & 127)];
+      const del = prev[j] + ga, ins = cur[j - 1] + (cb === 32 ? sg : 1);
+      if (del < v) v = del; if (ins < v) v = ins;
+      cur[j] = v; if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    const t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+const spaces = k => { let n = 0; for (let i = 0; i < k.length; i++) if (k.charCodeAt(i) === 32) n++; return n; };
 /** Index des noms de cartes : { list:[{k, n}], by: Map(k → n) } ; k = première face normalisée. */
 function nameIndex(names) {
   const by = new Map(), list = [];
-  for (const n of names || []) { const k = frontName(n); if (k.length >= 2 && !by.has(k)) { by.set(k, n); list.push({ k, n }); } }
+  for (const n of names || []) { const k = frontName(n); if (k.length >= 2 && !by.has(k)) { by.set(k, n); list.push({ k, n, s: spaces(k) }); } }
   return { list, by };
 }
 /** Variantes d'une ligne lue par OCR : la ligne, puis sans les petits mots parasites de fin (coût de mana lu comme du texte) ou de début. */
@@ -1848,15 +1907,20 @@ function matchName(raw, idx, minScore = 0.72) {
   let best = null;
   for (const v of lineVariants(raw)) {
     if (v.key.length < 3) continue;
-    let name = idx.by.get(v.key), d = 0, k = v.key;
+    let name = idx.by.get(v.key), d = 0, k = v.key; const vsp = name === undefined ? spaces(v.key) : 0;
     if (name === undefined) {
-      let limit = Math.max(1, Math.floor(v.key.length * 0.3)), bn = null;
-      if (minScore > 0.8) limit = Math.max(1, Math.min(limit, Math.floor((1 - minScore) * v.key.length) + 1));   // seuil exigeant : on écarte tôt les noms trop différents
-      for (const e of idx.list) {
-        if (limit < 0) break;
-        if (Math.abs(e.k.length - v.key.length) > limit) continue;
-        const dd = lev(v.key, e.k, limit);
-        if (dd <= limit) { bn = e; d = dd; limit = dd - 1; }
+      let max = Math.max(1, Math.floor(v.key.length * 0.3)), bn = null;
+      if (minScore > 0.8) max = Math.max(1, Math.min(max, Math.floor((1 - minScore) * v.key.length) + 1));   // seuil exigeant : on écarte tôt les noms trop différents
+      for (const st of max > 4 ? [2, 4, max] : max > 2 ? [2, max] : [max]) {                              // recherche par paliers : une lecture propre est trouvée en quelques calculs, le résultat est le même qu'avec la borne maximale d'emblée
+        let limit = st;
+        for (const e of idx.list) {
+          if (limit < 0) break;
+          const dl = e.k.length - v.key.length, ad = dl < 0 ? -dl : dl, sp = dl < 0 ? vsp : e.s, cheap = ad < sp ? ad : sp;      // écart de longueur : au mieux des espaces à 0,5, le reste à 1
+          if (cheap * 0.5 + (ad - cheap) > limit) continue;
+          const dd = levw(v.key, e.k, limit, Math.min(e.k.length, v.key.length) >= 6);
+          if (dd <= limit) { bn = e; d = dd; limit = dd - 0.1; }
+        }
+        if (bn) break;
       }
       if (!bn) continue;
       name = bn.n; k = bn.k;
@@ -1900,6 +1964,27 @@ function ocrMatches(lines, idx, spans = false) {
 
 /** Meilleure carte reconnue parmi des lignes lues : { name, key, score, raw } ou null. */
 function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b) => b.score - a.score)[0] || null; }
+/** Préfixe des miniatures Scryfall gardées dans le catalogue français (seul le chemin « front/a/b/id.jpg » est stocké). */
+const FR_IMG = 'https://cards.scryfall.io/small/';
+/** Catalogue français : lignes « nom imprimé \t nom anglais \t chemin de l'image » → { n, idx (recherche floue sur les noms imprimés), by (nom imprimé normalisé → { en, img }) }. */
+function frCatalog(rows) {
+  const by = new Map(), names = [];
+  for (const r of rows || []) {
+    const [p, en, img] = String(r).split('\t'); if (!p || !en) continue;
+    const k = frontName(p); if (k.length < 2 || by.has(k)) continue;
+    by.set(k, { en, img: img || '' }); names.push(p);
+  }
+  return { n: names.length, idx: nameIndex(names), by };
+}
+/** Meilleure carte française reconnue dans des lignes lues : { name (anglais), key, score, raw, card: 'fr', img } ou null. */
+function matchFr(lines, fc) {
+  if (!fc || !fc.n) return null;
+  const m = bestMatch(lines, fc.idx); if (!m) return null;
+  const e = fc.by.get(frontName(m.name)); if (!e) return null;
+  return { name: e.en, key: ownKey(e.en), score: m.score, raw: m.raw, card: 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '' };
+}
+/** Départage une lecture française et une lecture anglaise du même texte : la plus sûre ; à égalité (nom identique dans les deux langues) le français, langue de la plupart des cartes. */
+const bestOf = (fr, en) => (fr && (!en || fr.score >= en.score) ? fr : en || null);
 /** Rectangle d'écran (x, y, w, h) dans un conteneur cw×ch qui affiche une vidéo vw×vh en « object-fit: cover » → rectangle en pixels de la vidéo. */
 function coverMap(cw, ch, vw, vh, r) {
   const s = Math.max(cw / vw, ch / vh), ox = (cw - vw * s) / 2, oy = (ch - vh * s) / 2;
@@ -1942,8 +2027,8 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
-    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats,
-    lev, nameIndex, lineVariants, matchName, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
+    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice,
+    lev, levw, nameIndex, lineVariants, matchName, frCatalog, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
 
@@ -2302,6 +2387,72 @@ async function scryForeign(words, lang, signal) {
   try { j = await httpJson(limScry, 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards&order=name', SCRY_JSON, signal); }
   catch (e) { if (e.code === '404') return []; throw e; }
   return (j.data || []).slice(0, 30).map(c => ({ name: c.name, printed: c.printed_name || c.name, img: imgOf(c) || '' }));
+}
+/* ── Catalogue des noms français (reconnaissance des cartes françaises, hors ligne et tolérante aux fautes de lecture) ──────────
+   Scryfall n'a pas de liste de noms imprimés : on parcourt la recherche « lang:fr » (175 cartes par page, ~140 pages, 2 requêtes/s). Fait une seule fois,
+   gardé sur l'appareil (« nom imprimé \t nom anglais \t image », ~2,5 Mo), repris là où il en était si interrompu, puis complété des nouveautés tous les 14 jours. */
+const FR_KEY = 'sc:fr', FR_PART = 'sc:fr:part', FR_FRESH = 14 * DAY, FR_PAGES = 140, FR_STATIC = 'fr-names.tsv';
+/** Une carte Scryfall imprimée en français → « nom imprimé \t nom anglais \t image » (image : chemin après /small/, sans paramètre), ou '' sans nom imprimé. */
+function frRow(c) {
+  if (!c || (c.lang && c.lang !== 'fr')) return '';
+  const f = c.card_faces || [], p = c.printed_name || (f.length > 1 ? f.map(x => x.printed_name || x.name).join(' // ') : '');
+  if (!p || !c.name) return '';
+  const u = imgOf(c) || '', m = /\/small\/([^?]+)/.exec(u);
+  return p + '\t' + c.name + '\t' + (m ? m[1] : '');
+}
+const frRowKey = r => r.split('\t').slice(0, 2).join('\t');
+/** Suit les pages d'une recherche (next_page) : onPage(lignes de la page, total annoncé, page suivante) après chaque page. Retourne toutes les lignes. */
+async function scryFrPages(url, signal, onPage) {
+  const rows = [];
+  while (url) {
+    let j; try { j = await httpJson(limScry, url, SCRY_JSON, signal); } catch (e) { if (e.code === '404') break; throw e; }   // 404 : aucune carte (mise à jour sans nouveauté)
+    const got = (j.data || []).map(frRow).filter(Boolean); for (const r of got) rows.push(r);
+    url = j.has_more && typeof j.next_page === 'string' && /^https:\/\/api\.scryfall\.com\//.test(j.next_page) ? j.next_page : '';
+    if (onPage) await onPage(got, j.total_cards || 0, url);
+  }
+  return rows;
+}
+const frSearchUrl = q => 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards&order=name';
+/** Catalogue français sur l'appareil, s'il est complet : { rows, at } ou null. */
+async function scryFrCached() { const c = await Cache.get(FR_KEY, 3650 * DAY); return c && Array.isArray(c.rows) && c.rows.length > 500 ? c : null; }
+/** Catalogue prêt à l'emploi servi par le site (fr-names.tsv, régénéré chaque semaine par GitHub Actions : mêmes lignes « imprimé \t anglais \t image », < 1 Mo compressé) :
+ *  1 requête au lieu de ≈ 140 chez Scryfall. null s'il manque ou s'il est trop court (appli ouverte hors http, fichier pas encore généré) → on pagine chez Scryfall. */
+async function scryFrStatic(signal) {
+  if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
+  let r; try { r = await fetch(new URL(FR_STATIC, location.href).href, { signal, cache: 'no-cache' }); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
+  if (!r.ok) return null;
+  let t; try { t = await r.text(); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
+  const rows = t.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l && l[0] !== '#' && l.split('\t').length >= 2);
+  if (rows.length < 500) return null;
+  const rec = { rows, at: Date.now() }; await Cache.set(FR_KEY, rec); await Cache.set(FR_PART, null); return rec;
+}
+/** Télécharge (ou reprend, ou met à jour) le catalogue : retourne { rows, at }. onProgress(fait, total). Une mise à jour qui échoue garde l'ancien catalogue. */
+async function scryFrCatalog(signal, onProgress) {
+  const hit = await scryFrCached();
+  if (hit && Date.now() - hit.at < FR_FRESH) return hit;
+  const pre = await scryFrStatic(signal); if (pre) return pre;                     // fichier du site d'abord (rapide), Scryfall seulement s'il manque
+  if (hit) {
+    const since = new Date(hit.at - 30 * DAY).toISOString().slice(0, 10);          // nouveautés : impressions françaises sorties depuis le dernier passage (30 jours de marge)
+    try {
+      const add = await scryFrPages(frSearchUrl('lang:fr date>=' + since), signal);
+      const by = new Map(hit.rows.map(r => [frRowKey(r), r])); for (const r of add) by.set(frRowKey(r), r);
+      const rec = { rows: [...by.values()], at: Date.now() }; await Cache.set(FR_KEY, rec); return rec;
+    } catch (e) { if (e.name === 'AbortError') throw e; return hit; }
+  }
+  const part = await Cache.get(FR_PART, 30 * DAY);                                  // reprise d'un téléchargement interrompu
+  let rows = part && Array.isArray(part.rows) ? part.rows : [], url = part && part.next ? part.next : frSearchUrl('lang:fr'), pages = 0, total = part && part.total || 0;
+  if (part && part.next === '') url = '';
+  if (url) {
+    await scryFrPages(url, signal, async (got, t, next) => {
+      for (const r of got) rows.push(r); if (t) total = t; pages++;
+      if (onProgress) onProgress(rows.length, total || FR_PAGES * 175);
+      if (pages % 8 === 0 && next) await Cache.set(FR_PART, { rows: rows.slice(), next, total });      // copie : le point de reprise ne grossit pas avec les pages suivantes
+    });
+  }
+  const seen = new Set(); rows = rows.filter(r => { const k = frRowKey(r); if (seen.has(k)) return false; seen.add(k); return true; });
+  if (rows.length < 500) throw netErr('http', 'Catalogue français incomplet');
+  const rec = { rows, at: Date.now() }; await Cache.set(FR_KEY, rec); await Cache.set(FR_PART, null);
+  return rec;
 }
 /** Images (petites) de cartes dans une autre langue que l'anglais : Map(clé de collection → url, '' si Scryfall n'a pas la carte dans cette langue). Une recherche pour 12 noms. */
 async function scryLangImages(names, lang, signal, onProgress) {
@@ -4429,9 +4580,9 @@ function openCardViewer(items, index) {
   wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
     ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
     <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
-    <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span></div>
+    <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
     <button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button>`;
-  const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap);
+  const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
   const prevFocus = document.activeElement;
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
@@ -4452,12 +4603,13 @@ function openCardViewer(items, index) {
   };
   const go = n => {
     idx = n; it = items[n]; if (ctrl) ctrl.abort(); ctrl = new AbortController(); const my = ctrl, mine = it;
-    lang = it.lang || 'en'; enBig = it.small.replace('/small/', '/large/'); urls = []; face = 0;
+    lang = it.lang || 'en'; enBig = it.big || it.small.replace('/small/', '/large/'); urls = []; face = 0;
     where = [it.setName, it.set && it.num ? String(it.set).toUpperCase() + ' ' + it.num : ''].filter(Boolean).join(' · ');
     wrap.setAttribute('aria-label', it.name); title.textContent = it.name;
     ph.src = it.small; ph.hidden = false; img.hidden = true; img.classList.remove('ok'); img.removeAttribute('src'); card.dataset.busy = '1'; img.alt = it.name;
     caption(lang, ''); flipB.hidden = true; flipB.textContent = 'Retourner la carte';
     extra.textContent = it.extra || ''; extra.hidden = !it.extra;
+    if (it.shot) shotEl.src = it.shot; else shotEl.removeAttribute('src'); shotEl.hidden = !it.shot; wrap.classList.toggle('has-shot', !!it.shot);      // photo prise au scan (cartes à vérifier) : sous la carte, pour comparer
     if (multi) { countEl.textContent = (n + 1) + ' / ' + items.length; prevB.disabled = n === 0; nextB.disabled = n === items.length - 1; }
     (async () => {
       let r = null;
@@ -4466,7 +4618,8 @@ function openCardViewer(items, index) {
       if (r && r.urls.length) {
         urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
         flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
-      } else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
+      } else if (it.plain) { urls = [enBig]; caption(lang, ''); }                                // image seule : la langue est celle de l'image fournie
+      else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
       show(0);
     })();
   };
@@ -4717,10 +4870,11 @@ async function refreshDeckPrices(id) {
 /* ── collection.js : cartes possédées (stockage, compte, infos Scryfall, import, saisie, liste, stats) ─────────
    Source de vérité : « 3 Sol Ring » ligne par ligne (localStorage, et le compte Firestore users/{uid}/meta/collection).
    Les infos Scryfall (coût, type, couleurs, image, prix de référence) sont un cache à part : on peut le vider sans rien perdre. */
-const COLL_KEY = 'deckdeal:coll:v1', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
+const COLL_KEY = 'deckdeal:coll:v1', COLL_SRC_KEY = 'deckdeal:coll:src', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
 const COLL_RETRY = { off: 15000, err: 20000, live: 12000 };       // délais (ms) : nouvel essai hors ligne / en erreur, attente du serveur au démarrage
 const PX_KEY = 'deckdeal:px:v1', PX_TTL = 2 * DAY, PX_CHUNK = 40;
-const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0, runId: 0 };
+const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'ct', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', names: null, namesP: null, pushT: 0, runId: 0 };
+try { if (localStorage.getItem(COLL_SRC_KEY) === 'cm') COLL.src = 'cm'; } catch (e) { /* stockage indisponible */ }
 const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
 /** Exemplaires possédés d'une carte (k = ownKey du nom). */
@@ -5144,14 +5298,21 @@ function barsHtml(rows) {
   const max = Math.max(1, ...rows.map(r => r[1]));
   return `<div class="cs-bars">${rows.filter(r => r[1] > 0).map(([l, v, c]) => `<div class="cs-b"><span class="cs-l">${l}</span><span class="cs-t"><i class="${c || ''}" style="width:${Math.max(3, Math.round(v / max * 100))}%"></i></span><span class="cs-n">${nf0(v)}</span></div>`).join('')}</div>`;
 }
+/** Tuile de valeur (Stats) : bascule entre les prix réels CardTrader (CT) et l'estimation Cardmarket (CM). Choix retenu sur l'appareil. */
+function collToggleSrc() {
+  COLL.src = COLL.src === 'cm' ? 'ct' : 'cm'; haptic('tap');
+  try { localStorage.setItem(COLL_SRC_KEY, COLL.src); } catch (e) { /* stockage indisponible */ }
+  collPaintBody(true);
+  const t = $('.cs-val', COLL.el); if (t) t.focus({ preventScroll: true });
+}
 function collStatsHtml(items) {
-  const st = collStats(items), miss = st.unknown;
+  const st = collStats(items, COLL.src), miss = st.unknown, cm = st.src === 'cm';
   const colorRows = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert']].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
     .concat([['<i class="mc mc-m">M</i>Multicolore', st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>Incolore', st.colors.C, 'k-n']]);
   const typeRows = TYPE_ORDER.map(t => [esc(t), st.types[t], 'k-t']);
-  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span></div></div>`;
+  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="Valeur de la collection, source ${cm ? 'Cardmarket' : 'CardTrader'} : touche pour passer à ${cm ? 'CardTrader' : 'Cardmarket'}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? `valeur · estimation Cardmarket${st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}` : st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? `${cm ? 'CT' : 'CM'} : ${esc(fmt(st.alt.value, 'EUR'))} · ` : ''}touche pour changer</small></div></div></div>`;
   const note = miss ? `<p class="hint">Stats sur ${nf0(st.known)} cartes lues ; ${nf0(miss)} sans infos pour l'instant.</p>` : '';
-  const top = st.top.length ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${st.top.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${i.q}</span>` : ''}${i.up === i.rp ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(i.up, i.up === i.rp ? i.rc || 'EUR' : 'EUR'))}</b>${i.q > 1 ? `<small>${esc(fmt(i.up * i.q, i.up === i.rp ? i.rc || 'EUR' : 'EUR'))} au total</small>` : ''}</span></div>`).join('')}</div>` : '';
+  const top = st.top.length ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${st.top.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${i.q}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(i.up, i.rl ? i.rc || 'EUR' : 'EUR'))}</b>${i.q > 1 ? `<small>${esc(fmt(i.up * i.q, i.rl ? i.rc || 'EUR' : 'EUR'))} au total</small>` : ''}</span></div>`).join('')}</div>` : '';
   return `${nums}${note}
     <h3 class="cs-h">Courbe de mana <small>${nf0(st.spells)} sorts</small></h3>${curveBars(st.curve, false)}
     <h3 class="cs-h">Couleurs <small>sorts</small></h3>${barsHtml(colorRows)}
@@ -5220,9 +5381,11 @@ function openCollection(tab) {
     if (chip) { chip.outerHTML = langChip(k, l, (COLL.map[k] || {}).n || '', ''); }
     if (row) { const it = collItems().find(x => x.k === k), th = $('.thumb', row); if (it && th) { const u = collImage(k, l, it.im).src; let im = $('img', th); if (u && im) { im.classList.remove('ok'); im.src = u; } else if (u) { im = document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.src = u; th.appendChild(im); } } }
   });
+  wrap.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.cs-val')) { e.preventDefault(); collToggleSrc(); } });
   wrap.addEventListener('focusout', e => { if (COLL.dirty && e.target.matches && e.target.matches('.lchip select')) setTimeout(() => { COLL.dirty = false; collPaintBody(true); }, 0); });
   wrap.addEventListener('click', e => {
     if (e.target.closest('.lchip')) return;
+    if (e.target.closest('.cs-val')) { collToggleSrc(); return; }
     const b = e.target.closest('button[data-act]');
     if (b) {
       const act = b.dataset.act;
@@ -5340,10 +5503,10 @@ function openCollImport(initial) {
    Deux façons de scanner, même file d'attente (lecture en arrière-plan, une carte après l'autre) :
    · aperçu de l'appareil photo dans l'app : AUCUN calcul pendant l'aperçu ; le cercle prend la photo de la bande « nom · mana » ; on enchaîne ;
    · « Appareil » (appareil photo du téléphone, <input capture>) ou « Photos » (galerie) : photo de la carte entière en portrait, seul le tiers haut est lu.
-   Seul le NOM est lu, puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle. La langue (anglais, puis français si rien de sûr) est devinée toute seule.
+   Seul le NOM est lu, puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle. Français d'abord (catalogue des noms imprimés Scryfall, local), puis anglais ; la langue de la carte est enregistrée.
    ≥ 84 % de ressemblance = ajoutée (miniature Scryfall pour vérifier) · 72–84 % = à confirmer avec la miniature · en dessous = rien.
-   Les photos ne sont jamais enregistrées : décodées au moment de la lecture, puis vidées (il ne reste qu'une vignette de ~3 Ko de la zone lue pour reconnaître une carte non lue).
-   Tesseract.js est chargé à la demande depuis un CDN (≈ 3 Mo de modèle anglais, gardés ensuite par le navigateur ; le français seulement si l'anglais ne trouve rien). */
+   Les photos ne sont jamais enregistrées : décodées au moment de la lecture, puis vidées (il ne reste, en mémoire le temps du scan, qu'une vignette de ~3 Ko de la zone lue et, pour les cartes à vérifier ou non reconnues, une photo lisible de la bande du nom).
+   Tesseract.js est chargé à la demande depuis un CDN (modèle français d'abord, ≈ 3 Mo, gardé ensuite par le navigateur ; l'anglais seulement si le français ne trouve rien). */
 const TESS_V = '5.1.1', CDN = 'https://cdn.jsdelivr.net/npm/';
 const TESS = {
   js: `${CDN}tesseract.js@${TESS_V}/dist/tesseract.min.js`, worker: `${CDN}tesseract.js@${TESS_V}/dist/worker.min.js`, core: `${CDN}tesseract.js-core@${TESS_V}`,
@@ -5406,21 +5569,25 @@ function prepCanvas(src, r, outW, pol) {
 const scNoteOff = () => { try { return localStorage.getItem('deckdeal:scnote') === 'off'; } catch (e) { return false; } };      // aide fermée : retenu d'un scan à l'autre
 const scNoteSet = off => { try { if (off) localStorage.setItem('deckdeal:scnote', 'off'); else localStorage.removeItem('deckdeal:scnote'); } catch (e) { /* ignore */ } };
 function scNoteShow(on) { const n = $('.sc-note', SC.el), h = $('.sc-help', SC.el); if (n) n.hidden = !on; if (h) h.setAttribute('aria-pressed', String(on)); scNoteSet(!on); }
-const SC = { warm: false, el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, pref: 'eng', alive: false, hintT: 0, watch: null, fpsMin: 10, fps: 0, fixed: false, gen: 0, rbusy: false, rf: { n: 0, at: 0 }, restarts: 0, workEnd: 0, slowN: 0, ms: 0, diagT: 0, lt: [] };
-const scPref = () => { try { return localStorage.getItem('deckdeal:scpref') === 'fra' ? 'fra' : 'eng'; } catch (e) { return 'eng'; } };      // langue de la dernière carte reconnue : on repart de celle-là
-const scPrefSet = l => { SC.pref = l; try { if (l === 'fra') localStorage.setItem('deckdeal:scpref', 'fra'); else localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } };
+const SC = { warm: false, el: null, stream: null, items: new Map(), miss: [], mid: 0, pend: [], queue: [], working: false, cap: 0, session: 0, alive: false, hintT: 0, watch: null, fpsMin: 10, fps: 0, fixed: false, gen: 0, rbusy: false, rf: { n: 0, at: 0 }, restarts: 0, workEnd: 0, slowN: 0, ms: 0, diagT: 0, lt: [] };
 const camSlow = () => { try { return localStorage.getItem('deckdeal:cam2') === 'slow'; } catch (e) { return false; } };      // 'cam2' : l'ancien indicateur (posé quand la lecture tournait pendant l'aperçu) est abandonné
 const camSetSlow = on => { try { localStorage.removeItem('deckdeal:cam'); if (on) localStorage.setItem('deckdeal:cam2', 'slow'); else localStorage.removeItem('deckdeal:cam2'); } catch (e) { /* ignore */ } };
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
 function scanTotals() { let n = 0, maybe = 0; for (const e of SC.items.values()) { if (e.maybe) maybe++; else n += e.q; } return { n, maybe }; }
-function scanAdd(m, d, maybe) {
+function scanAdd(m, d, maybe, shot) {
   const cur = SC.items.get(m.key), l = m.card || 'en';
   if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); }       // image de la carte dans sa langue, vue pendant la lecture : gardée pour la collection
-  if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) cur.maybe = false; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } cur.l = l; }      // langue : la dernière carte lue l'emporte
-  else SC.items.set(m.key, { key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe, l });
+  if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) { cur.maybe = false; cur.shot = ''; } else if (cur.maybe && shot) cur.shot = shot; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } cur.l = l; }      // langue : la dernière carte lue l'emporte
+  else SC.items.set(m.key, { key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe, l, shot: maybe ? shot || '' : '' });
   scanPaintList();
+}
+/** Carte du scan pour la visionneuse (appui sur sa miniature) : image dans sa langue si Scryfall l'a donnée, sinon anglaise ; photo prise au scan si la carte est « à vérifier ». */
+function scanViewItem(e) {
+  const l = e.l || 'en', u = scanThumb(e), lang = l !== 'en' && COLL.li[liKey(l, e.key)] ? l : 'en';
+  return { key: e.key, name: e.name, small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
+    extra: `${e.q} exemplaire${e.q > 1 ? 's' : ''}${e.maybe ? ' · à vérifier' : ''}${l !== 'en' && lang === 'en' ? ' · image anglaise (pas encore d\'image ' + (LANGS[l] || l) + ')' : ''}${e.raw && e.score < 0.97 ? ' · lu « ' + e.raw + ' »' : ''}` };
 }
 /** Miniature d'une carte du scan : dans sa langue si Scryfall l'a donnée, sinon l'image anglaise. */
 function scanThumb(e) { const u = e.l && e.l !== 'en' ? COLL.li[liKey(e.l, e.key)] : ''; return u || scImg(e.name); }
@@ -5430,8 +5597,9 @@ function scanPaintList() {
   if (document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && list.contains(document.activeElement)) { SC.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas, la liste se met à jour après
   const th = u => (u ? `<img class="sc-th" alt="" src="${esc(u)}">` : '<span class="sc-th"></span>');
   const pend = SC.pend.map((p, k) => `<div class="sc-item pend" data-p="${p.id}">${th(p.thumb)}<span class="sc-n"><b>Lecture…</b><small>${esc(p.label)}${k ? ` · ${k} avant` : ''}</small></span><span class="sc-spin" aria-hidden="true"></span></div>`).join('');
-  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
-  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><b>${esc(e.name)}</b><span class="sc-meta">${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : est-ce bien cette carte ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
+  const pic = u => (u ? `<span class="sc-pic"><img alt="Ta photo" src="${esc(u)}"><i>Ta photo</i></span>` : '');
+  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${pic(m.shot)}${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
+  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><b>${esc(e.name)}</b><span class="sc-meta">${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
       ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
       <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
     : pend || miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
@@ -5447,6 +5615,37 @@ function scanHint(t, kind) {
 }
 function scanFlash() { const f = $('.sc-flash', SC.el); if (!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
 
+/* ── Catalogue des noms français (data.js › scryFrCatalog) : chargé depuis l'appareil dès l'ouverture du scan, téléchargé une fois s'il manque ─── */
+const FRC = { cat: null, at: 0, p: null, state: 'idle', done: 0, total: 0, err: '' };      // state : idle · run · ready · ask (réseau mobile : on demande) · err
+const frcMetered = () => { try { const c = navigator.connection; return !!c && (c.saveData === true || c.type === 'cellular'); } catch (e) { return false; } };
+async function frcWarm() {
+  if (!FRC.cat) { const c = await scryFrCached().catch(() => null); if (c && !FRC.cat) { FRC.cat = frCatalog(c.rows); FRC.at = c.at; } }
+  if (FRC.cat && Date.now() - FRC.at < FR_FRESH) { FRC.state = 'ready'; frcPaint(); return; }
+  frcStart(false);
+}
+/** Charge (ou reprend, ou met à jour) le catalogue en arrière-plan : fichier du site (fr-names.tsv) d'abord, sinon pages Scryfall ; le scan sert déjà pendant ce temps (recherche réseau mot par mot). force : malgré le réseau mobile. */
+function frcStart(force) {
+  if (FRC.p) return FRC.p;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = 'Hors ligne'; frcPaint(); return null; }
+  FRC.state = 'run'; FRC.err = ''; FRC.done = 0; FRC.total = 0; frcPaint();
+  FRC.p = (async () => {
+    if (!FRC.cat) { const st = await scryFrStatic().catch(() => null); if (st) { FRC.cat = frCatalog(st.rows); FRC.at = st.at; FRC.state = 'ready'; return; } }      // fichier du site : petit, pas de question même en 4G
+    if (!force && !FRC.cat && frcMetered()) { FRC.state = 'ask'; return; }
+    const rec = await scryFrCatalog(null, (d, t) => { FRC.done = d; FRC.total = t; frcPaint(); });
+    FRC.cat = frCatalog(rec.rows); FRC.at = rec.at; FRC.state = 'ready';
+  })().catch(e => { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? 'Scryfall demande une pause' : 'Téléchargement interrompu'; })
+    .finally(() => { FRC.p = null; frcPaint(); });
+  return FRC.p;
+}
+function frcPaint() {
+  const el = SC.el && $('.sc-cat', SC.el); if (!el) return;
+  const s = FRC.state, pct = FRC.total ? Math.min(99, Math.round(100 * FRC.done / FRC.total)) : 0;
+  if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>Catalogue des noms français : ${pct} % · la lecture marche déjà, elle sera plus sûre ensuite</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
+  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 Mo, une seule fois).</span><button class="link-btn" type="button" data-act="frc">Télécharger</button>'; }
+  else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${esc(FRC.err || 'Catalogue indisponible')}. Les cartes françaises restent lues, moins sûrement.</span><button class="link-btn" type="button" data-act="frc">Réessayer</button>`; }
+  else el.hidden = true;
+}
+
 /** Recherches Scryfall de noms français déjà faites (mots → résultats) : une carte qui reste dans le cadre ne relance pas de requête. */
 const FR_CACHE = new Map();
 async function frSearch(words, signal) {
@@ -5456,33 +5655,34 @@ async function frSearch(words, signal) {
   if (FR_CACHE.size > 400) FR_CACHE.clear(); FR_CACHE.set(k, res); return res;
 }
 /** Un texte lu (nom français probable) → { name (anglais), key, score, raw } ou null : mots longs cherchés chez Scryfall, puis nom imprimé comparé. */
-async function frenchName(text, signal) {
+async function frenchName(text, signal, quick) {
   const words = frWords(text);
   if (!words.length) return null;
   let res = await frSearch(words.slice(0, 2), signal);
-  for (let i = 0; !res.length && words.length > 1 && i < Math.min(3, words.length); i++) res = await frSearch([words[i]], signal);   // un mot mal lu fait échouer la recherche à deux mots : on essaie chaque mot seul
+  for (let i = 0; !quick && !res.length && words.length > 1 && i < Math.min(3, words.length); i++) res = await frSearch([words[i]], signal);   // un mot mal lu fait échouer la recherche à deux mots : on essaie chaque mot seul
   if (!res.length) return null;
   const fm = matchName(text, nameIndex(res.map(r => r.printed)), 0.72); if (!fm) return null;
   const hit = res.find(r => frontName(r.printed) === frontName(fm.name));
   return hit ? { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: text, card: 'fr', img: hit.img || '' } : null;
 }
-/** Texte lu → carte reconnue (anglais : catalogue Scryfall ; français : recherche des noms imprimés chez Scryfall). */
+/** Texte lu → carte reconnue. Deux catalogues locaux comparés sur les mêmes lignes : noms français imprimés (catalogue Scryfall téléchargé) et noms anglais ;
+ *  la lecture la plus sûre gagne, à égalité (nom identique dans les deux langues) le français. Catalogue français absent ou rien de sûr : repli sur la recherche Scryfall des noms imprimés. */
 async function scanMatch(lines, cat, lang) {
-  let m = bestMatch(lines, cat.idx);
-  if (m) m.card = 'en';                       // nom anglais retrouvé dans le catalogue : carte en anglais (le français est reconnu par scryForeign plus bas)
-  if (lang === 'fra' && (!m || m.score < 0.84)) {
-    for (const l of lines.slice(0, 3)) {
-      const fm = await frenchName(l.text);
+  const en = bestMatch(lines, cat.idx); if (en) en.card = 'en';
+  let m = bestOf(matchFr(lines, FRC.cat), en);
+  if (lang === 'fra' && (!m || m.score < 0.84) && (!FRC.cat || !m)) {
+    for (const l of lines.slice(0, FRC.cat ? 2 : 3)) {
+      const fm = await frenchName(l.text, undefined, !!FRC.cat);
       if (fm && (!m || fm.score > m.score)) m = fm;
       if (m && m.score >= 0.84) break;
     }
   }
   return m;
 }
-/** Lit une zone « nom » sans connaître la langue : anglais puis français (ou l'inverse si la dernière carte reconnue était en français),
- *  polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr. */
+/** Lit une zone « nom » : français d'abord (la plupart des cartes), puis anglais ; le texte lu est comparé aux noms français ET anglais (une carte anglaise lue par le moteur français est reconnue aussi).
+ *  Polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr. */
 async function readNameAuto(src, box, outW, psm, cat, retry) {
-  const langs = SC.pref === 'fra' ? ['fra', 'eng'] : ['eng', 'fra'];
+  const langs = ['fra', 'eng'];
   let best = null, inv;
   for (let pass = 0; pass < (retry ? 2 : 1); pass++) {
     const c = prepCanvas(src, box, outW, pass ? (inv ? 0 : 1) : undefined); if (!pass) inv = c.inv;
@@ -5491,7 +5691,7 @@ async function readNameAuto(src, box, outW, psm, cat, retry) {
         if (!SC.el) return best;
         const m = await scanMatch(await ocrLines(c, lang, psm), cat, lang);
         if (m && (!best || m.score > best.score)) { best = m; best.lang = lang; }
-        if (best && best.score >= 0.84) { if (SC.pref !== best.lang) scPrefSet(best.lang); return best; }
+        if (best && best.score >= 0.84) return best;
       }
     } finally { c.width = c.height = 0; }
   }
@@ -5526,6 +5726,18 @@ function thumbOf(src, box) {
     const u = c.toDataURL('image/jpeg', 0.55); c.width = c.height = 0; return u;
   } catch (e) { return ''; }
 }
+/** Zone du titre d'une photo de carte entière (portrait) : la même que celle lue en premier. */
+const titleBox = src => { const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height; return { x: Math.round(W * 0.04), y: Math.round(H * 0.01), w: Math.round(W * 0.92), h: Math.round(H * 0.17) }; };
+/** Photo de la zone lue en bonne qualité (≈ 720 px de large, JPEG) : montrée au-dessus des cartes « à vérifier » ou non reconnues pour savoir de quelle carte il s'agit. Reste en mémoire le temps du scan, jamais enregistrée. */
+function shotOf(src, box) {
+  try {
+    const W = box ? box.w : src.naturalWidth || src.width, H = box ? box.h : src.naturalHeight || src.height, k = Math.min(1, 720 / W), c = document.createElement('canvas');
+    c.width = Math.max(8, Math.round(W * k)); c.height = Math.max(8, Math.round(H * k));
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    if (box) x.drawImage(src, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height); else x.drawImage(src, 0, 0, c.width, c.height);
+    const u = c.toDataURL('image/jpeg', 0.82); c.width = c.height = 0; return u;
+  } catch (e) { return ''; }
+}
 /** Libère la mémoire d'une photo lue (canvas vidé, image détachée) : rien n'est gardé. */
 function scanFree(src) {
   try { if (!src) return; if (src.getContext) src.width = src.height = 0; else if (src.removeAttribute) src.removeAttribute('src'); } catch (e) { /* ignore */ }
@@ -5543,12 +5755,13 @@ async function scanWork() {
       try {
         if (!job.src && job.file) { const img = await loadImage(job.file); job.src = img; job.thumb = thumbOf(img, thirdBox(img)); }
         m = await readCard(job.src, await collCatalog(), job.strip);
+        if (!m || m.score < 0.84) job.shot = shotOf(job.src, job.strip ? null : titleBox(job.src));      // lecture douteuse : on garde une photo lisible de la zone pour comparer
       } catch (e) { fail = e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : e && e.code === 'rate' ? 'Scryfall demande une pause…' : ''; }
       scanFree(job.src); job.src = null; job.file = null;
       if (!SC.el || job.s !== SC.session) continue;
       SC.ms = performance.now() - t0; SC.pend = SC.pend.filter(p => p.id !== job.id);
-      if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84); haptic('ok'); scanHint((m.score >= 0.84 ? '✓ ' : 'À vérifier : ') + m.name, m.score >= 0.84 ? 'ok' : 'busy'); }
-      else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
+      if (m && m.score >= 0.72) { scanAdd(m, 1, m.score < 0.84, job.shot); haptic('ok'); scanHint((m.score >= 0.84 ? '✓ ' : 'À vérifier : ') + m.name, m.score >= 0.84 ? 'ok' : 'busy'); }
+      else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '', shot: job.shot || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
     }
   } finally { SC.working = false; SC.workEnd = performance.now(); }
 }
@@ -5637,8 +5850,8 @@ async function camOpen(slow) {
 async function scanWarm() {
   const s = SC.session; if (!SC.el || SC.warm) return; SC.warm = true;
   try {
-    await collCatalog();
-    for (const l of SC.pref === 'fra' ? ['fra'] : ['eng']) { if (!SC.el || SC.session !== s) return; await ocrWorker(l); }
+    await Promise.all([collCatalog(), frcWarm()]);
+    if (!SC.el || SC.session !== s) return; await ocrWorker('fra');      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
   } catch (e) { /* hors ligne ou CDN bloqué : le premier appui retentera et dira pourquoi */ }
   finally { SC.warm = false; SC.workEnd = performance.now(); }
 }
@@ -5684,16 +5897,17 @@ function openScan() {
       <div class="sc-flash"></div>
       <p class="sc-hint" hidden></p><p class="sc-prog" hidden></p><p class="sc-diag" hidden></p>
       <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.</p></div>
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>
+    <div class="sc-cat coll-status" hidden></div>
+    <div class="sc-note"><p class="hint">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p><button class="sc-x" type="button" data-act="note" aria-label="Fermer l'aide"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="dv-scroll sc-list"></div>
     <div class="sc-bar">
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
       <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
-      <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>
-    <div class="sc-note"><p class="hint">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (anglais ou français, détecté tout seul) puis retrouvé dans Scryfall : vérifie la miniature. Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p><button class="sc-x" type="button" data-act="note" aria-label="Fermer l'aide"><svg class="i"><use href="#i-close"/></svg></button></div>
-    <div class="dv-scroll sc-list"></div>
-    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>`;
-  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.pref = scPref(); SC.warm = false; const prevFocus = document.activeElement;
+      <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>`;
+  SC.el = wrap; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.warm = false; try { localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } const prevFocus = document.activeElement;
   const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
-  const onKey = e => { if (e.key === 'Escape' && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
+  const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (SC.el !== wrap) return; SC.el = null; stop(); document.removeEventListener('keydown', onKey, true);
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
@@ -5717,6 +5931,7 @@ function openScan() {
       const act = b.dataset.act;
       if (act === 'close') wrap.__close();
       else if (act === 'shot') scanCapture();
+      else if (act === 'frc') frcStart(true);
       else if (act === 'note') scNoteShow($('.sc-note', wrap).hidden);
       else if (act === 'done') {
         const items = [...SC.items.values()].filter(x => !x.maybe).map(x => ({ k: x.key, n: x.name, q: x.q, l: x.l || '' }));
@@ -5726,6 +5941,12 @@ function openScan() {
         toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
         collEnrich();
       }
+      return;
+    }
+    const th = e.target.closest('.sc-item[data-k] .sc-th');                      // miniature d'une carte reconnue : en grand, et on peut passer aux autres
+    if (th) {
+      const list = [...SC.items.values()].reverse().map(scanViewItem), i = list.findIndex(x => x.key === th.closest('.sc-item').dataset.k);
+      if (i >= 0) openCardViewer(list, i);
       return;
     }
     const a = e.target.closest('[data-a]'); if (!a) return;
@@ -5740,7 +5961,7 @@ function openScan() {
     haptic('tap');
     if (a.dataset.a === 'inc') it.q = Math.min(999, it.q + 1);
     else if (a.dataset.a === 'dec') { if (it.q > 1) it.q--; else SC.items.delete(it.key); }
-    else if (a.dataset.a === 'ok') it.maybe = false;
+    else if (a.dataset.a === 'ok') { it.maybe = false; it.shot = ''; }
     else if (a.dataset.a === 'del') SC.items.delete(it.key);
     scanPaintList();
   });

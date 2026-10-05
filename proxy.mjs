@@ -7,6 +7,7 @@
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { gzipSync } from 'node:zlib';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +32,7 @@ const STATIC = new Map([
   ['/icons/maskable-512.png', ['icons/maskable-512.png', 'image/png', YEAR]],
   ['/icons/apple-touch-icon.png', ['icons/apple-touch-icon.png', 'image/png', YEAR]],
   ['/icons/favicon-32.png', ['icons/favicon-32.png', 'image/png', YEAR]],
+  ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
 
 // Accès par compte Firebase : le navigateur envoie son jeton d'identité (X-Firebase-Token), le proxy en vérifie la signature Google
@@ -542,8 +544,12 @@ const server = http.createServer(async (req, res) => {
     if (st) {
       const f = join(here, 'pwa', st[0]);
       if (!existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
-      const data = await readFile(f);
-      res.writeHead(200, { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2], 'Content-Length': data.length });
+      let data = await readFile(f); const hd = { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2] };
+      if (st[3]) {
+        hd.Vary = 'Accept-Encoding';
+        if (/\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''))) { data = gzipSync(data); hd['Content-Encoding'] = 'gzip'; }
+      }
+      hd['Content-Length'] = data.length; res.writeHead(200, hd);
       return res.end(req.method === 'HEAD' ? undefined : data);
     }
     json(res, 404, { error: 'not_found' });

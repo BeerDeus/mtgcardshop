@@ -1,0 +1,24 @@
+# Catalogue des noms de cartes en français (pwa/fr-names.tsv), régénéré chaque semaine depuis l'API Scryfall.
+# L'app le télécharge en une requête ; s'il manque, elle pagine l'API Scryfall elle-même (plus lent). Lancement manuel : onglet Actions › Run workflow.
+name: Catalogue des noms français
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fr-names:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node gen-fr-names.mjs
+      - name: Commit si le fichier a changé
+        run: |
+          git config user.name "deck-deal-bot"
+          git config user.email "deck-deal-bot@users.noreply.github.com"
+          git add pwa/fr-names.tsv
+          if git diff --cached --quiet; then echo "Aucun changement."; else git commit -m "Catalogue FR : mise à jour automatique" && git push; fi
