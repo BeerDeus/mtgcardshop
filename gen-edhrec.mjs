@@ -91,6 +91,24 @@ export function avgLines(j, cmdNames = []) {
   const by = new Map(); for (const [n, q] of out) { const k = normKey(n); if (by.has(k)) by.get(k)[1] += q; else by.set(k, [n, q]); }
   return [...by.values()];
 }
+/** Thèmes « généraux » d'EDHREC : ce qui distingue le style d'un deck (contrôle, gain de vie, défausse, meule…), par libellé EDHREC en minuscules. Les ~150 étiquettes d'EDHREC mêlent ces archétypes à des types de créatures
+ *  (Cats, Wizards…), des mots-clés rares (Foretell, Mutate…) et des synergies très étroites (Pingers, Aikido…) : ces dernières sont écartées. Un libellé inconnu n'est simplement pas gardé. */
+export const GENERAL_THEMES = new Set([
+  'aggro', 'midrange', 'control', 'combo', 'tempo', 'stax', 'prison', 'pillow fort', 'voltron', 'storm', 'good stuff', 'toolbox', 'stompy', 'weenies', 'chaos', 'politics', 'group hug', 'group slug', 'hatebears', 'big mana', 'ramp',
+  'spellslinger', 'counterspells', 'card draw', 'cantrips', 'x spells', 'flash', 'burn', 'lifegain', 'lifedrain', 'mill', 'self-mill', 'discard', 'wheels', 'theft', 'bounce', 'exile', 'land destruction', 'extra turns', 'forced combat',
+  'tokens', 'aristocrats', 'sacrifice', 'reanimator', 'graveyard', 'blink', 'clones', '+1/+1 counters', 'proliferate', 'infect', 'poison', 'artifacts', 'equipment', 'auras', 'enchantress', 'planeswalkers', 'superfriends', 'vehicles',
+  'landfall', 'lands matter', 'treasure', 'food', 'blood', 'monarch', 'curses', 'donate',
+]);
+/** Thèmes EDHREC d'un commandant (panels.taglinks de la page du deck moyen : [{ count, slug, value }], le nombre est celui des decks EDHREC du commandant qui ont ce thème) → [[slug, libellé, nombre]], du plus au moins fréquent.
+ *  Seuls les thèmes généraux (GENERAL_THEMES) portés par au moins 1 % des decks du commandant (et 5 decks) sont gardés, 8 au plus. decks : nombre de decks du commandant (0 si inconnu : seul le plancher de 5 s'applique). */
+export function themesOf(j, decks = 0) {
+  const l = (j && j.panels && j.panels.taglinks) || (j && j.taglinks) || [], min = Math.max(5, Math.ceil((Number(decks) || 0) * 0.01)), seen = new Set(), out = [];
+  for (const t of Array.isArray(l) ? l : []) {
+    const slug = tab(t && t.slug).replace(/\s+/g, '-'), n = Math.round(Number(t && t.count)), label = tab(t && t.value).replace(/\s+/g, ' ').slice(0, 40);
+    if (!slug || slug.length > 60 || !GENERAL_THEMES.has(label.toLowerCase()) || !(n >= min) || seen.has(slug)) continue; seen.add(slug); out.push([slug, label, n]);
+  }
+  return out.sort((a, b) => b[2] - a[2] || a[1].localeCompare(b[1])).slice(0, 8);
+}
 /** Deck Archidekt (/api/decks/{id}/) → { name, views, cmd:[noms], cards:[[nom, qté]] } ; banc, maybeboard et « considering » exclus. */
 export function archidektDeck(j) {
   const cmd = [], by = new Map();
@@ -122,7 +140,7 @@ export function buildEdh({ at, cmds, decks, price, img, gc }) {
 
 /** Fichier binaire compressé (EDH2 + gzip). Mêmes paramètres que buildEdh ; price : Map(nom → centimes) · img : Map(slug → chemin) · gc : noms. */
 export function buildBin({ at, cmds, decks, price, img, gc }) {
-  const model = { v: 1, at, cmds: cmds.map(c => ({ slug: c.slug, decks: c.decks, ci: c.ci, names: c.names, img: (img && img.get(c.slug)) || '' })), decks: decks.map(d => ({ slug: d.slug, src: d.src, label: d.label, url: /^https:\/\//.test(d.url || '') ? d.url : '', cards: d.cards })), price: price || [], gc: gc || [] };
+  const model = { v: 1, at, cmds: cmds.map(c => ({ slug: c.slug, decks: c.decks, ci: c.ci, names: c.names, img: (img && img.get(c.slug)) || '', themes: c.themes || [] })), decks: decks.map(d => ({ slug: d.slug, src: d.src, label: d.label, url: /^https:\/\//.test(d.url || '') ? d.url : '', cards: d.cards })), price: price || [], gc: gc || [] };
   return gzipSync(Buffer.from(edhPack(model, normKey)), { level: 9 });
 }
 
@@ -199,7 +217,7 @@ async function discoverScryfall() {
 /* ── 2) Deck moyen de chaque commandant ───────────────────────────────────────────────────────── */
 async function avgDecks(cmds) {
   const decks = [], kept = [], skipped = [];
-  let n = 0;
+  let n = 0, nThemes = 0;
   for (const c of cmds) {
     n++; if (Date.now() - T0 > BUDGET_MS * 0.7) { log('  budget de temps atteint : decks moyens arrêtés à ' + decks.length); break; }
     let j; try { j = await getJson(EDH_BASE + 'average-decks/' + c.slug + '.json'); } catch (e) { skipped.push(`${c.slug}: ${e.message}`); if (skipped.length > 40 && !decks.length) throw new Error('EDHREC ne répond pas aux decks moyens : ' + skipped.slice(-3).join(' | ')); continue; }
@@ -208,10 +226,11 @@ async function avgDecks(cmds) {
     const cards = avgLines(j, c.names), total = cards.reduce((a, x) => a + x[1], 0);
     if (total < 40 || total > 105) { skipped.push(`${c.slug}: ${total} cartes`); continue; }      // un deck de Commander compte 100 cartes : au-delà, la liste est faussée
     decks.push({ slug: c.slug, src: 'edhrec', label: 'Deck moyen', url: 'https://edhrec.com/average-decks/' + c.slug, cards });
+    c.themes = themesOf(j, c.decks); nThemes += c.themes.length ? 1 : 0; if (nThemes === 1 && c.themes.length) log(`  thèmes (exemple) ${c.slug} : ${c.themes.map(t => t[1] + ' ' + t[2]).join(', ')}`); else if (n === 1 && !c.themes.length) log(`  aucun thème lu pour ${c.slug} (clés : ${Object.keys(j.panels || {}).join(',') || '-'})`);      // les thèmes sont ceux du commandant : ils valent aussi pour ses decks Archidekt
     kept.push(c);
     if (n % 50 === 0) log(`  decks moyens : ${decks.length} lus sur ${n} essayés`);
   }
-  log(`  decks moyens : ${decks.length} ; ignorés : ${skipped.length}`); for (const s of skipped.slice(0, 25)) log('   ·', s);
+  log(`  decks moyens : ${decks.length} (dont ${nThemes} avec des thèmes EDHREC) ; ignorés : ${skipped.length}`); for (const s of skipped.slice(0, 25)) log('   ·', s);
   return { decks, kept };
 }
 
