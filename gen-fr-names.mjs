@@ -20,14 +20,16 @@ export function frRow(c) {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function getJson(url) {
-  for (let i = 0; i < 5; i++) {
-    const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json;q=0.9,*/*;q=0.8' } });
+  let last = '';
+  for (let i = 0; i < 6; i++) {
+    let r; try { r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json;q=0.9,*/*;q=0.8' } }); } catch (e) { last = 'réseau : ' + (e && e.message); await sleep(3000 * (i + 1)); continue; }
     if (r.ok) return r.json();
     if (r.status === 404) return null;
-    if (r.status === 429 || r.status >= 500) { await sleep(2000 * (i + 1)); continue; }
-    throw new Error('Scryfall ' + r.status + ' sur ' + url);
+    const body = (await r.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 200); last = `HTTP ${r.status} ${body}`;
+    if (r.status === 429 || r.status >= 500) { await sleep(Math.max(3000 * (i + 1), (Number(r.headers.get('retry-after')) || 0) * 1000)); continue; }
+    break;
   }
-  throw new Error('Scryfall ne répond pas : ' + url);
+  throw new Error('Scryfall : ' + last + ' · ' + url);
 }
 async function main() {
   const out = process.argv[2] || join(here, 'pwa', 'fr-names.tsv');
@@ -35,10 +37,11 @@ async function main() {
   const by = new Map();
   while (url) {
     const j = await getJson(url); if (!j) break;
+    if (!pages) console.log(`  total annoncé : ${j.total_cards} cartes`);
     for (const c of j.data || []) { const r = frRow(c); if (r) by.set(r.split('\t').slice(0, 2).join('\t'), r); }
     url = j.has_more && typeof j.next_page === 'string' && /^https:\/\/api\.scryfall\.com\//.test(j.next_page) ? j.next_page : '';
     if (++pages % 10 === 0) console.log(`  page ${pages} · ${by.size} cartes`);
-    await sleep(120);                                       // 100 ms minimum demandé par Scryfall
+    await sleep(250);                                       // Scryfall demande 50–100 ms au minimum entre deux requêtes ; on reste large
   }
   const rows = [...by.values()].sort((a, b) => a.localeCompare(b, 'fr'));
   if (rows.length < 5000) { console.error(`Seulement ${rows.length} lignes : fichier existant conservé.`); process.exit(1); }
