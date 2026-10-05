@@ -6,7 +6,8 @@
 // Le token reste côté serveur. Seules les routes utiles sont relayées ; l'achat (cart/purchase) est bloqué.
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -36,6 +37,48 @@ const STATIC = new Map([
   ['/edh.bin.gz', ['edh.bin.gz', 'application/octet-stream', 'public, max-age=86400', 'pre']],                          // même contenu en binaire compact (EDH2, déjà compressé par le générateur : envoyé tel quel avec Content-Encoding: gzip, ou décompressé si le client n'accepte pas gzip)
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
+
+// ── Données EDHREC (edh.bin.gz) : le serveur récupère tout seul la dernière version générée par GitHub Actions (chaque lundi), sans redéploiement ──
+// Au démarrage puis toutes les 6 h : lecture conditionnelle (ETag) du fichier du dépôt ; il n'est gardé que s'il est lisible (gzip + EDH2), assez fourni et plus récent
+// que celui servi. Copie gardée en mémoire et dans .data/ (non versionné : ne gêne jamais un « git pull » de déploiement). Panne ou fichier douteux : on garde l'ancien.
+const EDH_SRC = (process.env.EDH_SOURCE_URL === undefined ? 'https://raw.githubusercontent.com/BeerDeus/mtgcardshop/main/pwa/edh.bin.gz' : process.env.EDH_SOURCE_URL).trim();      // '' : désactivé
+const EDH_EVERY = Number(process.env.EDH_SYNC_MS) || 6 * 3600000, EDH_FIRST = process.env.EDH_SYNC_FIRST_MS === undefined ? 5000 : Number(process.env.EDH_SYNC_FIRST_MS);
+const EDH_DIR = process.env.EDH_DATA_DIR || join(here, '.data'), EDH_COPY = join(EDH_DIR, 'edh.bin.gz'), EDH_REPO = join(here, 'pwa', 'edh.bin.gz');
+let EDHB = null; try { EDHB = createRequire(import.meta.url)('./edhbin.cjs'); } catch (e) { /* sans lecteur : contrôle minimal (gzip + EDH2) */ }
+let EDH_LIVE = null;                         // { buf, at, decks, cmds } : copie plus récente que celle du dépôt, servie à la place
+const EDH_ST = { from: 'none', at: '', decks: 0, cmds: 0, bytes: 0, check: '', err: '' };
+let edhEtag = '', edhBusy = false;
+/** Contrôle un fichier edh.bin.gz : { at, decks, cmds } ou lève une erreur. */
+function edhInfo(buf) {
+  const raw = gunzipSync(buf);
+  if (raw.length < 12 || raw.toString('latin1', 0, 4) !== 'EDH2') throw new Error('pas un fichier EDH2');
+  if (!EDHB) return { at: '', decks: 0, cmds: 0 };
+  const u = EDHB.edhUnpack(raw); return { at: String(u.at || ''), decks: u.dk.length, cmds: u.cmds.length };
+}
+async function edhLocal(f) { try { const buf = await readFile(f); return { buf, ...edhInfo(buf) }; } catch (e) { return null; } }
+async function edhBoot() {
+  const [repo, copy] = await Promise.all([edhLocal(EDH_REPO), edhLocal(EDH_COPY)]), best = copy && (!repo || copy.at > repo.at) ? copy : null;
+  if (best) { EDH_LIVE = best; Object.assign(EDH_ST, { from: 'copie', at: best.at, decks: best.decks, cmds: best.cmds, bytes: best.buf.length }); }
+  else if (repo) Object.assign(EDH_ST, { from: 'dépôt', at: repo.at, decks: repo.decks, cmds: repo.cmds, bytes: repo.buf.length });
+}
+async function edhSync() {
+  if (!EDH_SRC || edhBusy) return; edhBusy = true; EDH_ST.check = new Date().toISOString();
+  try {
+    const r = await fetch(EDH_SRC, { headers: { 'User-Agent': 'deckdeal-proxy', ...(edhEtag ? { 'If-None-Match': edhEtag } : {}) }, signal: AbortSignal.timeout(90000) });
+    if (r.status === 304) { EDH_ST.err = ''; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 40e6) throw new Error('fichier trop gros');
+    const m = edhInfo(buf);
+    if (EDHB && (m.decks < 50 || m.cmds < 100)) throw new Error(`fichier trop maigre (${m.decks} decks, ${m.cmds} commandants) : ignoré`);
+    if (EDH_ST.decks && m.decks < EDH_ST.decks / 2) throw new Error(`${m.decks} decks contre ${EDH_ST.decks} servis : ignoré`);
+    edhEtag = r.headers.get('etag') || ''; EDH_ST.err = '';
+    if (EDH_ST.at && m.at && m.at <= EDH_ST.at) return;                       // déjà à jour
+    EDH_LIVE = { buf, ...m }; Object.assign(EDH_ST, { from: 'GitHub', at: m.at, decks: m.decks, cmds: m.cmds, bytes: buf.length });
+    console.log(`EDH : données du ${m.at} récupérées (${m.decks} decks, ${m.cmds} commandants, ${(buf.length / 1048576).toFixed(2)} Mo)`);
+    try { await mkdir(EDH_DIR, { recursive: true }); await writeFile(EDH_COPY + '.tmp', buf); await rename(EDH_COPY + '.tmp', EDH_COPY); } catch (e) { /* dossier en lecture seule : la copie en mémoire suffit jusqu'au redémarrage */ }
+  } catch (e) { EDH_ST.err = String(e && e.message || e); console.warn('EDH : mise à jour impossible (' + EDH_ST.err + ')'); }
+  finally { edhBusy = false; }
+}
 
 // Accès par compte Firebase : le navigateur envoie son jeton d'identité (X-Firebase-Token), le proxy en vérifie la signature Google
 // puis compare l'UID (ou l'email vérifié) à la liste autorisée. Rien à retaper, rien à partager.
@@ -535,6 +578,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, push: PUSH_ON ? VAPID_PUB : '' });
+    if (url.pathname === '/__edh') return json(res, 200, { source: EDH_SRC ? 'GitHub' : '', ...EDH_ST });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       if (!PAGE) return json(res, 404, { error: 'page_missing', message: 'Place deck-deal.html à côté de proxy.mjs.' });
@@ -544,13 +588,17 @@ const server = http.createServer(async (req, res) => {
     }
     const st = (req.method === 'GET' || req.method === 'HEAD') && STATIC.get(url.pathname);
     if (st) {
-      const f = join(here, 'pwa', st[0]);
-      if (!existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
-      let data = await readFile(f); const hd = { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2] };
+      const f = join(here, 'pwa', st[0]), live = st[3] === 'pre' && EDH_LIVE;
+      if (!live && !existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
+      let data = live ? EDH_LIVE.buf : await readFile(f); const hd = { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2] };
       if (st[3]) {
         hd.Vary = 'Accept-Encoding';
         const gz = /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
-        if (st[3] === 'pre') { if (gz) hd['Content-Encoding'] = 'gzip'; else { try { data = gunzipSync(data); } catch (e) { /* pas du gzip : tel quel */ } } }
+        if (st[3] === 'pre') {
+          hd.ETag = '"' + createHash('sha1').update(data).digest('hex').slice(0, 20) + (gz ? '' : '-i') + '"';       // le navigateur revalide (304) au lieu de retélécharger
+          if (String(req.headers['if-none-match'] || '').split(',').some(t => t.trim().replace(/^W\//, '') === hd.ETag)) { delete hd['Content-Type']; res.writeHead(304, hd); return res.end(); }
+          if (gz) hd['Content-Encoding'] = 'gzip'; else { try { data = gunzipSync(data); } catch (e) { /* pas du gzip : tel quel */ } }
+        }
         else if (gz) { data = gzipSync(data); hd['Content-Encoding'] = 'gzip'; }
       }
       hd['Content-Length'] = data.length; res.writeHead(200, hd);
@@ -574,4 +622,5 @@ server.listen(PORT, HOST, () => {
   if (APP_KEY) console.log(AUTH_FB ? 'APP_KEY encore acceptée en secours : supprime-la une fois la connexion par compte validée.' : 'Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');
   if (APP_KEY && APP_KEY.length < 12) console.warn('⚠ APP_KEY courte (' + APP_KEY.length + ' caractères) : prends 16 caractères ou plus.');
   if (!PAGE) console.log('⚠ deck-deal.html introuvable à côté du proxy.');
+  if (EDH_SRC) edhBoot().catch(() => {}).then(() => { setTimeout(edhSync, EDH_FIRST).unref(); setInterval(edhSync, EDH_EVERY).unref(); });
 });

@@ -5939,7 +5939,7 @@ function openCollImport(initial) {
 /* ── edh.js : commandants joués (EDHREC) et decks à compléter, depuis la collection ───────────────────────────
    Données : edh.tsv, généré chaque semaine par GitHub Actions (gen-edhrec.mjs) et servi par le site : commandants (nombre de decks, identité de couleur),
    deck moyen de chacun et prix Cardmarket des cartes. Une seule requête, gardée sur l'appareil ; tout le calcul se fait ici, sans réseau. */
-const EDH_KEY = 'edh:v1', EDH_BIN_KEY = 'edh:v2', EDH_FILE = 'edh.tsv', EDH_BIN = 'edh.bin.gz', EDH_FRESH = 6 * DAY;      // v2 : fichier binaire (EDH2) ; v1 : ancien texte, gardé en repli
+const EDH_KEY = 'edh:v1', EDH_BIN_KEY = 'edh:v2', EDH_FILE = 'edh.tsv', EDH_BIN = 'edh.bin.gz', EDH_FRESH = DAY;      // v2 : fichier binaire (EDH2) ; v1 : ancien texte, gardé en repli
 const EDH_SORTS = [['have', 'Plus possédées'], ['cost', 'Moins cher'], ['pop', 'Meilleur tier']];
 const EDH_TIER_NAMES = ['S', 'A', 'B', 'C', 'D'], EDH_IM_KEY = 'edh:im', EDH_SMALL = 'https://cards.scryfall.io/small/';
 const EDH_BUDGETS = [[0, 'Budget illimité'], [3000, '≤ 30 €'], [6000, '≤ 60 €'], [10000, '≤ 100 €'], [20000, '≤ 200 €']];
@@ -5968,7 +5968,7 @@ async function edhFetchBin() {
 function edhRead(rec) {
   try { const d = rec && rec.buf ? parseEdhBin(rec.buf) : rec && rec.text ? parseEdh(rec.text) : null; return d && d.v === 1 && d.cmds.length ? d : null; } catch (e) { return null; }
 }
-/** Charge les données : copie locale de moins de 6 jours, sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
+/** Charge les données : copie locale de moins de 1 jour (le serveur répond 304 si le fichier n'a pas changé), sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
 function edhLoad() {
   if (EDH.data) return Promise.resolve(EDH.data);
   if (EDH.p) return EDH.p;
