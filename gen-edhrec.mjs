@@ -2,7 +2,7 @@
 // Génère pwa/edh.bin.gz : les commandants les plus joués (EDHREC), le deck moyen de chacun, des decks réels (Archidekt) et le prix Cardmarket
 // de chaque carte (tendance Scryfall), au format binaire EDH2 (src/edhbin.js, copie edhbin.cjs) compressé en gzip. L'app le télécharge une fois
 // (≈ 1 Mo pour 5 000 decks) et compare tout à ta collection, sans réseau. Une sortie en `.tsv` produit l'ancien format texte (tests, secours).
-//   node gen-edhrec.mjs [fichier de sortie]        (Node ≥ 18, aucune dépendance ; ≈ 2 h la 1re fois, puis ≈ 40 min grâce au cache des decks Archidekt)
+//   node gen-edhrec.mjs [fichier de sortie]        (Node ≥ 18, aucune dépendance ; ≈ 2 h 30 la 1re fois, puis ≈ 1 h à 1 h 20 grâce au cache des decks Archidekt)
 //   EDH_TOP=2000 (commandants avec deck moyen) · EDH_ARCH=2 (decks Archidekt par commandant, 0 = désactivé) · EDH_ARCH_TOP=2000 · EDH_ARCH_ROT=4 (1 commandant sur 4 relu chaque semaine)
 //   EDH_ARCH_MIN=130 (minutes pour Archidekt) · EDH_BUDGET=210 (minutes au total) · EDH_PREV=fichier précédent (cache des decks Archidekt, par défaut la sortie) · EDH_DEBUG=edh-debug
 // Lancé chaque semaine par .github/workflows/edhrec.yml. Le fichier existant n'est remplacé que si le nouveau est plausible.

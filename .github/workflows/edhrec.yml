@@ -1,7 +1,7 @@
 # Commandants EDHREC, decks moyens, decks réels Archidekt et prix (pwa/edh.bin.gz, format binaire EDH2 compressé), régénérés chaque semaine.
 # L'app (Ma collection › Decks, filtre « Joués en commandant ») le télécharge en une requête ; s'il manque, ces écrans l'indiquent et rien d'autre ne casse.
 # Lancement manuel : onglet Actions › « Commandants EDHREC » › Run workflow (top = nombre de commandants, arch = decks Archidekt par commandant, 0 = aucun).
-# Les decks Archidekt déjà lus sont gardés d'une semaine à l'autre (fichier précédent) : la 1re génération dure ≈ 2 h, les suivantes ≈ 40 min.
+# Les decks Archidekt déjà lus sont gardés d'une semaine à l'autre (fichier précédent) : la 1re génération a duré 2 h 30 (plafond Archidekt de 130 min atteint, quelques commandants reportés), les suivantes ≈ 1 h à 1 h 20 (estimation).
 # Le journal et des échantillons de réponses sont poussés sur la branche « edh-debug » (même en cas d'échec) pour voir ce que les sites ont répondu.
 name: Commandants EDHREC
 on:
