@@ -1,19 +1,24 @@
 #!/usr/bin/env node
-// Génère pwa/edh.tsv : les commandants les plus joués (EDHREC), le deck moyen de chacun, quelques decks réels (Archidekt) et le prix Cardmarket
-// de chaque carte (tendance Scryfall). L'app le télécharge une fois (≈ 0,5 Mo compressé) et compare tout à ta collection, sans réseau.
-//   node gen-edhrec.mjs [fichier de sortie]        (Node ≥ 18, aucune dépendance ; ≈ 10 à 20 minutes pour 1 000 commandants)
-//   EDH_TOP=1000 · EDH_ARCH=3 (decks Archidekt par commandant, 0 = désactivé) · EDH_ARCH_TOP=100 · EDH_DEBUG=edh-debug (dossier des échantillons)
+// Génère pwa/edh.bin.gz : les commandants les plus joués (EDHREC), le deck moyen de chacun, des decks réels (Archidekt) et le prix Cardmarket
+// de chaque carte (tendance Scryfall), au format binaire EDH2 (src/edhbin.js, copie edhbin.cjs) compressé en gzip. L'app le télécharge une fois
+// (≈ 1 Mo pour 5 000 decks) et compare tout à ta collection, sans réseau. Une sortie en `.tsv` produit l'ancien format texte (tests, secours).
+//   node gen-edhrec.mjs [fichier de sortie]        (Node ≥ 18, aucune dépendance ; ≈ 2 h la 1re fois, puis ≈ 40 min grâce au cache des decks Archidekt)
+//   EDH_TOP=2000 (commandants avec deck moyen) · EDH_ARCH=2 (decks Archidekt par commandant, 0 = désactivé) · EDH_ARCH_TOP=2000 · EDH_ARCH_ROT=4 (1 commandant sur 4 relu chaque semaine)
+//   EDH_ARCH_MIN=130 (minutes pour Archidekt) · EDH_BUDGET=210 (minutes au total) · EDH_PREV=fichier précédent (cache des decks Archidekt, par défaut la sortie) · EDH_DEBUG=edh-debug
 // Lancé chaque semaine par .github/workflows/edhrec.yml. Le fichier existant n'est remplacé que si le nouveau est plausible.
 // Aucune API officielle chez EDHREC : on lit les mêmes fichiers JSON que son site, lentement (≈ 3 requêtes par seconde au plus), avec un User-Agent qui s'annonce.
-import { writeFileSync, renameSync, mkdirSync, appendFileSync } from 'node:fs';
+import { writeFileSync, renameSync, mkdirSync, appendFileSync, readFileSync, existsSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const { edhPack, edhUnpack } = createRequire(import.meta.url)(existsSync(join(here, 'edhbin.cjs')) ? './edhbin.cjs' : './src/edhbin.js');      // format binaire partagé avec l'appli
 const UA = 'DeckDeal-edhrec/1.0 (+https://github.com/BeerDeus/mtgcardshop)';
-const TOP = Math.max(1, Number(process.env.EDH_TOP) || 1000), ARCH = process.env.EDH_ARCH === undefined ? 3 : Math.max(0, Number(process.env.EDH_ARCH) || 0), ARCH_TOP = Number(process.env.EDH_ARCH_TOP) || 100;
+const TOP = Math.max(1, Number(process.env.EDH_TOP) || 2000), ARCH = process.env.EDH_ARCH === undefined ? 2 : Math.max(0, Number(process.env.EDH_ARCH) || 0), ARCH_TOP = Number(process.env.EDH_ARCH_TOP) || 2000, ARCH_ROT = Math.max(1, Number(process.env.EDH_ARCH_ROT) || 4), ARCH_MS = (Number(process.env.EDH_ARCH_MIN) || 130) * 60000;
 const DEBUG = process.env.EDH_DEBUG || '';
-const LIST_MAX = Number(process.env.EDH_LIST) || 3000, MIN_DECKS_LISTED = 10, BUDGET_MS = (Number(process.env.EDH_BUDGET) || 70) * 60000, T0 = Date.now();      // commandants gardés dans la liste (3 000 max, ≥ 10 decks) ; durée maximale de la génération
+const LIST_MAX = Number(process.env.EDH_LIST) || 3000, MIN_DECKS_LISTED = 10, BUDGET_MS = (Number(process.env.EDH_BUDGET) || 210) * 60000, T0 = Date.now();      // commandants gardés dans la liste (3 000 max, ≥ 10 decks) ; durée maximale de la génération
 const EDH_BASE = process.env.EDH_BASE || 'https://json.edhrec.com/pages/', SCRY = process.env.SCRY_BASE || 'https://api.scryfall.com/', ARCH_BASE = process.env.ARCH_BASE || 'https://archidekt.com/api/';
 const MIN_DECKS = process.env.EDH_MIN_DECKS === undefined ? 50 : Number(process.env.EDH_MIN_DECKS), MIN_CMDS = process.env.EDH_MIN_CMDS === undefined ? 100 : Number(process.env.EDH_MIN_CMDS);
 const GAP = process.env.EDH_GAP === undefined ? null : Number(process.env.EDH_GAP);      // tests : espacement imposé (0 = aucun)
@@ -115,6 +120,12 @@ export function buildEdh({ at, cmds, decks, price, img, gc }) {
   return L.join('\n') + '\n';
 }
 
+/** Fichier binaire compressé (EDH2 + gzip). Mêmes paramètres que buildEdh ; price : Map(nom → centimes) · img : Map(slug → chemin) · gc : noms. */
+export function buildBin({ at, cmds, decks, price, img, gc }) {
+  const model = { v: 1, at, cmds: cmds.map(c => ({ slug: c.slug, decks: c.decks, ci: c.ci, names: c.names, img: (img && img.get(c.slug)) || '' })), decks: decks.map(d => ({ slug: d.slug, src: d.src, label: d.label, url: /^https:\/\//.test(d.url || '') ? d.url : '', cards: d.cards })), price: price || [], gc: gc || [] };
+  return gzipSync(Buffer.from(edhPack(model, normKey)), { level: 9 });
+}
+
 /* ── Réseau ───────────────────────────────────────────────────────────────────────────────────── */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const backoff = ms => (GAP == null ? ms : Math.min(ms, 20));      // tests : pas d'attente réelle entre les essais
@@ -204,29 +215,61 @@ async function avgDecks(cmds) {
   return { decks, kept };
 }
 
-/* ── 3) Decks réels Archidekt (facultatif, tolérant : un échec n'arrête rien) ──────────────────────────── */
-async function archidekt(cmds, decks) {
+/* ── 3) Decks réels Archidekt (facultatif, tolérant : un échec n'arrête rien ; incrémental) ──────────────────── */
+const archId = url => Number((/archidekt\.com\/decks\/(\d+)/.exec(String(url || '')) || [])[1]) || 0;
+const hash32 = s => { let x = 0; for (const ch of String(s)) x = (Math.imul(x, 31) + ch.charCodeAt(0)) >>> 0; return x; };
+/** Les commandants du deck sont exactement ceux du commandant (ou de la paire) cherché : « Tymna + Thrasios » ne reprend pas un deck « Tymna + Kraum ». */
+export const sameCmd = (deckCmd, names) => { const a = new Set(deckCmd.map(normKey)), b = new Set(names.map(normKey)); return a.size === b.size && [...a].every(x => b.has(x)); };
+/** Decks Archidekt du fichier précédent : slug → [{ slug, src, label, url, cards:[[nom, qté]] }]. Vide si le fichier manque, n'est pas un EDH2 ou est illisible. */
+export function loadPrev(file) {
+  const out = new Map(); if (!file || !existsSync(file) || /\.tsv$/.test(file)) return out;
+  try {
+    let buf = readFileSync(file); if (buf[0] === 0x1f && buf[1] === 0x8b) buf = gunzipSync(buf);
+    const r = edhUnpack(new Uint8Array(buf.buffer, buf.byteOffset, buf.length));
+    r.dk.forEach(([ci, src, label, url], i) => {
+      if (src !== 'archidekt' || !r.cmds[ci]) return;
+      const cards = []; for (let j = r.off[i]; j < r.off[i + 1]; j++) cards.push([r.names[r.ids[j]], r.qty[j]]);
+      const slug = r.cmds[ci].slug; if (!out.has(slug)) out.set(slug, []); out.get(slug).push({ slug, src, label, url: typeof url === 'number' ? 'https://archidekt.com/decks/' + url : String(url || ''), cards });
+    });
+  } catch (e) { log('  fichier précédent illisible (' + e.message + ') : cache Archidekt ignoré'); return new Map(); }
+  return out;
+}
+/** Decks réels : ARCH par commandant pour les ARCH_TOP premiers. Les decks déjà lus (fichier précédent) sont gardés ; seuls les commandants qui n'ont pas leur quota et 1 sur ARCH_ROT chaque semaine sont recherchés de nouveau. Une erreur, ou le temps imparti, conserve l'ancien. */
+async function archidekt(cmds, decks, prev = new Map()) {
   if (!ARCH) return 0;
-  const AR = ARCH_BASE, hd = { Accept: 'application/json' };
-  let added = 0, fails = 0, tried = 0, off = 0, rejected = 0;
-  const until = Date.now() + 15 * 60000;      // au plus 15 minutes pour cette source facultative
-  for (const c of cmds.slice(0, ARCH_TOP)) {
-    if (Date.now() > until || Date.now() - T0 > BUDGET_MS) { log('  Archidekt : temps imparti atteint'); break; }
-    tried++;
+  const AR = ARCH_BASE, hd = { Accept: 'application/json' }, week = Math.floor(Date.now() / 604800000), rot = c => ARCH_ROT <= 1 || (hash32(c.slug) + week) % ARCH_ROT === 0;
+  const todo = [], keep = [];
+  for (const c of cmds.slice(0, ARCH_TOP)) { const have = prev.get(c.slug) || []; (have.length < ARCH || rot(c) ? todo : keep).push([c, have]); }
+  for (const [, have] of keep) decks.push(...have.slice(0, ARCH));
+  todo.sort((x, y) => (x[1].length >= ARCH) - (y[1].length >= ARCH));      // d'abord ceux qui n'ont pas leur quota (tri stable : les plus populaires en tête)
+  let fresh = 0, reused = 0, fails = 0, tried = 0, off = 0, rejected = 0, i = 0, abort = false;
+  const until = Math.min(Date.now() + ARCH_MS, T0 + BUDGET_MS);
+  log(`  Archidekt : ${keep.length} commandants gardés du fichier précédent, ${todo.length} à chercher`);
+  for (; i < todo.length; i++) {
+    const [c, have] = todo[i];
+    if (Date.now() > until) { log(`  Archidekt : temps imparti atteint (${todo.length - i} commandants reportés, leurs anciens decks sont gardés)`); break; }
+    tried++; let got = [];
     try {
       const q = AR + 'decks/v3/?' + new URLSearchParams({ ...ARCH_QUERY, [ARCH_CMD_PARAM]: c.names[0], orderBy: '-viewCount', pageSize: String(ARCH + 2) });
-      const raw = await getJson(q, { gap: 900, headers: hd, tries: 2 }), list = archidektList(raw); if (!tried || tried === 1) sample('archidekt-search-' + c.slug, raw);
-      let got = 0;
+      const raw = await getJson(q, { gap: 900, headers: hd, tries: 2 }), list = archidektList(raw); if (tried === 1) sample('archidekt-search-' + c.slug, raw);
+      const byId = new Map(have.map(d => [archId(d.url), d]));
       for (const l of list) {
-        if (got >= ARCH) break;
+        if (got.length >= ARCH) break;
+        const old = byId.get(l.id); if (old) { got.push(old); reused++; continue; }      // déjà lu : pas de nouvelle requête
         const d = archidektDeck(await getJson(AR + 'decks/' + l.id + '/', { gap: 900, headers: hd, tries: 2 }));
-        if (!d.cmd.some(x => c.names.some(y => normKey(x) === normKey(y)))) { off++; if (off >= 8 && !added) throw Object.assign(new Error('la recherche ne filtre pas par commandant'), { fatal: true }); continue; }
+        if (!sameCmd(d.cmd, c.names)) { if (c.names.length === 1) { off++; if (off >= 8 && !fresh && !reused) throw Object.assign(new Error('la recherche ne filtre pas par commandant'), { fatal: true }); } continue; }
         const size = d.cards.reduce((a, x) => a + x[1], 0); if (size < 90 || size > 101) { rejected++; continue; }      // deck incomplet, ou cartes en trop (jetons, sideboard mal classé) : 98 à 100 cartes hors commandant attendues
-        decks.push({ slug: c.slug, src: 'archidekt', label: [d.name, d.views ? nf(d.views) + ' vues' : ''].filter(Boolean).join(' · '), url: 'https://archidekt.com/decks/' + l.id, cards: d.cards }); got++; added++;
+        got.push({ slug: c.slug, src: 'archidekt', label: [d.name, d.views ? nf(d.views) + ' vues' : ''].filter(Boolean).join(' · '), url: 'https://archidekt.com/decks/' + l.id, cards: d.cards }); fresh++;
       }
-    } catch (e) { fails++; if (fails <= 5) log('   · archidekt', c.slug, e.message); if (e.fatal || (fails >= 4 && !added)) { log('  Archidekt injoignable ou format inattendu : abandon de cette source'); break; } }
+    } catch (e) {
+      fails++; if (fails <= 5) log('   · archidekt', c.slug, e.message); got = [];
+      if (e.fatal || (fails >= 4 && !fresh && !reused)) { log('  Archidekt injoignable ou format inattendu : abandon de cette source (les anciens decks sont gardés)'); abort = true; }
+    }
+    decks.push(...(got.length ? got : have.slice(0, ARCH)));
+    if (abort) { i++; break; }
   }
-  log(`  decks Archidekt : ${added} (${tried} commandants essayés, ${fails} erreurs, ${rejected} écartés pour leur taille)`); return added;
+  for (let j = i; j < todo.length; j++) decks.push(...todo[j][1].slice(0, ARCH));
+  log(`  decks Archidekt : ${fresh} nouveaux, ${reused} déjà connus (${tried} commandants cherchés, ${fails} erreurs, ${rejected} écartés pour leur taille)`); return fresh + reused;
 }
 const nf = n => Number(n).toLocaleString('fr-FR');
 // paramètres de la recherche Archidekt (validés par la sonde `--probe`)
@@ -287,7 +330,8 @@ async function probe() {
   }
 }
 async function main() {
-  const out = process.argv.slice(2).find(a => !a.startsWith('--')) || join(here, 'pwa', 'edh.tsv');
+  const out = process.argv.slice(2).find(a => !a.startsWith('--')) || join(here, 'pwa', 'edh.bin.gz'), legacy = /\.tsv$/.test(out);
+  const prev = ARCH && !legacy ? loadPrev(process.env.EDH_PREV || out) : new Map(), prevTotal = [...prev.values()].reduce((a, l) => a + Math.min(l.length, ARCH), 0);
   log(`Génération : top ${TOP}, Archidekt ${ARCH ? ARCH + ' deck(s) pour les ' + ARCH_TOP + ' premiers' : 'désactivé'}`);
   let cmds = await discover();
   if (cmds.length < Math.min(TOP, MIN_CMDS)) { log('  liste EDHREC insuffisante : complétée par le classement Scryfall'); const seen = new Set(cmds.map(c => c.slug)); cmds = cmds.concat((await discoverScryfall()).filter(c => !seen.has(c.slug))); }
@@ -295,7 +339,7 @@ async function main() {
   const top = cmds.slice(0, TOP);
   log(`${cmds.length} commandants au total ; decks moyens pour les ${top.length} premiers`);
   const { decks, kept } = await avgDecks(top);
-  await archidekt(kept, decks);
+  await archidekt(kept, decks, prev);
   const names = new Set(); for (const c of cmds) for (const n of c.names) names.add(n); for (const d of decks) for (const [n] of d.cards) names.add(n);
   log(`Scryfall : prix de ${names.size} cartes`);
   const { price, meta } = await scryInfo([...names]);
@@ -305,10 +349,12 @@ async function main() {
   const usedKeys = new Set(); for (const d of decks) for (const [n] of d.cards) usedKeys.add(normKey(n)); for (const c of cmds) for (const n of c.names) usedKeys.add(normKey(n));
   const dispName = new Map(); for (const d of decks) for (const [n] of d.cards) if (!dispName.has(normKey(n))) dispName.set(normKey(n), n); for (const c of cmds) for (const n of c.names) if (!dispName.has(normKey(n))) dispName.set(normKey(n), n);
   for (const k of usedKeys) if (price.has(k)) priceByName.set(dispName.get(k) || k, price.get(k));
-  const text = buildEdh({ at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), cmds: cmds.filter(c => c.decks > 0 || decks.some(d => d.slug === c.slug)), decks: decks.sort((a, b) => (cmds.findIndex(c => c.slug === a.slug) - cmds.findIndex(c => c.slug === b.slug)) || (a.src === b.src ? 0 : a.src === 'edhrec' ? -1 : 1)), price: priceByName, img, gc });
+  const order = new Map(cmds.map((c, i) => [c.slug, i])), model = { at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), cmds: cmds.filter(c => c.decks > 0 || decks.some(d => d.slug === c.slug)), decks: decks.sort((a, b) => (order.get(a.slug) - order.get(b.slug)) || (a.src === b.src ? 0 : a.src === 'edhrec' ? -1 : 1)), price: priceByName, img, gc };
+  const payload = legacy ? Buffer.from(buildEdh(model)) : buildBin(model);
   if (decks.length < MIN_DECKS || cmds.length < MIN_CMDS) throw new Error(`Résultat trop maigre (${decks.length} decks, ${cmds.length} commandants) : fichier existant conservé`);
+  const ar = decks.filter(d => d.src === 'archidekt').length; if (prevTotal >= 100 && ar < prevTotal * 0.7) throw new Error(`Decks Archidekt en forte baisse (${ar} contre ${prevTotal}) : fichier existant conservé`);
   mkdirSync(dirname(out), { recursive: true });
-  const tmp = out + '.tmp'; writeFileSync(tmp, text); renameSync(tmp, out);
-  log(`${cmds.length} commandants, ${decks.length} decks, ${priceByName.size} prix → ${out} (${(text.length / 1048576).toFixed(2)} Mo)`);
+  const tmp = out + '.tmp'; writeFileSync(tmp, payload); renameSync(tmp, out);
+  log(`${cmds.length} commandants, ${decks.length} decks (dont ${decks.filter(d => d.src === 'archidekt').length} Archidekt), ${priceByName.size} prix → ${out} (${(payload.length / 1048576).toFixed(2)} Mo)`);
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) (process.argv.includes('--probe') ? probe() : main()).catch(e => { log('ERREUR : ' + (e.message || e)); process.exit(1); });

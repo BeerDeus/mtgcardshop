@@ -7,7 +7,7 @@
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,7 @@ const STATIC = new Map([
   ['/icons/apple-touch-icon.png', ['icons/apple-touch-icon.png', 'image/png', YEAR]],
   ['/icons/favicon-32.png', ['icons/favicon-32.png', 'image/png', YEAR]],
   ['/edh.tsv', ['edh.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],                  // commandants EDHREC, decks moyens et prix (généré par gen-edhrec.mjs), gzip comme le catalogue français
+  ['/edh.bin.gz', ['edh.bin.gz', 'application/octet-stream', 'public, max-age=86400', 'pre']],                          // même contenu en binaire compact (EDH2, déjà compressé par le générateur : envoyé tel quel avec Content-Encoding: gzip, ou décompressé si le client n'accepte pas gzip)
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
 
@@ -548,7 +549,9 @@ const server = http.createServer(async (req, res) => {
       let data = await readFile(f); const hd = { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2] };
       if (st[3]) {
         hd.Vary = 'Accept-Encoding';
-        if (/\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''))) { data = gzipSync(data); hd['Content-Encoding'] = 'gzip'; }
+        const gz = /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
+        if (st[3] === 'pre') { if (gz) hd['Content-Encoding'] = 'gzip'; else { try { data = gunzipSync(data); } catch (e) { /* pas du gzip : tel quel */ } } }
+        else if (gz) { data = gzipSync(data); hd['Content-Encoding'] = 'gzip'; }
       }
       hd['Content-Length'] = data.length; res.writeHead(200, hd);
       return res.end(req.method === 'HEAD' ? undefined : data);

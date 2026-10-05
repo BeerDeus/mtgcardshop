@@ -1932,7 +1932,55 @@ function cmdrClass(i, edh) {
   if (e) return { cx: 2, ed: e.decks };
   return { cx: (i.cd != null ? i.cd : isCmdrType(i.tl)) ? 1 : 0, ed: 0 };
 }
-/** Lit edh.tsv (généré par gen-edhrec.mjs) :
+/** Lit le texte d'un edh.tsv en modèle { v, at, cmds:[{ slug, decks, ci, names, img }], decks:[{ slug, src, label, url, cards:[[nom, qté]] }], price:[[nom, centimes]], gc:[nom] } (voir edhPack). */
+function edhModelFromTsv(text) {
+  const m = { v: 0, at: '', cmds: [], decks: [], price: [], gc: [] }, bySlug = new Map();
+  let cur = null;
+  for (const line of String(text || '').split('\n')) {
+    if (!line) continue;
+    const t = line.replace(/\r$/, '').split('\t'), tag = t[0];
+    if (tag === '#edh') { m.v = Number(t[1]) || 0; m.at = t[2] || ''; }
+    else if (tag === 'C' && t.length >= 5) {
+      const names = t.slice(4).map(x => x.trim()).filter(Boolean); if (!names.length || !t[1]) continue;
+      const c = { slug: t[1], decks: Math.max(0, Number(t[2]) || 0), ci: String(t[3] || '').replace(/[^WUBRG]/g, ''), names, img: '' };
+      m.cmds.push(c); bySlug.set(c.slug, c);
+    }
+    else if (tag === 'I' && t.length >= 3) { const c = bySlug.get(t[1]); if (c && /^[\w\-./]+$/.test(t[2])) c.img = t[2]; }
+    else if (tag === 'D' && t[1]) { const c = bySlug.get(t[1]); cur = c ? { slug: t[1], src: t[2] || 'edhrec', label: t[3] || '', url: /^https:\/\//.test(t[4] || '') ? t[4] : '', cards: [] } : null; if (cur) m.decks.push(cur); }
+    else if (tag === 'K' && cur && t.length >= 3) { const n = t.slice(2).join('\t').trim(); if (n) cur.cards.push([n, Math.max(1, Math.min(99, Number(t[1]) || 1))]); }
+    else if (tag === 'P' && t.length >= 3) { const v = Number(t[1]); if (v > 0) m.price.push([t.slice(2).join('\t').trim(), Math.round(v)]); }
+    else if (tag === 'G' && t.length >= 2) { const n = t.slice(1).join('\t').trim(); if (n) m.gc.push(n); }
+  }
+  return m;
+}
+const EDHB = typeof module !== 'undefined' && module.exports ? require('./edhbin.js') : { edhPack, edhUnpack };
+/** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande. */
+class EdhDeck {
+  constructor(e, i, cmd, src, label, url) {
+    this._e = e; this.i = i; this.cmd = cmd; this.slug = cmd.slug; this.src = src || 'edhrec'; this.label = label || '';
+    this.url = url === 0 ? 'https://edhrec.com/average-decks/' + cmd.slug : typeof url === 'number' ? 'https://archidekt.com/decks/' + url : /^https:\/\//.test(url || '') ? url : '';
+  }
+  get cards() { const e = this._e, out = []; for (let j = e.off[this.i], z = e.off[this.i + 1]; j < z; j++) { const id = e.ids[j]; out.push([e.keys[id], e.names[id], e.qty[j]]); } return out; }
+}
+/** Index de recherche à partir d'un fichier EDH2 lu (edhUnpack) :
+ *  { v, at, cmds:[{ slug, decks, ci, names, keys, ids, img, rank (1 = le plus joué), tier ('S'…'D'), i }], by: clé → commandant, bySlug, decks:[EdhDeck], price: clé → centimes, gc: Set de clés,
+ *    names / keys / idOf : carte ↔ numéro, off / ids / qty : entrées des decks, pr : prix par numéro, bs / gcA : terrain de base · Game Changer par numéro }. */
+function edhIndex(raw) {
+  const names = raw.names, nn = names.length, keys = new Array(nn), idOf = new Map(), bs = new Uint8Array(nn), gcA = new Uint8Array(nn);
+  for (let i = 0; i < nn; i++) { const k = ownKey(names[i]); keys[i] = k; if (!idOf.has(k)) idOf.set(k, i); if (BASIC_NAMES.has(k)) bs[i] = 1; }
+  const out = { v: raw.v, at: raw.at, cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set(), names, keys, idOf, off: raw.off, ids: raw.ids, qty: raw.qty, pr: raw.pr, bs, gcA };
+  for (let i = 0; i < nn; i++) if (raw.pr[i] > 0) out.price.set(keys[i], raw.pr[i]);
+  for (const id of raw.gc) { gcA[id] = 1; out.gc.add(keys[id]); }
+  for (const r of raw.cmds) {
+    const ck = r.names.map(ownKey), c = { slug: r.slug, decks: r.decks, ci: String(r.ci || '').replace(/[^WUBRG]/g, ''), names: r.names, keys: ck, ids: ck.map(k => idOf.get(k)).filter(x => x !== undefined), img: r.img && /^[\w\-./]+$/.test(r.img) ? FR_IMG + r.img : '', i: out.cmds.length };
+    out.cmds.push(c); out.bySlug.set(c.slug, c);
+    for (const k of c.keys) { const p = out.by.get(k); if (!p || c.decks > p.decks) out.by.set(k, c); }
+  }
+  [...out.cmds].sort((a, b) => b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
+  raw.dk.forEach(([ci, src, label, url], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url)));
+  return out;
+}
+/** Lit edh.tsv (généré par gen-edhrec.mjs ; ancien format, gardé en repli) :
  *    #edh \t version \t date
  *    C \t slug \t decks \t identité \t nom [\t nom 2]        un commandant (ou une paire), avec son nombre de decks EDHREC
  *    I \t slug \t chemin d'image                            petite image du commandant (après cards.scryfall.io/small/)
@@ -1940,30 +1988,10 @@ function cmdrClass(i, edh) {
  *    K \t quantité \t nom                                    une carte du deck courant (commandant exclu)
  *    P \t centimes \t nom                                    prix Cardmarket (tendance Scryfall) au moment de la génération
  *    G \t nom                                                une carte de la liste Game Changers (Scryfall `is:gamechanger`)
- *  Retourne { v, at, cmds:[{ slug, decks, ci, names, keys, img, rank (1 = le plus joué), tier ('S'…'D') }], by: clé → commandant, decks:[{ slug, cmd, src, label, url, cards:[[clé, nom, qté]] }], price: clé → centimes, gc: Set de clés }. */
-function parseEdh(text) {
-  const out = { v: 0, at: '', cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set() }, kc = new Map();
-  const key = n => { let k = kc.get(n); if (k === undefined) { k = ownKey(n); kc.set(n, k); } return k; };      // les mêmes noms reviennent dans des centaines de decks
-  let cur = null;
-  for (const line of String(text || '').split('\n')) {
-    if (!line) continue;
-    const t = line.replace(/\r$/, '').split('\t'), tag = t[0];
-    if (tag === '#edh') { out.v = Number(t[1]) || 0; out.at = t[2] || ''; }
-    else if (tag === 'C' && t.length >= 5) {
-      const names = t.slice(4).map(x => x.trim()).filter(Boolean); if (!names.length || !t[1]) continue;
-      const c = { slug: t[1], decks: Math.max(0, Number(t[2]) || 0), ci: String(t[3] || '').replace(/[^WUBRG]/g, ''), names, keys: names.map(key), img: '' };
-      out.cmds.push(c); out.bySlug.set(c.slug, c);
-      for (const k of c.keys) { const p = out.by.get(k); if (!p || c.decks > p.decks) out.by.set(k, c); }
-    }
-    else if (tag === 'I' && t.length >= 3) { const c = out.bySlug.get(t[1]); if (c && /^[\w\-./]+$/.test(t[2])) c.img = FR_IMG + t[2]; }
-    else if (tag === 'D' && t[1]) { const c = out.bySlug.get(t[1]); cur = c ? { slug: t[1], cmd: c, src: t[2] || 'edhrec', label: t[3] || '', url: /^https:\/\//.test(t[4] || '') ? t[4] : '', cards: [] } : null; if (cur) out.decks.push(cur); }
-    else if (tag === 'K' && cur && t.length >= 3) { const n = t.slice(2).join('\t').trim(); if (n) cur.cards.push([key(n), n, Math.max(1, Math.min(99, Number(t[1]) || 1))]); }
-    else if (tag === 'P' && t.length >= 3) { const v = Number(t[1]); if (v > 0) out.price.set(key(t.slice(2).join('\t')), Math.round(v)); }
-    else if (tag === 'G' && t.length >= 2) { const n = t.slice(1).join('\t').trim(); if (n) out.gc.add(key(n)); }
-  }
-  [...out.cmds].sort((a, b) => b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
-  return out;
-}
+ *  Retourne l'index (voir edhIndex). */
+function parseEdh(text) { return edhIndex(EDHB.edhUnpack(EDHB.edhPack(edhModelFromTsv(text), ownKey))); }
+/** Lit un fichier binaire EDH2 (edh.bin) : même index que parseEdh. Lève une erreur si le fichier est illisible. */
+function parseEdhBin(buf) { return edhIndex(EDHB.edhUnpack(buf)); }
 /** Tier d'un commandant selon son rang de popularité (nombre de decks EDHREC) : S = les 30 premiers, A jusqu'à 150, B 500, C 1 500, D le reste. */
 const EDH_TIERS = [['S', 30], ['A', 150], ['B', 500], ['C', 1500], ['D', Infinity]];
 const edhTier = rank => (EDH_TIERS.find(t => rank <= t[1]) || EDH_TIERS[EDH_TIERS.length - 1])[0];
@@ -1974,31 +2002,62 @@ const edhTokens = q => normName(q).replace(/ \/\/ /g, ' ').split(' ').filter(Boo
 /** Le commandant (ou la paire) contient tous les mots (début de mot) : « tymna » et « thrasios triton » trouvent la paire Tymna + Thrasios. */
 const edhWords = (s, toks) => { const w = ' ' + s; return toks.every(t => w.includes(' ' + t)); };      // chaque mot cherché commence un mot du nom : « smite » ne trouve pas « Prismite »
 const edhCmdHas = (c, toks) => edhWords(c.keys.join(' '), toks);
+/** Une ligne du classement. Les listes `missing`, `owned` et `gc` (longues, utiles seulement à la feuille d'un deck) ne sont calculées qu'au premier accès. */
+class EdhRow {
+  constructor(deck, cmd, total, have, cost, unpriced, mine, br, hit, e, own) {
+    this.deck = deck; this.cmd = cmd; this.total = total; this.have = have; this.miss = total - have; this.cost = cost; this.unpriced = unpriced; this.mine = mine;
+    this.tier = cmd.tier; this.rank = cmd.rank; this.br = br; this.hit = hit; this._e = e; this._o = own;
+  }
+  get missing() { edhDetail(this); return this.missing; }
+  get owned() { edhDetail(this); return this.owned; }
+  get gc() { edhDetail(this); return this.gc; }
+}
+function edhDetail(r) {
+  const e = r._e, own = r._o, c = r.cmd, d = r.deck, missing = [], owned = [], gcs = [];
+  const one = (id, q) => {
+    if (e.bs[id]) return;
+    const h = Math.min(q, own[id]), m = q - h, g = e.gcA[id] === 1; if (g) gcs.push(e.names[id]);
+    if (m) { const u = e.pr[id]; missing.push({ k: e.keys[id], n: e.names[id], q: m, u: u > 0 ? u : null, gc: g }); }
+    if (h) owned.push({ k: e.keys[id], n: e.names[id], q: h, gc: g });
+  };
+  for (const id of c.ids) one(id, 1);
+  for (let j = e.off[d.i], z = e.off[d.i + 1]; j < z; j++) one(e.ids[j], e.qty[j]);
+  missing.sort((a, b) => ((b.u || 0) * b.q - (a.u || 0) * a.q) || a.n.localeCompare(b.n));
+  Object.defineProperties(r, { missing: { value: missing, configurable: true }, owned: { value: owned, configurable: true }, gc: { value: gcs, configurable: true } });
+}
 /** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur tier), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
- *  Terrains de base ignorés. Une ligne par deck : { deck, cmd, total, have, miss, cost, unpriced, missing:[{ k, n, q, u, gc }], owned:[{ k, n, q, gc }], mine, tier, rank, gc:[noms des Game Changers du deck, commandant compris], br (bracket estimé, 0 sans liste Game Changers), hit ([[clé, nom]] des cartes trouvées par une recherche « carte », sinon null) }. */
+ *  Terrains de base ignorés. Une ligne par deck : { deck, cmd, total, have, miss, cost, unpriced, mine, tier, rank, br (bracket estimé, 0 sans liste Game Changers), hit ([[clé, nom]] des cartes trouvées par une recherche « carte », sinon null), et à la demande : missing:[{ k, n, q, u, gc }], owned:[{ k, n, q, gc }], gc:[noms des Game Changers du deck, commandant compris] }.
+ *  Calcul sur tableaux typés (un passage sur toutes les entrées de tous les decks) : quelques millisecondes pour 10 000 decks. */
 function edhRank(edh, qty, o = {}) {
-  const rows = [], cols = o.cols && o.cols.size ? o.cols : null; let toks = o.q ? edhTokens(o.q) : null; if (toks && !toks.length) toks = null;
-  for (const d of (edh && edh.decks) || []) {
-    const c = d.cmd, mine = c.keys.some(k => qty(k) > 0);
+  const rows = []; if (!edh || !edh.decks || !edh.decks.length) return rows;
+  const cols = o.cols && o.cols.size ? o.cols : null, card = o.qm === 'card'; let toks = o.q ? edhTokens(o.q) : null; if (toks && !toks.length) toks = null;
+  const names = edh.names, keys = edh.keys, nn = names.length, own = new Uint16Array(nn);
+  for (let i = 0; i < nn; i++) { const q = qty(keys[i]); if (q > 0) own[i] = q > 65535 ? 65535 : q; }
+  const { off, ids, qty: qa, pr, bs, gcA } = edh, gset = edh.gc && edh.gc.size > 0;
+  let hitF = null, cmdOk = null;
+  if (toks && card) { hitF = new Uint8Array(nn); for (let i = 0; i < nn; i++) if (!bs[i] && edhWords(names[i].includes('//') ? normName(names[i]) : keys[i], toks)) hitF[i] = 1; }
+  else if (toks) cmdOk = new Int8Array(edh.cmds.length);
+  for (const d of edh.decks) {
+    const c = d.cmd; let mine = false; for (const id of c.ids) if (own[id] > 0) { mine = true; break; }
     if (o.mine && !mine) continue;
     if (cols && ![...c.ci].every(x => cols.has(x))) continue;
     if (o.tiers && o.tiers.size && !o.tiers.has(c.tier)) continue;
-    let hit = null;
-    if (toks) {
-      if (o.qm === 'card') { hit = []; for (const [k, n] of c.keys.map((k, i) => [k, c.names[i]]).concat(d.cards)) { const m = n.includes('//') ? normName(n) : k; if (!BASIC_NAMES.has(k) && edhWords(m, toks) && !hit.some(h => h[0] === k)) hit.push([k, n]); } if (!hit.length) continue; }
-      else if (!edhCmdHas(c, toks)) continue;
-    }
-    let total = 0, have = 0, cost = 0, unpriced = 0; const missing = [], owned = [], gcs = [], seen = new Set(), gset = edh.gc && edh.gc.size ? edh.gc : null;
-    for (const [k, n, q] of c.keys.map((k, i) => [k, c.names[i], 1]).concat(d.cards)) {
-      if (BASIC_NAMES.has(k) || seen.has(k)) continue; seen.add(k);
-      const h = Math.min(q, qty(k)), m = q - h, g = !!gset && gset.has(k); total += q; have += h; if (g) gcs.push(n);
-      if (m) { const u = edh.price.get(k) || 0; if (u > 0) cost += u * m; else unpriced += m; missing.push({ k, n, q: m, u: u > 0 ? u : null, gc: g }); }
-      if (h) owned.push({ k, n, q: h, gc: g });
+    const a = off[d.i], z = off[d.i + 1]; let hit = null;
+    if (hitF) {
+      hit = []; for (const id of c.ids) if (hitF[id]) hit.push([keys[id], names[id]]);
+      for (let j = a; j < z; j++) if (hitF[ids[j]]) hit.push([keys[ids[j]], names[ids[j]]]);
+      if (!hit.length) continue;
+    } else if (cmdOk) { if (!cmdOk[c.i]) cmdOk[c.i] = edhCmdHas(c, toks) ? 1 : -1; if (cmdOk[c.i] < 0) continue; }
+    let total = 0, have = 0, cost = 0, unpriced = 0, gcN = 0;
+    for (const id of c.ids) { if (bs[id]) continue; total++; if (gcA[id]) gcN++; if (own[id] > 0) have++; else { const u = pr[id]; if (u > 0) cost += u; else unpriced++; } }
+    for (let j = a; j < z; j++) {
+      const id = ids[j]; if (bs[id]) continue;
+      const q = qa[j], ow = own[id], h = ow < q ? ow : q; total += q; have += h; if (gcA[id]) gcN++;
+      if (h < q) { const m = q - h, u = pr[id]; if (u > 0) cost += u * m; else unpriced += m; }
     }
     if (total < 20 || total > 105) continue;      // liste tronquée, ou faussée (cartes en trop : un deck de Commander en compte 100)
     if (o.budget > 0 && cost > o.budget) continue;
-    missing.sort((a, b) => ((b.u || 0) * b.q - (a.u || 0) * a.q) || a.n.localeCompare(b.n));
-    rows.push({ deck: d, cmd: c, total, have, miss: total - have, cost, unpriced, missing, owned, mine, tier: c.tier, rank: c.rank, gc: gcs, br: gset ? edhBracket(gcs.length) : 0, hit });
+    rows.push(new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own));
   }
   const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (b.cmd.decks - a.cmd.decks) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
   return rows.sort((a, b) => by(a, b) || (b.cmd.decks - a.cmd.decks) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
@@ -2255,9 +2314,96 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
-    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, edhTokens, edhCmdHas, edhRank, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers,
+    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
+
+
+/* ── edhbin.js : format binaire des decks (EDH2), partagé par le générateur (Node) et l'appli ─────────────────────
+   Pourquoi : 10 000 decks en texte pèsent ~25 Mo et se lisent en plusieurs secondes sur un téléphone. Ici chaque carte est un numéro (Uint16) dans un
+   dictionnaire, chaque deck une tranche d'un grand tableau : ~2 Mo compressé pour 10 000 decks, lu en quelques millisecondes, sans créer d'objet par carte.
+   Fichier (petit-boutiste, sections alignées sur 4 octets) :
+     'EDH2' · u32 longueur de l'en-tête · en-tête JSON { v, at, nc, nd, nn, ne, ng, sl:[octets cmds, decks, noms] }
+     JSON des commandants  [[slug, decks, identité, [noms], chemin d'image]]
+     JSON des decks        [[indice du commandant, source, libellé, lien]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
+     noms des cartes       un par ligne (indice = numéro de la carte)
+     u32 × (nd + 1)        début de chaque deck dans la liste des entrées
+     u16 × ne              numéro de carte de chaque entrée        (ne = total des cartes de tous les decks, terrains de base compris)
+     u8 × ne               quantité de chaque entrée
+     u32 × nn              prix Cardmarket en centimes par numéro de carte (0 = inconnu)
+     u16 × ng              numéros des cartes de la liste Game Changers
+   Un deck ne contient ni doublon (la 1re ligne gagne) ni son propre commandant (compté à part). */
+const EDHB_MAX_CARDS = 65535;
+const edhPad4 = n => (n + 3) & ~3;
+
+/** model : { v, at, cmds:[{ slug, decks, ci, names, img }], decks:[{ slug, src, label, url, cards:[[nom, qté]] }], price:[[nom, centimes]] | Map, gc:[nom] } ; keyOf : nom → clé (la même que ownKey de l'appli). Retourne un Uint8Array. */
+function edhPack(model, keyOf) {
+  const clean = n => String(n == null ? '' : n).replace(/[\r\n\t]+/g, ' ').trim();
+  const kc = new Map(), kf = keyOf; keyOf = n => { let k = kc.get(n); if (k === undefined) { k = kf(n); kc.set(n, k); } return k; };      // les mêmes noms reviennent dans des centaines de decks
+  const idOf = new Map(), names = [];
+  const add = raw => {
+    const n = clean(raw), k = keyOf(n); let id = idOf.get(k);
+    if (id === undefined) { id = names.length; if (id >= EDHB_MAX_CARDS) throw new Error('trop de cartes distinctes (' + id + ')'); idOf.set(k, id); names.push(n); }
+    else if (!names[id].includes('//') && n.includes('//')) names[id] = n;      // le nom complet d'une carte à deux faces vaut mieux que sa première face seule
+    return id;
+  };
+  const slugIx = new Map(), cmds = [], cmdKeys = [];
+  for (const c of model.cmds || []) { if (slugIx.has(c.slug)) continue; slugIx.set(c.slug, cmds.length); for (const n of c.names) add(n); cmds.push([c.slug, Math.max(0, Math.round(Number(c.decks) || 0)), c.ci || '', c.names.map(clean), c.img || '']); cmdKeys.push(c.names.map(n => keyOf(clean(n)))); }
+  const meta = [], off = [0], ids = [], qty = [];
+  for (const d of model.decks || []) {
+    const ci = slugIx.get(d.slug); if (ci === undefined) continue;
+    const seen = new Set(cmdKeys[ci]);
+    for (const [n, q] of d.cards || []) {
+      const k = keyOf(clean(n)); if (!k || seen.has(k)) continue; seen.add(k);
+      ids.push(add(n)); qty.push(Math.max(1, Math.min(99, Math.round(Number(q) || 1))));
+    }
+    off.push(ids.length);
+    const url = d.url || '', m = /^https:\/\/archidekt\.com\/decks\/(\d+)$/.exec(url);
+    meta.push([ci, d.src || 'edhrec', d.label || '', !url ? '' : (d.src || 'edhrec') === 'edhrec' && url === 'https://edhrec.com/average-decks/' + d.slug ? 0 : m ? Number(m[1]) : url]);
+  }
+  const pr = new Uint32Array(names.length);
+  for (const [n, v] of model.price instanceof Map ? model.price : model.price || []) { const id = idOf.get(keyOf(clean(n))); if (id !== undefined && v > 0) pr[id] = Math.round(v); }
+  const gcIds = []; for (const n of model.gc || []) { const k = keyOf(clean(n)); if (k) gcIds.push(add(n)); }
+  const enc = new TextEncoder(), cm = enc.encode(JSON.stringify(cmds)), dk = enc.encode(JSON.stringify(meta)), nm = enc.encode(names.join('\n'));
+  const head = enc.encode(JSON.stringify({ v: model.v || 0, at: model.at || '', nc: cmds.length, nd: meta.length, nn: names.length, ne: ids.length, ng: gcIds.length, sl: [cm.length, dk.length, nm.length] }));
+  const hp = edhPad4(8 + head.length), cp = edhPad4(cm.length), dp = edhPad4(dk.length), np = edhPad4(nm.length);
+  const total = hp + cp + dp + np + 4 * off.length + edhPad4(2 * ids.length) + edhPad4(ids.length) + 4 * names.length + edhPad4(2 * gcIds.length);
+  const buf = new Uint8Array(total), dv = new DataView(buf.buffer);
+  buf.set([0x45, 0x44, 0x48, 0x32], 0); dv.setUint32(4, head.length, true); buf.set(head, 8);
+  let p = hp; buf.set(cm, p); p += cp; buf.set(dk, p); p += dp; buf.set(nm, p); p += np;
+  new Uint32Array(buf.buffer, p, off.length).set(off); p += 4 * off.length;
+  new Uint16Array(buf.buffer, p, ids.length).set(ids); p += edhPad4(2 * ids.length);
+  new Uint8Array(buf.buffer, p, qty.length).set(qty); p += edhPad4(ids.length);
+  new Uint32Array(buf.buffer, p, names.length).set(pr); p += 4 * names.length;
+  new Uint16Array(buf.buffer, p, gcIds.length).set(gcIds);
+  return buf;
+}
+
+/** Lit un fichier EDH2 (ArrayBuffer ou Uint8Array). Retourne { v, at, cmds:[{ slug, decks, ci, names, img }], dk:[[indice commandant, source, libellé, lien]], names, off, ids, qty, pr, gc } — les tableaux typés sont des vues, rien n'est copié. Lève une erreur si le fichier est tronqué ou n'est pas un EDH2. */
+function edhUnpack(input) {
+  const u8 = input instanceof Uint8Array ? input : new Uint8Array(input);
+  const buf = u8.byteOffset % 4 ? u8.slice().buffer : u8.buffer, base = u8.byteOffset % 4 ? 0 : u8.byteOffset, len = u8.byteLength;
+  if (len < 12 || u8[0] !== 0x45 || u8[1] !== 0x44 || u8[2] !== 0x48 || u8[3] !== 0x32) throw new Error('format');
+  const dv = new DataView(buf, base, len), hl = dv.getUint32(4, true);
+  if (8 + hl > len) throw new Error('tronqué');
+  const dec = new TextDecoder(), head = JSON.parse(dec.decode(new Uint8Array(buf, base + 8, hl)));
+  const [lc, ld, ln] = head.sl, nd = head.nd, nn = head.nn, ne = head.ne, ng = head.ng;
+  const need = edhPad4(8 + hl) + edhPad4(lc) + edhPad4(ld) + edhPad4(ln) + 4 * (nd + 1) + edhPad4(2 * ne) + edhPad4(ne) + 4 * nn + edhPad4(2 * ng);
+  if (need !== len) throw new Error('tronqué');
+  let p = edhPad4(8 + hl);
+  const text = n => { const s = dec.decode(new Uint8Array(buf, base + p, n)); p += edhPad4(n); return s; };
+  const cmds = JSON.parse(text(lc)).map(([slug, decks, ci, names, img]) => ({ slug, decks, ci, names, img })), dk = JSON.parse(text(ld)), nmText = text(ln), names = nn ? nmText.split('\n') : [];
+  if (names.length !== nn) throw new Error('noms');
+  const off = new Uint32Array(buf, base + p, nd + 1); p += 4 * (nd + 1);
+  const ids = new Uint16Array(buf, base + p, ne); p += edhPad4(2 * ne);
+  const qty = new Uint8Array(buf, base + p, ne); p += edhPad4(ne);
+  const pr = new Uint32Array(buf, base + p, nn); p += 4 * nn;
+  const gc = new Uint16Array(buf, base + p, ng);
+  if (off[nd] !== ne || dk.length !== nd) throw new Error('decks');
+  return { v: head.v, at: head.at, cmds, dk, names, off, ids, qty, pr, gc };
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { edhPack, edhUnpack, EDHB_MAX_CARDS };
 
 
 /* ── cloud.js : compte + decks (Firebase Auth / Firestore). Chargé à la demande, jamais bloquant. ──
@@ -5774,35 +5920,59 @@ function openCollImport(initial) {
 /* ── edh.js : commandants joués (EDHREC) et decks à compléter, depuis la collection ───────────────────────────
    Données : edh.tsv, généré chaque semaine par GitHub Actions (gen-edhrec.mjs) et servi par le site : commandants (nombre de decks, identité de couleur),
    deck moyen de chacun et prix Cardmarket des cartes. Une seule requête, gardée sur l'appareil ; tout le calcul se fait ici, sans réseau. */
-const EDH_KEY = 'edh:v1', EDH_FILE = 'edh.tsv', EDH_FRESH = 6 * DAY;
+const EDH_KEY = 'edh:v1', EDH_BIN_KEY = 'edh:v2', EDH_FILE = 'edh.tsv', EDH_BIN = 'edh.bin.gz', EDH_FRESH = 6 * DAY;      // v2 : fichier binaire (EDH2) ; v1 : ancien texte, gardé en repli
 const EDH_SORTS = [['have', 'Plus possédées'], ['cost', 'Moins cher'], ['pop', 'Meilleur tier']];
 const EDH_TIER_NAMES = ['S', 'A', 'B', 'C', 'D'], EDH_IM_KEY = 'edh:im', EDH_SMALL = 'https://cards.scryfall.io/small/';
 const EDH_BUDGETS = [[0, 'Budget illimité'], [3000, '≤ 30 €'], [6000, '≤ 60 €'], [10000, '≤ 100 €'], [20000, '≤ 200 €']];
 const EDH = { data: null, p: null, err: '', at: 0, sort: 'have', cols: new Set(), tiers: new Set(), mine: false, budget: 0, shown: 30, memo: null, im: null, q: '', qm: 'cmd' };
 
-/** Fichier du site (null hors http, ou s'il manque). */
-async function edhFetch() {
+/** Octets d'un fichier du site (null hors http, ou s'il manque). */
+async function edhGet(file) {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
-  let r; try { r = await fetch(new URL(EDH_FILE, location.href).href, { cache: 'no-cache' }); } catch (e) { return null; }
+  let r; try { r = await fetch(new URL(file, location.href).href, { cache: 'no-cache' }); } catch (e) { return null; }
   if (!r.ok) return null;
-  try { return await r.text(); } catch (e) { return null; }
+  try { return await r.arrayBuffer(); } catch (e) { return null; }
 }
-/** Charge les données (copie locale de moins de 6 jours, sinon le fichier du site ; une copie plus ancienne sert si le site ne répond pas). */
+/** Fichier texte du site (ancien format), ou null. */
+async function edhFetch() { const b = await edhGet(EDH_FILE); try { return b ? new TextDecoder().decode(b) : null; } catch (e) { return null; } }
+/** Fichier binaire du site, décompressé (le serveur l'envoie déjà décompressé par le navigateur ; sinon DecompressionStream), ou null. */
+async function edhFetchBin() {
+  let b = await edhGet(EDH_BIN); if (!b) return null;
+  const u = new Uint8Array(b);
+  if (u.length > 2 && u[0] === 0x1f && u[1] === 0x8b) {
+    if (typeof DecompressionStream === 'undefined') return null;
+    try { b = await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer(); } catch (e) { return null; }
+  }
+  return b;
+}
+/** Index lu depuis un enregistrement du cache ({ buf } binaire ou { text } ancien format), ou null s'il est illisible. */
+function edhRead(rec) {
+  try { const d = rec && rec.buf ? parseEdhBin(rec.buf) : rec && rec.text ? parseEdh(rec.text) : null; return d && d.v === 1 && d.cmds.length ? d : null; } catch (e) { return null; }
+}
+/** Charge les données : copie locale de moins de 6 jours, sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
 function edhLoad() {
   if (EDH.data) return Promise.resolve(EDH.data);
   if (EDH.p) return EDH.p;
   EDH.err = '';
   EDH.p = (async () => {
-    let rec = null; try { rec = await Cache.get(EDH_KEY, 90 * DAY); } catch (e) { /* cache absent */ }
-    if (!(rec && rec.text && Date.now() - rec.at < EDH_FRESH)) {
-      const t = await edhFetch();
-      if (t) { const d = parseEdh(t); if (d.v === 1 && d.cmds.length && d.decks.length) { rec = { text: t, at: Date.now() }; Cache.set(EDH_KEY, rec); } }
+    const get = k => Cache.get(k, 90 * DAY).catch(() => null), fresh = r => !!r && Date.now() - r.at < EDH_FRESH;
+    const [rb, rt] = await Promise.all([get(EDH_BIN_KEY), get(EDH_KEY)]);
+    let d = fresh(rb) ? edhRead(rb) : null, at = d ? rb.at : 0;
+    if (!d) {
+      const b = await edhFetchBin(), rec = b ? { buf: b, at: Date.now() } : null, x = rec && edhRead(rec);
+      if (x && x.decks.length) { d = x; at = rec.at; Cache.set(EDH_BIN_KEY, rec); }
     }
-    if (!rec || !rec.text) throw new Error('absent');
-    const d = parseEdh(rec.text); if (d.v !== 1 || !d.cmds.length) throw new Error('illisible');
-    EDH.data = d; EDH.at = rec.at; EDH.memo = null;
+    if (!d && fresh(rt)) { d = edhRead(rt); at = d ? rt.at : 0; }
+    if (!d) {
+      const t = await edhFetch(), rec = t ? { text: t, at: Date.now() } : null, x = rec && edhRead(rec);
+      if (x && x.decks.length) { d = x; at = rec.at; Cache.set(EDH_KEY, rec); }
+    }
+    if (!d) { const x = edhRead(rb); if (x) { d = x; at = rb.at; } }
+    if (!d) { const x = edhRead(rt); if (x) { d = x; at = rt.at; } }
+    if (!d) throw new Error(rb || rt ? 'illisible' : 'absent');
+    EDH.data = d; EDH.at = at; EDH.memo = null;
     return d;
-  })().catch(e => { EDH.err = e && e.message === 'absent' ? 'Données EDHREC indisponibles : le fichier edh.tsv n\'est pas encore généré ou le site est injoignable.' : 'Données EDHREC illisibles.'; throw e; })
+  })().catch(e => { EDH.err = e && e.message === 'absent' ? 'Données EDHREC indisponibles : le fichier edh.bin.gz n\'est pas encore généré ou le site est injoignable.' : 'Données EDHREC illisibles.'; throw e; })
     .finally(() => { EDH.p = null; if (COLL.el) collPaintBody(true); });
   return EDH.p;
 }
@@ -5831,7 +6001,7 @@ function edhPanelHtml() {
   }
   const all = EDH.data.cmds.length, mineN = EDH.data.cmds.filter(c => c.keys.some(k => collQty(k) > 0)).length;
   const gcOn = !!(EDH.data.gc && EDH.data.gc.size);
-  const tiersHave = new Set(EDH.data.decks.map(d => d.cmd.tier));      // seuls les tiers qui ont des decks : pas de bouton « D » vide
+  const tiersHave = EDH.data.tiers || (EDH.data.tiers = new Set(EDH.data.decks.map(d => d.cmd.tier)));      // seuls les tiers qui ont des decks : pas de bouton « D » vide
   const qm = EDH_QMODES.find(m => m[0] === EDH.qm) || EDH_QMODES[0];
   const search = `<div class="dk-search"><div class="fbar-row"><label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" id="dkQ" data-act="dq" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(EDH.q)}" placeholder="${esc(qm[2])}" aria-label="${esc(qm[2])}"><button type="button" class="fclear" data-act="dqx" aria-label="Effacer la recherche"${EDH.q ? '' : ' hidden'}><svg class="i"><use href="#i-close"/></svg></button></label></div>
       <div class="fopts" role="group" aria-label="Chercher par">${EDH_QMODES.map(([v, l]) => `<button type="button" class="fopt" data-act="dqm" data-v="${v}" aria-pressed="${EDH.qm === v}">${l}</button>`).join('')}</div></div>`;
@@ -5850,7 +6020,7 @@ function edhResHtml() {
   const sum = `<p class="hint dk-sum">${nf0(rows.length)} deck${rows.length > 1 ? 's' : ''} sur ${nf0(EDH.data.decks.length)}${q ? ` · ${card ? 'contenant' : 'commandant'} « ${esc(EDH.q.trim())} »` : ''}${EDH.cols.size ? ' · couleurs ⊆ ' + [...EDH.cols].join('') : ''}${EDH.tiers.size ? ' · tier ' + EDH_TIER_NAMES.filter(t => EDH.tiers.has(t)).join(' ') : ''}${near ? ` · <b>${nf0(near)}</b> à 10 cartes ou moins` : ''}</p>`;
   let note = '', none = 'Aucun deck ne correspond à ces réglages.';
   if (q && !card) {
-    const toks = edhTokens(q), found = EDH.data.cmds.filter(c => edhCmdHas(c, toks)), has = new Set(EDH.data.decks.map(d => d.cmd.slug)), nod = found.filter(c => !has.has(c.slug)).sort((a, b) => a.rank - b.rank);
+    const toks = edhTokens(q), found = EDH.data.cmds.filter(c => edhCmdHas(c, toks)), has = EDH.data.withDeck || (EDH.data.withDeck = new Set(EDH.data.decks.map(d => d.cmd.slug))), nod = found.filter(c => !has.has(c.slug)).sort((a, b) => a.rank - b.rank);
     if (!found.length) none = 'Aucun commandant ne correspond à « ' + esc(EDH.q.trim()) + ' ».';
     else if (nod.length) note = `<p class="hint dk-note">Sans deck dans le fichier (fourni pour les 1 000 commandants les plus joués) : ${nod.slice(0, 6).map(c => esc(c.names.join(' + ')) + ' (n° ' + nf0(c.rank) + ')').join(', ')}${nod.length > 6 ? ' et ' + (nod.length - 6) + ' autres' : ''}.</p>`;
   } else if (q) {
