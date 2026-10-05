@@ -6441,7 +6441,7 @@ function scanRecap() {
   if (!live().length || sheets.some(x => x.wrap.classList.contains('rc-sheet'))) return;
   const asked = new Set(), got = new Map(); let err = '', busy = false;
   const info = k => (got.has(k) ? got.get(k) : COLL.meta[k]);      // undefined : pas encore lu · null : inconnue de Scryfall · objet { eu, … }
-  const api = openSheet('Ajouter', '', a => { a.wrap.classList.add('rc-sheet'); });
+  const api = openSheet('Ajouter', '', a => { a.wrap.classList.add('rc-sheet'); a.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true); });      // les miniatures n'apparaissent qu'une fois chargées (classe ok)
   const plural = (n, w) => nf0(n) + ' ' + w + (n > 1 ? 's' : '');
   const paint = () => {
     if (!sheets.includes(api)) { if (SC.recap === hook) SC.recap = null; return; }
