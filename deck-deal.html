@@ -712,6 +712,7 @@ button.sync:active{background:var(--surface-2)}
 .dk-px em{font-style:normal;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
 .dk-help summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent);padding:2px 2px 6px}
 .dk-help .hint{margin:0 2px 6px}
+.dk-cmd .crow.ro{background:var(--accent-soft);border-color:var(--accent)}
 .dk-own{margin-top:6px}
 .dk-own summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--ink-2);padding:8px 2px}
 .dk-own[open] summary{margin-bottom:6px}
@@ -5870,10 +5871,13 @@ function openEdhDeck(r) {
       const ex = own ? 'Dans ta collection' + (x.q > 1 ? ' · × ' + x.q : '') : 'À acheter' + (x.q > 1 ? ' × ' + x.q : '') + (x.u ? ' · ≈ ' + fmt(x.u * x.q, 'EUR') : '');
       return `<div class="crow ro dk-card" role="button" tabindex="0" data-ik="${esc(x.k)}" data-nm="${esc(x.n)}" data-ex="${esc(ex)}" aria-label="${esc(x.n)} : voir en grand"><span class="thumb" data-ik="${esc(x.k)}" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}</span><span class="row-main"><span class="row-name">${esc(x.n)}</span>${tg ? `<span class="row-meta">${tg}</span>` : ''}</span><span class="row-price"><b>${own ? '✓' : x.u ? esc(fmt(x.u * x.q, 'EUR')) : '—'}</b>${x.q > 1 ? `<small>× ${x.q}${!own && x.u ? ' · ' + esc(fmt(x.u, 'EUR')) : ''}</small>` : ''}</span></div>`;
     };
+    const cmdSet = new Set(c.keys), byK = new Map([...r.missing.map(x => [x.k, [x, false]]), ...r.owned.map(x => [x.k, [x, true]])]);
+    const cmdRows = c.keys.map(k => byK.get(k)).filter(Boolean), buy = r.missing.filter(x => !cmdSet.has(x.k)), have = r.owned.filter(x => !cmdSet.has(x.k));      // le commandant est toujours en tête, avec son prix ou ✓
     const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC` : '', r.br ? `<span title="${esc(edhBracketNote(r))}">bracket ≈ ${r.br}${r.gc.length ? ' · ' + r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') : ''}</span>` : ''].filter(Boolean).join(' · ');
     api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}</div>
-      ${r.missing.length ? `<h3 class="cs-h">À acheter <small>${nf0(r.missing.length)} cartes</small></h3><div class="cs-top">${r.missing.map(x => row(x, false)).join('')}</div>` : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
-      ${r.owned.length ? `<details class="dk-own"><summary>Déjà dans ta collection (${nf0(r.owned.length)})</summary><div class="cs-top">${r.owned.map(x => row(x, true)).join('')}</div></details>` : ''}
+      ${cmdRows.length ? `<h3 class="cs-h">${cmdRows.length > 1 ? 'Commandants' : 'Commandant'}</h3><div class="cs-top dk-cmd">${cmdRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
+      ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
+      ${have.length ? `<details class="dk-own" open><summary>Déjà dans ta collection (${nf0(have.length)})</summary><div class="cs-top dk-have-l">${have.map(x => row(x, true)).join('')}</div></details>` : ''}
       <p class="hint dk-tap">Touche une carte pour la voir en grand.</p>`;
     let imgs = new Map(), settled = false;
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
