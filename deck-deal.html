@@ -5960,30 +5960,42 @@ const EDH_TIER_NAMES = ['S', 'A', 'B', 'C', 'D'], EDH_IM_KEY = 'edh:im', EDH_SMA
 const EDH_BUDGETS = [[0, 'Budget illimité'], [3000, '≤ 30 €'], [6000, '≤ 60 €'], [10000, '≤ 100 €'], [20000, '≤ 200 €']];
 const EDH = { data: null, p: null, err: '', at: 0, sort: 'have', cols: new Set(), tiers: new Set(), mine: false, budget: 0, shown: 30, memo: null, im: null, q: '', qm: 'cmd' };
 
-/** Octets d'un fichier du site (null hors http, ou s'il manque). */
-async function edhGet(file) {
+/** Fichier du site (null hors http, ou s'il manque) : { buf, etag }. same : ETag déjà connu ; si le site répond avec le même, le corps n'est pas lu → { same: true }. */
+async function edhGet(file, same) {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
   let r; try { r = await fetch(new URL(file, location.href).href, { cache: 'no-cache' }); } catch (e) { return null; }
   if (!r.ok) return null;
-  try { return await r.arrayBuffer(); } catch (e) { return null; }
+  const etag = r.headers.get('etag') || '';
+  if (same && etag && etag === same) { try { if (r.body) r.body.cancel(); } catch (e) { /* ignore */ } return { same: true, etag }; }
+  try { return { buf: await r.arrayBuffer(), etag }; } catch (e) { return null; }
 }
 /** Fichier texte du site (ancien format), ou null. */
-async function edhFetch() { const b = await edhGet(EDH_FILE); try { return b ? new TextDecoder().decode(b) : null; } catch (e) { return null; } }
-/** Fichier binaire du site, décompressé (le serveur l'envoie déjà décompressé par le navigateur ; sinon DecompressionStream), ou null. */
-async function edhFetchBin() {
-  let b = await edhGet(EDH_BIN); if (!b) return null;
-  const u = new Uint8Array(b);
+async function edhFetch() { const g = await edhGet(EDH_FILE); try { return g ? new TextDecoder().decode(g.buf) : null; } catch (e) { return null; } }
+/** Fichier binaire du site, décompressé (le serveur l'envoie déjà décompressé par le navigateur ; sinon DecompressionStream) : { buf, etag }, { same: true } si l'ETag est inchangé, ou null. */
+async function edhFetchBin(same) {
+  const g = await edhGet(EDH_BIN, same); if (!g || g.same) return g;
+  let b = g.buf; const u = new Uint8Array(b);
   if (u.length > 2 && u[0] === 0x1f && u[1] === 0x8b) {
     if (typeof DecompressionStream === 'undefined') return null;
     try { b = await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer(); } catch (e) { return null; }
   }
-  return b;
+  return { buf: b, etag: g.etag };
+}
+/** Copie de l'appareil déjà affichée : en arrière-plan, une lecture de contrôle (ETag : rien n'est relu si le site n'a pas changé) ; une version plus récente la remplace tout de suite. */
+async function edhRevalidate(rec) {
+  try {
+    const g = await edhFetchBin(rec.etag); if (!g || g.same) return;
+    const n = { buf: g.buf, at: Date.now(), etag: g.etag }, x = edhRead(n); if (!x || !x.decks.length) return;
+    Cache.set(EDH_BIN_KEY, n);
+    if (x.at && EDH.data && EDH.data.at && x.at <= EDH.data.at) return;      // même version : rien à changer
+    EDH.data = x; EDH.at = n.at; EDH.memo = null; if (COLL.el) collPaintBody(true);
+  } catch (e) { /* hors ligne ou fichier douteux : la copie de l'appareil reste */ }
 }
 /** Index lu depuis un enregistrement du cache ({ buf } binaire ou { text } ancien format), ou null s'il est illisible. */
 function edhRead(rec) {
   try { const d = rec && rec.buf ? parseEdhBin(rec.buf) : rec && rec.text ? parseEdh(rec.text) : null; return d && d.v === 1 && d.cmds.length ? d : null; } catch (e) { return null; }
 }
-/** Charge les données : copie locale de moins de 1 jour (le serveur répond 304 si le fichier n'a pas changé), sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
+/** Charge les données : copie locale de moins de 1 jour (affichée tout de suite, puis contrôlée en arrière-plan : une version plus récente du site la remplace), sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
 function edhLoad() {
   if (EDH.data) return Promise.resolve(EDH.data);
   if (EDH.p) return EDH.p;
@@ -5991,9 +6003,9 @@ function edhLoad() {
   EDH.p = (async () => {
     const get = k => Cache.get(k, 90 * DAY).catch(() => null), fresh = r => !!r && Date.now() - r.at < EDH_FRESH;
     const [rb, rt] = await Promise.all([get(EDH_BIN_KEY), get(EDH_KEY)]);
-    let d = fresh(rb) ? edhRead(rb) : null, at = d ? rb.at : 0;
+    let d = fresh(rb) ? edhRead(rb) : null, at = d ? rb.at : 0; const cached = !!d;
     if (!d) {
-      const b = await edhFetchBin(), rec = b ? { buf: b, at: Date.now() } : null, x = rec && edhRead(rec);
+      const g = await edhFetchBin(), rec = g && g.buf ? { buf: g.buf, at: Date.now(), etag: g.etag } : null, x = rec && edhRead(rec);
       if (x && x.decks.length) { d = x; at = rec.at; Cache.set(EDH_BIN_KEY, rec); }
     }
     if (!d && fresh(rt)) { d = edhRead(rt); at = d ? rt.at : 0; }
@@ -6005,6 +6017,7 @@ function edhLoad() {
     if (!d) { const x = edhRead(rt); if (x) { d = x; at = rt.at; } }
     if (!d) throw new Error(rb || rt ? 'illisible' : 'absent');
     EDH.data = d; EDH.at = at; EDH.memo = null;
+    if (cached) edhRevalidate(rb);
     return d;
   })().catch(e => { EDH.err = e && e.message === 'absent' ? 'Données EDHREC indisponibles : le fichier edh.bin.gz n\'est pas encore généré ou le site est injoignable.' : 'Données EDHREC illisibles.'; throw e; })
     .finally(() => { EDH.p = null; if (COLL.el) collPaintBody(true); });
