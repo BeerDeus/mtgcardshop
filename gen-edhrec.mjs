@@ -45,12 +45,19 @@ export function cardviewsOf(j) {
   walk(Array.isArray(lists) ? lists : j, 0);
   return out;
 }
+/** Noms d'un commandant EDHREC : « A // B » est une paire (Partner, Friends forever…) quand l'adresse contient les deux noms (« kraum-…-tymna-the-weaver »), sinon une carte à deux faces (adresse = première face) : un seul nom. « A + B » : paire aussi. */
+export function namesOf(name, slug) {
+  const parts = String(name || '').split(/\s+(?:\/\/|\+)\s+/).map(cleanName).filter(Boolean);
+  if (parts.length < 2) return parts;
+  if (/\s\+\s/.test(name) || (slug !== edhSlug(parts[0]) && slug.includes(edhSlug(parts[1])))) return parts;
+  return [cleanName(name)];
+}
 /** Page de liste de commandants → [{ slug, names, decks, ci }] (ceux qui ont un nombre de decks). */
 export function commandersOf(j) {
   const out = [];
   for (const cv of cardviewsOf(j)) {
     const decks = Number(cv.num_decks); if (!slugOk(cv.sanitized) || !Number.isFinite(decks) || decks <= 0) continue;
-    const names = String(cv.name).split(/\s+\+\s+/).map(cleanName).filter(Boolean); if (!names.length) continue;
+    const names = namesOf(cv.name, cv.sanitized); if (!names.length) continue;
     out.push({ slug: cv.sanitized, names, decks: Math.round(decks), ci: ciOf(cv.color_identity) });
   }
   return out;
