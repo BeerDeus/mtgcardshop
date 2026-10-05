@@ -1968,20 +1968,21 @@ function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b
 const FR_IMG = 'https://cards.scryfall.io/small/';
 /** Catalogue français : lignes « nom imprimé \t nom anglais \t chemin de l'image » → { n, idx (recherche floue sur les noms imprimés), by (nom imprimé normalisé → { en, img }) }. */
 function frCatalog(rows) {
-  const by = new Map(), names = [];
+  const by = new Map(), amb = new Set(), names = [];
   for (const r of rows || []) {
     const [p, en, img] = String(r).split('\t'); if (!p || !en) continue;
-    const k = frontName(p); if (k.length < 2 || by.has(k)) continue;
+    const k = frontName(p); if (k.length < 2) continue;
+    if (by.has(k)) { if (frontName(by.get(k).en) !== frontName(en)) amb.add(k); continue; }      // même nom français pour deux cartes différentes (≈ 0,1 %) : on garde la 1re mais on le sait
     by.set(k, { en, img: img || '' }); names.push(p);
   }
-  return { n: names.length, idx: nameIndex(names), by };
+  return { n: names.length, idx: nameIndex(names), by, amb };
 }
-/** Meilleure carte française reconnue dans des lignes lues : { name (anglais), key, score, raw, card: 'fr', img } ou null. */
 function matchFr(lines, fc) {
   if (!fc || !fc.n) return null;
   const m = bestMatch(lines, fc.idx); if (!m) return null;
   const e = fc.by.get(frontName(m.name)); if (!e) return null;
-  return { name: e.en, key: ownKey(e.en), score: m.score, raw: m.raw, card: 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '' };
+  const dup = !!(fc.amb && fc.amb.has(frontName(m.name)));      // nom français partagé par plusieurs cartes : jamais « sûr », la photo permet de trancher
+  return { name: e.en, key: ownKey(e.en), score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, card: 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '', ...(dup ? { amb: true } : {}) };
 }
 /** Départage une lecture française et une lecture anglaise du même texte : la plus sûre ; à égalité (nom identique dans les deux langues) le français, langue de la plupart des cartes. */
 const bestOf = (fr, en) => (fr && (!en || fr.score >= en.score) ? fr : en || null);
@@ -2389,9 +2390,9 @@ async function scryForeign(words, lang, signal) {
   return (j.data || []).slice(0, 30).map(c => ({ name: c.name, printed: c.printed_name || c.name, img: imgOf(c) || '' }));
 }
 /* ── Catalogue des noms français (reconnaissance des cartes françaises, hors ligne et tolérante aux fautes de lecture) ──────────
-   Scryfall n'a pas de liste de noms imprimés : on parcourt la recherche « lang:fr » (175 cartes par page, ~140 pages, 2 requêtes/s). Fait une seule fois,
+   Scryfall n'a pas de liste de noms imprimés : on parcourt la recherche « lang:fr » (175 cartes par page, ~180 pages (≈ 31 000 cartes mesurées), 2 requêtes/s). Fait une seule fois,
    gardé sur l'appareil (« nom imprimé \t nom anglais \t image », ~2,5 Mo), repris là où il en était si interrompu, puis complété des nouveautés tous les 14 jours. */
-const FR_KEY = 'sc:fr', FR_PART = 'sc:fr:part', FR_FRESH = 14 * DAY, FR_PAGES = 140, FR_STATIC = 'fr-names.tsv';
+const FR_KEY = 'sc:fr', FR_PART = 'sc:fr:part', FR_FRESH = 14 * DAY, FR_PAGES = 180, FR_STATIC = 'fr-names.tsv';
 /** Une carte Scryfall imprimée en français → « nom imprimé \t nom anglais \t image » (image : chemin après /small/, sans paramètre), ou '' sans nom imprimé. */
 function frRow(c) {
   if (!c || (c.lang && c.lang !== 'fr')) return '';
@@ -2415,8 +2416,8 @@ async function scryFrPages(url, signal, onPage) {
 const frSearchUrl = q => 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards&order=name';
 /** Catalogue français sur l'appareil, s'il est complet : { rows, at } ou null. */
 async function scryFrCached() { const c = await Cache.get(FR_KEY, 3650 * DAY); return c && Array.isArray(c.rows) && c.rows.length > 500 ? c : null; }
-/** Catalogue prêt à l'emploi servi par le site (fr-names.tsv, régénéré chaque semaine par GitHub Actions : mêmes lignes « imprimé \t anglais \t image », < 1 Mo compressé) :
- *  1 requête au lieu de ≈ 140 chez Scryfall. null s'il manque ou s'il est trop court (appli ouverte hors http, fichier pas encore généré) → on pagine chez Scryfall. */
+/** Catalogue prêt à l'emploi servi par le site (fr-names.tsv, régénéré chaque semaine par GitHub Actions : mêmes lignes « imprimé \t anglais \t image », ≈ 1,3 Mo compressé) :
+ *  1 requête au lieu de ≈ 180 chez Scryfall. null s'il manque ou s'il est trop court (appli ouverte hors http, fichier pas encore généré) → on pagine chez Scryfall. */
 async function scryFrStatic(signal) {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
   let r; try { r = await fetch(new URL(FR_STATIC, location.href).href, { signal, cache: 'no-cache' }); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
@@ -5641,7 +5642,7 @@ function frcPaint() {
   const el = SC.el && $('.sc-cat', SC.el); if (!el) return;
   const s = FRC.state, pct = FRC.total ? Math.min(99, Math.round(100 * FRC.done / FRC.total)) : 0;
   if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>Catalogue des noms français : ${pct} % · la lecture marche déjà, elle sera plus sûre ensuite</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
-  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 Mo, une seule fois).</span><button class="link-btn" type="button" data-act="frc">Télécharger</button>'; }
+  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).</span><button class="link-btn" type="button" data-act="frc">Télécharger</button>'; }
   else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${esc(FRC.err || 'Catalogue indisponible')}. Les cartes françaises restent lues, moins sûrement.</span><button class="link-btn" type="button" data-act="frc">Réessayer</button>`; }
   else el.hidden = true;
 }

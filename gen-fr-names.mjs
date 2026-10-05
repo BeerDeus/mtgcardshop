@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Génère pwa/fr-names.tsv : le catalogue des noms de cartes imprimés en français, servi tel quel à l'app (une requête, < 1 Mo compressé)
-// à la place de ≈ 140 pages de l'API Scryfall téléchargées depuis chaque téléphone. Une ligne par carte : « nom imprimé \t nom anglais \t image » (image : chemin après /small/).
+// Génère pwa/fr-names.tsv : le catalogue des noms de cartes imprimés en français, servi tel quel à l'app (une requête, ≈ 1,3 Mo compressé)
+// à la place de ≈ 180 pages de l'API Scryfall téléchargées depuis chaque téléphone. Une ligne par carte : « nom imprimé \t nom anglais \t image » (image : chemin après /small/).
 //   node gen-fr-names.mjs [fichier de sortie]        (Node ≥ 18, aucune dépendance, ≈ 1 à 2 minutes)
-// Lancé chaque semaine par .github/workflows/fr-names.yml. Le fichier existant n'est remplacé que si le nouveau est plausible (≥ 5 000 lignes).
+// Lancé chaque semaine par .github/workflows/fr-names.yml. Le fichier existant n'est remplacé que si le nouveau est plausible (≥ 5 000 lignes ; ≈ 31 000 en réalité).
 import { writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
