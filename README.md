@@ -159,6 +159,14 @@ Android (Chrome, Edge, Firefox) : direct. iPhone / iPad : seulement si Deck Deal
 
 Une fois l'app installée, elle apparaît dans le menu Partager d'Android : partager une liste de cartes (texte) ou un lien EDHREC (decks moyens), Archidekt ou Moxfield remplit la liste. Les liens passent par `GET /api/import?url=…` sur le serveur (lecture seule, liste blanche de sites, 2 Mo max, protégé comme le reste de l'API). EDHREC est fiable ; Archidekt et Moxfield dépendent de leurs API publiques (Moxfield peut refuser les serveurs : coller la liste en texte reste possible).
 
+## Interface et mouvement
+
+- **Listes groupées** : cartes, offres et decks forment un seul bloc à filets (plus une carte bordée par ligne) ; étiquettes en minuscules, chiffres dans la police de l'appli, pastilles de filtre pleines quand elles sont actives, total flottant au-dessus du dock. Lignes de la collection en `content-visibility:auto` (listes longues fluides).
+- **Feuilles** : se ferment en les tirant vers le bas par la poignée ou l'en-tête (seuil 28 % de la hauteur ou geste rapide ; le fond s'éclaircit pendant le glissé ; inactif sur grand écran et sur les boutons).
+- **Transitions** : saisie ↔ résultats glissent dans le sens de la navigation (`.fwd` / `.back`), onglets de la collection en fondu (`.tabin`), reflet unique sur le total des résultats (`.hero.shine`), filet sous la barre seulement quand le contenu passe dessous (`.bar.scrolled`), collection vide avec trois cartes en éventail. Tout est coupé par « réduire les animations » (CSS + `reduceMotion()`).
+- **Scan** : bouton de capture rond agrandi à 84 px, repères d'angle sur la bande de lecture.
+- Tests : `ui-e2e.mjs` (feuille glissable, sens des vues, filet de barre, reflet, fondu des onglets, état vide) ; taille du bouton de capture dans `scan-e2e.mjs`.
+
 ## Installation (PWA)
 
 `pwa/` contient le manifeste, le service worker et les icônes, servis par `proxy.mjs` en liste blanche (aucun autre fichier du dépôt n'est exposé).
