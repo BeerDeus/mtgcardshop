@@ -3153,7 +3153,14 @@ class Limiter {
   constructor({ rate = 6, conc = 4, min = 1, max = 10 } = {}) {
     Object.assign(this, { rate, conc, min, max, queue: [], active: 0, next: 0, count: 0, stamps: [], cool: 0 });
   }
-  schedule(fn, signal) { return new Promise((res, rej) => { this.queue.push({ fn, res, rej, signal }); this.pump(); }); }
+  /** prio : requête demandée par un geste (aperçu d'une carte…) : passe devant les lectures de fond (collection, catalogue) qui attendent. */
+  schedule(fn, signal, prio) {
+    return new Promise((res, rej) => {
+      const job = { fn, res, rej, signal, prio: !!prio };
+      if (prio) { let i = 0; while (i < this.queue.length && this.queue[i].prio) i++; this.queue.splice(i, 0, job); } else this.queue.push(job);
+      this.pump();
+    });
+  }
   pump() {
     while (this.queue.length && this.active < this.conc) {
       const job = this.queue.shift(); this.active++;
@@ -3190,11 +3197,11 @@ const scryUntil = () => { try { return Number(localStorage.getItem(SCRY_KEY)) ||
 const setScryUntil = t => { try { localStorage.setItem(SCRY_KEY, String(Math.min(t, Date.now() + BACKOFF.maxGate))); } catch (e) { /* stockage indisponible */ } };
 const scryLeft = () => Math.max(0, Math.min(scryUntil() - Date.now(), BACKOFF.maxGate));
 
-async function httpJson(lim, url, init, signal, retries = 4) {
+async function httpJson(lim, url, init, signal, retries = 4, prio = false) {
   const host = hostOf(url), scry = /scryfall/.test(host);
   for (let a = 0, n = 0; ;) {
     let r;
-    try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal); }
+    try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal, prio); }
     catch (e) {
       if (e.name === 'AbortError') throw e;
       // Coupure passagère (réseau mobile, 429 sans en-têtes CORS…) : on ralentit puis on retente, sauf si l'appareil est hors ligne.
@@ -3355,7 +3362,7 @@ async function scryImage({ set, num, lang }, signal) {
   const hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
   const base = 'https://api.scryfall.com/cards/' + encodeURIComponent(set) + '/' + encodeURIComponent(num);
   const get = async l => {
-    try { const j = await httpJson(limScry, base + (l === 'en' ? '' : '/' + l), SCRY_JSON, signal); const urls = facesOf(j); return urls.length ? { urls, lang: j.lang || l } : null; }
+    try { const j = await httpJson(limScry, base + (l === 'en' ? '' : '/' + l), SCRY_JSON, signal, 4, true); const urls = facesOf(j); return urls.length ? { urls, lang: j.lang || l } : null; }
     catch (e) { if (e.code === '404') return null; throw e; }
   };
   let r = await get(sl);
@@ -3373,7 +3380,7 @@ async function scryArtPrints(name, lang, signal) {
   let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent('!"' + n + '" lang:' + sl + ' game:paper') + '&unique=prints&order=released&dir=desc';
   const out = [], seen = new Set();
   for (let pg = 0; url && pg < 3; pg++) {
-    let j; try { j = await httpJson(limScry, url, SCRY_JSON, signal); } catch (e) { if (e.code === '404') j = { data: [] }; else throw e; }
+    let j; try { j = await httpJson(limScry, url, SCRY_JSON, signal, 4, true); } catch (e) { if (e.code === '404') j = { data: [] }; else throw e; }
     for (const c of j.data || []) {
       const urls = facesOf(c), im = c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {}, id = c.set + '/' + c.collector_number;
       if (!urls.length || seen.has(id)) continue; seen.add(id);
@@ -3484,13 +3491,13 @@ async function scryFrCatalog(signal, onProgress) {
   return rec;
 }
 /** Images (petites) de cartes dans une autre langue que l'anglais : Map(clé de collection → url, '' si Scryfall n'a pas la carte dans cette langue). Une recherche pour 12 noms. */
-async function scryLangImages(names, lang, signal, onProgress) {
+async function scryLangImages(names, lang, signal, onProgress, prio = false) {
   const sl = SCRY_LANG[lang], out = new Map();
   if (!sl || sl === 'en') return out;
   const uniq = [...new Map(names.map(n => [ownKey(n), String(n).split('//')[0].trim()])).entries()].filter(([, n]) => n && !n.includes('"'));
   for (let i = 0; i < uniq.length; i += 12) {
     const chunk = uniq.slice(i, i + 12), q = '(' + chunk.map(([, n]) => '!"' + n + '"').join(' or ') + ') lang:' + sl;
-    let j; try { j = await httpJson(limScry, 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards', SCRY_JSON, signal); }
+    let j; try { j = await httpJson(limScry, 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards', SCRY_JSON, signal, 4, prio); }
     catch (e) { if (e.code === '404') j = { data: [] }; else throw e; }
     for (const c of j.data || []) { const u = imgOf(c); if (u) out.set(ownKey(c.name), u); }
     for (const [k] of chunk) if (!out.has(k)) out.set(k, '');
@@ -5794,7 +5801,7 @@ function langvPrefetch(names, lang) {
   for (let i = 0; i < todo.length; i += 12) {
     const chunk = todo.slice(i, i + 12);
     const pr = (async () => {
-      try { const got = await scryLangImages(chunk.map(c => c.n), lang); for (const c of chunk) LANGV.m.set(c.k, got.get(c.ok) || ''); langvSave(); }
+      try { const got = await scryLangImages(chunk.map(c => c.n), lang, undefined, undefined, true); for (const c of chunk) LANGV.m.set(c.k, got.get(c.ok) || ''); langvSave(); }
       catch (e) { /* hors ligne ou limite Scryfall : l'aperçu reste anglais, réessayé à la prochaine ouverture */ }
       finally { for (const c of chunk) LANGV.p.delete(c.k); }
     })();
@@ -6916,7 +6923,7 @@ function collViewItem(k, ln) {
   const ls = collLines(x), line = ls.find(e => e[0] === (ln || '')) || ls[0] || [x.l || '', x.q], l = line[0], n = line[1];
   const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · image anglaise (pas d\'image ' + (LANGS[l] || l) + ' sur Scryfall)' : '';
   const own = ls.length > 1 ? `${n} exemplaire${n > 1 ? 's' : ''} ${l ? langCode(l) : 'sans langue'} · ${x.q} au total` : `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection`;
-  return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
+  return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, wl: l && l !== 'en' ? l : '', small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
 }
 
 /* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
@@ -8017,7 +8024,7 @@ function scanAdd(m, d, maybe, shot) {
 /** Carte du scan pour la visionneuse (appui sur sa miniature) : image dans sa langue si Scryfall l'a donnée, sinon anglaise ; photo prise au scan si la carte est « à vérifier ». */
 function scanViewItem(e) {
   const l = e.l || 'en', u = scanThumb(e), lang = l !== 'en' && COLL.li[liKey(l, e.key)] ? l : 'en';
-  return { key: e.key, lid: e.id || e.key, name: e.name, small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
+  return { key: e.key, lid: e.id || e.key, name: e.name, wl: l !== 'en' && lang === 'en' ? l : '', small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
     extra: `${e.q} exemplaire${e.q > 1 ? 's' : ''}${e.maybe ? ' · à vérifier' : ''}${l !== 'en' && lang === 'en' ? ' · image anglaise (pas encore d\'image ' + (LANGS[l] || l) + ')' : ''}${e.raw && e.score < 0.97 ? ' · lu « ' + e.raw + ' »' : ''}` };
 }
 /** Miniature d'une carte du scan : dans sa langue si Scryfall l'a donnée, sinon l'image anglaise. */
@@ -8582,7 +8589,7 @@ async function ownLangFetch(list) {
   let n = 0;
   for (const l of langs) {
     const keys = [...by[l].keys()]; keys.forEach(k => liTried.add(liKey(l, k)));
-    try { const got = await scryLangImages([...by[l].values()], l); for (const k of keys) { COLL.li[liKey(l, k)] = got.get(k) || ''; n++; } }
+    try { const got = await scryLangImages([...by[l].values()], l, undefined, undefined, true); for (const k of keys) { COLL.li[liKey(l, k)] = got.get(k) || ''; n++; } }
     catch (e) { /* hors ligne ou limite Scryfall : l'image du deck reste */ }
   }
   if (n) collMetaSave();
