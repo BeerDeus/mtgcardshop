@@ -1181,7 +1181,8 @@ button,.btn,select,summary{touch-action:manipulation}
 .deck[data-active="1"] .deck-art{box-shadow:0 0 0 3px var(--accent),0 8px 16px -10px rgba(16,21,43,.5)}
 .deck-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--font-display);font-weight:650;font-size:15px;line-height:1.2;letter-spacing:-.01em;text-wrap:balance}
 .deck-tags{display:flex;align-items:center;gap:7px;min-height:17px}
-.deck-meta{font-size:12px;line-height:1.35;color:var(--ink-3)}
+.deck-meta{display:flex;flex-direction:column;gap:1px;font-size:12px;line-height:1.35;color:var(--ink-3)}
+.deck-ago{font-size:11.5px;opacity:.85}
 .deck-price{position:absolute;left:6px;right:6px;bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .deck-price:empty{display:none}
 .deck-price b{padding:2px 8px;border-radius:99px;background:rgba(10,14,30,.84);color:#fff;font-size:11.5px;font-weight:600;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
@@ -5290,7 +5291,8 @@ const COLOR_NAMES = { W: 'blanc', U: 'bleu', B: 'noir', R: 'rouge', G: 'vert' };
 function pips(text) { const c = dkColors(text); return c ? `<span class="deck-pips" role="img" aria-label="Couleurs : ${[...c].map(x => COLOR_NAMES[x]).join(', ')}" title="Couleurs d'après les terrains de base">${[...c].map(x => `<i class="pip ${x}"></i>`).join('')}</span>` : ''; }
 const deckFmt = d => dkFmtOf(d.text);
 /** Image de la carte de présentation d'un deck (grande taille), '' tant que sa fiche n'est pas lue. */
-const coverUrl = c => { const m = c && dmOf(c.key); return m && m.im ? m.im.replace('/small/', '/normal/') : ''; };
+const coverImg = c => { if (!c) return ''; const o = ownLangImg(c.key), m = dmOf(c.key); return o ? o.src : (m && m.im) || ''; };      // carte possédée : dans la langue de l'exemplaire
+const coverUrl = c => coverImg(c).replace('/small/', '/normal/');
 function deckCard(d, i) {
   const dl = priceDelta(d.history), fresh = !D.seen.has(d.id), fk = deckFmt(d), dv = dkValue(d.text, dmOf), vt = dv.total && !dv.missing.length ? dkValueText(dv) : '';
   const cv = dkCoverCard(d.text, dmOf), art = coverUrl(cv), hue = hash32(d.id) % 360;
@@ -5298,7 +5300,7 @@ function deckCard(d, i) {
     <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
       <span class="deck-top"><span class="deck-name">${esc(d.name)}</span></span>
       <span class="deck-tags">${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span>
-      <span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">monté</b>' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
+      <span class="deck-meta"><span class="deck-line">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">complet</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
     <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
 }
 /** Bouton « Mes decks » de l'accueil + écran des decks s'il est ouvert. */
@@ -5306,7 +5308,7 @@ function renderDecks() {
   alSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
-  $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' monté' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
+  $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
   dksPaint();
   paintSync(); updateSaveButtons();
 }
@@ -5318,7 +5320,8 @@ function dvSoon(decks, delay) {
     await dmLoad();
     const covers = decks.map(d => dkCoverCard(d.text, dmOf)).filter(c => c && !dmOf(c.key)), miss = decks.flatMap(d => dkValue(d.text, dmOf).missing);
     const a = covers.length ? await dmFetch(covers) : false, b = miss.length ? await dmFetch(miss) : false;
-    if ((a || b) && DKS.el) renderDecks();
+    const c = await ownLangFetch(decks.map(d => dkCoverCard(d.text, dmOf)).filter(Boolean));      // carte de présentation possédée dans une autre langue : son image dans cette langue
+    if ((a || b || c) && DKS.el) renderDecks();
   }, delay == null ? 900 : delay);
 }
 function paintSync() {
@@ -5388,7 +5391,7 @@ function openDeckSheet(id) {
     }).join('');
     api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">Nom</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
       <button class="coll-open dk-cover" type="button" id="dkCover"><span class="cover-th" aria-hidden="true"></span><span class="coll-t"><b>Image du deck</b><span id="dkCoverSub"></span></span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button>
-      <label class="switch-row" for="dkMount"><span class="t"><b>Deck monté</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
+      <label class="switch-row" for="dkMount"><span class="t"><b>Deck complet</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
       <div class="dk-val" id="dkVal"></div>
       <div class="sec-title">Historique des prix</div>
       ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${series.length} relevés · de ${esc(fmt(Math.min(...series)))} à ${esc(fmt(Math.max(...series)))}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
@@ -5463,7 +5466,7 @@ function openCoverPicker(id, done) {
     const paint = () => {
       const cur = dkCoverCard((findDeck(id) || d0).text, dmOf), chosen = cur && !cur.auto ? cur.key : '', f = q.value.trim().toLowerCase();
       const list = pool().filter(c => !f || c.name.toLowerCase().includes(f)).slice(0, 150);
-      grid.innerHTML = list.map(c => { const m = dmOf(c.key), im = m && m.im; return `<button type="button" class="cv-card" data-n="${esc(c.name)}" aria-pressed="${c.key === chosen}" aria-label="${esc(c.name)}${c.cmd ? ', commandant' : ''}"><span class="dvc-art" style="--h:${hash32(c.key) % 360}"><b>${esc((c.name.trim()[0] || '?').toUpperCase())}</b><i>${esc(c.name)}</i>${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span></button>`; }).join('') || '<p class="hint">Aucune carte de ce nom.</p>';
+      grid.innerHTML = list.map(c => { const im = coverImg(c); return `<button type="button" class="cv-card" data-n="${esc(c.name)}" aria-pressed="${c.key === chosen}" aria-label="${esc(c.name)}${c.cmd ? ', commandant' : ''}"><span class="dvc-art" style="--h:${hash32(c.key) % 360}"><b>${esc((c.name.trim()[0] || '?').toUpperCase())}</b><i>${esc(c.name)}</i>${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span></button>`; }).join('') || '<p class="hint">Aucune carte de ce nom.</p>';
     };
     grid.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
     grid.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
@@ -5887,6 +5890,19 @@ function sbItemsOf(text, id) {
   }
   return out;
 }
+/** Image d'une carte possédée dans la langue de l'exemplaire (la plus fournie : fr, de, en…) : { src, lang }. null si la carte n'est pas dans la collection, sans langue précisée,
+ *  ou sans image dans cette langue (Scryfall ne l'a pas encore donnée) : l'image du deck reste alors. Affichage seulement, jamais gardé dans un relevé. */
+function ownLangImg(k) {
+  const kk = ownKey(k), x = COLL.map[kk]; if (!x || !(x.q > 0) || !x.l) return null;
+  const im = collImage(kk, x.l, (COLL.meta[kk] || {}).im);
+  return im.src && im.lang === x.l ? im : null;
+}
+/** Cartes possédées d'une liste d'items du viewer : leur image passe dans la langue de l'exemplaire (ol = langue montrée). */
+const dvOwnIm = items => items.map(i => {
+  if (!(i.ow > 0 || i.s === 'own')) return i;
+  const o = ownLangImg(String(i.k).replace(/^sb:/, ''));
+  return o && o.src !== i.im ? { ...i, im: o.src, ol: o.lang } : i;
+});
 /** Terrains de base : image lue sur Scryfall (cache des decks), ajoutée à l'affichage seulement, jamais gardée dans le relevé. */
 const basicIm = k => { const m = dmOf(ownKey(k)); return (m && m.im) || ''; };
 function dvBasics(snap) {
@@ -5901,16 +5917,23 @@ function dvNeeds() {
 /** Lit sur Scryfall ce qui manque (images, coûts, prix du relevé de référence, de la réserve et des terrains), puis reconstruit l'affichage si le viewer est toujours ouvert. */
 async function dvMetaLoad(wrap) {
   const list = dvNeeds();
-  if (!dmMissing(list, true).length) return;
-  DV.loading = !!(DV.snap && DV.snap.ref); DV.framed = null; dvRender();
-  try { await dmFetch(list, true); } catch (e) { /* hors ligne : l'affichage reste partiel */ }
-  if (DV.el !== wrap) return;
-  DV.loading = false; dvRebuild(); dvRender();
+  if (dmMissing(list, true).length) {
+    DV.loading = !!(DV.snap && DV.snap.ref); DV.framed = null; dvRender();
+    try { await dmFetch(list, true); } catch (e) { /* hors ligne : l'affichage reste partiel */ }
+    if (DV.el !== wrap) return;
+    DV.loading = false; dvRebuild(); dvRender();
+  }
+  // cartes possédées dans une autre langue que l'anglais : leur image, dans cette langue, si Scryfall ne l'a pas encore donnée
+  const pd = parseDeck(DV.text); let got = false;
+  try { got = await ownLangFetch([...pd.cards, ...dkSideCards(DV.text)]); } catch (e) { /* ignore */ }
+  if (got && DV.el === wrap) { dvRebuild(); dvRender(); }
 }
 /** Relevé de référence, réserve et images des terrains recalculés d'après les fiches connues (le relevé de prix, lui, ne change pas). */
 function dvRebuild() {
   if (DV.snap && DV.snap.ref) DV.snap = refSnapOf(DV.text, DV.deckId);
-  DV.snap = dvBasics(DV.snap); DV.sb = DV.snap ? sbItemsOf(DV.text, DV.deckId) : []; DV.framed = null;
+  DV.snap = dvBasics(DV.snap);
+  if (DV.snap) DV.snap = { ...DV.snap, items: dvOwnIm(DV.snap.items) };
+  DV.sb = DV.snap ? dvOwnIm(sbItemsOf(DV.text, DV.deckId)) : []; DV.framed = null;
 }
 
 /* Relevés gardés sur cet appareil (toujours) ; ils sont aussi dans le document du deck quand le compte l'accepte (règles Firestore à jour). */
@@ -6043,7 +6066,8 @@ function dvItemFor(it) {
   const rf2 = (DV.snap && DV.snap.ref) || it.sb;
   const extra = it.s === 'basic' ? 'Terrain de base' : rf2 ? [it.sb ? 'Réserve' : '', it.s === 'ok' ? fmt(it.c) + (it.q > 1 ? ' pour ' + it.q : '') + ' · prix tendance Cardmarket' : 'Prix inconnu', own].filter(Boolean).join(' · ') : it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + (it.q - (it.ow || 0)) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') + (it.ow ? ` · ${it.ow} possédée${it.ow > 1 ? 's' : ''}` : '') + ref + mv
     : it.s === 'own' ? 'Dans ta collection' : 'Aucune offre avec tes critères';
-  return { key: it.k, name: it.n, small: it.im, lang: it.l || 'en', set: it.st, num: it.nu, setName: it.sn, extra, plain: (it.s === 'own' || it.s === 'basic' || rf2) && !it.st };
+  const ol = !!it.ol;      // image de ta propre carte (sa langue) : pas la version de l'offre, donc ni extension ni numéro à relire sur Scryfall
+  return { key: it.k, name: it.n, small: it.im, lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
 }
 function dvOpenCard(i) {
   const list = [], at = new Map();
@@ -7082,14 +7106,14 @@ function edhResHtml() {
     ${rows.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="dmore">Afficher ${nf0(Math.min(30, rows.length - shown.length))} de plus · ${nf0(rows.length - shown.length)} restants</button>` : ''}`;
 }
 function edhRowHtml(r, i) {
-  const c = r.cmd, name = c.names.join(' + '), img = c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
+  const c = r.cmd, name = c.names.join(' + '), img = (ownLangImg(c.keys[0]) || {}).src || c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
   const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC">n° ${nf0(c.rank)}</span>`); if (c.decks) tags.push(`<span class="tag">${nf0(c.decks)} decks</span>`);
   tags.push(`<span class="tag${r.deck.src === 'edhrec' ? '' : ' accent'}">${r.deck.src === 'edhrec' ? 'Deck moyen' : esc(edhSrcLabel(r.deck))}</span>`);
   if (r.br) tags.push(`<span class="tag${r.br >= 4 ? ' warn' : ''}" title="${esc(edhBracketNote(r))}">Bracket ${r.br}</span>`);
   if (r.mine) tags.push('<span class="tag good">Commandant possédé</span>');
   const right = r.miss ? `<b>${nf0(r.miss)}</b><small>à acheter</small><em>${r.cost ? '≈ ' + esc(fmt(r.cost, 'EUR')) : 'prix inconnu'}</em>${r.cost && r.unpriced ? `<small>+ ${nf0(r.unpriced)} sans prix</small>` : ''}` : '<b class="ok">✓</b><small>complet</small>';
   return `<div class="crow dk" role="button" tabindex="0" data-dk="${i}" aria-label="${esc(name)} : tier ${esc(r.tier)}, ${r.have} cartes sur ${r.total}${r.eng ? ' (dont ' + r.eng + ' engagée' + (r.eng > 1 ? 's' : '') + ' dans un deck)' : ''}, ${r.miss} à acheter">${r.tier ? `<i class="dk-tier t-${esc(r.tier.toLowerCase())}" aria-hidden="true">${esc(r.tier)}</i>` : ''}<span class="thumb" style="--h:${hash32(c.slug) % 360}">${esc((name.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-name">${esc(name)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` <em class="dk-eng" title="Exemplaires déjà réservés par un de tes decks montés">· dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.deck.src !== 'edhrec' && r.deck.label ? `<span class="dk-lab">${esc(r.deck.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(name)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` <em class="dk-eng" title="Exemplaires déjà réservés par un de tes decks complets">· dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.deck.src !== 'edhrec' && r.deck.label ? `<span class="dk-lab">${esc(r.deck.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
     <span class="row-px dk-px">${right}</span></div>`;
 }
 
@@ -7101,7 +7125,7 @@ async function edhImages(entries, seed) {
   }
   const out = new Map(), need = [];
   for (const [k, n] of entries) {
-    const own = COLL.meta[k] && COLL.meta[k].im, sd = seed && seed.get(k), cached = EDH.im.get(k), u = own || sd || (cached ? EDH_SMALL + cached : '');
+    const own = (ownLangImg(k) || {}).src || (COLL.meta[k] && COLL.meta[k].im), sd = seed && seed.get(k), cached = EDH.im.get(k), u = own || sd || (cached ? EDH_SMALL + cached : '');
     if (u) out.set(k, u); else if (cached === undefined) need.push([k, n]);
   }
   if (need.length && !scryLeft()) {
@@ -7123,7 +7147,7 @@ function openEdhDeck(r) {
   const c = r.cmd, name = c.names.join(' + '), url = r.deck.url || (r.deck.src === 'edhrec' ? 'https://edhrec.com/average-decks/' + encodeURIComponent(c.slug) : '');
   openSheet(name, `${r.tier ? 'Tier ' + r.tier + ' · n° ' + nf0(r.rank) + ' · ' : ''}${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` (dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''})` : ''} · ${edhSrcLabel(r.deck)}`, api => {
     const row = (x, own) => {
-      const tg = (c.keys.includes(x.k) ? '<span class="tag accent">Commandant</span>' : '') + (own && x.eg ? `<span class="tag warn" title="Déjà réservé par un de tes decks montés">dont ${x.eg} engagée${x.eg > 1 ? 's' : ''}</span>` : '') + (x.gc ? '<span class="tag warn" title="Liste Game Changers (brackets Commander)">Game Changer</span>' : '');
+      const tg = (c.keys.includes(x.k) ? '<span class="tag accent">Commandant</span>' : '') + (own && x.eg ? `<span class="tag warn" title="Déjà réservé par un de tes decks complets">dont ${x.eg} engagée${x.eg > 1 ? 's' : ''}</span>` : '') + (x.gc ? '<span class="tag warn" title="Liste Game Changers (brackets Commander)">Game Changer</span>' : '');
       const ex = own ? 'Dans ta collection' + (x.q > 1 ? ' · × ' + x.q : '') + (x.eg ? ' · dont ' + x.eg + ' engagée' + (x.eg > 1 ? 's' : '') : '') : 'À acheter' + (x.q > 1 ? ' × ' + x.q : '') + (x.u ? ' · ≈ ' + fmt(x.u * x.q, 'EUR') : '');
       return `<div class="crow ro dk-card" role="button" tabindex="0" data-ik="${esc(x.k)}" data-nm="${esc(x.n)}" data-ex="${esc(ex)}" aria-label="${esc(x.n)} : voir en grand"><span class="thumb" data-ik="${esc(x.k)}" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}</span><span class="row-main"><span class="row-name">${esc(x.n)}</span>${tg ? `<span class="row-meta">${tg}</span>` : ''}</span><span class="row-price"><b>${own ? '✓' : x.u ? esc(fmt(x.u * x.q, 'EUR')) : '—'}</b>${x.q > 1 ? `<small>× ${x.q}${!own && x.u ? ' · ' + esc(fmt(x.u, 'EUR')) : ''}</small>` : ''}</span></div>`;
     };
@@ -7461,7 +7485,7 @@ function engRefresh(id, name, text) {
   if (JSON.stringify(q) === JSON.stringify(cur.q) && cur.n === name) return;
   engSet(id, name, text);
 }
-/** Interrupteur « Deck monté » de la feuille d'un deck. */
+/** Interrupteur « Deck complet » (deck monté) de la feuille d'un deck. */
 function engBindSwitch(id, cb, hint) {
   const paint = () => {
     const n = engCount(id); cb.checked = engIsOn(id);
@@ -7474,8 +7498,8 @@ function engBindSwitch(id, cb, hint) {
     if (cb.checked) {
       const d = findDeck(id);
       if (!d || !Object.keys(engSnapshot(d.text, collQty)).length) { cb.checked = false; toast('Aucune carte de ce deck n\'est dans ta collection'); return; }
-      engSet(id, d.name, d.text); haptic('ok'); toast('Deck monté : cartes réservées');
-    } else { engClear(id); haptic('tap'); toast('Deck démonté : cartes à nouveau disponibles'); }
+      engSet(id, d.name, d.text); haptic('ok'); toast('Deck complet : cartes réservées');
+    } else { engClear(id); haptic('tap'); toast('Deck non complet : cartes à nouveau disponibles'); }
     paint();
   };
 }
@@ -7489,7 +7513,7 @@ function engTag(k) {
 /* ── Synchro avec le compte (engagés, historique de valeur) ───────────────────────────────────── */
 function xsFail(id, err) {
   const d = XS.docs[id]; d.state = 'error';
-  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast('Règles Firestore à publier pour synchroniser decks montés et historique (voir README)'); }
+  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast('Règles Firestore à publier pour synchroniser decks complets et historique (voir README)'); }
 }
 function xsUser(user) {
   for (const id in XS.docs) { const d = XS.docs[id]; if (d.unsub) { try { d.unsub(); } catch (e) { /* ignore */ } d.unsub = null; } clearTimeout(d.pushT); d.state = 'off'; d.uid = ''; }
@@ -8410,6 +8434,25 @@ async function dmFetch(list, basics) {
   catch (e) { return false; }      // hors ligne ou limite Scryfall : l'estimation reste partielle
 }
 const dmOf = k => COLL.meta[k] || DM[k] || null;
+const liTried = new Set();
+/** Images, dans la langue de l'exemplaire, des cartes possédées de cette liste ([{ key, name }]) : lues sur Scryfall par lots de 12, une seule fois par carte (gardées 60 jours avec celles de la collection).
+ *  Déjà connues, déjà tentées, anglaises ou non possédées : rien à lire. Retourne vrai si quelque chose est arrivé. */
+async function ownLangFetch(list) {
+  const by = {};
+  for (const c of list) {
+    const k = ownKey(c.key), x = COLL.map[k], l = x && x.q > 0 ? x.l : '';
+    if (l && l !== 'en' && SCRY_LANG[l] && !(liKey(l, k) in COLL.li) && !liTried.has(liKey(l, k))) (by[l] = by[l] || new Map()).set(k, c.name);
+  }
+  const langs = Object.keys(by); if (!langs.length || scryLeft() > 0) return false;
+  let n = 0;
+  for (const l of langs) {
+    const keys = [...by[l].keys()]; keys.forEach(k => liTried.add(liKey(l, k)));
+    try { const got = await scryLangImages([...by[l].values()], l); for (const k of keys) { COLL.li[liKey(l, k)] = got.get(k) || ''; n++; } }
+    catch (e) { /* hors ligne ou limite Scryfall : l'image du deck reste */ }
+  }
+  if (n) collMetaSave();
+  return n > 0;
+}
 /** Valeur estimée d'un texte de deck, en chaîne : « ≈ 84 € » (« ≈ 84 €+ » si des cartes n'ont pas de prix), '' tant que rien n'est lu. */
 function dkValueText(v) { return v.known ? `≈ ${fmt(v.cents, 'EUR')}${v.known < v.total ? '+' : ''}` : ''; }
 const BD = { el: null, id: null, name: '', fmt: 'standard', cover: '', main: new Map(), side: new Map(), cmdr: [], tab: 'deck', tgt: 'main', q: '', shown: 60, dirty: false, meta: DM, tried: new Set(), cat: null, catErr: '', metaT: 0, issuesOpen: false, idx: null };
@@ -8558,7 +8601,7 @@ function bdTags(k, q, ctx) {
   if (ctx !== 'deck' && BD.cmdr.some(c => c.key === k)) out.push('<span class="tag accent">Commandant</span>');
   if (ctx === 'deck') out.push(own >= q ? '<span class="tag good">Possédée</span>' : own > 0 ? `<span class="tag warn">${own} possédée${own > 1 ? 's' : ''} sur ${q}</span>` : '<span class="tag">À acheter</span>');
   else out.push(own ? `<span class="tag good">× ${own} possédée${own > 1 ? 's' : ''}</span>` : '<span class="tag">Pas dans ta collection</span>');
-  if (own && eg) out.push(`<span class="tag warn" title="Réservées par un autre deck monté">${eg} engagée${eg > 1 ? 's' : ''} ailleurs</span>`);
+  if (own && eg) out.push(`<span class="tag warn" title="Réservées par un autre deck complet">${eg} engagée${eg > 1 ? 's' : ''} ailleurs</span>`);
   return out.join('');
 }
 function bdRow(k, name, q, tgt, ctx, label) {
