@@ -733,6 +733,8 @@ button.sync:active{background:var(--surface-2)}
 .th-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:6px}
 .th-main{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);font-size:14px;font-weight:600;color:var(--ink-2);text-align:left;transition:background .2s,border-color .2s}
 .th-main small{font-size:11.5px;font-weight:500;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.th-zero{opacity:.45}
+.th-main:disabled{cursor:default}
 .th-main[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .th-main[aria-pressed="true"] small{color:inherit;opacity:.8}
 .th-i{width:42px;min-height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);font-family:var(--font-mono);font-size:16px;font-weight:700;font-style:italic;color:var(--ink-3)}
@@ -2108,6 +2110,17 @@ function edhRank(edh, qty, o = {}) {
   const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (b.cmd.decks - a.cmd.decks) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
   return rows.sort((a, b) => by(a, b) || (b.cmd.decks - a.cmd.decks) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
 }
+/** Nombre de decks de `rows` (résultat d'edhRank) qui portent chaque thème, indexé comme edh.themes. Les compteurs de la liste des thèmes en dépendent : ils suivent tous les filtres en cours (couleurs, tiers, budget, recherche, thèmes déjà choisis). */
+function edhThemeCounts(edh, rows) {
+  const n = new Array(edh && edh.themes ? edh.themes.length : 0).fill(0);
+  for (const r of rows || []) for (const t of r.cmd.th) n[t[0]]++;
+  return n;
+}
+/** Indices des thèmes du fichier, du plus au moins présent dans `counts` ; à égalité : les thèmes déjà choisis (sel : Set de slugs), puis la présence dans tout le fichier, puis le nom. Ceux à zéro viennent en dernier. */
+function edhThemeOrder(edh, counts, sel) {
+  const th = edh.themes, pick = new Set(); for (const s of sel || []) { const i = edh.themeIx.get(s); if (i !== undefined) pick.add(i); }
+  return (edh.themeOrder || []).slice().sort((a, b) => (counts[b] - counts[a]) || (pick.has(b) - pick.has(a)) || (th[b].decks - th[a].decks) || th[a].label.localeCompare(th[b].label));
+}
 /** Liste à charger dans la page de saisie : commandant(s) puis cartes du deck (terrains de base compris). */
 function edhDeckText(d) {
   const c = d.cmd, cmd = c.names.map(n => '1 ' + n);
@@ -2360,7 +2373,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
-    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers,
+    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
@@ -5797,7 +5810,7 @@ function collPaintBody(keep) {
   if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
   $('.coll-fwrap', el).hidden = COLL.tab !== 'list'; valPaintAlert();
   if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
-  else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) res.innerHTML = edhResHtml(); else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
+  else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) { res.innerHTML = edhResHtml(); edhThemesSync(); } else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
   else if (COLL.f.cmdr === 'played' && !EDH.data) { host.innerHTML = edhWaitHtml(); edhEnsure(); }
   else {
     const filtered = filterItems(all, COLL.f), sorted = collSorted(filtered), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
@@ -5995,7 +6008,7 @@ const EDH_KEY = 'edh:v1', EDH_BIN_KEY = 'edh:v2', EDH_FILE = 'edh.tsv', EDH_BIN 
 const EDH_SORTS = [['have', 'Plus possédées'], ['cost', 'Moins cher'], ['pop', 'Meilleur tier']];
 const EDH_TIER_NAMES = ['S', 'A', 'B', 'C', 'D'], EDH_IM_KEY = 'edh:im', EDH_SMALL = 'https://cards.scryfall.io/small/';
 /** Thèmes EDHREC (style du commandant, vaut pour tous ses decks) : noms affichés en français, par libellé EDHREC en minuscules ; un libellé absent s'affiche tel que l'écrit EDHREC. */
-const EDH_THEME_FR = { 'control': 'Contrôle', 'discard': 'Défausse', 'mill': 'Meule', 'self-mill': 'Auto-meule', 'lifegain': 'Gain de vie', 'lifedrain': 'Drain de vie', 'card draw': 'Pioche', 'counterspells': 'Contresorts', 'reanimator': 'Réanimation', 'extra turns': 'Tours supplémentaires', 'politics': 'Politique', 'theft': 'Vol', 'blink': 'Blink', 'equipment': 'Équipements', 'artifacts': 'Artefacts', 'tokens': 'Jetons', 'graveyard': 'Cimetière', '+1/+1 counters': 'Marqueurs +1/+1', 'proliferate': 'Prolifération', 'lands matter': 'Terrains', 'treasure': 'Trésors', 'big mana': 'Gros mana', 'vehicles': 'Véhicules', 'forced combat': 'Combat forcé', 'land destruction': 'Destruction de terrains', 'x spells': 'Sorts à X', 'bounce': 'Rebond', 'exile': 'Exil', 'infect': 'Poison', 'poison': 'Poison', 'food': 'Nourriture', 'blood': 'Sang', 'curses': 'Malédictions', 'donate': 'Don', 'enchantress': 'Enchantress', 'monarch': 'Monarque', 'superfriends': 'Superfriends', 'planeswalkers': 'Planeswalkers' };
+const EDH_THEME_FR = { 'control': 'Contrôle', 'discard': 'Défausse', 'mill': 'Meule', 'self-mill': 'Auto-meule', 'lifegain': 'Gain de vie', 'lifedrain': 'Drain de vie', 'card draw': 'Pioche', 'counterspells': 'Contresorts', 'reanimator': 'Réanimation', 'extra turns': 'Tours supplémentaires', 'politics': 'Politique', 'theft': 'Vol', 'blink': 'Blink', 'equipment': 'Équipements', 'artifacts': 'Artefacts', 'tokens': 'Jetons', 'graveyard': 'Cimetière', '+1/+1 counters': 'Marqueurs +1/+1', 'proliferate': 'Prolifération', 'lands matter': 'Terrains', 'treasure': 'Trésors', 'big mana': 'Gros mana', 'vehicles': 'Véhicules', 'forced combat': 'Combat forcé', 'land destruction': 'Destruction de terrains', 'x spells': 'Sorts à X', 'bounce': 'Rebond', 'exile': 'Exil', 'infect': 'Poison', 'poison': 'Poison', 'food': 'Nourriture', 'blood': 'Sang', 'curses': 'Malédictions', 'donate': 'Don', 'enchantress': 'Enchantements', 'monarch': 'Monarque', 'superfriends': 'Superfriends', 'planeswalkers': 'Planeswalkers' };
 const edhThemeName = t => EDH_THEME_FR[t.label.toLowerCase()] || t.label;
 /** À quoi correspond chaque thème (le « i » de la liste des thèmes et de la feuille d'un deck), par libellé EDHREC en minuscules : un libellé sans description n'a pas de « i ». Rédigées d'après des sources de stratégie Commander (EDHREC, MTG Wiki, Draftsim, Card Kingdom, Commander's Herald…) ; la fin « Ex. : » liste des cartes emblématiques, séparées par « · » (affichée à part). */
 const EDH_THEME_INFO = {
@@ -6053,7 +6066,7 @@ const EDH_THEME_INFO = {
   'artifacts': 'Un deck rempli d\'artefacts qui se renforcent entre eux : réduction de coût, recyclage et sacrifice, effets d\'arrivée et jetons, pour poser tôt de grosses menaces. Fragile aux destructions de masse d\'artefacts (Bane of Progress, Vandalblast), qui emportent aussi les artefacts de mana. Ex. : Foundry Inspector · Goblin Welder · Krark-Clan Ironworks',
   'equipment': 'Équiper ses créatures (en phase principale, en payant le coût d\'équipement) avec des équipements qui donnent bonus, évasion, protection ou pioche, souvent en Voltron sur le commandant. Contrairement aux auras, l\'équipement reste sur le champ de bataille si la créature meurt et se rééquipe ailleurs. Ex. : Lightning Greaves · Swiftfoot Boots · Skullclamp',
   'auras': 'Enchanter ses créatures avec des auras (bonus, protection) pour en faire des menaces. Risque : si la créature meurt ou quitte le champ de bataille, l\'aura part au cimetière (deux cartes perdues pour une). Les Umbra (qui survivent à une destruction) et la pioche liée aux auras compensent. Ex. : Ethereal Armor · Bear Umbra · Kor Spiritdancer',
-  'enchantress': 'Piocher des cartes à chaque enchantement lancé ou arrivé sur le champ de bataille grâce aux créatures enchantress, en enchaînant enchantements, auras, ramp et protections, puis gagner avec des jetons ou du gain de vie. Vulnérable aux balayages d\'enchantements. Ex. : Argothian Enchantress · Mesa Enchantress · Eidolon of Blossoms',
+  'enchantress': 'Deck centré sur les enchantements (auras, sagas, enchantements-créatures) avec des « enchantresses » qui piochent à chaque enchantement lancé ou arrivé sur le champ de bataille (constellation). Ramp et protection assurent la mise en place, jetons ou gain de vie concluent. Vulnérable aux balayages d\'enchantements. Ex. : Argothian Enchantress · Eidolon of Blossoms · Sythis, Harvest\'s Hand',
   'planeswalkers': 'Deck qui joue beaucoup de planeswalkers et active leurs capacités de loyauté chaque tour pour piocher, faire du mana, créer des jetons ou contrôler la table. Ils attirent les attaques ; contrairement à Superfriends, le commandant n\'est pas forcément bâti autour d\'eux. Ex. : The Eternal Wanderer · Wrenn and Realmbreaker · Oath of Teferi',
   'superfriends': 'Archétype bâti autour des planeswalkers : on les protège (taxes d\'attaque, bloqueurs, destruction de masse) et on accélère leur loyauté avec la prolifération et les doubleurs de marqueurs pour atteindre les ultimes. Plan lent, et les planeswalkers attirent les attaques. Ex. : Doubling Season · The Chain Veil · Deepglow Skate',
   'vehicles': 'Les Véhicules sont des artefacts qui deviennent des créatures-artefacts jusqu\'à la fin du tour quand on engage des créatures de puissance totale suffisante (Équipage N), même celles arrivées ce tour. Il faut des créatures pour les piloter, et la destruction d\'artefacts les menace. Ex. : Smuggler\'s Copter · Parhelion II · Heart of Kiran',
@@ -6152,27 +6165,37 @@ function edhRows() {
 /** Recherche en cours, ou '' : un nom de commandant dès 1 lettre, une carte à partir de 2 (sinon presque tous les decks la contiennent). */
 const edhQuery = () => { const t = edhTokens(EDH.q); return t.length && (EDH.qm === 'cmd' || t.join('').length >= 2) ? EDH.q : ''; };
 const EDH_QMODES = [['cmd', 'Commandant', 'Rechercher un commandant'], ['card', 'Carte dans le deck', 'Rechercher une carte dans les decks']];
-/** Thèmes EDHREC : les plus présents en puces (avec ceux déjà choisis), et « Tous » qui ouvre la liste complète. Vide si le fichier chargé n'a pas de thèmes (ancienne version, avant la prochaine génération). */
+/** Compteurs des thèmes et leur ordre d'après les decks qui restent (mêmes filtres que la liste, thèmes déjà choisis compris), mémorisés avec la liste. */
+function edhThemeView() {
+  const rows = edhRows(), m = EDH.memo, e = EDH.data;
+  if (m && m.tv && m.rows === rows) return m.tv;
+  const counts = edhThemeCounts(e, rows), tv = { counts, order: edhThemeOrder(e, counts, EDH.themes) };
+  if (m) m.tv = tv; return tv;
+}
+/** Thèmes EDHREC : les plus présents parmi les decks restants en puces (avec ceux déjà choisis), et « Tous » qui ouvre la liste complète. Vide si le fichier chargé n'a pas de thèmes (ancienne version, avant la prochaine génération). */
 const EDH_TH_QUICK = 5;
 function edhThemesHtml() {
-  const e = EDH.data, ord = e.themeOrder || []; if (!ord.length) return '';
-  const show = ord.slice(0, EDH_TH_QUICK); for (const s of EDH.themes) { const i = e.themeIx.get(s); if (i !== undefined && !show.includes(i)) show.push(i); }
-  return `<div class="fopts dk-themes" role="group" aria-label="Thèmes du commandant (EDHREC)"><span class="dk-lbl">Thème</span>${show.map(i => { const t = e.themes[i]; return `<button type="button" class="fopt" data-act="dth" data-s="${esc(t.slug)}" aria-pressed="${EDH.themes.has(t.slug)}">${esc(edhThemeName(t))}</button>`; }).join('')}${ord.length > show.length || EDH.themes.size ? `<button type="button" class="fopt" data-act="dthall">${ord.length > EDH_TH_QUICK ? `Tous (${nf0(ord.length)})` : 'Plus…'}</button>` : ''}</div>`;
+  const e = EDH.data, all = e.themeOrder || []; if (!all.length) return '';
+  const v = edhThemeView(), show = v.order.filter(i => v.counts[i] > 0).slice(0, EDH_TH_QUICK); for (const s of EDH.themes) { const i = e.themeIx.get(s); if (i !== undefined && !show.includes(i)) show.push(i); }
+  return `<div class="fopts dk-themes" role="group" aria-label="Thèmes du commandant (EDHREC)"><span class="dk-lbl">Thème</span>${show.map(i => { const t = e.themes[i]; return `<button type="button" class="fopt" data-act="dth" data-s="${esc(t.slug)}" aria-pressed="${EDH.themes.has(t.slug)}">${esc(edhThemeName(t))}</button>`; }).join('')}${all.length > show.length || EDH.themes.size ? `<button type="button" class="fopt" data-act="dthall">${all.length > EDH_TH_QUICK ? `Tous (${nf0(all.length)})` : 'Plus…'}</button>` : ''}</div>`;
 }
+/** Barre de thèmes repeinte sur place (pendant la frappe dans la recherche, qui ne repeint que les résultats) : les puces suivent la recherche. */
+function edhThemesSync() { const el = COLL.el && $('.dk-themes', COLL.el); if (el && EDH.data) el.outerHTML = edhThemesHtml(); }
 /** Liste complète des thèmes (feuille) : une ligne par thème (on coche : le commandant doit les avoir tous) avec un « i » qui déplie ce que le thème veut dire ; le nombre de decks restants se met à jour. */
 function openEdhThemes() {
   const e = EDH.data; if (!e || !(e.themeOrder || []).length) return;
   openSheet('Thèmes', 'Style des commandants d\'après EDHREC · vaut pour tous leurs decks', api => {
     const shown = new Set();      // thèmes dont la description est dépliée (gardés quand la liste est repeinte)
     const paint = () => {
-      api.body.innerHTML = `<p class="hint">Choisis un ou plusieurs thèmes : seuls les decks dont le commandant les a tous restent. Touche « i » pour savoir ce que le thème veut dire ; le nombre est celui des decks du fichier.</p>
-        <div class="th-list" role="group" aria-label="Thèmes">${e.themeOrder.map(i => {
-          const t = e.themes[i], nm = edhThemeName(t), inf = edhThemeInfo(t), on = shown.has(t.slug);
-          return `<div class="th-row"><button type="button" class="th-main" data-s="${esc(t.slug)}" aria-pressed="${EDH.themes.has(t.slug)}"><span>${esc(nm)}</span><small>${nf0(t.decks)}</small></button>${inf ? `<button type="button" class="th-i" data-i="${esc(t.slug)}" aria-expanded="${on}" aria-label="Que veut dire ${esc(nm)} ?">i</button>` : ''}${inf ? `<p class="th-desc"${on ? '' : ' hidden'}>${edhInfoHtml(inf)}</p>` : ''}</div>`;
+      const v = edhThemeView();
+      api.body.innerHTML = `<p class="hint">Choisis un ou plusieurs thèmes : seuls les decks dont le commandant les a tous restent. Touche « i » pour savoir ce que le thème veut dire. Le nombre = decks qui ont ce thème parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…) : la liste se reclasse à chaque choix.</p>
+        <div class="th-list" role="group" aria-label="Thèmes">${v.order.map(i => {
+          const t = e.themes[i], nm = edhThemeName(t), inf = edhThemeInfo(t), on = shown.has(t.slug), sel = EDH.themes.has(t.slug), c = v.counts[i];
+          return `<div class="th-row${c || sel ? '' : ' th-zero'}"><button type="button" class="th-main" data-s="${esc(t.slug)}" aria-pressed="${sel}"${c || sel ? '' : ' disabled'}><span>${esc(nm)}</span><small>${nf0(c)}</small></button>${inf ? `<button type="button" class="th-i" data-i="${esc(t.slug)}" aria-expanded="${on}" aria-label="Que veut dire ${esc(nm)} ?">i</button>` : ''}${inf ? `<p class="th-desc"${on ? '' : ' hidden'}>${edhInfoHtml(inf)}</p>` : ''}</div>`;
         }).join('')}</div>`;
       const n = edhRows().length;
       api.setFoot(`<button class="btn ghost" type="button" id="thClr"${EDH.themes.size ? '' : ' disabled'}>Effacer</button><button class="btn" type="button" data-close>${nf0(n)} deck${n > 1 ? 's' : ''}</button>`);
-      const clr = $('#thClr', api.foot); if (clr) clr.onclick = () => { EDH.themes.clear(); EDH.shown = 30; haptic('tap'); const y = api.body.scrollTop; paint(); api.body.scrollTop = y; collPaintBody(true); };
+      const clr = $('#thClr', api.foot); if (clr) clr.onclick = () => { EDH.themes.clear(); EDH.shown = 30; haptic('tap'); paint(); api.body.scrollTop = 0; collPaintBody(true); };
     };
     api.body.addEventListener('click', ev => {
       const inf = ev.target.closest('button[data-i]');
@@ -6183,7 +6206,7 @@ function openEdhThemes() {
       const b = ev.target.closest('button[data-s]'); if (!b) return;
       const s = b.dataset.s; if (EDH.themes.has(s)) EDH.themes.delete(s); else EDH.themes.add(s);
       EDH.shown = 30; haptic('tap');
-      const y = api.body.scrollTop; paint(); api.body.scrollTop = y; collPaintBody(true);
+      paint(); api.body.scrollTop = 0; collPaintBody(true);
     });
     paint();
   });
@@ -6202,7 +6225,7 @@ function edhPanelHtml() {
   const search = `<div class="dk-search"><div class="fbar-row"><label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" id="dkQ" data-act="dq" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(EDH.q)}" placeholder="${esc(qm[2])}" aria-label="${esc(qm[2])}"><button type="button" class="fclear" data-act="dqx" aria-label="Effacer la recherche"${EDH.q ? '' : ' hidden'}><svg class="i"><use href="#i-close"/></svg></button></label></div>
       <div class="fopts" role="group" aria-label="Chercher par">${EDH_QMODES.map(([v, l]) => `<button type="button" class="fopt" data-act="dqm" data-v="${v}" aria-pressed="${EDH.qm === v}">${l}</button>`).join('')}</div></div>`;
   const ctl = `${search}<p class="hint">Deck moyen EDHREC des commandants les plus joués (et decks réels Archidekt pour les premiers), comparés à ta collection (terrains de base ignorés). Prix : tendance Cardmarket${edhDate() ? ' au ' + edhDate() : ''}.</p>
-    <details class="dk-help"><summary>Tier${gcOn ? ', bracket' : ''} et thèmes : comment lire</summary><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Bracket</b> : estimation d\'après le nombre de Game Changers du deck (0 → 2, 1 à 3 → 3, 4 et plus → 4) ; les terrains détruits, tours supplémentaires et combos ne sont pas lus.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés.' : ''}</p></details>
+    <details class="dk-help"><summary>Tier${gcOn ? ', bracket' : ''} et thèmes : comment lire</summary><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Bracket</b> : estimation d\'après le nombre de Game Changers du deck (0 → 2, 1 à 3 → 3, 4 et plus → 4) ; les terrains détruits, tours supplémentaires et combos ne sont pas lus.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés. Dans la liste complète, le nombre à côté d\'un thème = decks qui l\'ont parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…).' : ''}</p></details>
     <div class="dk-ctl"><div class="fopts" role="group" aria-label="Classer par">${EDH_SORTS.map(([v, l]) => `<button type="button" class="fopt" data-act="dsort" data-v="${v}" aria-pressed="${EDH.sort === v}">${l}</button>`).join('')}</div>
       <div class="fopts" role="group" aria-label="Tier du commandant"><span class="dk-lbl">Tier</span>${EDH_TIER_NAMES.filter(t => tiersHave.has(t)).map(t => `<button type="button" class="fopt tier t-${t.toLowerCase()}" data-act="dtier" data-t="${t}" aria-pressed="${EDH.tiers.has(t)}" aria-label="Tier ${t}">${t}</button>`).join('')}</div>
       ${edhThemesHtml()}
@@ -6332,7 +6355,7 @@ let edhQT = 0;
 function edhInput(e) {
   const i = e.target && e.target.closest && e.target.closest('#dkQ'); if (!i) return false;
   EDH.q = i.value; EDH.shown = 30; const x = $('.fclear', i.parentNode); if (x) x.hidden = !i.value;
-  clearTimeout(edhQT); edhQT = setTimeout(() => { const res = COLL.el && $('.dk-res', COLL.el); if (res && EDH.data) { res.innerHTML = edhResHtml(); } }, 120);
+  clearTimeout(edhQT); edhQT = setTimeout(() => { const res = COLL.el && $('.dk-res', COLL.el); if (res && EDH.data) { res.innerHTML = edhResHtml(); edhThemesSync(); } }, 120);
   return true;
 }
 /** Filtre « Joués en commandant » sans données : chargement en cours, ou erreur avec repli sur « Peuvent l'être ». */
