@@ -268,6 +268,7 @@ const rowsOf = pg => pg.$$eval('#list .row', rs => rs.map(r => r.innerText.repla
 }
 // pastille de recherche : visible dès qu'une fenêtre est ouverte ou que la barre de progression sort de l'écran
 {
+  prodDelay = 1200;      // la recherche doit rester en cours pendant les défilements et l'ouverture des réglages (sinon, machine chargée, elle finit avant)
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const pg = await c.newPage(); const errs2 = []; pg.on('pageerror', e => errs2.push(e.message));
   await pg.route('https://api.scryfall.com/**', async route => { await new Promise(r => setTimeout(r, 650)); const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
@@ -286,6 +287,7 @@ const rowsOf = pg => pg.$$eval('#list .row', rs => rs.map(r => r.innerText.repla
   await pg.click('#btnSettings'); await pg.waitForSelector('#tasks .task.in', { timeout: 3000 });
   assert.equal(await pg.$eval('#tasks', el => el.classList.contains('over')), true, 'pile remontée sous une fenêtre ouverte');
   await pg.waitForSelector('#tasks .task.ok, #tasks .task.warn', { timeout: 30000 });
+  prodDelay = 0;
   const end = (await pg.textContent('#tasks .task')).replace(/\s+/g, ' ').trim(); console.log('pastille (fin) :', end);
   assert.match(end, /Recherche terminée/); assert.match(end, /4 \/ 4 cartes avec offre/);
   await pg.click('.sheet-wrap.open [data-close].icon-btn'); await pg.waitForTimeout(500);
