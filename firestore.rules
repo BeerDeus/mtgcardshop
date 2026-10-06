@@ -83,5 +83,21 @@ service cloud.firestore {
             && request.resource.data.dsh is map && request.resource.data.dsh.size() <= 200)
         );
     }
+
+    // Classeur Full Art (autre appli du même projet Firebase, pas Deck Deal) : un seul document par compte
+    //   users/{uid}/binder/lands = { owned: { <scryfallId>: true }, pages: { <codeSet>: "12" }, updatedAt }
+    // Gardé ici : publier ce fichier remplace TOUTES les règles du projet.
+    match /users/{uid}/binder/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && docId == 'lands'
+        && request.resource.data.keys().hasOnly(['owned', 'pages', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['owned', 'updatedAt'])
+        && request.resource.data.owned is map
+        && request.resource.data.owned.size() <= 5000
+        && request.resource.data.updatedAt is number
+        && (!('pages' in request.resource.data)
+            || (request.resource.data.pages is map && request.resource.data.pages.size() <= 1500));
+    }
   }
 }
