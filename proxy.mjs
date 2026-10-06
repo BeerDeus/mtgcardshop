@@ -7,15 +7,17 @@
 //   Alertes de prix : mêmes clés VAPID (ALERTS=0 pour couper).
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { gzipSync, gunzipSync } from 'node:zlib';
+import { gunzipSync, gzip, brotliCompress, constants as zc } from 'node:zlib';
+import { promisify } from 'node:util';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timingSafeEqual, createPublicKey, createPrivateKey, verify as rsaVerify, sign as dsaSign, randomBytes, createHash, createECDH, createCipheriv, hkdfSync } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const gzipA = promisify(gzip), brotliA = promisify(brotliCompress);
 const PORT = Number(process.env.PORT) || 8787;
 const HOST = process.env.HOST || '127.0.0.1';
 const TOKEN = (process.env.CARDTRADER_TOKEN || '').trim();
@@ -755,6 +757,40 @@ async function api(req, res, url) {
   res.end(body);
 }
 
+/* ── Fichiers servis : lus et compressés une seule fois (gzip + brotli, hors du fil principal), ETag → 304 ──────────────────────
+   Relus seulement si la date de modification change (un « git pull » de déploiement est pris en compte sans redémarrage).
+   Brotli (≈ 20 % plus léger que gzip) n'est servi qu'une fois prêt : en attendant, gzip. */
+const FILES = new Map();
+const sha1Of = (() => { const memo = new WeakMap(); return buf => { let h = memo.get(buf); if (!h) { h = createHash('sha1').update(buf).digest('hex').slice(0, 20); memo.set(buf, h); } return h; }; })();
+const notModified = (req, etag) => String(req.headers['if-none-match'] || '').split(',').some(t => t.trim().replace(/^W\//, '') === etag);
+async function fileEntry(f, compress) {
+  const mt = (await stat(f)).mtimeMs, cur = FILES.get(f);
+  if (cur && cur.mt === mt) return cur;
+  const raw = await readFile(f), e = { mt, raw, tag: sha1Of(raw), gz: null, br: null, gzP: null };
+  if (compress) {
+    e.gzP = gzipA(raw, { level: 9 }).then(b => (e.gz = b), () => null);
+    brotliA(raw, { params: { [zc.BROTLI_PARAM_QUALITY]: 11, [zc.BROTLI_PARAM_SIZE_HINT]: raw.length, [zc.BROTLI_PARAM_MODE]: zc.BROTLI_MODE_TEXT } }).then(b => { e.br = b; }, () => {});
+  }
+  FILES.set(f, e); return e;
+}
+async function sendFile(req, res, f, headers, compress) {
+  const e = await fileEntry(f, compress), hd = { ...SEC, ...headers };
+  const ae = String(req.headers['accept-encoding'] || ''), wantBr = compress && /\bbr\b/i.test(ae), wantGz = compress && /\bgzip\b/i.test(ae);
+  if (wantGz && !e.gz && !(wantBr && e.br)) await e.gzP;
+  const enc = wantBr && e.br ? 'br' : wantGz && e.gz ? 'gzip' : '', data = enc === 'br' ? e.br : enc ? e.gz : e.raw;
+  if (compress) hd.Vary = 'Accept-Encoding';
+  hd.ETag = '"' + e.tag + (enc ? '-' + enc : '') + '"';
+  if (notModified(req, hd.ETag)) { delete hd['Content-Type']; res.writeHead(304, hd); return res.end(); }
+  if (enc) hd['Content-Encoding'] = enc;
+  hd['Content-Length'] = data.length; res.writeHead(200, hd);
+  res.end(req.method === 'HEAD' ? undefined : data);
+}
+/** Prépare la page et les gros fichiers dès le démarrage : le premier visiteur n'attend pas la compression. */
+function warmFiles() {
+  if (PAGE) fileEntry(PAGE, true).catch(() => {});
+  for (const st of STATIC.values()) if (st[3] === true) fileEntry(join(here, 'pwa', st[0]), true).catch(() => {});
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
@@ -763,25 +799,20 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       if (!PAGE) return json(res, 404, { error: 'page_missing', message: 'Place deck-deal.html à côté de proxy.mjs.' });
-      const html = await readFile(PAGE);
-      res.writeHead(200, { ...SEC, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-      return res.end(html);
+      return await sendFile(req, res, PAGE, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }, true);
     }
     const st = (req.method === 'GET' || req.method === 'HEAD') && STATIC.get(url.pathname);
     if (st) {
       const f = join(here, 'pwa', st[0]), live = st[3] === 'pre' && EDH_LIVE;
       if (!live && !existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
-      let data = live ? EDH_LIVE.buf : await readFile(f); const hd = { ...SEC, 'Content-Type': st[1], 'Cache-Control': st[2] };
-      if (st[3]) {
-        hd.Vary = 'Accept-Encoding';
-        const gz = /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
-        if (st[3] === 'pre') {
-          hd.ETag = '"' + createHash('sha1').update(data).digest('hex').slice(0, 20) + (gz ? '' : '-i') + '"';       // le navigateur revalide (304) au lieu de retélécharger
-          if (String(req.headers['if-none-match'] || '').split(',').some(t => t.trim().replace(/^W\//, '') === hd.ETag)) { delete hd['Content-Type']; res.writeHead(304, hd); return res.end(); }
-          if (gz) hd['Content-Encoding'] = 'gzip'; else { try { data = gunzipSync(data); } catch (e) { /* pas du gzip : tel quel */ } }
-        }
-        else if (gz) { data = gzipSync(data); hd['Content-Encoding'] = 'gzip'; }
-      }
+      const hd = { 'Content-Type': st[1], 'Cache-Control': st[2] };
+      if (st[3] !== 'pre') return await sendFile(req, res, f, hd, !!st[3]);
+      let data = live ? EDH_LIVE.buf : await readFile(f); Object.assign(hd, SEC);
+      hd.Vary = 'Accept-Encoding';
+      const gz = /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
+      hd.ETag = '"' + sha1Of(data) + (gz ? '' : '-i') + '"';       // le navigateur revalide (304) au lieu de retélécharger
+      if (notModified(req, hd.ETag)) { delete hd['Content-Type']; res.writeHead(304, hd); return res.end(); }
+      if (gz) hd['Content-Encoding'] = 'gzip'; else { try { data = gunzipSync(data); } catch (e) { /* pas du gzip : tel quel */ } }
       hd['Content-Length'] = data.length; res.writeHead(200, hd);
       return res.end(req.method === 'HEAD' ? undefined : data);
     }
@@ -798,6 +829,7 @@ process.on('uncaughtException', e => console.error('uncaughtException:', e));
 
 if (ALERTS_ON) await alLoad();                                  // abonnements et relevés avant d'accepter la première requête
 server.listen(PORT, HOST, () => {
+  warmFiles();
   console.log(`Deck Deal → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(TOKEN ? 'Token CardTrader : OK' : '⚠ CARDTRADER_TOKEN manquant : mode démo uniquement');
   if (AUTH_FB) console.log(`Accès : compte Firebase « ${FB_PROJECT} » (${ALLOWED_UIDS.size} UID, ${ALLOWED_EMAILS.size} email${ALLOWED_EMAILS.size > 1 ? 's' : ''} vérifié${ALLOWED_EMAILS.size > 1 ? 's' : ''}).`);

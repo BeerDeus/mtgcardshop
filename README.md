@@ -50,6 +50,7 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 
 - Clé invalide : délai de 400 ms, puis blocage 5 min de l'IP après 15 essais (nécessite `X-Forwarded-For`).
 - `APP_KEY` (si conservée) : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
+- Page et catalogues (`fr-names.tsv`) : lus et compressés une seule fois (brotli, sinon gzip ; hors du fil principal, dès le démarrage), ETag → 304 au lieu de retélécharger ; relus si le fichier change sur le disque. Page : 750 Ko → ≈ 180 Ko transférés.
 - Scryfall : 2 requêtes/s max ; les cartes sont cherchées par lots de 12 noms (une recherche `(!"A" or !"B" …)` au lieu d'une par carte, soit ~10 requêtes pour un deck de 100 cartes), repli carte par carte pour les noms approximatifs ; pause automatique sur 429 ; résultats en cache 7 jours.
 
 ## Lecture des offres en tâche de fond
