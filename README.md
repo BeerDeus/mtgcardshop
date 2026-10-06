@@ -14,7 +14,12 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `HOST` | `0.0.0.0` en hébergement. Refusé si ni `APP_KEY` ni `ALLOWED_UIDS`/`ALLOWED_EMAILS` n'est défini |
 | `PORT` | Fourni par l'hébergeur (défaut 8787) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Facultatif : notifications « recherche terminée » (voir plus bas, `node gen-vapid.mjs`) |
+| `ALERTS` | `0` coupe les alertes de prix (actives dès que les clés VAPID sont là) |
+| `ALERT_EVERY_MS` | Intervalle entre deux relevés de prix (défaut 6 h) |
+| `ALERT_MIN_DROP_CENTS`, `ALERT_COOLDOWN_MS` | Chute minimale en centimes (défaut 50) · délai avant de re-signaler une carte (défaut 5 jours) |
+| `ALERT_FILE` | Fichier d'état des alertes (défaut `.data/alerts.json`) |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
+| `SCRYFALL_UPSTREAM`, `ALERT_FIRST_MS`, `ALERT_SEED_MS`, `ALERT_CHECK_GAP_MS` | Tests seulement |
 
 ### Accès par compte Firebase (remplace `APP_KEY`)
 
@@ -107,7 +112,7 @@ Bouton **Ma collection** sur l'accueil. Les cartes possédées sont retirées de
 - **Valeur dans le temps et alertes de prix** (`src/value.js`) : au plus une fois par 20 h (au lancement, au retour sur l'appli, à l'ouverture de la collection ; **pas en arrière-plan, appli fermée**), l'appli relit sur Scryfall le prix tendance Cardmarket (`eur`) de toutes les cartes (75 par requête, ~20 requêtes pour 1 500 cartes ; rien si la collection vient d'être lue en entier). Gardé **sur l'appareil seulement** (rien dans Firestore, donc pas de règles à republier, mais pas partagé entre téléphones) :
   - **un relevé de la valeur par jour** (`deckdeal:coll:hist` dans localStorage, 400 jours au plus, le dernier du jour remplace ; **synchronisé avec le compte** : document `meta/history`, fusion jour par jour entre appareils, voir « Achats, decks montés… ») → onglet Stats › **Valeur dans le temps** : courbe (axes = min / max réels), variation à **7 et 30 jours** (la valeur varie aussi quand tu ajoutes ou retires des cartes), bouton **Actualiser** (relit même s'il y a moins de 20 h) ;
   - **prix carte par carte de la semaine** (IndexedDB `coll:base`, période de 7 jours puis « précédente » : la comparaison porte sur 7 à 14 jours) → Stats › **Variations des prix** : cartes dont le prix a bougé d'au moins **10 / 25 / 50 %** (réglage mémorisé, 25 % par défaut) **et** de 0,20 € par exemplaire, classées par variation du lot, total « marché » hors cartes ajoutées depuis ;
-  - **alerte** : bannière en haut de la collection (« 2 prix ont bougé de plus de 25 % · ▲ Sol Ring +50 % · … », **Voir** → Stats, **Ignorer** : écartée pour la journée, mémorisé), « N prix ont bougé » sous le bouton Ma collection de l'accueil, pastilles **▲ +50 % / ▼ −47 %** sur les lignes concernées de la liste. Pas de notification push : l'alerte se voit à l'ouverture de l'appli ;
+  - **alerte** : bannière en haut de la collection (« 2 prix ont bougé de plus de 25 % · ▲ Sol Ring +50 % · … », **Voir** → Stats, **Ignorer** : écartée pour la journée, mémorisé), « N prix ont bougé » sous le bouton Ma collection de l'accueil, pastilles **▲ +50 % / ▼ −47 %** sur les lignes concernées de la liste. Pas de notification push pour cette bannière locale (voir « Alertes de prix » pour les notifications) : elle se voit à l'ouverture de l'appli ;
   - la première semaine, pas de variation (une journée d'écart au moins), faute de point de comparaison ; premier relevé = lecture des cartes (rien de plus à faire).
 - **Confirmation avant de retirer** : le « − » de la liste Cartes et du scan ouvre d'abord une fiche (« Retirer un exemplaire ? — Il en restera N sur M », ou « Retirer de la collection ? — Dernier exemplaire » ; dans le scan, la carte sort de la liste du scan) avec **Annuler** / **Retirer**. Après un retrait à zéro dans la collection, « Annuler » du message la remet avec sa date d'ajout. Les « + » et le bouton × du scan ne demandent rien.
 - **Fiche récap du scan** : « Ajouter X cartes » ouvre d'abord une fiche (cartes différentes, exemplaires, **valeur estimée = tendance Cardmarket** `eur` de Scryfall × quantités, les 3 plus chères, nouvelles / déjà possédées, langues) avec **Retour** (le scan reste ouvert) et **Ajouter** (l'ajout, annulable). Les prix des cartes pas encore lues sont demandés à Scryfall (un lot) ; sans réponse, la valeur est signalée indisponible / partielle et l'ajout reste possible. La fiche suit la liste du scan en direct.
@@ -163,6 +168,19 @@ Notification push (Web Push chiffré, VAPID, sans dépendance) quand la lecture 
 3. Dans l'app : Réglages › Notifications › « Prévenir quand la recherche est finie ».
 
 Android (Chrome, Edge, Firefox) : direct. iPhone / iPad : seulement si Deck Deal est installée sur l'écran d'accueil (iOS 16.4 ou plus). Si tu changes les clés, les abonnements existants s'arrêtent : on réactive l'option. `PUSH_GRACE_MS` (défaut 4000) : délai avant d'envoyer, pour ne pas notifier si l'app est encore là.
+
+## Alertes de prix
+
+Notification push quand une carte surveillée **chute de prix**, même app fermée. Mêmes clés VAPID que ci-dessus ; l'abonnement push est partagé avec « recherche terminée » (couper l'un ne coupe pas l'autre).
+
+- **Activation** : Réglages › Alertes de prix › « Prévenir en cas de forte baisse » (demande l'autorisation de notifier), ou bouton **Prévenir si le prix baisse** dans la fiche d'une carte.
+- **Cartes surveillées** : (1) **automatiquement**, les cartes qu'il manque pour chaque deck enregistré (liste du deck − collection libre, decks montés pris en compte, terrains de base exclus), mises à jour quand un deck ou la collection change ; (2) **à la main** : nom de carte + prix cible facultatif (feuille « Cartes surveillées et réglages », ou fiche d'une carte). Une carte de deck peut être exclue (×), puis rétablie. 400 cartes au plus.
+- **Prix** : tendance Cardmarket (champ `eur` de Scryfall, impression par défaut), relevée par le **serveur** toutes les 6 h par lots de 75 noms ; pas le prix CardTrader en France, c'est un signal pour déclencher la recherche, pas le prix final du panier.
+- **Quand** : baisse d'au moins **N %** (20 / 30 / 40 / 50, défaut 30) **et** 0,50 €, par rapport à la médiane des relevés précédents (12 derniers) ; ou prix passé sous la cible fixée à la main (ré-armée quand le prix remonte). Une carte déjà signalée n'est plus signalée pendant 5 jours, sauf rechute de 15 % ou plus. Un seul message par appareil et par relevé (plusieurs cartes = un résumé). Toucher la notification ouvre la feuille des alertes (dernières baisses, cartes surveillées avec prix et variation, bouton **Vérifier les prix** = relevé immédiat).
+- **Stockage** : `.data/alerts.json` côté serveur (abonnements push, listes, relevés ; écriture atomique) : à garder d'un déploiement à l'autre si l'hébergeur le permet, sinon l'app renvoie sa liste à chaque ouverture (au plus toutes les 12 h) et l'historique des prix repart de zéro. Un abonnement refusé par le service de push (404 / 410) est retiré.
+- **Le serveur doit tourner en continu** : les relevés sont faits par le process Node (pas de tâche planifiée externe). S'il s'endort (offre d'hébergement qui arrête les apps inactives), les alertes ne partent qu'à son réveil.
+- Les cartes suivies à la main et les réglages sont **par appareil** (`deckdeal:alert:v1`) ; la liste automatique se recalcule partout depuis les decks et la collection du compte.
+- Limite : un relevé toutes les 6 h sur le prix Scryfall (mis à jour une fois par jour environ) → une baisse peut être signalée jusqu'à une journée après avoir eu lieu chez Cardmarket.
 
 ## Partage vers l'app et import de liens
 

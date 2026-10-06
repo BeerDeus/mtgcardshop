@@ -4,6 +4,7 @@
 //   HOST=0.0.0.0 ALLOWED_UIDS=<uid Firebase> node proxy.mjs  → accessible depuis le téléphone, réservé à ton compte Firebase
 //   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → variante : clé partagée à saisir dans Réglages
 // Le token reste côté serveur. Seules les routes utiles sont relayées ; l'achat (cart/purchase) est bloqué.
+//   Alertes de prix : mêmes clés VAPID (ALERTS=0 pour couper).
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
 import http from 'node:http';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
@@ -250,12 +251,12 @@ function parsePush(p) {
   return { sub: { endpoint: s.endpoint, keys: { p256dh: k.p256dh, auth: k.auth } }, title: str(p.title, 80, 'Recherche terminée'), body: str(p.body, 200, 'Les offres sont prêtes.'), url };
 }
 async function sendPush(p) {
-  const u = new URL(p.sub.endpoint), body = encryptPush(Buffer.from(JSON.stringify({ title: p.title, body: p.body, url: p.url })), p.sub.keys.p256dh, p.sub.keys.auth);
+  const u = new URL(p.sub.endpoint), body = encryptPush(Buffer.from(JSON.stringify({ title: p.title, body: p.body, url: p.url, ...(p.kind ? { kind: p.kind } : {}) })), p.sub.keys.p256dh, p.sub.keys.auth);
   for (let a = 0; a < 2; a++) {
     let r;
     try {
       r = await fetch(u, { method: 'POST', body, signal: AbortSignal.timeout(10000), redirect: 'manual',
-        headers: { Authorization: vapidAuth(u.origin), 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '3600', Urgency: 'high', Topic: 'deckdeal-run' } });
+        headers: { Authorization: vapidAuth(u.origin), 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: String(p.ttl || 3600), Urgency: p.urgency || 'high', Topic: p.topic || 'deckdeal-run' } });
     } catch (e) { if (a === 0) { await sleepMs(1500); continue; } return 0; }
     if ((r.status === 429 || r.status >= 500) && a === 0) { await sleepMs(Math.min(5000, Number(r.headers.get('retry-after')) * 1000 || 1500)); continue; }
     return r.status;
@@ -272,6 +273,186 @@ function pushWhenDone(job) {
       if (st && st < 300) console.log('push envoyé (' + st + ')'); else console.warn('push refusé (' + (st || 'réseau') + ')' + (st === 404 || st === 410 ? ' : abonnement expiré' : ''));
     }
   }, PUSH_GRACE).unref();
+}
+
+/* ── Alertes de prix (Web Push) ────────────────────────────────────────────────────────────────────────────────────────
+   L'appli enregistre ici, avec son abonnement push, la liste des cartes à surveiller (cartes manquantes de tes decks enregistrés,
+   cartes suivies à la main, avec ou sans prix cible). Toutes les 6 h le serveur relit le prix tendance Cardmarket (champ `eur` de
+   Scryfall, lots de 75 noms) et pousse une notification quand une carte :
+   · chute d'au moins `thr` % (30 par défaut) ET d'au moins 0,50 € sous sa valeur habituelle (médiane des relevés précédents) ;
+   · passe sous le prix cible fixé à la main.
+   Une carte déjà signalée n'est plus signalée pendant 5 jours, sauf nouvelle chute de 15 % ou plus. Un seul message par appareil et par
+   passage (plusieurs cartes = un résumé). Stocké dans .data/alerts.json (abonnements, listes, relevés), écriture atomique ; un
+   abonnement refusé par le service de push (404 / 410) est retiré. Le serveur doit tourner en continu pour que les passages aient lieu. */
+const ALERTS_ON = PUSH_ON && process.env.ALERTS !== '0';
+const SCRY_UP = (process.env.SCRYFALL_UPSTREAM || 'https://api.scryfall.com').replace(/\/+$/, '');            // surchargeable pour les tests
+const AL_EVERY = Number(process.env.ALERT_EVERY_MS) || 6 * 3600e3;
+const AL_FIRST = process.env.ALERT_FIRST_MS === undefined ? 90e3 : Number(process.env.ALERT_FIRST_MS);
+const AL_FILE = process.env.ALERT_FILE || join(EDH_DIR, 'alerts.json');
+const AL_SEED = Number(process.env.ALERT_SEED_MS ?? 2500);
+const AL_MIN_DROP = Number(process.env.ALERT_MIN_DROP_CENTS) || 50, AL_COOL = Number(process.env.ALERT_COOLDOWN_MS ?? 5 * 86400e3), AL_CHECK_GAP = Number(process.env.ALERT_CHECK_GAP_MS ?? 90e3);
+const AL_MAX_ITEMS = 400, AL_MAX_SUBS = 8, AL_HIST_MAX = 48, AL_HIST_AGE = 14 * 86400e3, AL_HITS_KEEP = 20, AL_BASE_WIN = 12;
+const AL = { subs: new Map(), px: new Map(), run: null, saveT: null, seedT: null, checkAt: 0, last: { at: 0, ok: 0, miss: 0, hits: 0, err: '' }, warned: false };
+const alKey = name => String(name || '').split('//')[0].replace(/æ/gi, 'ae').replace(/œ/gi, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const alEur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
+const alId = endpoint => createHash('sha1').update(endpoint).digest('hex').slice(0, 24);
+const alMedian = a => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
+
+async function alLoad() {
+  try {
+    const j = JSON.parse(await readFile(AL_FILE, 'utf8'));
+    for (const r of Array.isArray(j.subs) ? j.subs : []) if (r && r.id && r.sub && Array.isArray(r.items)) AL.subs.set(r.id, r);
+    for (const [k, h] of Object.entries(j.px || {})) if (Array.isArray(h)) AL.px.set(k, h);
+    if (j.last && typeof j.last === 'object') AL.last = { ...AL.last, ...j.last, err: '' };
+  } catch (e) { if (e && e.code !== 'ENOENT') console.warn('Alertes : fichier illisible (' + e.message + '), repart de zéro'); }
+}
+function alSaveSoon() {
+  if (AL.saveT) return;
+  AL.saveT = setTimeout(async () => {
+    AL.saveT = null;
+    try {
+      await mkdir(dirname(AL_FILE), { recursive: true });
+      const tmp = AL_FILE + '.tmp';
+      await writeFile(tmp, JSON.stringify({ v: 1, last: AL.last, subs: [...AL.subs.values()], px: Object.fromEntries(AL.px) }));
+      await rename(tmp, AL_FILE);
+    } catch (e) { if (!AL.warned) { AL.warned = true; console.warn('Alertes : écriture impossible (' + e.message + ') : les listes restent en mémoire jusqu\'au prochain redémarrage'); } }
+  }, 1500);
+  AL.saveT.unref();
+}
+
+/** Prix tendance (centimes) des noms demandés : Map clé → centimes, ou null si Scryfall ne connaît pas la carte / n'a pas de prix. */
+async function alFetch(list) {
+  const out = new Map();
+  for (let i = 0; i < list.length; i += 75) {
+    const chunk = list.slice(i, i + 75);
+    const r = await fetch(SCRY_UP + '/cards/collection', { method: 'POST', signal: AbortSignal.timeout(20000), redirect: 'manual',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': UA },
+      body: JSON.stringify({ identifiers: chunk.map(([, n]) => ({ name: String(n).split('//')[0].trim() })) }) });
+    if (r.status === 429) throw new Error('Scryfall : trop de requêtes (429)');
+    if (!r.ok) throw new Error('Scryfall : HTTP ' + r.status);
+    const j = await r.json();
+    const got = new Map();
+    for (const c of j.data || []) got.set(alKey(c.name), eurC(c.prices && c.prices.eur));
+    for (const [k] of chunk) out.set(k, got.has(k) ? got.get(k) : null);
+    if (i + 75 < list.length) await sleepMs(120);
+  }
+  return out;
+}
+const eurC = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null; };
+
+/** Cartes d'un abonnement qui méritent une alerte, d'après les relevés partagés. Met à jour l'état par carte (dernier envoi, ré-armement). */
+function alEval(rec, now) {
+  const hits = [], thr = rec.thr / 100;
+  for (const it of rec.items) {
+    const h = AL.px.get(it.nk); if (!h || !h.length) continue;
+    const cur = h[h.length - 1][1], prev = h.slice(0, -1).slice(-AL_BASE_WIN).map(x => x[1]);
+    if (it.t) {                                                                    // prix cible : une alerte, ré-armée quand le prix remonte
+      if (cur > it.t) { it.arm = true; continue; }
+      if (it.arm === false) continue;
+      it.arm = false; it.nt = now; it.na = cur;
+      hits.push({ k: it.k, n: it.n, why: 'target', t: it.t, to: cur, from: prev.length ? alMedian(prev) : cur, d: it.d || [], at: now });
+      continue;
+    }
+    if (!prev.length) continue;
+    const base = alMedian(prev), drop = base - cur;
+    if (drop < AL_MIN_DROP || drop / base < thr) continue;
+    if (it.nt && now - it.nt < AL_COOL && cur > (it.na || 0) * 0.85) continue;      // déjà signalée : seulement si elle rechute d'au moins 15 %
+    it.nt = now; it.na = cur;
+    hits.push({ k: it.k, n: it.n, why: 'drop', from: base, to: cur, pct: Math.round(drop / base * 100), d: it.d || [], at: now });
+  }
+  return hits;
+}
+function alMessage(hits) {
+  if (hits.length === 1) {
+    const h = hits[0], deck = h.d && h.d.length ? ' · manque à ' + h.d[0] : '';
+    return h.why === 'target'
+      ? { title: `${h.n} à ${alEur(h.to)}`, body: `Sous ton prix cible de ${alEur(h.t)} (tendance Cardmarket).` + deck }
+      : { title: `${h.n} : −${h.pct} %`, body: `${alEur(h.from)} → ${alEur(h.to)} (tendance Cardmarket).` + deck };
+  }
+  const part = h => h.why === 'target' ? `${h.n} ${alEur(h.to)}` : `${h.n} −${h.pct} %`;
+  return { title: `${hits.length} cartes en baisse`, body: hits.slice(0, 3).map(part).join(', ') + (hits.length > 3 ? ` et ${hits.length - 3} autre${hits.length > 4 ? 's' : ''}` : '') };
+}
+
+/** Un passage : relève les prix de toutes les cartes suivies, puis prévient chaque appareil concerné. `seed` : seulement les cartes jamais relevées (pas d'alerte). */
+async function alTick({ seed = false } = {}) {
+  if (!ALERTS_ON) return null;
+  if (AL.run) return AL.run;
+  AL.run = (async () => {
+    const now = Date.now();
+    try {
+      const want = new Map();
+      for (const rec of AL.subs.values()) for (const it of rec.items) if (!want.has(it.nk)) want.set(it.nk, it.n);
+      const ask = [...want].filter(([k]) => !seed || !(AL.px.get(k) || []).length);
+      if (!ask.length && seed) return;
+      const got = ask.length ? await alFetch(ask) : new Map();
+      let ok = 0, miss = 0;
+      for (const [k, c] of got) {
+        if (c == null) { miss++; continue; }
+        ok++; const h = AL.px.get(k) || []; h.push([now, c]);
+        while (h.length > AL_HIST_MAX || (h.length > 2 && now - h[0][0] > AL_HIST_AGE)) h.shift();
+        AL.px.set(k, h);
+      }
+      if (!seed) for (const k of [...AL.px.keys()]) if (!want.has(k)) AL.px.delete(k);
+      AL.last = { at: seed ? AL.last.at : now, ok: seed ? AL.last.ok : ok, miss: seed ? AL.last.miss : miss, hits: AL.last.hits, err: '' };
+      if (!seed) {
+        let sent = 0;
+        for (const rec of [...AL.subs.values()]) {
+          const hits = alEval(rec, now); if (!hits.length) continue;
+          rec.hits = [...hits, ...(rec.hits || [])].slice(0, AL_HITS_KEEP);
+          const m = alMessage(hits), st = await sendPush({ sub: rec.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
+          if (st && st < 300) { sent++; console.log('alerte envoyée (' + hits.length + ' carte' + (hits.length > 1 ? 's' : '') + ')'); }
+          else if (st === 404 || st === 410) { AL.subs.delete(rec.id); console.warn('alerte : abonnement expiré, retiré'); }
+          else console.warn('alerte refusée (' + (st || 'réseau') + ')');
+        }
+        AL.last.hits = sent;
+      }
+    } catch (e) { AL.last = { ...AL.last, err: String(e && e.message || e).slice(0, 160) }; console.warn('Alertes : ' + AL.last.err); }
+    alSaveSoon();
+  })().finally(() => { AL.run = null; });
+  return AL.run;
+}
+function alSeedSoon() { if (AL.seedT) return; AL.seedT = setTimeout(() => { AL.seedT = null; alTick({ seed: true }); }, AL_SEED); AL.seedT.unref(); }
+
+const alStr = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '';
+async function alertsApi(req, res, path, url) {
+  if (!ALERTS_ON) return json(res, 404, { error: 'alerts_disabled', message: PUSH_ON ? 'Alertes désactivées (ALERTS=0).' : 'Notifications non configurées (clés VAPID manquantes).' });
+  const sub = path.replace(/^alerts\/?/, '');
+  const id = String(url.searchParams.get('id') || '');
+  if (req.method === 'PUT' && !sub) {
+    let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
+    const pu = parsePush({ sub: b && b.sub, url: './?alerts=1' });
+    if (!pu) return json(res, 400, { error: 'bad_subscription', message: 'Abonnement push invalide ou refusé.' });
+    const rid = alId(pu.sub.endpoint), old = AL.subs.get(rid), oldItems = new Map(((old && old.items) || []).map(x => [x.nk, x]));
+    const items = new Map();
+    for (const x of Array.isArray(b.items) ? b.items : []) {
+      if (items.size >= AL_MAX_ITEMS) break;
+      const n = alStr(x && x.n, 150), nk = alKey(n); if (!nk || items.has(nk)) continue;
+      const t = Number.isSafeInteger(x.t) && x.t > 0 && x.t <= 1e6 ? x.t : 0, d = (Array.isArray(x.d) ? x.d : []).map(y => alStr(y, 40)).filter(Boolean).slice(0, 3), prev = oldItems.get(nk) || {};
+      items.set(nk, { k: alStr(x.k, 150) || nk, n, nk, ...(t ? { t } : {}), ...(d.length ? { d } : {}), ...(prev.nt ? { nt: prev.nt, na: prev.na } : {}), ...(t && prev.t === t && prev.arm === false ? { arm: false } : {}) });
+    }
+    if (!items.size) { AL.subs.delete(rid); alSaveSoon(); return json(res, 200, { ok: true, id: rid, watching: 0 }); }
+    const thr = Math.min(80, Math.max(10, Math.round(Number(b.thr)) || 30));
+    if (!old && AL.subs.size >= AL_MAX_SUBS) { const oldest = [...AL.subs.values()].sort((x, y) => x.at - y.at)[0]; if (oldest) AL.subs.delete(oldest.id); }
+    AL.subs.set(rid, { id: rid, sub: pu.sub, thr, at: Date.now(), items: [...items.values()], hits: (old && old.hits) || [] });
+    alSaveSoon(); alSeedSoon();
+    return json(res, 200, { ok: true, id: rid, watching: items.size, thr, last: AL.last.at, next: AL.last.at ? AL.last.at + AL_EVERY : 0 });
+  }
+  const rec = AL.subs.get(id);
+  if (req.method === 'GET' && !sub) {
+    if (!rec) return json(res, 404, { error: 'not_registered', message: 'Cet appareil n\'est pas (ou plus) enregistré pour les alertes.' });
+    const prices = {};
+    for (const it of rec.items) { const h = AL.px.get(it.nk); if (h && h.length) prices[it.k] = { c: h[h.length - 1][1], b: h.length > 1 ? alMedian(h.slice(0, -1).slice(-AL_BASE_WIN).map(x => x[1])) : 0 }; }
+    return json(res, 200, { id: rec.id, thr: rec.thr, watching: rec.items.length, priced: Object.keys(prices).length, last: AL.last, next: AL.last.at ? AL.last.at + AL_EVERY : 0, every: AL_EVERY, prices, hits: rec.hits || [] });
+  }
+  if (req.method === 'DELETE' && !sub) { const had = AL.subs.delete(id); if (had) alSaveSoon(); return json(res, 200, { ok: true, removed: had }); }
+  if (req.method === 'POST' && sub === 'check') {
+    if (!rec) return json(res, 404, { error: 'not_registered', message: 'Cet appareil n\'est pas (ou plus) enregistré pour les alertes.' });
+    const wait = AL.checkAt + AL_CHECK_GAP - Date.now();
+    if (wait > 0 && !AL.run) return json(res, 200, { ok: true, skipped: true, retry: Math.ceil(wait / 1000), last: AL.last });
+    AL.checkAt = Date.now(); await alTick();
+    return json(res, 200, { ok: !AL.last.err, last: AL.last, error: AL.last.err || undefined });
+  }
+  return json(res, 405, { error: 'method_not_allowed' });
 }
 
 const jobs = new Map();
@@ -535,9 +716,9 @@ async function importApi(req, res, url) {
 async function api(req, res, url) {
   if (!(await authorize(req, res))) return;
   if (url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '') === 'import') return importApi(req, res, url);   // n'a pas besoin du token CardTrader
-  if (!TOKEN) return json(res, 401, { error: 'no_token', message: 'CARDTRADER_TOKEN absent côté proxy.' });
-
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
+  if (path === 'alerts' || path.startsWith('alerts/')) return alertsApi(req, res, path, url);   // Scryfall + push : pas besoin du token CardTrader
+  if (!TOKEN) return json(res, 401, { error: 'no_token', message: 'CARDTRADER_TOKEN absent côté proxy.' });
   if (path === 'jobs' || path.startsWith('jobs/')) return jobsApi(req, res, path, url);
   const allowed = ALLOW[req.method];
   if (!allowed) return json(res, 405, { error: 'method_not_allowed' });
@@ -577,7 +758,7 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, push: PUSH_ON ? VAPID_PUB : '' });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '' });
     if (url.pathname === '/__edh') return json(res, 200, { source: EDH_SRC ? 'GitHub' : '', ...EDH_ST });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -615,6 +796,7 @@ const server = http.createServer(async (req, res) => {
 process.on('unhandledRejection', e => console.error('unhandledRejection:', e));
 process.on('uncaughtException', e => console.error('uncaughtException:', e));
 
+if (ALERTS_ON) await alLoad();                                  // abonnements et relevés avant d'accepter la première requête
 server.listen(PORT, HOST, () => {
   console.log(`Deck Deal → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(TOKEN ? 'Token CardTrader : OK' : '⚠ CARDTRADER_TOKEN manquant : mode démo uniquement');
@@ -622,5 +804,10 @@ server.listen(PORT, HOST, () => {
   if (APP_KEY) console.log(AUTH_FB ? 'APP_KEY encore acceptée en secours : supprime-la une fois la connexion par compte validée.' : 'Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');
   if (APP_KEY && APP_KEY.length < 12) console.warn('⚠ APP_KEY courte (' + APP_KEY.length + ' caractères) : prends 16 caractères ou plus.');
   if (!PAGE) console.log('⚠ deck-deal.html introuvable à côté du proxy.');
+  if (ALERTS_ON) {
+    const wait = Math.max(AL_FIRST, (AL.last.at || 0) + AL_EVERY - Date.now());
+    setTimeout(() => { alTick(); setInterval(alTick, AL_EVERY).unref(); }, wait).unref();
+    console.log(`Alertes de prix : ${AL.subs.size} appareil${AL.subs.size > 1 ? 's' : ''}, contrôle toutes les ${Math.round(AL_EVERY / 360000) / 10} h.`);
+  }
   if (EDH_SRC) edhBoot().catch(() => {}).then(() => { setTimeout(edhSync, EDH_FIRST).unref(); setInterval(edhSync, EDH_EVERY).unref(); });
 });

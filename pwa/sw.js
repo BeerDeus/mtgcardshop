@@ -3,7 +3,7 @@
    • Icônes et manifeste : cache d'abord, rafraîchis en arrière-plan.
    • Images de cartes Scryfall (cards.scryfall.io) : cache d'abord → une carte déjà vue ne se retélécharge plus.
      Le cache vit dans le stockage du navigateur : il saute si tu effaces les données du site, puis se reremplit tout seul.
-   • Notifications push « recherche terminée » : affichées ici, un toucher rouvre l'app et reprend la recherche.
+   • Notifications push « recherche terminée » (un toucher rouvre l'app et reprend la recherche) et alertes de prix (rouvre la feuille des alertes).
    • Jamais interceptés : /api/*, /__ping, tout autre domaine (CardTrader, Firebase, polices, API Scryfall),
      toute requête qui n'est pas un GET. Aucune donnée de recherche, token ou clé n'est mise en cache ici. */
 const V = 'deckdeal-v1';
@@ -79,20 +79,21 @@ self.addEventListener('fetch', e => {
 /* ── Push « recherche terminée » ──────────────────────────────────────────────────────────────── */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { try { d = { body: e.data.text() }; } catch (__) { d = {}; } }
-  const title = String(d.title || 'Recherche terminée').slice(0, 80);
+  const alert = d.kind === 'alert';
+  const title = String(d.title || (alert ? 'Baisse de prix' : 'Recherche terminée')).slice(0, 80);
   e.waitUntil(self.registration.showNotification(title, {
-    body: String(d.body || 'Les offres sont prêtes.').slice(0, 200),
-    icon: 'icons/icon-192.png', badge: 'icons/favicon-32.png', tag: 'deckdeal-run', renotify: true,
-    data: { url: typeof d.url === 'string' && !/^[a-z]+:/i.test(d.url) ? d.url : './?resume=1' },
+    body: String(d.body || (alert ? 'Une carte surveillée a baissé.' : 'Les offres sont prêtes.')).slice(0, 200),
+    icon: 'icons/icon-192.png', badge: 'icons/favicon-32.png', tag: alert ? 'deckdeal-alert' : 'deckdeal-run', renotify: true,
+    data: { kind: alert ? 'alert' : 'run', url: typeof d.url === 'string' && !/^[a-z]+:/i.test(d.url) ? d.url : (alert ? './?alerts=1' : './?resume=1') },
   }));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || './?resume=1', ROOT).href;
+  const nd = e.notification.data || {}, url = new URL(nd.url || './?resume=1', ROOT).href;
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const mine = all.find(c => c.url.startsWith(ROOT));
-    if (mine) { try { await mine.focus(); } catch (_) { /* ignore */ } mine.postMessage({ type: 'resume' }); return; }
+    if (mine) { try { await mine.focus(); } catch (_) { /* ignore */ } mine.postMessage({ type: nd.kind === 'alert' ? 'alerts' : 'resume' }); return; }
     await self.clients.openWindow(url);
   })());
 });
