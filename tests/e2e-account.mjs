@@ -76,7 +76,7 @@ async function wireFirebase(ctx, { sdk = true } = {}) {
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const errs = [];
 const newCtx = async (opts = {}) => {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, ...opts });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', ...opts });      // le service worker irait chercher lui-même le SDK Firebase (cache des bibliothèques), hors des routes du test
   return ctx;
 };
 const watch = (p, tag) => {

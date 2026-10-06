@@ -235,8 +235,13 @@ Une fois l'app installée, elle apparaît dans le menu Partager d'Android : part
 - **Listes groupées** : cartes et offres forment un seul bloc à filets (plus une carte bordée par ligne) ; étiquettes en minuscules, chiffres dans la police de l'appli, pastilles de filtre pleines quand elles sont actives, total flottant au-dessus du dock. Lignes de la collection en `content-visibility:auto` (listes longues fluides).
 - **Feuilles** : se ferment en les tirant vers le bas par la poignée ou l'en-tête (seuil 28 % de la hauteur ou geste rapide ; le fond s'éclaircit pendant le glissé ; inactif sur grand écran et sur les boutons).
 - **Transitions** : saisie ↔ résultats glissent dans le sens de la navigation (`.fwd` / `.back`), onglets de la collection en fondu (`.tabin`), reflet unique sur le total des résultats (`.hero.shine`), filet sous la barre seulement quand le contenu passe dessous (`.bar.scrolled`), collection vide avec trois cartes en éventail. Tout est coupé par « réduire les animations » (CSS + `reduceMotion()`).
+- **Toucher** (`src/motion.js`) : boutons, cartes, pastilles, onglets s'enfoncent légèrement et reviennent avec un petit ressort.
+- **Carte en grand** : elle **grandit depuis la vignette touchée** et y retourne à la fermeture (même carte) ; **inclinaison 3D et reflet holographique** qui suivent le doigt ou la souris (aussi sur le commandant du viewer et les couvertures de « Mes decks »).
+- **Cascades** : listes de la collection, de l'échange, de l'écran public, grilles du viewer et blocs de l'accueil arrivent l'un après l'autre (14 premiers éléments, à l'ouverture d'un écran, d'un onglet ou d'un tri ; jamais pendant la frappe) ; **main de départ distribuée** carte par carte.
+- **Onglets de la collection** : arrivent du côté où l'on va ; **total du viewer** qui défile ; images en fondu avec léger zoom arrière ; en-têtes des écrans plein format avec filet seulement quand le contenu passe dessous.
+- Tout est en `transform` / `opacity` (aucun recalcul de mise en page) et coupé par « réduire les animations ».
 - **Scan** : bouton de capture rond agrandi à 84 px, repères d'angle sur la bande de lecture.
-- Tests : `ui-e2e.mjs` (feuille glissable, sens des vues, filet de barre, reflet, fondu des onglets, état vide) ; taille du bouton de capture dans `scan-e2e.mjs`.
+- Tests : `ui-e2e.mjs` (feuille glissable, sens des vues, filet de barre, reflet, fondu des onglets, état vide), `motion-e2e.mjs` (FLIP, inclinaison, cascades, sens des onglets, chiffres, réduire les animations) ; taille du bouton de capture dans `scan-e2e.mjs`.
 
 ## Installation (PWA)
 

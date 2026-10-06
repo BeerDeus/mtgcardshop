@@ -23,7 +23,7 @@ ok('couleurs du deck (terrains de base, dont enneigés)');
 // toucher le deck : ouvre le viewer (pas la liste dans la saisie)
 await p.click('.deck [data-act="open"]'); await p.waitForSelector('.dv.on[aria-label^="Deck viewer"]');
 await p.waitForFunction(() => /6,00/.test((document.querySelector('.dv-eur') || {}).textContent || ''), null, { timeout: 8000 });
-assert.equal(await txt(p, '.dv-eur'), '≈ 6,00 €'); assert.equal(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), '28 cartes · 3 à trouver'); assert.deepEqual(await p.$$eval('.dv-g[data-g="m1"] .dvc', ts => ts.map(t => t.getAttribute('aria-label').replace(/\s/g, ' '))), ['Sol Ring, ×4, 6,00 €, 1 possédée']); assert.equal(await txt(p, '.dvc-l'), '1/4', 'possédées sur voulues');
+assert.equal((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), '≈ 6,00 €'); assert.equal(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), '28 cartes · 3 à trouver'); assert.deepEqual(await p.$$eval('.dv-g[data-g="m1"] .dvc', ts => ts.map(t => t.getAttribute('aria-label').replace(/\s/g, ' '))), ['Sol Ring, ×4, 6,00 €, 1 possédée']); assert.equal(await txt(p, '.dvc-l'), '1/4', 'possédées sur voulues');
 assert.equal(await p.$eval('#deckText', e => /Rakdos|Sol Ring/.test(e.value) && /Deck Deal/.test(e.value)), false, 'la liste n\'est pas chargée dans la saisie');
 await p.waitForFunction(() => document.querySelectorAll('.dv-g[data-g="land"] .dvc-art img.ok').length === 3, null, { timeout: 8000 }); ok('terrains de base : images (Swamp, Mountain, Snow-Covered Swamp)');
 await back(); await p.waitForFunction(() => !document.querySelector('.dv:not(.dks)'), null, { timeout: 3000 }); assert.ok(await p.$('.dks.on'), 'l\'écran des decks reste dessous'); ok('toucher un deck ouvre le viewer (valeur estimée, cartes en tuiles) ; Retour le ferme');
@@ -53,7 +53,7 @@ await p.context().close();
   const { p: q, errs: e2 } = await newPage(browser, world, { init: own }); await q.waitForTimeout(600);
   await q.click('#btnDecks'); await q.waitForSelector('.dks.on .deck'); await q.click('.deck [data-act="open"]'); await q.waitForSelector('.dv.on[aria-label^="Deck viewer"]');
   await q.waitForFunction(() => /6,50/.test((document.querySelector('.dv-eur') || {}).textContent || ''), null, { timeout: 8000 });
-  assert.equal(await txt(q, '.dv-eur'), '≈ 6,50 €'); assert.equal(await txt(q, '.dv[aria-label^="Deck viewer"] .dv-title span'), '4 cartes · toutes possédées');
+  assert.equal((await q.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(q, '.dv-eur')), '≈ 6,50 €'); assert.equal(await txt(q, '.dv[aria-label^="Deck viewer"] .dv-title span'), '4 cartes · toutes possédées');
   assert.match(await txt(q, '.dv-cmd'), /Commandant Edgar Markov.*Dans ta collection/i); assert.equal(await q.$eval('.dv-foot [data-act="refresh"]', e => e.hidden), true, 'tout est possédé : pas de recherche d\'offres');
   assert.equal(await txt(q, '.dvc-l.own'), '✓'); assert.equal(await q.$eval('.dv-g[data-g="land"] .dvc', e => e.dataset.s), 'basic', 'terrains de base à part, sans prix');
   assert.equal(await q.$eval('.dv-foot [data-act="edit"]', e => e.hidden), false); ok('deck 100 % possédé : viewer en valeur estimée, commandant, ✓, pas de « Chercher les offres »');

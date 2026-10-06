@@ -200,7 +200,7 @@ assert.match(await txt(p, '.dv-evo-h'), /^Depuis la recherche de \d\d:\d\d ▼ �
 assert.deepEqual(await p.$$eval('.dv-mv .mv', m => m.map(x => x.className.replace('mv ', '') + ' ' + x.innerText.replace(/\s+/g, ' ').trim())),
   ['down Craterhoof Behemoth 9,00 € → 8,00 € −1,00 €', 'down Wrath of God 3,00 € → 2,50 € −0,50 €', 'up Swords to Plowshares 2,00 € → 2,50 € +0,50 €']);
 assert.deepEqual(await p.$$eval('.dvc em', e => e.map(x => x.closest('.dvc').getAttribute('aria-label').split(',')[0] + (x.classList.contains('dn') ? ' ▼' : ' ▲')).sort()), ['Craterhoof Behemoth ▼', 'Swords to Plowshares ▲', 'Wrath of God ▼'], 'flèches sur les cartes qui ont bougé');
-assert.match(await txt(p, '.dv-eur'), /19,00 €/); assert.match(await txt(p, '.dv-ref'), /Réf\. Cardmarket pour les mêmes cartes/);
+assert.match((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), /19,00 €/); assert.match(await txt(p, '.dv-ref'), /Réf\. Cardmarket pour les mêmes cartes/);
 await p.waitForTimeout(900); await p.screenshot({ path: 'shots/coll-9-evolution.png' });
 await p.click('.dv-mv .mv >> nth=0'); await p.waitForSelector('.imgv-img'); assert.equal(await p.$eval('.imgv-cap b', e => e.textContent), 'Craterhoof Behemoth'); assert.match(await txt(p, '.imgv-extra'), /▼ −1,00 € par exemplaire/);
 await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 2000 }); await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.dv'), null, { timeout: 2000 });

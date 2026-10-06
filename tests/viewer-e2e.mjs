@@ -86,7 +86,7 @@ await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on');
 // aucun relevé gardé : le même viewer, en valeur estimée (prix tendance Cardmarket) au lieu d'une simple liste
 await p.waitForFunction(() => /15,00/.test(document.querySelector('.dv-eur') ? document.querySelector('.dv-eur').textContent : ''), null, { timeout: 8000 });
 assert.equal(await p.$('.dv-empty'), null, 'plus d\'état vide'); assert.equal(await p.$('.dv-plain'), null);
-assert.equal(await txt(p, '.dv-eur'), '≈ 15,00 €+', 'valeur estimée, « + » : une carte sans prix'); assert.match(await txt(p, '.dv-crit'), /Valeur estimée · prix tendance Cardmarket/); assert.match(await txt(p, '.dv-age'), /Prix de référence, pas des offres/);
+assert.equal((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), '≈ 15,00 €+', 'valeur estimée, « + » : une carte sans prix'); assert.match(await txt(p, '.dv-crit'), /Valeur estimée · prix tendance Cardmarket/); assert.match(await txt(p, '.dv-age'), /Prix de référence, pas des offres/);
 assert.equal(await p.$('.dv-age [data-act="refresh"]'), null, 'pas de « Actualiser » : ce ne sont pas des offres');
 assert.equal(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), '15 cartes · 10 à trouver · 1 sans prix');
 assert.deepEqual(await groups(p), ['m0', 'm1', 'm2', 'm4', 'm7', 'land'], 'mana, terrains');
@@ -105,7 +105,7 @@ await p.click('#toast .toast-act'); await p.waitForSelector('.dv.on .dv-g');
 await p.waitForFunction(() => document.querySelectorAll('.dvc-art img.ok').length >= 5, null, { timeout: 8000 });
 
 // 2) contenu du viewer : mana
-assert.equal(norm(await p.textContent('.dv-eur')).replace(/\s/g, ' '), '16,70 €'); assert.match(await txt(p, '.dv-age'), /Prix du .+ · /); assert.equal(await p.$eval('.dv-age', e => e.dataset.age), 'fresh');
+assert.equal(norm((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await p.textContent('.dv-eur'))).replace(/\s/g, ' '), '16,70 €'); assert.match(await txt(p, '.dv-age'), /Prix du .+ · /); assert.equal(await p.$eval('.dv-age', e => e.dataset.age), 'fresh');
 assert.equal(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), '15 cartes · 1 introuvable · 1 sans offre', '10 cartes + 5 basiques');
 ok('total 16,70 € · prix du jour · résumé');
 
@@ -162,7 +162,7 @@ ok('carte en grand : précédent / suivant (boutons, clavier, glissement), prix 
 await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.dv'), null, { timeout: 2000 }); assert.equal(await p.$eval('#app', a => a.inert), false);
 await p.reload(); await p.waitForTimeout(900); const n0 = prodReqs(); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main'); await p.waitForTimeout(1500); const s0 = scry.filter(u => !/^\/cards\/collection/.test(u)).length;      // l'écran des decks et le viewer peuvent lire des fiches (POST /cards/collection) : jamais autre chose
 await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on .dv-g');
-assert.equal(norm(await p.textContent('.dv-eur')).replace(/\s/g, ' '), '16,70 €'); assert.equal(await p.evaluate(() => DV.sort), 'mana', 'tri mémorisé relu après rechargement');
+assert.equal(norm((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await p.textContent('.dv-eur'))).replace(/\s/g, ' '), '16,70 €'); assert.equal(await p.evaluate(() => DV.sort), 'mana', 'tri mémorisé relu après rechargement');
 assert.equal(prodReqs(), n0, 'aucune requête CardTrader pour ouvrir le viewer'); assert.equal(scry.filter(u => !/^\/cards\/collection/.test(u)).length, s0, 'aucune requête Scryfall de recherche non plus (images : cache navigateur)');
 ok('après rechargement : prix gardés, viewer immédiat sans réseau CardTrader');
 await p.click('.dv-foot [data-act="close"]').catch(() => {}); await p.keyboard.press('Escape');
@@ -188,7 +188,7 @@ await p.click('#btnRun'); await done(p); await p.waitForTimeout(500);
 assert.equal(await p.$eval('#btnViewer', b => b.disabled), false); await p.click('#btnViewer'); await p.waitForSelector('.dv.on .dv-g');
 assert.equal(await txt(p, '.dv-age'), 'Prix de la recherche en cours'); assert.equal(await p.$('.dv-age [data-act="refresh"]'), null);
 assert.equal(await p.$eval('.dv-foot [data-act="edit"]', b => b.hidden), true); assert.equal(await p.$eval('.dv-foot [data-act="close"]', b => b.hidden), false);
-assert.equal(norm(await p.textContent('.dv-eur')).replace(/\s/g, ' '), '16,70 €');
+assert.equal(norm((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await p.textContent('.dv-eur'))).replace(/\s/g, ' '), '16,70 €');
 await p.click('.dv-foot [data-act="close"]'); await p.waitForFunction(() => !document.querySelector('.dv'), null, { timeout: 2000 }); ok('viewer de la recherche en cours depuis les résultats');
 
 // 9) la liste de résultats navigue aussi entre les cartes (nouvelle visionneuse)

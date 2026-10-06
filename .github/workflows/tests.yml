@@ -41,7 +41,7 @@ jobs:
           echo "CHROMIUM=$(node -p "require('playwright-core').chromium.executablePath()")" >> "$GITHUB_ENV"
       - name: Tests navigateur
         if: github.event_name == 'pull_request' || inputs.full
-        run: bash tests/run-tests.sh ui-e2e.mjs list-e2e.mjs value-e2e.mjs frcat-e2e.mjs alerts-e2e.mjs dklist-e2e.mjs back-e2e.mjs lang-e2e.mjs art-e2e.mjs viewer-e2e.mjs builder-e2e.mjs coll-e2e.mjs extras-e2e.mjs edh-e2e.mjs prix-e2e.mjs pwa-e2e.mjs sw-e2e.mjs push-client-e2e.mjs sync-e2e.mjs e2e-account.mjs scan-e2e.mjs live-e2e.mjs trade-e2e.mjs
+        run: bash tests/run-tests.sh ui-e2e.mjs list-e2e.mjs value-e2e.mjs frcat-e2e.mjs alerts-e2e.mjs dklist-e2e.mjs back-e2e.mjs lang-e2e.mjs art-e2e.mjs viewer-e2e.mjs builder-e2e.mjs coll-e2e.mjs extras-e2e.mjs edh-e2e.mjs prix-e2e.mjs pwa-e2e.mjs sw-e2e.mjs push-client-e2e.mjs sync-e2e.mjs e2e-account.mjs scan-e2e.mjs live-e2e.mjs trade-e2e.mjs motion-e2e.mjs
       - name: Journaux
         if: failure()
         uses: actions/upload-artifact@v4

@@ -79,7 +79,7 @@ await p.waitForFunction(() => document.querySelector('.dv-g[data-g="sb"]') && do
 const lab = sel => p.$$eval(sel, t => t.map(x => x.getAttribute('aria-label').replace(/\s/g, ' ')));
 assert.deepEqual(await lab('.dv-g[data-g="sb"] .dvc'), ['Swords to Plowshares, ×2, 3,80 €, réserve', 'Wrath of God, 1,50 €, réserve'], 'réserve : tuiles, prix tendance');
 assert.match(await txt(p, '.dv-g[data-g="sb"] h3'), /^Réserve 3 cartes · ≈ 5,30 € · prix tendance$/);
-assert.match(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), /réserve 3$/); assert.equal(await txt(p, '.dv-eur'), '≈ 6,00 €', 'total du deck sans la réserve (4 Sol Ring × 1,50 €)');
+assert.match(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), /réserve 3$/); assert.equal((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), '≈ 6,00 €', 'total du deck sans la réserve (4 Sol Ring × 1,50 €)');
 assert.equal((await p.$$eval('.dv-g[data-g="land"] .dvc', t => t.length)), 2, 'terrains de base : 2 tuiles avec leur image');
 assert.deepEqual(await p.$$eval('.dv-g .dvc', t => t.map(x => x.closest('.dv-g').dataset.g).filter((g, i, a) => a.indexOf(g) === i)), ['m1', 'land', 'sb'], 'réserve en dernier');
 await p.click('.dv-g[data-g="sb"] .dvc >> nth=1'); await p.waitForSelector('.imgv'); assert.match(await txt(p, '.imgv-extra'), /Réserve · 1,50 € · prix tendance Cardmarket/); await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 });

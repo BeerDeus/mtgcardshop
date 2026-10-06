@@ -1259,6 +1259,73 @@ button,.btn,select,summary{touch-action:manipulation}
 .pubv #pubSub{margin-bottom:10px}
 .pub-row{cursor:pointer}
 .pub-row .row-top .flag{margin-top:2px}
+
+/* ── Mouvement (motion.js) : retours au toucher, cascades, foil, en-têtes ─────────────────────────────────────────── */
+/* toucher : tout ce qui se touche s'enfonce un peu et revient avec un léger ressort */
+.icon-btn,.ca-opt,.seg-opt,.fcol,.imgv-v,.deck-main,.dvc,.dv-cmd,.coll-open,.dv-bar{transition:transform .32s var(--spring),background .2s,border-color .2s,color .2s,box-shadow .25s}
+.icon-btn:active{transform:scale(.9)}
+.seg-opt:active{transform:scale(.95)}
+.ca-opt:active,.coll-open:active{transform:scale(.975)}
+.fcol:active,.imgv-v:active{transform:scale(.9)}
+.deck-main:active .deck-art,.dvc:active .dvc-art{transform:scale(.955)}
+.dv-cmd:active{transform:scale(.985)}
+.dv-bar:not([disabled]):active{transform:translateY(2px)}
+.coll-list>.crow.pub-row:active,.coll-list>.crow.tr-row:active{background:var(--surface-3)}
+.dvc-art{transition:transform .32s var(--spring),box-shadow .25s}
+@media (hover:hover){.deck-main:hover .deck-art,.dvc:hover .dvc-art{box-shadow:0 2px 4px rgba(16,21,43,.18),0 18px 30px -14px rgba(16,21,43,.55)}}
+
+/* images : fondu et léger zoom arrière à l'arrivée (au lieu d'un simple fondu) */
+.thumb img,.dvc-art img{transform:scale(1.06);transition:opacity .45s var(--out),transform .7s var(--out)}
+.thumb img.ok,.dvc-art img.ok{transform:none}
+
+/* cascades : les 14 premiers éléments arrivent l'un après l'autre */
+@keyframes stgin{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.stg>*:nth-child(-n+14){animation:stgin .46s var(--out) both}
+.stg>:nth-child(2){animation-delay:28ms}.stg>:nth-child(3){animation-delay:56ms}.stg>:nth-child(4){animation-delay:84ms}.stg>:nth-child(5){animation-delay:112ms}
+.stg>:nth-child(6){animation-delay:140ms}.stg>:nth-child(7){animation-delay:168ms}.stg>:nth-child(8){animation-delay:196ms}.stg>:nth-child(9){animation-delay:224ms}
+.stg>:nth-child(10){animation-delay:252ms}.stg>:nth-child(11){animation-delay:280ms}.stg>:nth-child(12){animation-delay:308ms}.stg>:nth-child(13){animation-delay:336ms}.stg>:nth-child(14){animation-delay:364ms}
+/* main de départ : les cartes sont distribuées */
+@keyframes deal{from{opacity:0;transform:translate(-30px,60px) rotate(-14deg) scale(.7)}60%{opacity:1}to{opacity:1;transform:none}}
+.hand-grid.stg>*{animation:deal .55s var(--out) both}
+.hand-grid.stg>:nth-child(2){animation-delay:60ms}.hand-grid.stg>:nth-child(3){animation-delay:120ms}.hand-grid.stg>:nth-child(4){animation-delay:180ms}
+.hand-grid.stg>:nth-child(5){animation-delay:240ms}.hand-grid.stg>:nth-child(6){animation-delay:300ms}.hand-grid.stg>:nth-child(7){animation-delay:360ms}
+.odd i{transition:width .5s var(--out),background .3s}
+
+/* onglets de la collection : arrivent du côté où l'on va */
+@keyframes tabinl{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:none}}
+@keyframes tabinr{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+.tabin[data-dir="l"]{animation-name:tabinl}
+.tabin[data-dir="r"]{animation-name:tabinr}
+
+/* accueil : les blocs, puis les trois entrées (decks, collection, prix rapide), arrivent en cascade */
+#viewInput>*,#collSec>*{animation:stgin .5s var(--out) both}
+#viewInput>:nth-child(2){animation-delay:40ms}#viewInput>:nth-child(3){animation-delay:80ms}#viewInput>:nth-child(4){animation-delay:100ms}
+#viewInput>:nth-child(5){animation-delay:260ms}#viewInput>:nth-child(6){animation-delay:300ms}
+#collSec>:nth-child(1){animation-delay:120ms}#collSec>:nth-child(2){animation-delay:170ms}#collSec>:nth-child(3){animation-delay:220ms}#collSec>:nth-child(4){animation-delay:270ms}
+
+/* cartes foil : inclinaison 3D et reflet holographique qui suivent le doigt */
+.tilt{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;transform:perspective(800px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .55s var(--spring),box-shadow .25s}
+.tilt.tilting{transition:transform .09s linear,box-shadow .25s}
+.tilt::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;opacity:0;transition:opacity .4s;mix-blend-mode:soft-light;
+  background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.55),transparent 42%),linear-gradient(115deg,transparent 18%,rgba(255,143,195,.55) 34%,rgba(255,212,121,.5) 44%,rgba(123,232,200,.55) 54%,rgba(127,176,255,.55) 64%,transparent 80%);
+  background-size:100% 100%,240% 240%;background-position:center,var(--mx) var(--my)}
+.tilt.tilting::after{opacity:1}
+.tilt img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}      /* sinon le doigt (ou la souris) « attrape » l'image et l'inclinaison s'arrête */
+.imgv-card.tilt{touch-action:none}      /* la carte en grand suit le doigt ; le glissement horizontal (carte suivante) passe par les événements tactiles */
+.deck-main:active .deck-art.tilt{transform:perspective(800px) rotateX(var(--rx)) rotateY(var(--ry)) scale(.955)}
+.imgv-card.tilt{transform:scale(.92);transition:transform .38s cubic-bezier(.2,.85,.25,1)}
+.imgv.on .imgv-card.tilt{transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry))}
+.imgv.on .imgv-card.tilt.tilting{transition:transform .09s linear}
+
+/* écrans plein format : filet et ombre sous l'en-tête seulement quand le contenu passe dessous */
+.dv>.dv-head{border-bottom-color:transparent;transition:border-color .25s,box-shadow .25s}
+.dv.scrolled>.dv-head{border-bottom-color:var(--line);box-shadow:0 10px 24px -20px rgba(16,21,43,.5)}
+
+@media (prefers-reduced-motion:reduce){
+  .stg>*,#viewInput>*,#collSec>*,.hand-grid.stg>*{animation:none!important}
+  .tilt,.imgv-card.tilt,.imgv.on .imgv-card.tilt{transform:none!important}.tilt::after{display:none}
+  .thumb img,.dvc-art img{transform:none}
+}
 </style>
 </head>
 <body>
@@ -4244,12 +4311,12 @@ function fmt(c, cur) {
 }
 function tween(el, to) {
   const from = el._v == null ? 0 : el._v; el._v = to;
-  if (reduceMotion() || from === to) { el.textContent = fmt(to); return; }
-  const t0 = performance.now(), d = 620; cancelAnimationFrame(el._raf);
+  if (reduceMotion() || from === to) { cancelAnimationFrame(el._raf); delete el.dataset.tw; el.textContent = fmt(to); return; }
+  const t0 = performance.now(), d = 620; cancelAnimationFrame(el._raf); el.dataset.tw = '1';      // data-tw : le chiffre défile encore
   const step = now => {
     const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3);
     el.textContent = fmt(Math.round(from + (to - from) * e));
-    if (p < 1) el._raf = requestAnimationFrame(step);
+    if (p < 1) el._raf = requestAnimationFrame(step); else delete el.dataset.tw;
   };
   el._raf = requestAnimationFrame(step);
 }
@@ -5287,6 +5354,81 @@ function paintCollSwitch() {
 }
 
 
+/* ── motion.js : mouvement et retours au toucher ────────────────────────────────────────────────────────────────
+   · Carte en grand : elle part de la vignette touchée et y revient en se fermant (FLIP, Web Animations).
+   · Cartes « foil » (.tilt : carte en grand, commandant, couvertures de decks) : inclinaison 3D et reflet qui suivent le doigt ou la souris.
+   · Entrées en cascade (.stg) : listes et grilles arrivent ligne après ligne quand un écran ou un onglet s'ouvre (14 premières seulement).
+   · En-têtes des écrans plein format : filet et ombre seulement quand le contenu passe dessous.
+   Tout passe par transform / opacity (compositeur, jamais de mise en page) ; « réduire les animations » coupe tout. */
+const MO = { press: null, at: 0, tilt: null, raf: 0, pt: null };
+const motionOff = () => reduceMotion() || typeof Element === 'undefined' || !Element.prototype.animate;
+
+/* ── Vignette touchée : point de départ de la carte en grand ── */
+const PRESS_SEL = '.thumb, .dvc-art, .imgv-v img, .ca-opt';
+document.addEventListener('pointerdown', e => {
+  const el = e.target && e.target.closest && e.target.closest(PRESS_SEL);
+  if (el) { MO.press = el; MO.at = performance.now(); }
+}, { capture: true, passive: true });
+/** Élément touché il y a moins de 900 ms, encore affiché : origine du FLIP (null sinon). */
+function pressOrigin() {
+  const el = MO.press; if (!el || !el.isConnected || performance.now() - MO.at > 900) return null;
+  const r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 ? r : null;
+}
+/** Anime `el` depuis le rectangle `from` jusqu'à sa place (agrandissement depuis la vignette). */
+function flipFrom(el, from, ms = 460) {
+  if (!from || motionOff()) return false;
+  const was = el.style.transition; el.style.transition = 'none'; el.style.transform = 'none';
+  const to = el.getBoundingClientRect(); el.style.transform = ''; void el.offsetWidth; el.style.transition = was;
+  if (!to.width) return false;
+  const dx = from.left + from.width / 2 - (to.left + to.width / 2), dy = from.top + from.height / 2 - (to.top + to.height / 2), s = from.width / to.width;
+  el.animate([{ transform: `translate(${dx}px,${dy}px) scale(${s})`, opacity: 0.5 }, { transform: 'none', opacity: 1 }], { duration: ms, easing: 'cubic-bezier(.22,1.12,.36,1)' });      // léger dépassement : la carte « se pose »
+  return true;
+}
+/** Retour vers le rectangle `to` (fermeture). */
+function flipTo(el, to, ms = 300) {
+  if (!to || motionOff()) return false;
+  const r = el.getBoundingClientRect(); if (!r.width) return false;
+  const dx = to.left + to.width / 2 - (r.left + r.width / 2), dy = to.top + to.height / 2 - (r.top + r.height / 2), s = to.width / r.width;
+  el.animate([{ transform: getComputedStyle(el).transform === 'none' ? 'none' : getComputedStyle(el).transform, opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(${s})`, opacity: 0.4 }], { duration: ms, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  return true;
+}
+
+/* ── Inclinaison foil ── */
+function tiltReset(el) { if (!el) return; el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.classList.remove('tilting'); }
+function tiltPaint() {
+  MO.raf = 0; const el = MO.tilt, p = MO.pt; if (!el || !p) return;
+  const r = el.getBoundingClientRect(); if (!r.width) return;
+  const x = Math.min(1, Math.max(0, (p.x - r.left) / r.width)), y = Math.min(1, Math.max(0, (p.y - r.top) / r.height)), max = el.classList.contains('imgv-card') ? 9 : 7;
+  el.style.setProperty('--rx', ((0.5 - y) * max).toFixed(2) + 'deg'); el.style.setProperty('--ry', ((x - 0.5) * max).toFixed(2) + 'deg');
+  el.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); el.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+  el.classList.add('tilting');
+}
+function tiltMove(e) {
+  if (motionOff()) return;
+  const el = e.target && e.target.closest && e.target.closest('.tilt');
+  if (el !== MO.tilt) { tiltReset(MO.tilt); MO.tilt = el; }
+  if (!el) return;
+  MO.pt = { x: e.clientX, y: e.clientY };
+  if (!MO.raf) MO.raf = requestAnimationFrame(tiltPaint);
+}
+document.addEventListener('pointermove', tiltMove, { passive: true });
+document.addEventListener('pointerdown', tiltMove, { passive: true });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'scroll']) document.addEventListener(ev, e => { if (ev !== 'pointerup' || e.pointerType !== 'mouse') { tiltReset(MO.tilt); MO.tilt = null; } }, { passive: true, capture: ev === 'scroll' });
+
+/* ── Entrées en cascade ── */
+/** Rejoue l'arrivée en cascade des enfants de chaque conteneur (listes, grilles) : seulement à l'ouverture d'un écran, d'un onglet, d'un tri. */
+function stagger(...els) {
+  if (motionOff()) return;
+  for (const el of els.flat()) { if (!el) continue; el.classList.remove('stg'); void el.offsetWidth; el.classList.add('stg'); }
+}
+
+/* ── En-têtes des écrans plein format ── */
+document.addEventListener('scroll', e => {
+  const sc = e.target; if (!sc || !sc.classList || !sc.classList.contains('dv-scroll')) return;
+  const dv = sc.closest('.dv'); if (dv) dv.classList.toggle('scrolled', sc.scrollTop > 4);
+}, { capture: true, passive: true });
+
+
 /* ── filters.js : recherche + filtres couleur / famille / coût (deck viewer et collection) ───────────────────── */
 const COLOR_DEF = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert'], ['C', 'Incolore']];
 const newFilter = () => ({ q: '', colors: new Set(), type: '', cmc: '', cmdr: '' });
@@ -5506,7 +5648,7 @@ function deckCard(d, i) {
   const dl = priceDelta(d.history), fresh = !D.seen.has(d.id), fk = deckFmt(d), dv = dkValue(d.text, dmOf), vt = dv.total && !dv.missing.length ? dkValueText(dv) : '';
   const cv = dkCoverCard(d.text, dmOf), art = coverUrl(cv), hue = hash32(d.id) % 360;
   return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
-    <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
+    <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art tilt" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
       <span class="deck-top"><span class="deck-name">${esc(d.name)}</span></span>
       <span class="deck-tags">${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span>
       <span class="deck-meta"><span class="deck-line">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">complet</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
@@ -6001,20 +6143,21 @@ function openCardViewer(items, index) {
   const multi = items.length > 1;
   wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
     ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
-    <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
+    <div class="imgv-card tilt" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
     <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
     <div class="imgv-acts"><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
     <div class="imgv-vars" hidden><div class="imgv-vh" aria-live="polite"></div><div class="imgv-vl"></div></div>`;
   const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
   const artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
-  const prevFocus = document.activeElement;
+  const prevFocus = document.activeElement, from = pressOrigin(), fromEl = from ? MO.press : null, idx0 = Math.max(0, Math.min(items.length - 1, index | 0));
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
   let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
   const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
   if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
   const api = imgView = { close() {
     if (imgView !== api) return; imgView = null; if (ctrl) ctrl.abort(); clearTimeout(varT);
+    if (idx === idx0 && fromEl && fromEl.isConnected) flipTo(card, fromEl.getBoundingClientRect(), 280);      // retour vers la vignette d'origine
     wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
     setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 260);
     releaseApp();
@@ -6110,11 +6253,12 @@ function openCardViewer(items, index) {
   document.body.appendChild(wrap); holdApp();
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); go(idx);
+  flipFrom(card, from);      // la carte part de la vignette touchée
 }
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
+const DV = { anim: false, el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
 
 /** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
@@ -6283,7 +6427,7 @@ function dvHero(it, idx, snap, dl) {
   const art = dvImg(it), hue = hash32(it.k) % 360, d = dl && dl.get(it.k);
   const price = it.s === 'ok' ? `<b>${esc(fmt(it.c))}</b>${it.rf ? `<span class="cmd-ref">Réf. Cardmarket ${esc(fmt(it.rf))}</span>` : ''}${snap.ref && it.ow ? `<span class="cmd-ref">${it.ow >= it.q ? 'Dans ta collection' : 'Possédé en ' + it.ow + ' ex.'}</span>` : ''}${d && dvMoved(d) ? `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(d.tot)))}</span>` : ''}`
     : it.s === 'own' ? '<b class="own">Dans ta collection</b>' : it.s === 'nf' ? '<b class="bad">Introuvable</b>' : `<b class="warn">${snap.ref ? 'Prix inconnu' : 'Aucune offre'}</b>`;
-  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
+  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art tilt" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
     <span class="cmd-t"><small>${/planeswalker/i.test(it.tl || '') ? 'Planeswalker commandant' : 'Commandant'}</small><strong>${esc(it.n)}</strong>${it.tl ? `<span class="cmd-tl">${esc(it.tl)}</span>` : ''}${it.mc ? `<span class="cmd-mc">${manaHtml(it.mc)}</span>` : ''}<span class="cmd-p">${price}</span></span></button>`;
 }
 
@@ -6316,7 +6460,7 @@ function dvFrame(snap) {
   $('.dv-title span', el).textContent = DV.pub ? `${copies} carte${copies > 1 ? 's' : ''}${sbTxt} · partagé, lecture seule` : ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
     : `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
-      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}${esc(fmt(total))}${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
+      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}<span class="dv-amt">${esc(fmt(total))}</span>${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
@@ -6327,10 +6471,11 @@ function dvFrame(snap) {
     <div id="dvF"></div>
     <div class="dv-groups"></div>`;
   mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: 'Prix' }, { v: 'type', label: 'Type' }], DV.sort, v => {
-    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); dvGroups();
+    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); DV.anim = true; dvGroups();
     const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
   });
   $('#dvSeg', el).setValue(DV.sort);
+  { const a = $('.dv-amt', el); a._v = DV.shownTotal == null ? 0 : DV.shownTotal; DV.shownTotal = total; tween(a, total); }      // le total défile depuis 0 à l'ouverture, puis d'une valeur à l'autre
   DV.fb = mountFilters($('#dvF', el), DV.f, () => dvGroups(), { placeholder: 'Rechercher dans le deck' });
 }
 /** Commandant + groupes de cartes, d'après le tri et les filtres. */
@@ -6348,6 +6493,7 @@ function dvGroups() {
     + (groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + (g.id === 'sb' ? '≈ ' : '') + esc(fmt(g.cost)) : ''}${g.id === 'sb' ? ' · prix tendance' : ''}</small></h3><div class="dv-grid">${g.items.map(it => { flat(it); return dvTile(it, n++, snap, dl); }).join('')}</div></section>`).join('')
       || (cmds.length ? '' : '<p class="hint listempty">Aucune carte ne correspond.</p>'));
   if (sc) sc.scrollTop = keep;
+  if (DV.anim) { DV.anim = false; stagger($$('.dv-grid', el), $('.dv-cmds', el)); }
 }
 function dvRender() {
   const snap = DV.snap, el = DV.el; if (!el) return;
@@ -6388,7 +6534,7 @@ function openDeckViewer({ id, live, text, name, pub } = {}) {
   closeDeckViewer(); closeCardImage();
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
   DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
-  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
+  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
   DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
   if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
   // Pas de prix gardé (ou tout est possédé, donc rien à chiffrer) : même viewer, avec la valeur estimée du deck au prix tendance Cardmarket
@@ -6458,7 +6604,7 @@ function openHand() {
         <div class="odds" role="img" aria-label="${odds.map((p, k) => k + ' terrain' + (k > 1 ? 's' : '') + ' : ' + pctTxt(p)).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
         <p class="hint">Entre 2 et 4 terrains : ${pctTxt(odds[2] + odds[3] + (odds[4] || 0))} des mains.${unknown ? ` ${unknown} carte${unknown > 1 ? 's' : ''} au type pas encore lu, comptée${unknown > 1 ? 's' : ''} comme sort${unknown > 1 ? 's' : ''}.` : ''}</p>`;
     };
-    const deal = () => { hand = drawHand(lib, 7); paint(); };
+    const deal = () => { hand = drawHand(lib, 7); paint(); stagger($('.hand-grid', api.body)); };
     api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" data-act="redeal">Nouvelle main</button>');
     api.foot.addEventListener('click', e => { if (e.target.closest('[data-act="redeal"]')) { haptic('tap'); deal(); } });
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
@@ -7013,6 +7159,7 @@ function collPaintBody(keep) {
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
   }
   if (sc) sc.scrollTop = pos;
+  if (!keep) stagger($$('.coll-list, .cs-tiles, .dk-res', host));
 }
 
 function closeCollection() { if (COLL.el) COLL.el.__close(); }
@@ -7044,7 +7191,7 @@ function openCollection(tab) {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
-  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { const ord = ['list', 'stats', 'decks', 'trade'], dir = ord.indexOf(v) > ord.indexOf(COLL.tab) ? 'l' : 'r'; { const h = $('.coll-main', wrap); if (h) h.dataset.dir = dir; } COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
   COLL.fb = mountFilters($('#collF', wrap), COLL.f, () => {
     if (COLL.f.cmdr === 'played' && COLL.cmdrSeen !== 'played' && COLL.sort === 'name') { COLL.sort = 'decks'; $('#collSort', wrap).value = 'decks'; }      // les plus joués d'abord
     COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(true);
@@ -9413,6 +9560,7 @@ function openPublicTrade(sh, preview) {
       ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.'}</p>`}
       ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}`;
     if (sc) sc.scrollTop = pos;
+    if (!keep) stagger($('.pub-main .coll-list', wrap));
   };
   mountSeg($('#pubSub', wrap), [{ v: 'have', label: 'À échanger', sub: nf0(sh.have.length) }, { v: 'want', label: 'Recherchées', sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
   mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: 'Nom français ou anglais' });

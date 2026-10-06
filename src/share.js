@@ -321,6 +321,7 @@ function openPublicTrade(sh, preview) {
       ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.'}</p>`}
       ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}`;
     if (sc) sc.scrollTop = pos;
+    if (!keep) stagger($('.pub-main .coll-list', wrap));
   };
   mountSeg($('#pubSub', wrap), [{ v: 'have', label: 'À échanger', sub: nf0(sh.have.length) }, { v: 'want', label: 'Recherchées', sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
   mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: 'Nom français ou anglais' });

@@ -537,6 +537,7 @@ function collPaintBody(keep) {
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
   }
   if (sc) sc.scrollTop = pos;
+  if (!keep) stagger($$('.coll-list, .cs-tiles, .dk-res', host));
 }
 
 function closeCollection() { if (COLL.el) COLL.el.__close(); }
@@ -568,7 +569,7 @@ function openCollection(tab) {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
-  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { const ord = ['list', 'stats', 'decks', 'trade'], dir = ord.indexOf(v) > ord.indexOf(COLL.tab) ? 'l' : 'r'; { const h = $('.coll-main', wrap); if (h) h.dataset.dir = dir; } COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
   COLL.fb = mountFilters($('#collF', wrap), COLL.f, () => {
     if (COLL.f.cmdr === 'played' && COLL.cmdrSeen !== 'played' && COLL.sort === 'name') { COLL.sort = 'decks'; $('#collSort', wrap).value = 'decks'; }      // les plus joués d'abord
     COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(true);

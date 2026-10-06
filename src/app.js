@@ -142,12 +142,12 @@ function fmt(c, cur) {
 }
 function tween(el, to) {
   const from = el._v == null ? 0 : el._v; el._v = to;
-  if (reduceMotion() || from === to) { el.textContent = fmt(to); return; }
-  const t0 = performance.now(), d = 620; cancelAnimationFrame(el._raf);
+  if (reduceMotion() || from === to) { cancelAnimationFrame(el._raf); delete el.dataset.tw; el.textContent = fmt(to); return; }
+  const t0 = performance.now(), d = 620; cancelAnimationFrame(el._raf); el.dataset.tw = '1';      // data-tw : le chiffre défile encore
   const step = now => {
     const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3);
     el.textContent = fmt(Math.round(from + (to - from) * e));
-    if (p < 1) el._raf = requestAnimationFrame(step);
+    if (p < 1) el._raf = requestAnimationFrame(step); else delete el.dataset.tw;
   };
   el._raf = requestAnimationFrame(step);
 }

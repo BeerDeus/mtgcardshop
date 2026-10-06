@@ -1234,3 +1234,70 @@ button,.btn,select,summary{touch-action:manipulation}
 .pubv #pubSub{margin-bottom:10px}
 .pub-row{cursor:pointer}
 .pub-row .row-top .flag{margin-top:2px}
+
+/* ── Mouvement (motion.js) : retours au toucher, cascades, foil, en-têtes ─────────────────────────────────────────── */
+/* toucher : tout ce qui se touche s'enfonce un peu et revient avec un léger ressort */
+.icon-btn,.ca-opt,.seg-opt,.fcol,.imgv-v,.deck-main,.dvc,.dv-cmd,.coll-open,.dv-bar{transition:transform .32s var(--spring),background .2s,border-color .2s,color .2s,box-shadow .25s}
+.icon-btn:active{transform:scale(.9)}
+.seg-opt:active{transform:scale(.95)}
+.ca-opt:active,.coll-open:active{transform:scale(.975)}
+.fcol:active,.imgv-v:active{transform:scale(.9)}
+.deck-main:active .deck-art,.dvc:active .dvc-art{transform:scale(.955)}
+.dv-cmd:active{transform:scale(.985)}
+.dv-bar:not([disabled]):active{transform:translateY(2px)}
+.coll-list>.crow.pub-row:active,.coll-list>.crow.tr-row:active{background:var(--surface-3)}
+.dvc-art{transition:transform .32s var(--spring),box-shadow .25s}
+@media (hover:hover){.deck-main:hover .deck-art,.dvc:hover .dvc-art{box-shadow:0 2px 4px rgba(16,21,43,.18),0 18px 30px -14px rgba(16,21,43,.55)}}
+
+/* images : fondu et léger zoom arrière à l'arrivée (au lieu d'un simple fondu) */
+.thumb img,.dvc-art img{transform:scale(1.06);transition:opacity .45s var(--out),transform .7s var(--out)}
+.thumb img.ok,.dvc-art img.ok{transform:none}
+
+/* cascades : les 14 premiers éléments arrivent l'un après l'autre */
+@keyframes stgin{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.stg>*:nth-child(-n+14){animation:stgin .46s var(--out) both}
+.stg>:nth-child(2){animation-delay:28ms}.stg>:nth-child(3){animation-delay:56ms}.stg>:nth-child(4){animation-delay:84ms}.stg>:nth-child(5){animation-delay:112ms}
+.stg>:nth-child(6){animation-delay:140ms}.stg>:nth-child(7){animation-delay:168ms}.stg>:nth-child(8){animation-delay:196ms}.stg>:nth-child(9){animation-delay:224ms}
+.stg>:nth-child(10){animation-delay:252ms}.stg>:nth-child(11){animation-delay:280ms}.stg>:nth-child(12){animation-delay:308ms}.stg>:nth-child(13){animation-delay:336ms}.stg>:nth-child(14){animation-delay:364ms}
+/* main de départ : les cartes sont distribuées */
+@keyframes deal{from{opacity:0;transform:translate(-30px,60px) rotate(-14deg) scale(.7)}60%{opacity:1}to{opacity:1;transform:none}}
+.hand-grid.stg>*{animation:deal .55s var(--out) both}
+.hand-grid.stg>:nth-child(2){animation-delay:60ms}.hand-grid.stg>:nth-child(3){animation-delay:120ms}.hand-grid.stg>:nth-child(4){animation-delay:180ms}
+.hand-grid.stg>:nth-child(5){animation-delay:240ms}.hand-grid.stg>:nth-child(6){animation-delay:300ms}.hand-grid.stg>:nth-child(7){animation-delay:360ms}
+.odd i{transition:width .5s var(--out),background .3s}
+
+/* onglets de la collection : arrivent du côté où l'on va */
+@keyframes tabinl{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:none}}
+@keyframes tabinr{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+.tabin[data-dir="l"]{animation-name:tabinl}
+.tabin[data-dir="r"]{animation-name:tabinr}
+
+/* accueil : les blocs, puis les trois entrées (decks, collection, prix rapide), arrivent en cascade */
+#viewInput>*,#collSec>*{animation:stgin .5s var(--out) both}
+#viewInput>:nth-child(2){animation-delay:40ms}#viewInput>:nth-child(3){animation-delay:80ms}#viewInput>:nth-child(4){animation-delay:100ms}
+#viewInput>:nth-child(5){animation-delay:260ms}#viewInput>:nth-child(6){animation-delay:300ms}
+#collSec>:nth-child(1){animation-delay:120ms}#collSec>:nth-child(2){animation-delay:170ms}#collSec>:nth-child(3){animation-delay:220ms}#collSec>:nth-child(4){animation-delay:270ms}
+
+/* cartes foil : inclinaison 3D et reflet holographique qui suivent le doigt */
+.tilt{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;transform:perspective(800px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .55s var(--spring),box-shadow .25s}
+.tilt.tilting{transition:transform .09s linear,box-shadow .25s}
+.tilt::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;opacity:0;transition:opacity .4s;mix-blend-mode:soft-light;
+  background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.55),transparent 42%),linear-gradient(115deg,transparent 18%,rgba(255,143,195,.55) 34%,rgba(255,212,121,.5) 44%,rgba(123,232,200,.55) 54%,rgba(127,176,255,.55) 64%,transparent 80%);
+  background-size:100% 100%,240% 240%;background-position:center,var(--mx) var(--my)}
+.tilt.tilting::after{opacity:1}
+.tilt img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}      /* sinon le doigt (ou la souris) « attrape » l'image et l'inclinaison s'arrête */
+.imgv-card.tilt{touch-action:none}      /* la carte en grand suit le doigt ; le glissement horizontal (carte suivante) passe par les événements tactiles */
+.deck-main:active .deck-art.tilt{transform:perspective(800px) rotateX(var(--rx)) rotateY(var(--ry)) scale(.955)}
+.imgv-card.tilt{transform:scale(.92);transition:transform .38s cubic-bezier(.2,.85,.25,1)}
+.imgv.on .imgv-card.tilt{transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry))}
+.imgv.on .imgv-card.tilt.tilting{transition:transform .09s linear}
+
+/* écrans plein format : filet et ombre sous l'en-tête seulement quand le contenu passe dessous */
+.dv>.dv-head{border-bottom-color:transparent;transition:border-color .25s,box-shadow .25s}
+.dv.scrolled>.dv-head{border-bottom-color:var(--line);box-shadow:0 10px 24px -20px rgba(16,21,43,.5)}
+
+@media (prefers-reduced-motion:reduce){
+  .stg>*,#viewInput>*,#collSec>*,.hand-grid.stg>*{animation:none!important}
+  .tilt,.imgv-card.tilt,.imgv.on .imgv-card.tilt{transform:none!important}.tilt::after{display:none}
+  .thumb img,.dvc-art img{transform:none}
+}

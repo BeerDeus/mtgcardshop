@@ -154,7 +154,7 @@ function deckCard(d, i) {
   const dl = priceDelta(d.history), fresh = !D.seen.has(d.id), fk = deckFmt(d), dv = dkValue(d.text, dmOf), vt = dv.total && !dv.missing.length ? dkValueText(dv) : '';
   const cv = dkCoverCard(d.text, dmOf), art = coverUrl(cv), hue = hash32(d.id) % 360;
   return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
-    <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
+    <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art tilt" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
       <span class="deck-top"><span class="deck-name">${esc(d.name)}</span></span>
       <span class="deck-tags">${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span>
       <span class="deck-meta"><span class="deck-line">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">complet</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>

@@ -86,20 +86,21 @@ function openCardViewer(items, index) {
   const multi = items.length > 1;
   wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
     ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
-    <div class="imgv-card" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
+    <div class="imgv-card tilt" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
     <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
     <div class="imgv-acts"><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
     <div class="imgv-vars" hidden><div class="imgv-vh" aria-live="polite"></div><div class="imgv-vl"></div></div>`;
   const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
   const artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
-  const prevFocus = document.activeElement;
+  const prevFocus = document.activeElement, from = pressOrigin(), fromEl = from ? MO.press : null, idx0 = Math.max(0, Math.min(items.length - 1, index | 0));
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
   let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
   const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
   if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
   const api = imgView = { close() {
     if (imgView !== api) return; imgView = null; if (ctrl) ctrl.abort(); clearTimeout(varT);
+    if (idx === idx0 && fromEl && fromEl.isConnected) flipTo(card, fromEl.getBoundingClientRect(), 280);      // retour vers la vignette d'origine
     wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
     setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 260);
     releaseApp();
@@ -195,11 +196,12 @@ function openCardViewer(items, index) {
   document.body.appendChild(wrap); holdApp();
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); go(idx);
+  flipFrom(card, from);      // la carte part de la vignette touchée
 }
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
+const DV = { anim: false, el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
 
 /** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
@@ -368,7 +370,7 @@ function dvHero(it, idx, snap, dl) {
   const art = dvImg(it), hue = hash32(it.k) % 360, d = dl && dl.get(it.k);
   const price = it.s === 'ok' ? `<b>${esc(fmt(it.c))}</b>${it.rf ? `<span class="cmd-ref">Réf. Cardmarket ${esc(fmt(it.rf))}</span>` : ''}${snap.ref && it.ow ? `<span class="cmd-ref">${it.ow >= it.q ? 'Dans ta collection' : 'Possédé en ' + it.ow + ' ex.'}</span>` : ''}${d && dvMoved(d) ? `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(d.tot)))}</span>` : ''}`
     : it.s === 'own' ? '<b class="own">Dans ta collection</b>' : it.s === 'nf' ? '<b class="bad">Introuvable</b>' : `<b class="warn">${snap.ref ? 'Prix inconnu' : 'Aucune offre'}</b>`;
-  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
+  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art tilt" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
     <span class="cmd-t"><small>${/planeswalker/i.test(it.tl || '') ? 'Planeswalker commandant' : 'Commandant'}</small><strong>${esc(it.n)}</strong>${it.tl ? `<span class="cmd-tl">${esc(it.tl)}</span>` : ''}${it.mc ? `<span class="cmd-mc">${manaHtml(it.mc)}</span>` : ''}<span class="cmd-p">${price}</span></span></button>`;
 }
 
@@ -401,7 +403,7 @@ function dvFrame(snap) {
   $('.dv-title span', el).textContent = DV.pub ? `${copies} carte${copies > 1 ? 's' : ''}${sbTxt} · partagé, lecture seule` : ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
     : `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
-      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}${esc(fmt(total))}${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
+      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}<span class="dv-amt">${esc(fmt(total))}</span>${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
@@ -412,10 +414,11 @@ function dvFrame(snap) {
     <div id="dvF"></div>
     <div class="dv-groups"></div>`;
   mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: 'Prix' }, { v: 'type', label: 'Type' }], DV.sort, v => {
-    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); dvGroups();
+    DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); DV.anim = true; dvGroups();
     const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
   });
   $('#dvSeg', el).setValue(DV.sort);
+  { const a = $('.dv-amt', el); a._v = DV.shownTotal == null ? 0 : DV.shownTotal; DV.shownTotal = total; tween(a, total); }      // le total défile depuis 0 à l'ouverture, puis d'une valeur à l'autre
   DV.fb = mountFilters($('#dvF', el), DV.f, () => dvGroups(), { placeholder: 'Rechercher dans le deck' });
 }
 /** Commandant + groupes de cartes, d'après le tri et les filtres. */
@@ -433,6 +436,7 @@ function dvGroups() {
     + (groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + (g.id === 'sb' ? '≈ ' : '') + esc(fmt(g.cost)) : ''}${g.id === 'sb' ? ' · prix tendance' : ''}</small></h3><div class="dv-grid">${g.items.map(it => { flat(it); return dvTile(it, n++, snap, dl); }).join('')}</div></section>`).join('')
       || (cmds.length ? '' : '<p class="hint listempty">Aucune carte ne correspond.</p>'));
   if (sc) sc.scrollTop = keep;
+  if (DV.anim) { DV.anim = false; stagger($$('.dv-grid', el), $('.dv-cmds', el)); }
 }
 function dvRender() {
   const snap = DV.snap, el = DV.el; if (!el) return;
@@ -473,7 +477,7 @@ function openDeckViewer({ id, live, text, name, pub } = {}) {
   closeDeckViewer(); closeCardImage();
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
   DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
-  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
+  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
   DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
   if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
   // Pas de prix gardé (ou tout est possédé, donc rien à chiffrer) : même viewer, avec la valeur estimée du deck au prix tendance Cardmarket
@@ -543,7 +547,7 @@ function openHand() {
         <div class="odds" role="img" aria-label="${odds.map((p, k) => k + ' terrain' + (k > 1 ? 's' : '') + ' : ' + pctTxt(p)).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
         <p class="hint">Entre 2 et 4 terrains : ${pctTxt(odds[2] + odds[3] + (odds[4] || 0))} des mains.${unknown ? ` ${unknown} carte${unknown > 1 ? 's' : ''} au type pas encore lu, comptée${unknown > 1 ? 's' : ''} comme sort${unknown > 1 ? 's' : ''}.` : ''}</p>`;
     };
-    const deal = () => { hand = drawHand(lib, 7); paint(); };
+    const deal = () => { hand = drawHand(lib, 7); paint(); stagger($('.hand-grid', api.body)); };
     api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" data-act="redeal">Nouvelle main</button>');
     api.foot.addEventListener('click', e => { if (e.target.closest('[data-act="redeal"]')) { haptic('tap'); deal(); } });
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
