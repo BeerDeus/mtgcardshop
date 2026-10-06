@@ -72,7 +72,11 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   assert.match(await txt(p, '.tr-row[data-k="wrath of god"] .row-meta'), /souhait × 2/); assert.equal(await txt(p, '.tr-row[data-k="wrath of god"] .qstep b'), '2');
   await p.click('.tr-row[data-k="wrath of god"] [data-act="wminus"]'); await p.waitForTimeout(150);
   assert.equal(await txt(p, '.tr-row[data-k="wrath of god"] .qstep b'), '1'); await p.waitForTimeout(500); await p.screenshot({ path: 'shots/trade-2-recherche.png' });
-  ok('Je recherche : manquantes du deck + souhaits (ajout par le catalogue, quantité ajustable)');
+  await p.evaluate(() => { window.__clip = []; navigator.clipboard.writeText = t => { window.__clip.push(t); return Promise.resolve(); }; });
+  await p.click('[data-act="wcm"]'); await p.waitForTimeout(200);
+  assert.equal((await p.evaluate(() => window.__clip))[0], '1 Arcane Signet\n1 Command Tower\n1 Craterhoof Behemoth\n1 Edgar Markov\n1 Wrath of God', 'Cardmarket : une ligne par carte recherchée');
+  assert.match(await txt(p, '#toast'), /5 cartes copiées/);
+  ok('Je recherche : manquantes du deck + souhaits (ajout par le catalogue, quantité ajustable), copie pour Cardmarket');
 }
 {
   assert.equal(shareWrites, 0, 'rien n\'est partagé avant « Créer le lien »');
@@ -129,6 +133,10 @@ const tradeId = [...shares.keys()][0];
   assert.equal(await p.$eval('.sheet .tr-link input', i => i.value), world.url + '?p=' + id);
   assert.deepEqual(JSON.parse(shares.get(id).d).name, 'Edgar'); assert.equal(shares.get(id).kind, 'deck');
   await p.click('.sheet [data-close].icon-btn'); await p.waitForTimeout(450);
+  // manquantes du deck pour Cardmarket : deck − collection, sans terrains de base
+  await p.evaluate(() => { window.__clip = []; navigator.clipboard.writeText = t => { window.__clip.push(t); return Promise.resolve(); }; });
+  await p.click('.dv.on [data-act="cm"]'); await p.waitForTimeout(200);
+  assert.equal((await p.evaluate(() => window.__clip))[0], '1 Edgar Markov\n1 Craterhoof Behemoth\n1 Command Tower\n1 Arcane Signet', 'Cardmarket : les manquantes du deck (Sol Ring et Swords possédées, Plaines exclues)');
   // main de départ côté propriétaire
   await p.click('.dv.on [data-act="hand"]'); await p.waitForSelector('.hand-grid');
   assert.equal(await p.$$eval('.hand-c', n => n.length), 7); await p.waitForTimeout(700); await p.screenshot({ path: 'shots/trade-5-main.png' });

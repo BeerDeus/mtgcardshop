@@ -1544,6 +1544,27 @@ function tradeWant(coll, use, wish) {
   return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
 }
 
+/* ── Export Cardmarket : une ligne « 2 Sol Ring » par carte (noms anglais), à coller dans une Wants list (Shopping Wizard) ── */
+/** items : [{ n, q }] → texte ; cartes additionnées par nom, terrains de base exclus, quantités ≤ 0 ignorées. */
+function cmText(items) {
+  const m = new Map();
+  for (const x of items || []) {
+    const k = ownKey(x.n), q = Math.floor(Number(x.q) || 0); if (!k || q <= 0 || BASIC_NAMES.has(k)) continue;
+    const cur = m.get(k); if (cur) cur.q += q; else m.set(k, { n: String(x.n).trim(), q });
+  }
+  return [...m.values()].map(x => x.q + ' ' + x.n).join('\n');
+}
+/** Cartes qui manquent à un deck (texte) : deck + réserve − owned(clé) ; owned absent = rien n'est possédé. [{ n, q }] */
+function deckMissing(text, owned) {
+  const need = new Map();
+  const add = (name, q) => { const k = ownKey(name); if (!k || BASIC_NAMES.has(k)) return; const cur = need.get(k); if (cur) cur.q += q; else need.set(k, { n: name, q }); };
+  for (const c of parseDeck(text).cards) add(c.name, c.qty);
+  for (const c of dkSideCards(text)) add(c.name, c.qty);
+  const out = [];
+  for (const [k, x] of need) { const q = x.q - (owned ? Math.max(0, Number(owned(k)) || 0) : 0); if (q > 0) out.push({ n: x.n, q }); }
+  return out;
+}
+
 /* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
 const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/(?![\w./-]*(?:\/\/|\.\.))[\w./-]+(\?\d+)?$/;      // images Scryfall seulement, sans « // » ni « .. »
 const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
@@ -1610,7 +1631,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,

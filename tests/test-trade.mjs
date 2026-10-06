@@ -86,4 +86,11 @@ const use = C.deckUse(decks);
   assert.deepEqual(sh, { kind: 'deck', at: 9, name: 'D', text: '1 Sol Ring' });
   console.log('✓ shareFetch : API REST Firestore sans compte, identifiant contrôlé avant toute requête, erreurs lisibles');
 }
+{
+  assert.equal(C.cmText([{ n: 'Sol Ring', q: 1 }, { n: 'Forest', q: 3 }, { n: 'Fire // Ice', q: 2 }, { n: 'sol ring', q: 1 }, { n: 'Zéro', q: 0 }]), '2 Sol Ring\n2 Fire // Ice', 'additionnées, sans terrains de base ni quantité nulle');
+  const m = C.deckMissing('Commander\n1 Edgar Markov\nDeck\n4 Lightning Bolt\n10 Plains\nSB: 2 Negate', k => ({ 'lightning bolt': 3, 'edgar markov': 1 })[k] || 0);
+  assert.deepEqual(m, [{ n: 'Lightning Bolt', q: 1 }, { n: 'Negate', q: 2 }], 'deck + réserve − possédées, terrains de base exclus');
+  assert.deepEqual(C.deckMissing('1 Sol Ring\n2 Island', null), [{ n: 'Sol Ring', q: 1 }], 'sans collection : tout le deck');
+  console.log('✓ export Cardmarket : « 2 Sol Ring » par ligne, manquantes d\'un deck (réserve comprise, terrains de base exclus)');
+}
 console.log('test-trade OK');

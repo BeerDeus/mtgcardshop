@@ -1330,6 +1330,8 @@ button,.btn,select,summary{touch-action:manipulation}
 .imgv-wish.on{background:rgba(255,212,121,.16);border-color:#ffd479;color:#ffd479}
 .imgv-wish[hidden]{display:none}
 .set-ver{margin:14px 0 0;text-align:center;font-family:var(--font-code);font-size:11.5px}
+.dv-acts{margin-top:2px}.dv-acts .btn,.tr-wacts .btn{flex:1 1 auto;height:44px;font-size:14px}
+.tr-wacts{margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1537,7 +1539,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = 'f07f29fd';
+const DD_BUILD = 'b85481b9';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -3084,6 +3086,27 @@ function tradeWant(coll, use, wish) {
   return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
 }
 
+/* ── Export Cardmarket : une ligne « 2 Sol Ring » par carte (noms anglais), à coller dans une Wants list (Shopping Wizard) ── */
+/** items : [{ n, q }] → texte ; cartes additionnées par nom, terrains de base exclus, quantités ≤ 0 ignorées. */
+function cmText(items) {
+  const m = new Map();
+  for (const x of items || []) {
+    const k = ownKey(x.n), q = Math.floor(Number(x.q) || 0); if (!k || q <= 0 || BASIC_NAMES.has(k)) continue;
+    const cur = m.get(k); if (cur) cur.q += q; else m.set(k, { n: String(x.n).trim(), q });
+  }
+  return [...m.values()].map(x => x.q + ' ' + x.n).join('\n');
+}
+/** Cartes qui manquent à un deck (texte) : deck + réserve − owned(clé) ; owned absent = rien n'est possédé. [{ n, q }] */
+function deckMissing(text, owned) {
+  const need = new Map();
+  const add = (name, q) => { const k = ownKey(name); if (!k || BASIC_NAMES.has(k)) return; const cur = need.get(k); if (cur) cur.q += q; else need.set(k, { n: name, q }); };
+  for (const c of parseDeck(text).cards) add(c.name, c.qty);
+  for (const c of dkSideCards(text)) add(c.name, c.qty);
+  const out = [];
+  for (const [k, x] of need) { const q = x.q - (owned ? Math.max(0, Number(owned(k)) || 0) : 0); if (q > 0) out.push({ n: x.n, q }); }
+  return out;
+}
+
 /* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
 const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/(?![\w./-]*(?:\/\/|\.\.))[\w./-]+(\?\d+)?$/;      // images Scryfall seulement, sans « // » ni « .. »
 const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
@@ -3150,7 +3173,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
@@ -6512,7 +6535,7 @@ function dvFrame(snap) {
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
-      <button class="btn ghost block dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>
+      <div class="tr-acts dv-acts"><button class="btn ghost dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>${dvMissing().length ? `<button class="btn ghost" type="button" data-act="cm" title="Les cartes qui manquent, une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket"><svg class="i"><use href="#i-copy"/></svg>${DV.pub ? 'Copier pour Cardmarket' : 'Manquantes · Cardmarket'}</button>` : ''}</div>
     </section>
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
@@ -6616,6 +6639,7 @@ function openDeckViewer({ id, live, text, name, pub } = {}) {
     const act = b.dataset.act, deck = DV.deckId;
     if (act === 'close') wrap.__close();
     else if (act === 'hand') openHand();
+    else if (act === 'cm') cmCopy(dvMissing());
     else if (act === 'share') shareDeck(DV.deckId && !DV.live ? { id: DV.deckId } : { text: DV.text, name: DV.name });
     else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
     else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
@@ -6634,6 +6658,9 @@ async function refreshDeckPrices(id) {
   const cur = findDeck(id), now = snapOf(cur);
   if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
 }
+
+/** Cartes qui manquent au deck affiché (deck + réserve − collection libre ; deck public : tout le deck, la collection du visiteur n'est pas lue ici). */
+const dvMissing = () => deckMissing(DV.text, DV.pub ? null : k => engFree(collQty(k), XS.eng, k, DV.deckId));
 
 /* ── Main de départ : 7 cartes au hasard dans la bibliothèque (commandant et réserve à part), et les chances d'avoir 0 à 7 terrains (loi hypergéométrique) ── */
 const pctTxt = p => (p >= 0.995 ? '100' : p < 0.005 && p > 0 ? '< 1' : String(Math.round(p * 100))) + ' %';
@@ -9473,6 +9500,16 @@ function trDeckGone(id) {
   if (cloudOn()) D.cloud.dropShare(sid).catch(() => {});
 }
 
+/* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
+const CM_WANTS = 'https://www.cardmarket.com/fr/Magic/Wants';
+function cmCopy(items, what) {
+  const text = cmText(items), n = text ? text.split('\n').length : 0;
+  if (!n) { toast('Rien à copier : ' + (what || 'aucune carte manquante')); return; }
+  haptic('ok');
+  const done = () => toast(`${n} carte${n > 1 ? 's' : ''} copiée${n > 1 ? 's' : ''} : colle-les dans une Wants list Cardmarket`, { label: 'Ouvrir', fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
+}
+
 /* ── Onglet « Échange » de la collection (propriétaire) ────────────────────────────────────────── */
 /** Item d'affichage (filtres, vignette) d'une carte de la collection ou recherchée. */
 function trItem(k, n, q, l) {
@@ -9515,7 +9552,7 @@ function trPanelHtml() {
     <div class="tr-keep"><span class="label">Réserve gardée en plus de tes decks</span><div class="seg" id="trKeep" role="radiogroup" aria-label="Réserve"></div><p class="hint">${esc(keepHint)}</p></div>
     <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="Liste"></div>
     ${act ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(sub === 'want' ? st.want.length : st.have.length)}</p>` : ''}
-    ${sub === 'want' ? '<button class="btn ghost block tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte recherchée</button>' : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
+    ${sub === 'want' ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)"><svg class="i"><use href="#i-copy"/></svg>Copier pour Cardmarket</button>' : ''}</div>` : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
     ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (sub === 'want' ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
       : `<p class="hint listempty">${act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.'}</p>`}
     ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}
@@ -9551,6 +9588,7 @@ function trClick(e) {
     else { TR.wish[k] = { ...TR.wish[k], q: Math.min(99, q) }; trChanged(); }
   }
   else if (act === 'wadd') openWishAdd();
+  else if (act === 'wcm') cmCopy(TR.st ? TR.st.want : trState().want, 'aucune carte recherchée');
   else return false;
   return true;
 }

@@ -186,6 +186,16 @@ function trDeckGone(id) {
   if (cloudOn()) D.cloud.dropShare(sid).catch(() => {});
 }
 
+/* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
+const CM_WANTS = 'https://www.cardmarket.com/fr/Magic/Wants';
+function cmCopy(items, what) {
+  const text = cmText(items), n = text ? text.split('\n').length : 0;
+  if (!n) { toast('Rien à copier : ' + (what || 'aucune carte manquante')); return; }
+  haptic('ok');
+  const done = () => toast(`${n} carte${n > 1 ? 's' : ''} copiée${n > 1 ? 's' : ''} : colle-les dans une Wants list Cardmarket`, { label: 'Ouvrir', fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
+}
+
 /* ── Onglet « Échange » de la collection (propriétaire) ────────────────────────────────────────── */
 /** Item d'affichage (filtres, vignette) d'une carte de la collection ou recherchée. */
 function trItem(k, n, q, l) {
@@ -228,7 +238,7 @@ function trPanelHtml() {
     <div class="tr-keep"><span class="label">Réserve gardée en plus de tes decks</span><div class="seg" id="trKeep" role="radiogroup" aria-label="Réserve"></div><p class="hint">${esc(keepHint)}</p></div>
     <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="Liste"></div>
     ${act ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(sub === 'want' ? st.want.length : st.have.length)}</p>` : ''}
-    ${sub === 'want' ? '<button class="btn ghost block tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte recherchée</button>' : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
+    ${sub === 'want' ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)"><svg class="i"><use href="#i-copy"/></svg>Copier pour Cardmarket</button>' : ''}</div>` : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
     ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (sub === 'want' ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
       : `<p class="hint listempty">${act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.'}</p>`}
     ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}
@@ -264,6 +274,7 @@ function trClick(e) {
     else { TR.wish[k] = { ...TR.wish[k], q: Math.min(99, q) }; trChanged(); }
   }
   else if (act === 'wadd') openWishAdd();
+  else if (act === 'wcm') cmCopy(TR.st ? TR.st.want : trState().want, 'aucune carte recherchée');
   else return false;
   return true;
 }

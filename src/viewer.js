@@ -432,7 +432,7 @@ function dvFrame(snap) {
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
-      <button class="btn ghost block dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>
+      <div class="tr-acts dv-acts"><button class="btn ghost dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>${dvMissing().length ? `<button class="btn ghost" type="button" data-act="cm" title="Les cartes qui manquent, une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket"><svg class="i"><use href="#i-copy"/></svg>${DV.pub ? 'Copier pour Cardmarket' : 'Manquantes · Cardmarket'}</button>` : ''}</div>
     </section>
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
@@ -536,6 +536,7 @@ function openDeckViewer({ id, live, text, name, pub } = {}) {
     const act = b.dataset.act, deck = DV.deckId;
     if (act === 'close') wrap.__close();
     else if (act === 'hand') openHand();
+    else if (act === 'cm') cmCopy(dvMissing());
     else if (act === 'share') shareDeck(DV.deckId && !DV.live ? { id: DV.deckId } : { text: DV.text, name: DV.name });
     else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
     else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
@@ -554,6 +555,9 @@ async function refreshDeckPrices(id) {
   const cur = findDeck(id), now = snapOf(cur);
   if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
 }
+
+/** Cartes qui manquent au deck affiché (deck + réserve − collection libre ; deck public : tout le deck, la collection du visiteur n'est pas lue ici). */
+const dvMissing = () => deckMissing(DV.text, DV.pub ? null : k => engFree(collQty(k), XS.eng, k, DV.deckId));
 
 /* ── Main de départ : 7 cartes au hasard dans la bibliothèque (commandant et réserve à part), et les chances d'avoir 0 à 7 terrains (loi hypergéométrique) ── */
 const pctTxt = p => (p >= 0.995 ? '100' : p < 0.005 && p > 0 ? '< 1' : String(Math.round(p * 100))) + ' %';

@@ -1305,3 +1305,5 @@ button,.btn,select,summary{touch-action:manipulation}
 .imgv-wish.on{background:rgba(255,212,121,.16);border-color:#ffd479;color:#ffd479}
 .imgv-wish[hidden]{display:none}
 .set-ver{margin:14px 0 0;text-align:center;font-family:var(--font-code);font-size:11.5px}
+.dv-acts{margin-top:2px}.dv-acts .btn,.tr-wacts .btn{flex:1 1 auto;height:44px;font-size:14px}
+.tr-wacts{margin-bottom:10px}
