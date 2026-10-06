@@ -85,11 +85,14 @@ Accueil › **Mes decks** › **+** (la section est toujours visible) : nom + **
 
 - **Format et valeur** : « Mes decks » affiche **Standard** ou **Commander** à côté du nom (noté dans la liste par l'éditeur, ou déduit d'un bloc `Commander` pour un deck importé) et la **valeur estimée** du deck (`≈ 84 €`, `+` si certaines cartes n'ont pas de prix) : prix tendance Cardmarket de chaque carte × exemplaires, **cartes possédées comprises**, terrains de base et réserve exclus. Marche aussi pour un deck monté (la recherche d'offres ne sert pas quand on a tout). Les cartes hors collection sont lues sur Scryfall en arrière-plan (gardées 30 jours sur l'appareil) ; la feuille d'un deck détaille « N cartes sur M ». L'éditeur affiche la valeur dans son résumé, et **toucher la vignette d'une carte** l'ouvre en grand.
 
+- **Couleurs du deck** : pastilles à côté du format, d'après les **terrains de base** du deck (Plains W, Island U, Swamp B, Mountain R, Forest G, enneigés compris ; Wastes ignorés).
+- **Bouton Retour du téléphone** : ferme l'écran ouvert (image en grand, feuille, collection, scan, éditeur de deck, viewer, résultats) au lieu de quitter l'app ; sur l'accueil, un 1er Retour affiche « Appuie encore sur Retour pour quitter », le 2e (dans les 2,5 s) quitte. Fonctionne en PWA installée comme dans le navigateur (l'historique garde deux entrées ; un rechargement n'en ajoute pas).
+
 ## Deck viewer et prix gardés
 
 Chaque recherche live d'un deck enregistré garde les prix carte par carte (carte retenue, langue, état, vendeur, extension, coût de mana, type, image) : sur l'appareil (`deckdeal:snaps:v1`, 30 decks max) et, si les règles Firestore le permettent, dans le document du deck (champ `snap`, synchronisé entre appareils).
 
-- Liste « Mes decks » › **Voir** : viewer plein écran du deck, sans nouvelle recherche. Aussi dans les résultats : bouton **Viewer** (recherche en cours).
+- Liste « Mes decks » : **toucher un deck** ouvre son viewer plein écran, sans nouvelle recherche (un deck jamais cherché liste ses cartes et sa valeur estimée). Pour charger la liste dans la saisie : ⋯ › **Ouvrir**, ou viewer › **Modifier la liste**. Aussi dans les résultats : bouton **Viewer** (recherche en cours).
 - Tri **Mana** (colonnes par coût, terrains à part, courbe de mana cliquable), **Prix** (du plus cher au moins cher) ou **Type** ; le choix est mémorisé.
 - Toucher une carte l'ouvre en grand (langue de l'offre) ; précédent / suivant par boutons, flèches du clavier ou glissement ; prix, état et vendeur sous l'image.
 - **Commandant** mis en avant en tête ; **Réf. Cardmarket** par carte (prix de référence Scryfall, écart en % : bon prix / correct / cher) ; recherche + filtres couleur, famille, coût.

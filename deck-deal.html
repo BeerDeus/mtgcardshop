@@ -1176,6 +1176,14 @@ button,.btn,select,summary{touch-action:manipulation}
 .dk-val b{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .dk-val span{font-size:12.5px;color:var(--ink-3)}
 .bd-val{font-family:var(--font-display);font-size:17px;font-weight:650;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.deck-pips{flex:none;display:inline-flex;gap:3px}
+.pip{width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
+.pip.W{background:#f6f0cf}.pip.U{background:#3f8fe0}.pip.B{background:#4b3f52}.pip.R{background:#e0533d}.pip.G{background:#3a9a5e}
+.dv-est{font-family:var(--font-display);font-size:18px;font-weight:650;color:var(--ink)}
+.dv-plain{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.dv-line{display:flex;gap:12px;align-items:baseline;padding:9px 14px;border-top:1px solid var(--line);font-size:14.5px}
+.dv-line:first-child{border-top:0}
+.dv-line b{flex:none;min-width:22px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -2047,6 +2055,12 @@ function dkValue(text, metaOf) {
   }
   return { cents: Math.round(cents), known, total: cards.length, missing, noPrice };
 }
+/** Couleurs d'un deck d'après ses terrains de base (« WUBRG », dans cet ordre ; Wastes ignorés) : '' si le deck n'en a pas. */
+function dkColors(text) {
+  const have = new Set(), by = { plains: 'W', island: 'U', swamp: 'B', mountain: 'R', forest: 'G' };
+  for (const b of parseDeck(text).basics) { const c = by[b.key.replace(/^snow covered /, '')]; if (c && b.qty > 0) have.add(c); }
+  return [...'WUBRG'].filter(c => have.has(c)).join('');
+}
 /** Vérifie un deck du créateur. d = { main, side, cmdr } (comme dkParse) ; metaOf(clé) → { ci } ou null (identité de couleur, si connue).
  *  Retourne { n (cartes du deck, commandant compris), side, size, issues: [{ lv: 'bad'|'warn', t }] } : « bad » = règle enfreinte, « warn » = deck pas fini. */
 function dkCheck(fmt, d, metaOf) {
@@ -2849,7 +2863,7 @@ if (typeof module !== 'undefined' && module.exports) {
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
-    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkSideCards, dkBuildText, dkParse, dkCheck,
+    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkColors, dkSideCards, dkBuildText, dkParse, dkCheck,
     ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
@@ -5220,13 +5234,15 @@ function deltaChip(h) {
   const d = deltaFor(h); if (!d || d.diff === 0) return '';
   return `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${fmt(Math.abs(d.diff))}</span>`;
 }
+const COLOR_NAMES = { W: 'blanc', U: 'bleu', B: 'noir', R: 'rouge', G: 'vert' };
+/** Pastilles de couleur d'un deck (d'après ses terrains de base). */
+function pips(text) { const c = dkColors(text); return c ? `<span class="deck-pips" role="img" aria-label="Couleurs : ${[...c].map(x => COLOR_NAMES[x]).join(', ')}" title="Couleurs d'après les terrains de base">${[...c].map(x => `<i class="pip ${x}"></i>`).join('')}</span>` : ''; }
 const deckFmt = d => dkFormat(d.text) || (commanderKeys(d.text).length ? 'commander' : '');
 function deckCard(d, i) {
   const dl = priceDelta(d.history), fresh = !D.seen.has(d.id), fk = deckFmt(d), dv = dkValue(d.text, dmOf), vt = dv.total && !dv.missing.length ? dkValueText(dv) : '';
   return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
-    <button class="deck-main" type="button" data-act="open"><span class="deck-top"><span class="deck-name">${esc(d.name)}</span>${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">monté</b>' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
+    <button class="deck-main" type="button" data-act="open"><span class="deck-top"><span class="deck-name">${esc(d.name)}</span>${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">monté</b>' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
     <span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span>
-    <button class="deck-view" type="button" data-act="view" aria-label="Voir ${esc(d.name)} dans le viewer">Voir</button>
     <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
 }
 function renderDecks() {
@@ -5512,7 +5528,7 @@ function initDecks() {
     const b = e.target.closest('[data-act]'); if (!b) return;
     if (b.dataset.act === 'import') { b.disabled = true; importLocal(); return; }
     const id = (b.closest('.deck') || {}).dataset && b.closest('.deck').dataset.id; if (!id) return;
-    if (b.dataset.act === 'open') loadDeck(id); else if (b.dataset.act === 'view') openDeckViewer({ id }); else if (b.dataset.act === 'more') openDeckSheet(id);
+    if (b.dataset.act === 'open') openDeckViewer({ id }); else if (b.dataset.act === 'more') openDeckSheet(id);      // toucher le deck : le viewer ; « Ouvrir » (feuille ⋯ ou viewer › Modifier la liste) charge la liste
   });
   $('#btnMoreDecks').onclick = () => { D.expanded = !D.expanded; renderDecks(); };
   $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
@@ -5775,7 +5791,9 @@ function dvRender() {
   const snap = DV.snap, el = DV.el; if (!el) return;
   if (!snap) {
     DV.framed = null;
-    $('.dv-body', el).innerHTML = `<div class="dv-empty"><b>Aucun prix gardé pour ce deck</b><p>Lance une recherche : les prix, les cartes et leur coût de mana seront gardés ici pour les revoir sans attendre.</p>${DV.deckId ? '<button class="btn" type="button" data-act="refresh">Chercher les prix</button>' : ''}</div>`;
+    const dk = DV.deckId ? findDeck(DV.deckId) : null, pd = dk ? parseDeck(dk.text) : null, vt = dk ? dkValueText(dkValue(dk.text, dmOf)) : '';
+    const lines = pd ? pd.cards.slice(0, 200).map(c => `<div class="dv-line"><b>${c.qty}</b><span>${esc(c.name)}</span></div>`).join('') + (pd.basicCopies ? `<div class="dv-line"><b>${pd.basicCopies}</b><span>terrains de base</span></div>` : '') : '';
+    $('.dv-body', el).innerHTML = `<div class="dv-empty"><b>Aucun prix gardé pour ce deck</b>${vt ? `<p class="dv-est">${esc(vt)} · valeur estimée (prix tendance Cardmarket)</p>` : ''}<p>Lance une recherche : les prix, les cartes et leur coût de mana seront gardés ici pour les revoir sans attendre.</p>${DV.deckId ? '<button class="btn" type="button" data-act="refresh">Chercher les prix</button>' : ''}</div>${lines ? `<div class="dv-plain">${lines}</div>` : ''}`;
     $('.dv-title span', el).textContent = ''; $('.dv-foot', el).hidden = !DV.deckId; return;
   }
   if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
@@ -8436,6 +8454,35 @@ function bdSave() {
 }
 
 
+/* ── back.js : bouton Retour du téléphone ─────────────────────────────────────────────────────────
+   Un écran ouvert (feuille, collection, scan, éditeur de deck, visionneuse, résultats) se ferme au lieu de quitter l'app.
+   Sur l'accueil : un 1er Retour affiche « Appuie encore sur Retour pour quitter », le 2e (dans les 2,5 s) quitte.
+   Principe : l'historique garde toujours deux entrées [root, trap] ; Retour ramène sur « root », on traite puis on repose « trap ». */
+const BK = { armed: 0 };
+/** Ferme l'écran le plus haut ; retourne vrai s'il y en avait un. */
+function backClose() {
+  if (typeof imgView !== 'undefined' && imgView) { imgView.close(); return true; }
+  if (sheets.length) { sheets[sheets.length - 1].close(); return true; }
+  const dvs = $$('body > .dv.on'), top = dvs[dvs.length - 1];
+  if (top && top.__close) { if (top.classList.contains('bd')) bdClose(); else top.__close(); return true; }
+  if (S.view === 'results') { $('#btnBack').click(); return true; }
+  return false;
+}
+function backInit() {
+  if (typeof history === 'undefined' || !history.pushState || !/^https?:$/.test(location.protocol)) return;
+  const mark = d => { try { history.pushState({ dd: d }, ''); } catch (e) { /* ignore */ } };
+  const st = history.state && history.state.dd;
+  if (st === 'root') mark('trap');
+  else if (st !== 'trap') { try { history.replaceState({ dd: 'root' }, ''); } catch (e) { return; } mark('trap'); }      // déjà sur « trap » après un rechargement : rien à ajouter
+  window.addEventListener('popstate', e => {
+    if (!e.state || e.state.dd !== 'root') return;
+    if (backClose()) { BK.armed = 0; mark('trap'); return; }
+    if (Date.now() - BK.armed < 2500) { BK.armed = 0; history.back(); return; }      // 2e Retour : on laisse partir
+    BK.armed = Date.now(); toast('Appuie encore sur Retour pour quitter'); mark('trap');
+  });
+}
+
+
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
    Chrome/Edge/Android/Samsung : l'événement « beforeinstallprompt » ouvre la fenêtre d'installation du navigateur.
    iPhone/iPad : Apple n'autorise que « Sur l'écran d'accueil » (pas d'installation déclenchable) → on explique le geste.
@@ -8567,6 +8614,7 @@ async function paintPushBox(box) {
 
 /* ── main.js : démarrage ─────────────────────────────────────────────────────────────────────── */
 init();
+backInit();
 </script>
 </body>
 </html>
