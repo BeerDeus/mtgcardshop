@@ -1129,6 +1129,10 @@ button,.btn,select,summary{touch-action:manipulation}
 .dv-foot .sc-total[hidden]{display:none}
 .sc-cnt{border:0;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;gap:5px}
 .dk-eng{white-space:nowrap}
+
+/* ── Une carte en plusieurs langues : lignes successives, la 2e allégée ─────── */
+.crow.ml.sub{border-top-color:transparent}
+.crow.sub .thumb{opacity:.92}
 </style>
 </head>
 <body>
@@ -1963,6 +1967,40 @@ const colNorm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').to
 /** Repère de date d'ajout dans le texte de la collection : « 3 Sol Ring (Dh7zqkx) *FR* », secondes en base 36. Une ligne que l'ancienne version lit encore : elle y voit un code d'extension et l'ignore. */
 const DATE_MARK_RE = /\s+\(D([0-9a-z]{5,7})\)(?=(?:\s+\*[A-Za-z]+\*)?\s*$)/;
 const dateNowSec = () => Math.floor(Date.now() / 1000);
+/* ── Une carte, plusieurs langues : entrée { n, q (total), l (langue la plus fournie), x? { langue: exemplaires } (seulement avec plusieurs langues), d? } ───
+   Chaque langue est une « ligne » (« 2 Sol Ring *FR* » + « 1 Sol Ring *EN* » dans le texte) ; la langue '' = non précisée. Les totaux (q) servent partout ailleurs (decks, paniers, valeur). */
+const LINE_RANK = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', ''];
+const lineRank = l => { const i = LINE_RANK.indexOf(l || ''); return i < 0 ? LINE_RANK.length : i; };
+/** Lignes d'une entrée : [[langue, exemplaires]] dans l'ordre d'affichage (fr, en, autres, non précisée) ; toujours au moins une ligne si la carte existe. */
+function collLines(x) {
+  if (!x || !(x.q > 0)) return [];
+  const ls = x.x ? Object.entries(x.x).filter(e => e[1] > 0) : [[x.l || '', x.q]];
+  return ls.sort((a, b) => lineRank(a[0]) - lineRank(b[0]));
+}
+/** Langue la plus fournie d'une liste de lignes ('' si c'est la non précisée) ; à égalité la première dans l'ordre d'affichage. */
+const collDomLang = lines => { let d = null; for (const e of lines) if (!d || e[1] > d[1]) d = e; return d ? d[0] : ''; };
+/** Entrée reconstruite depuis ses lignes (base : n, d… gardés) : q = total, x seulement avec plusieurs langues, l = langue la plus fournie. null s'il ne reste rien. */
+function collFromLines(base, lines) {
+  const m = new Map();
+  for (const [l, q] of lines) if (q > 0) m.set(l || '', Math.min(9999, (m.get(l || '') || 0) + q));
+  if (!m.size) return null;
+  const ls = [...m].sort((a, b) => lineRank(a[0]) - lineRank(b[0])), out = { ...base }; delete out.x; delete out.l;
+  out.q = ls.reduce((a, e) => a + e[1], 0);
+  const dom = collDomLang(ls); if (dom) out.l = dom;
+  if (ls.length > 1) out.x = Object.fromEntries(ls);
+  return out;
+}
+/** Union de deux répartitions de la même carte sans état commun connu : plus grande quantité par langue précisée ; les exemplaires « non précisée » ne s'ajoutent pas à une langue connue de l'autre côté (c'est probablement la même carte). */
+function unionLines(la, lb) {
+  const m = new Map(); let ta = 0, tb = 0;
+  for (const [g, q] of la) { ta += q; if (g) m.set(g, q); }
+  for (const [g, q] of lb) { tb += q; if (g) m.set(g, Math.max(m.get(g) || 0, q)); }
+  const spec = [...m.values()].reduce((a, q) => a + q, 0), none = Math.max(0, Math.max(ta, tb) - spec);
+  return [...m, ...(none ? [['', none]] : [])];
+}
+/** Empreinte des lignes d'une entrée (comparaison, fusion). */
+const collSig = x => collLines(x).map(e => e[0] + ':' + e[1]).join(',');
+
 /**
  * Lit une collection : export CSV (ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield, TCGplayer…) ou texte « 3 Sol Ring ».
  * Retourne { items:[{k, n, q, l?, d?}] (l : langue si le fichier la donne : colonne « Language », ou « *FR* » en fin de ligne ; d : date d'ajout en secondes, seulement avec o.dates : repère « (Dxxxxxx) » écrit par collToText), lines, skipped, format:'csv'|'text', copies }. Les quantités d'une même carte (impressions différentes) s'additionnent.
@@ -1986,7 +2024,7 @@ function parseCollection(text, o) {
   const add = (name, q, l, d) => {
     name = String(name || '').trim(); q = Math.max(1, Math.min(9999, Math.round(q) || 1));
     const k = ownKey(name); if (!name || !k) { skipped++; return; }
-    const cur = map.get(k); if (cur) { cur.q = Math.min(9999, cur.q + q); if (l) cur.l = l; if (d && !(cur.d <= d)) cur.d = d; } else if (map.size < COLL_MAX) map.set(k, { k, n: name, q, ...(l ? { l } : {}), ...(d ? { d } : {}) });
+    const cur = map.get(k), lg = l || ''; if (cur) { cur.b.set(lg, Math.min(9999, (cur.b.get(lg) || 0) + q)); if (d && !(cur.d <= d)) cur.d = d; } else if (map.size < COLL_MAX) map.set(k, { k, n: name, b: new Map([[lg, q]]), ...(d ? { d } : {}) });      // une ligne par langue
   };
   if (delim) {
     for (let i = i0 + 1; i < lines.length; i++) {
@@ -2004,7 +2042,7 @@ function parseCollection(text, o) {
       add(p.name, p.qty, p.lang, d);
     }
   }
-  const items = [...map.values()];
+  const items = [...map.values()].map(({ b, ...base }) => collFromLines(base, [...b]));
   return { items, lines: n, skipped, format: delim ? 'csv' : 'text', copies: items.reduce((a, x) => a + x.q, 0) };
 }
 
@@ -2012,17 +2050,21 @@ function parseCollection(text, o) {
 function mergeColl(base, add, mode, now) {
   const out = mode === 'replace' ? {} : { ...base }, t = now || dateNowSec();
   for (const it of add) {
-    const prev = base[it.k], cur = out[it.k];
-    out[it.k] = { ...(prev || {}), n: (prev && prev.n) || it.n, q: Math.min(9999, (cur ? cur.q : 0) + it.q), ...(it.l ? { l: it.l } : {}), ...(!prev && (it.d || t) ? { d: it.d || t } : {}) };       // langue : la dernière lue l'emporte ; date d'ajout : posée à la première entrée de la carte, jamais modifiée ensuite (une carte d'avant le suivi reste sans date)
+    const prev = base[it.k], cur = out[it.k], lines = collLines(cur).map(e => e.slice()), dom = collDomLang(lines);
+    for (const [l, q] of collLines(it)) {
+      const lang = l || dom;      // sans langue précisée, les exemplaires rejoignent la langue déjà connue de la carte ; une langue lue (scan, CSV) a sa propre ligne
+      const e = lines.find(x => x[0] === lang); if (e) e[1] = Math.min(9999, e[1] + q); else lines.push([lang, q]);
+    }
+    out[it.k] = collFromLines({ ...(prev || {}), n: (prev && prev.n) || it.n, ...(!prev && (it.d || t) ? { d: it.d || t } : {}) }, lines);       // date d'ajout : posée à la première entrée de la carte, jamais modifiée ensuite (une carte retirée puis ré-ajoutée en reçoit une nouvelle)
   }
   return out;
 }
 /** Texte compact d'une collection (une carte par ligne, « 3 Sol Ring ») pour le cloud, et son inverse. dates : ajoute la date d'ajout « (Dxxxxxx) » (stockage et compte ; pas l'export). */
-const collToText = (coll, dates) => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).map(x => x.q + ' ' + x.n + (dates && x.d > 0 ? ' (D' + Math.floor(x.d).toString(36) + ')' : '') + (x.l ? ' *' + x.l.toUpperCase() + '*' : '')).join('\n');
-const collFromText = text => { const o = {}; for (const it of parseCollection(text, { dates: true }).items) o[it.k] = { n: it.n, q: it.q, ...(it.l ? { l: it.l } : {}), ...(it.d ? { d: it.d } : {}) }; return o; };
+const collToText = (coll, dates) => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).flatMap(x => collLines(x).map(([l, q]) => q + ' ' + x.n + (dates && x.d > 0 ? ' (D' + Math.floor(x.d).toString(36) + ')' : '') + (l ? ' *' + l.toUpperCase() + '*' : ''))).join('\n');
+const collFromText = text => { const o = {}; for (const it of parseCollection(text, { dates: true }).items) o[it.k] = { n: it.n, q: it.q, ...(it.l ? { l: it.l } : {}), ...(it.x ? { x: it.x } : {}), ...(it.d ? { d: it.d } : {}) }; return o; };
 
 /** Même carte au même état (quantité, langue) ? Deux absences sont identiques. */
-const sameEntry = (a, b) => (!a && !b) || (!!a && !!b && a.q === b.q && (a.l || '') === (b.l || ''));
+const sameEntry = (a, b) => (!a && !b) || (!!a && !!b && collSig(a) === collSig(b));
 /**
  * Fusion à trois : base (dernier état connu du compte), local (cet appareil), remote (compte maintenant). Carte par carte, sans horloge :
  * · rien de changé ici depuis la base → on prend le compte (ajouts, retraits et quantités de l'autre appareil) ;
@@ -2041,10 +2083,14 @@ function merge3(base, local, remote) {
     else if (sameEntry(l, r)) v = l;
     else if (!l) v = r;
     else if (!r) v = l;
-    else {
-      const q = b ? r.q + (l.q - b.q) : Math.max(l.q, r.q), lang = b ? ((l.l || '') !== (b.l || '') ? l.l : r.l) : (l.l || r.l);
-      v = q >= 1 ? { ...r, ...l, n: l.n || r.n, q: Math.min(9999, q) } : undefined;
-      if (v) { if (lang) v.l = lang; else delete v.l; }
+    else {      // changé des deux côtés : ligne par ligne (une langue = une ligne) ; deux changements de quantité d'une même ligne s'additionnent
+      const B = new Map(collLines(b)), L = new Map(collLines(l)), R = new Map(collLines(r)); let lines = [];
+      if (!b) lines = unionLines(collLines(l), collLines(r));      // première connexion : pas d'état commun
+      else for (const g of new Set([...B.keys(), ...L.keys(), ...R.keys()])) {
+        const bq = B.get(g) || 0, lq = L.get(g) || 0, rq = R.get(g) || 0;
+        lines.push([g, lq === rq ? lq : Math.max(0, rq + (lq - bq))]);
+      }
+      v = collFromLines({ ...r, ...l, n: l.n || r.n }, lines) || undefined;
     }
     if (v && v.q > 0) {
       out[k] = { ...v };
@@ -2057,14 +2103,17 @@ function merge3(base, local, remote) {
 /** Union de deux collections (première connexion : appareil + compte) : pour chaque carte, la plus grande quantité. */
 function unionColl(a, b) {
   const out = { ...a };
-  for (const [k, v] of Object.entries(b || {})) { const cur = out[k]; out[k] = cur ? { ...v, ...cur, q: Math.max(cur.q, v.q) } : { ...v }; }
+  for (const [k, v] of Object.entries(b || {})) {
+    const cur = out[k]; if (!cur) { out[k] = { ...v }; continue; }
+    out[k] = collFromLines({ ...v, ...cur }, unionLines(collLines(cur), collLines(v)));      // langue par langue : la plus grande quantité
+  }
   return out;
 }
 /** Deux collections contiennent-elles la même chose (clés, quantités, langues) ? */
 function sameColl(a, b) {
   const ka = Object.keys(a || {}), kb = Object.keys(b || {});
   if (ka.length !== kb.length) return false;
-  for (const k of ka) if (!b[k] || b[k].q !== a[k].q || (b[k].l || '') !== (a[k].l || '')) return false;
+  for (const k of ka) if (!b[k] || collSig(b[k]) !== collSig(a[k])) return false;
   return true;
 }
 
@@ -2666,7 +2715,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
-    lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
+    lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
 
@@ -5689,7 +5738,7 @@ function collImage(k, l, en) {
 /** Langues à lire sur Scryfall : clés de cartes de langue ≠ anglais dont l'image n'a pas encore été cherchée. */
 function collLangMissing() {
   const by = {};
-  for (const [k, x] of Object.entries(COLL.map)) if (x.l && x.l !== 'en' && SCRY_LANG[x.l] && !(liKey(x.l, k) in COLL.li)) (by[x.l] = by[x.l] || []).push(k);
+  for (const [k, x] of Object.entries(COLL.map)) for (const [l] of collLines(x)) if (l && l !== 'en' && SCRY_LANG[l] && !(liKey(l, k) in COLL.li)) (by[l] = by[l] || []).push(k);
   return by;
 }
 const collLangMissingCount = () => Object.values(collLangMissing()).reduce((a, x) => a + x.length, 0);
@@ -5698,11 +5747,15 @@ async function langImgFor(k, name, l) {
   if (!l || l === 'en' || !SCRY_LANG[l] || (liKey(l, k) in COLL.li)) return;
   try { const got = await scryLangImages([name], l); COLL.li[liKey(l, k)] = got.get(k) || ''; collMetaSave(); scanPaintList(); if (COLL.el) collPaintBody(true); } catch (e) { /* pas d'image dans cette langue pour l'instant : on garde l'anglaise */ }
 }
-/** Change la langue d'une carte de la collection ('' = non précisée). */
-function collSetLang(k, l) {
-  const cur = COLL.map[k]; if (!cur || (cur.l || '') === l) return;
-  const nx = { ...cur }; if (l) nx.l = l; else delete nx.l;
-  COLL.map[k] = nx; collChanged({ paint: false }); collEnrich();
+/** Change la langue d'une ligne de la collection ('' = non précisée). from : la ligne concernée (sans lui : la langue la plus fournie). Si la carte a déjà une ligne dans la nouvelle langue, les exemplaires s'y ajoutent. */
+function collSetLang(k, l, from) {
+  const cur = COLL.map[k]; if (!cur) return;
+  const lines = collLines(cur).map(e => e.slice()), src = from === undefined ? collDomLang(lines) : from;
+  if (src === l) return;
+  const i = lines.findIndex(e => e[0] === src); if (i < 0) return;
+  const q = lines[i][1]; lines.splice(i, 1);
+  const to = lines.find(e => e[0] === l); if (to) to[1] += q; else lines.push([l, q]);
+  COLL.map[k] = collFromLines(cur, lines); collChanged({ paint: false }); collEnrich();
 }
 
 /** Toute modification passe par ici : enregistre, envoie au compte, met à jour la page de saisie et la recherche en cours. */
@@ -5715,18 +5768,21 @@ function collChanged(o = {}) {
 }
 function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); collChanged(); }
 /** Confirmation avant de retirer un exemplaire (« − » de la liste Cartes ou du scan) : petite fiche, jamais de confirm() natif. where : 'coll' | 'scan'. */
-function confirmMinus(name, q, where, onOk) {
+function confirmMinus(name, q, where, onOk, line) {
   const last = q <= 1, scan = where === 'scan';
   openSheet(last ? (scan ? 'Retirer cette carte ?' : 'Retirer de la collection ?') : 'Retirer un exemplaire ?', '', api => {
-    api.body.innerHTML = `<p class="cf-msg"><b>${esc(name)}</b>${last ? (scan ? 'Dernier exemplaire : la carte sort de la liste du scan.' : 'Dernier exemplaire : la carte sort de ta collection.') : `Il en restera ${nf0(q - 1)} sur ${nf0(q)}.`}</p>`;
+    api.body.innerHTML = `<p class="cf-msg"><b>${esc(name)}</b>${last ? (scan ? 'Dernier exemplaire : la carte sort de la liste du scan.' : line ? `Dernier exemplaire ${line} : cette ligne sort de ta collection (la carte reste dans les autres langues).` : 'Dernier exemplaire : la carte sort de ta collection.') : `Il en restera ${nf0(q - 1)} sur ${nf0(q)}.`}</p>`;
     api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" data-ok>Retirer</button>');
     api.foot.addEventListener('click', e => { if (e.target.closest('[data-ok]')) { api.close(); onOk(); } });
   });
 }
-/** +/− d'exemplaires d'une carte ; à 0 la carte sort de la collection. */
+/** +/− d'exemplaires d'une carte. o.lang : la ligne (langue) concernée ; sans lui, la langue la plus fournie de la carte (« non précisée » pour une carte neuve). À 0 la ligne disparaît, puis la carte. Retourne les exemplaires de la ligne (0 : retirée). */
 function collBump(k, name, d, o) {
-  const cur = COLL.map[k], q = Math.max(0, Math.min(9999, (cur ? cur.q : 0) + d));
-  if (!q) delete COLL.map[k]; else COLL.map[k] = { ...(cur || {}), n: (cur && cur.n) || name, q, ...(cur ? {} : { d: (o && o.date) || dateNowSec() }) };      // date d'ajout : à l'entrée de la carte (o.date : celle qu'elle avait avant un retrait annulé)
+  const cur = COLL.map[k], lines = collLines(cur).map(e => e.slice()), lang = o && o.lang !== undefined ? o.lang : collDomLang(lines);
+  const e = lines.find(x => x[0] === lang), q = Math.max(0, Math.min(9999, (e ? e[1] : 0) + d));
+  if (e) e[1] = q; else if (q) lines.push([lang, q]);
+  const next = collFromLines({ ...(cur || {}), n: (cur && cur.n) || name, ...(cur ? {} : { d: (o && o.date) || dateNowSec() }) }, lines);      // date d'ajout : à l'entrée de la carte (o.date : celle qu'elle avait avant un retrait annulé)
+  if (next) COLL.map[k] = next; else delete COLL.map[k];
   collChanged(o); return q;
 }
 
@@ -6041,6 +6097,12 @@ function collItems() {
     return Object.assign(it, cmdrClass(it, EDH.data));      // cx : 0 · 1 peut être commandant · 2 joué comme commandant (EDHREC), ed : nombre de decks
   });
 }
+/** Lignes d'affichage d'une carte : une par langue possédée (fr, en…), chacune avec sa quantité, son nom imprimé et son image. Les infos de la carte (type, coût, étiquettes) ne sont montrées que sur la première ; l'offre CardTrader seulement sur la ligne de la langue lue (la plus fournie). */
+function collRowItems(it) {
+  const ls = collLines(COLL.map[it.k]); if (ls.length < 2) return [{ ...it, nl: 1, li: 0 }];
+  const dom = collDomLang(ls);
+  return ls.map(([l, q], i) => { const r = { ...it, l, q, nl: ls.length, li: i }; const dn = frName(it.k, l); if (dn) r.dn = dn; else delete r.dn; if (l !== dom) { delete r.rp; delete r.rt; delete r.rc; } return r; });
+}
 function collSorted(items) {
   const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => (((srcPrice(b, COLL.src) || {}).u || 0) - ((srcPrice(a, COLL.src) || {}).u || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b), decks: (a, b) => ((b.ed || 0) - (a.ed || 0)) || ((b.cx || 0) - (a.cx || 0)) || byName(a, b), new: (a, b) => ((b.d || 0) - (a.d || 0)) || byName(a, b), old: (a, b) => ((a.d || 0) - (b.d || 0)) || byName(a, b) }[COLL.sort] || byName;
   return items.slice().sort(by);
@@ -6051,20 +6113,20 @@ function langChip(k, l, name, cls) {
   return `<label class="lchip${l ? '' : ' none'}${cls ? ' ' + cls : ''}" data-l="${esc(l)}">${l ? flag(l) : '<span>Langue ?</span>'}<select data-lk="${esc(k)}" aria-label="Langue de ${esc(name)}"><option value=""${l ? '' : ' selected'}>Non précisée</option>${CARD_LANG_LIST.map(x => `<option value="${x}"${x === l ? ' selected' : ''}>${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></label>`;
 }
 function crowHtml(it) {
-  const nm = it.dn || it.n, hue = hash32(it.k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase()), img = collImage(it.k, it.l, it.im).src;
+  const nm = it.dn || it.n, hue = hash32(it.k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase()), img = collImage(it.k, it.l, it.im).src, sub = it.li > 0;      // sub : 2e ligne de langue de la même carte
   const tags = [];      // le drapeau suit le nom (à droite, loin de la vignette qu'on touche pour agrandir) ; « Langue ? » finit la rangée de tags
-  if (it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
-  if (it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
-  if (COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="Commandant dans des decks EDHREC">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
-  if (isDateSort() && it.d) tags.push(`<span class="tag" title="Date d'ajout à la collection">${esc(new Date(it.d * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
-  const mvv = valMove(it.k); if (mvv) tags.push(valTag(mvv));
-  const mnt = engTag(it.k); if (mnt) tags.push(mnt);
+  if (!sub && it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
+  if (!sub && it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
+  if (!sub && COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="Commandant dans des decks EDHREC">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
+  if (!sub && isDateSort() && it.d) tags.push(`<span class="tag" title="Date d'ajout à la collection">${esc(new Date(it.d * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
+  const mvv = !sub && valMove(it.k); if (mvv) tags.push(valTag(mvv));
+  const mnt = !sub && engTag(it.k); if (mnt) tags.push(mnt);
   if (!it.l) tags.push(langChip(it.k, '', it.n));
   const px = [];      // prix : CM (tendance Cardmarket, estimation) au-dessus, CT (offre CardTrader la plus basse, lue à la demande) en dessous
   if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="Cardmarket : prix tendance"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
   if (Number.isFinite(it.rp)) px.push(`<span class="px ct" title="CardTrader : offre la plus basse"><i>CT</i> <b>${esc(fmt(it.rp, it.rc || 'EUR'))}</b></span>`);
   else if (it.rp === null && it.rt) px.push('<span class="px ct none" title="CardTrader : aucune offre"><i>CT</i> <b>aucune offre</b></span>');
-  return `<div class="crow${px.length ? ' has-px' : ''}" data-k="${esc(it.k)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow${px.length ? ' has-px' : ''}${sub ? ' sub' : ''}${it.nl > 1 ? ' ml' : ''}" data-k="${esc(it.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? langChip(it.k, it.l, it.n) : ''}</span>${tags.length ? `<span class="row-meta">${tags.join('')}</span>` : ''}</span>
     ${px.length ? `<span class="row-px">${px.join('')}</span>` : ''}
     <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(nm)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(nm)}">+</button></span></div>`;
@@ -6164,7 +6226,7 @@ function collPaintBody(keep) {
     const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '' || COLL.f.cmdr) && known < all.length;
     const undated = isDateSort() ? all.filter(i => !i.d).length : 0;
     host.innerHTML = `${undated ? `<p class="hint coll-count">${nf0(undated)} carte${undated > 1 ? 's' : ''} sans date d'ajout (déjà là avant le suivi des dates) : ${COLL.sort === 'new' ? 'en bas' : 'en haut'}, par nom.</p>` : ''}${act ? `<p class="hint coll-count">${nf0(filtered.length)} carte${filtered.length > 1 ? 's' : ''} sur ${nf0(all.length)}${hid ? ' · les cartes sans infos sont masquées par ces filtres' : ''}</p>` : ''}
-      ${shown.length ? `<div class="coll-list">${shown.map(crowHtml).join('')}</div>` : '<p class="hint listempty">Aucune carte ne correspond.</p>'}
+      ${shown.length ? `<div class="coll-list">${shown.flatMap(collRowItems).map(crowHtml).join('')}</div>` : '<p class="hint listempty">Aucune carte ne correspond.</p>'}
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
   }
   if (sc) sc.scrollTop = pos;
@@ -6213,17 +6275,8 @@ function openCollection(tab) {
     const bud = e.target.closest && e.target.closest('select[data-act="dbudget"]');
     if (bud) { EDH.budget = Number(bud.value) || 0; EDH.shown = 30; haptic('tap'); collPaintBody(true); return; }
     const sel = e.target.closest && e.target.closest('.lchip select'); if (!sel) return;
-    const k = sel.dataset.lk, l = sel.value; haptic('tap'); sel.blur(); COLL.dirty = false; collSetLang(k, l);
-    const row = sel.closest('.crow'), chip = sel.closest('.lchip');
-    if (row && chip) {
-      const it = collItems().find(x => x.k === k); if (!it) return;
-      chip.remove();
-      const nameEl = $('.row-name', row); if (nameEl) nameEl.textContent = it.dn || it.n;      // FR : nom imprimé ; sinon nom anglais
-      const html = langChip(k, l, it.n, '');
-      if (l) { const top = $('.row-top', row); if (top) top.insertAdjacentHTML('beforeend', html); }
-      else { let meta = $('.row-meta', row); if (!meta) { meta = document.createElement('span'); meta.className = 'row-meta'; $('.row-main', row).appendChild(meta); } meta.insertAdjacentHTML('beforeend', html); }
-      const th = $('.thumb', row); if (th) { const u = collImage(k, l, it.im).src; let im = $('img', th); if (u && im) { im.classList.remove('ok'); im.src = u; } else if (u) { im = document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.src = u; th.appendChild(im); } }
-    }
+    const k = sel.dataset.lk, l = sel.value, from = sel.closest('.lchip').dataset.l || ''; haptic('tap'); sel.blur(); COLL.dirty = false;
+    collSetLang(k, l, from); collPaintBody(true);      // la ligne change de langue : son nom, son image, et elle peut rejoindre la ligne de l'autre langue
   });
   wrap.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -6257,22 +6310,26 @@ function openCollection(tab) {
     }
     const st = e.target.closest('.qstep button');
     if (st) {
-      const k = st.closest('.crow').dataset.k, cur = COLL.map[k]; if (!cur) return;
-      const d = Number(st.dataset.d); haptic('tap');
+      const rowEl = st.closest('.crow'), k = rowEl.dataset.k, ln = rowEl.dataset.ln || '', cur = COLL.map[k]; if (!cur) return;
+      const lines = collLines(cur), line = lines.find(x => x[0] === ln); if (!line) return;
+      const d = Number(st.dataset.d), tag = lines.length > 1 ? (ln ? ln.toUpperCase() : 'sans langue') : '', same = r => r.dataset.k === k && (r.dataset.ln || '') === ln; haptic('tap');
       const step = () => {                                  // le « − » passe par une confirmation ; la ligne est retrouvée à ce moment-là (la liste a pu être repeinte)
         const c = COLL.map[k]; if (!c) return;
-        const name = c.n, was = c.q, date = c.d, q = collBump(k, name, d, { paint: false }), row = $$('.crow', wrap).find(r => r.dataset.k === k);
+        const was = (collLines(c).find(x => x[0] === ln) || [ln, 0])[1], multi = collLines(c).length > 1, name = c.n, date = c.d, q = collBump(k, name, d, { paint: false, lang: ln }), row = $$('.crow', wrap).find(same);
         if (q) { if (row) $('.qstep b', row).textContent = q; }
-        else { if (row) row.remove(); toast(`${name} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date }); } }); }
+        else {
+          if (multi) collPaintBody(true); else if (row) row.remove();      // une langue de moins : les autres lignes de la carte se réorganisent
+          toast(`${name}${multi ? ' (' + (ln ? ln.toUpperCase() : 'sans langue') + ')' : ''} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date, lang: ln }); } });
+        }
       };
-      if (d < 0) confirmMinus(cur.n, cur.q, 'coll', step); else step();
+      if (d < 0) confirmMinus(cur.n, line[1], 'coll', step, tag); else step();
       return;
     }
     const th = e.target.closest('.thumb');
     if (th && th.querySelector('img.ok')) {
       const row = th.closest('.crow'); if (!row) return;
-      const rows = $$('.crow', row.parentNode), list = rows.map(r => collViewItem(r.dataset.k)).filter(Boolean);
-      const i = list.findIndex(x => x.key === row.dataset.k); if (i >= 0) openCardViewer(list, i);
+      const rows = $$('.crow', row.parentNode), list = rows.map(r => collViewItem(r.dataset.k, r.dataset.ln || '')).filter(Boolean);
+      const i = list.findIndex(x => x.lid === row.dataset.k + '|' + (row.dataset.ln || '')); if (i >= 0) openCardViewer(list, i);
     }
   });
   document.body.appendChild(wrap); holdApp(); collPaintHead(); collPaintBody(false);
@@ -6280,19 +6337,22 @@ function openCollection(tab) {
   haptic('tap');
   if ((collMissing().length || collLangMissingCount()) && !COLL.enrichErr) collEnrich(); else valMaybe();
 }
-function collViewItem(k) {
+function collViewItem(k, ln) {
   const x = COLL.map[k], m = COLL.meta[k]; if (!x || !m || !m.im) return null;
-  const im = collImage(k, x.l, m.im), fr = x.l && x.l !== 'en' && im.lang === 'en' ? ' · image anglaise (pas d\'image ' + (LANGS[x.l] || x.l) + ' sur Scryfall)' : '';
-  return { key: k, name: x.n, small: im.src, lang: im.lang, plain: true, extra: `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
+  const ls = collLines(x), line = ls.find(e => e[0] === (ln || '')) || ls[0] || [x.l || '', x.q], l = line[0], n = line[1];
+  const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · image anglaise (pas d\'image ' + (LANGS[l] || l) + ' sur Scryfall)' : '';
+  const own = ls.length > 1 ? `${n} exemplaire${n > 1 ? 's' : ''} ${l ? l.toUpperCase() : 'sans langue'} · ${x.q} au total` : `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection`;
+  return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
 }
 
 /* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
 function openCollAdd() {
   openSheet('Ajouter une carte', 'Nom anglais ou français déjà connu de Scryfall', api => {
     api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">Nom de la carte</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Sol Ring" enterkeyhint="search"></div>
+      <div class="field-in"><label class="label" for="caLang">Langue des exemplaires ajoutés</label><div class="sel"><select id="caLang"><option value="">Celle de la carte (sinon non précisée)</option>${CARD_LANG_LIST.map(x => `<option value="${x}">${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></div></div>
       <div class="status" id="caStatus" data-ok="0" hidden><span class="dot"></span><span></span></div>
       <div class="ca-list" id="caList" role="listbox" aria-label="Suggestions"></div>`;
-    const inp = $('#caName', api.body), list = $('#caList', api.body), stt = $('#caStatus', api.body);
+    const inp = $('#caName', api.body), list = $('#caList', api.body), stt = $('#caStatus', api.body), lang = $('#caLang', api.body);
     let cat = null, added = new Map();
     const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
     const paint = () => {
@@ -6304,7 +6364,7 @@ function openCollAdd() {
     };
     list.onclick = e => {
       const b = e.target.closest('.ca-opt'); if (!b) return;
-      const n = b.dataset.n, k = ownKey(n), q = collBump(k, n, 1); haptic('ok'); added.set(k, q);
+      const n = b.dataset.n, k = ownKey(n); collBump(k, n, 1, lang.value ? { lang: lang.value } : undefined); const q = collQty(k); haptic('ok'); added.set(k, q);
       const i = $('i', b); i.textContent = '× ' + q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
       say(`${n} · ${q} dans ta collection`, true); collEnrich();
     };
@@ -6318,7 +6378,7 @@ function openCollAdd() {
 /* ── Importer (fichier CSV, texte collé, texte partagé) ───────────────────────────────────────── */
 function openCollImport(initial) {
   openSheet('Importer ma collection', 'ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… ou une liste « 3 Sol Ring »', api => {
-    api.body.innerHTML = `<p class="hint">Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l'appli que tu utilises, puis choisis le fichier. Les quantités d'une même carte (éditions différentes) s'additionnent.</p>
+    api.body.innerHTML = `<p class="hint">Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l'appli que tu utilises, puis choisis le fichier. Les quantités d'une même carte (éditions différentes) s'additionnent ; une ligne par langue si le fichier la donne.</p>
       <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>Choisir un fichier<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
       <div class="field-in"><label class="label" for="ciText">ou colle le texte</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Swords to Plowshares"></textarea></div>
       <div class="ci-sum" id="ciSum" hidden></div>
@@ -7363,18 +7423,27 @@ const camSetSlow = on => { try { localStorage.removeItem('deckdeal:cam'); if (on
 
 /** Miniature officielle de Scryfall (vérification visuelle : on voit tout de suite si c'est la bonne carte). */
 const scImg = n => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=small';
+/** Identifiant d'une ligne du scan : carte + langue. */
+const scanId = (key, l) => key + '|' + (l || '');
+/** Change la langue d'une ligne du scan ; si la carte existe déjà dans cette langue, les exemplaires s'y ajoutent. L'ordre de la liste est gardé. */
+function scanSetLang(it, l) {
+  if ((it.l || '') === l) return;
+  const nid = scanId(it.key, l), other = SC.items.get(nid);
+  if (other) { other.q = Math.min(999, other.q + it.q); if (!it.maybe) { other.maybe = false; other.shot = ''; } SC.items.delete(it.id); return; }
+  it.l = l; const old = it.id; it.id = nid; SC.items = new Map([...SC.items].map(([i, v]) => (i === old ? [nid, v] : [i, v])));
+}
 function scanTotals() { let n = 0, maybe = 0; for (const e of SC.items.values()) { if (e.maybe) maybe++; else n += e.q; } return { n, maybe }; }
 function scanAdd(m, d, maybe, shot) {
-  const cur = SC.items.get(m.key), l = m.card || 'en';
+  const l = m.card || 'en', id = scanId(m.key, l), cur = SC.items.get(id);      // une ligne par carte ET par langue : la même carte lue en français puis en anglais fait deux lignes
   if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); }       // image de la carte dans sa langue, vue pendant la lecture : gardée pour la collection
-  if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) { cur.maybe = false; cur.shot = ''; } else if (cur.maybe && shot) cur.shot = shot; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } cur.l = l; }      // langue : la dernière carte lue l'emporte
-  else SC.items.set(m.key, { key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe, l, shot: maybe ? shot || '' : '' });
+  if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) { cur.maybe = false; cur.shot = ''; } else if (cur.maybe && shot) cur.shot = shot; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } }
+  else SC.items.set(id, { id, key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe, l, shot: maybe ? shot || '' : '' });
   scanPaintList();
 }
 /** Carte du scan pour la visionneuse (appui sur sa miniature) : image dans sa langue si Scryfall l'a donnée, sinon anglaise ; photo prise au scan si la carte est « à vérifier ». */
 function scanViewItem(e) {
   const l = e.l || 'en', u = scanThumb(e), lang = l !== 'en' && COLL.li[liKey(l, e.key)] ? l : 'en';
-  return { key: e.key, name: e.name, small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
+  return { key: e.key, lid: e.id || e.key, name: e.name, small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
     extra: `${e.q} exemplaire${e.q > 1 ? 's' : ''}${e.maybe ? ' · à vérifier' : ''}${l !== 'en' && lang === 'en' ? ' · image anglaise (pas encore d\'image ' + (LANGS[l] || l) + ')' : ''}${e.raw && e.score < 0.97 ? ' · lu « ' + e.raw + ' »' : ''}` };
 }
 /** Miniature d'une carte du scan : dans sa langue si Scryfall l'a donnée, sinon l'image anglaise. */
@@ -7396,7 +7465,7 @@ function scanPaintList() {
     return;
   }
   { const go = $('.dv-foot [data-act="done"]', el); go.hidden = false; $('.dv-foot [data-act="close"]', el).textContent = 'Annuler'; $('.sc-total', el).hidden = true; }
-  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
+  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}" data-id="${esc(e.id)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
       ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
       <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
     : pend || miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
@@ -7425,23 +7494,23 @@ function scanRecap() {
       else if (m && m.eu > 0) { val += m.eu * x.q; priced += x.q; rows.push({ x, eu: m.eu }); }
       else nopx += x.q;
     }
-    const have = items.filter(x => collQty(x.k) > 0), haveN = have.reduce((a, x) => a + x.q, 0), langs = new Map();
+    const uniq = new Set(items.map(x => x.k)), haveK = new Set([...uniq].filter(k => collQty(k) > 0)), have = items.filter(x => haveK.has(x.k)), haveN = have.reduce((a, x) => a + x.q, 0), langs = new Map();
     for (const x of items) langs.set(x.l, (langs.get(x.l) || 0) + x.q);
     rows.sort((a, b) => b.eu - a.eu || byName(a.x, b.x));
     $('h2', api.wrap).textContent = 'Ajouter ' + plural(n, 'carte'); let sub = $('.sheet-head p', api.wrap);
-    if (!sub) { sub = document.createElement('p'); $('.sheet-head > div', api.wrap).appendChild(sub); } sub.textContent = plural(items.length, 'carte') + ' différente' + (items.length > 1 ? 's' : '');
+    if (!sub) { sub = document.createElement('p'); $('.sheet-head > div', api.wrap).appendChild(sub); } sub.textContent = plural(uniq.size, 'carte') + ' différente' + (uniq.size > 1 ? 's' : '');
     const note = wait ? 'Lecture des prix…' : !nopx ? '' : err ? (priced ? 'Valeur partielle : ' : 'Prix indisponibles : ') + err + '.' : plural(nopx, 'exemplaire') + ' sans prix Cardmarket, non comptés.';
-    api.body.innerHTML = `<div class="rc"><div class="cs-tiles"><div><b>${nf0(items.length)}</b><span>carte${items.length > 1 ? 's' : ''} différente${items.length > 1 ? 's' : ''}</span></div><div><b>${nf0(n)}</b><span>exemplaire${n > 1 ? 's' : ''}</span></div><div class="rc-val"><b>${wait || (!priced && err) ? (wait ? '…' : '—') : priced ? esc(fmt(val, 'EUR')) : '—'}</b><span>valeur estimée · tendance Cardmarket</span></div></div>
+    api.body.innerHTML = `<div class="rc"><div class="cs-tiles"><div><b>${nf0(uniq.size)}</b><span>carte${uniq.size > 1 ? 's' : ''} différente${uniq.size > 1 ? 's' : ''}</span></div><div><b>${nf0(n)}</b><span>exemplaire${n > 1 ? 's' : ''}</span></div><div class="rc-val"><b>${wait || (!priced && err) ? (wait ? '…' : '—') : priced ? esc(fmt(val, 'EUR')) : '—'}</b><span>valeur estimée · tendance Cardmarket</span></div></div>
       ${note ? `<p class="hint rc-note">${esc(note)}</p>` : ''}
       ${rows.length && !wait ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${rows.slice(0, 3).map(({ x, eu }) => `<div class="crow ro"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}<img alt="" loading="lazy" decoding="async" src="${esc(scanThumb({ key: x.k, name: x.n, l: x.l }))}"></span><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta">${x.q > 1 ? `<span class="tag accent">× ${nf0(x.q)}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(eu, 'EUR'))}</b>${x.q > 1 ? `<small>${esc(fmt(eu * x.q, 'EUR'))} le lot</small>` : ''}</span></div>`).join('')}</div>` : ''}
-      <dl class="rc-facts"><div><dt>Nouvelles dans ta collection</dt><dd>${plural(items.length - have.length, 'carte')}</dd></div>
-        <div><dt>Déjà possédées</dt><dd>${have.length ? `${plural(have.length, 'carte')} · +${nf0(haveN)} ex.` : 'aucune'}</dd></div>
+      <dl class="rc-facts"><div><dt>Nouvelles dans ta collection</dt><dd>${plural(uniq.size - haveK.size, 'carte')}</dd></div>
+        <div><dt>Déjà possédées</dt><dd>${haveK.size ? `${plural(haveK.size, 'carte')} · +${nf0(haveN)} ex.` : 'aucune'}</dd></div>
         <div><dt>Langues</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(l.toUpperCase()) : 'Langue ?'} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
     api.setFoot(`<button class="btn ghost" type="button" data-close>Retour</button><button class="btn" type="button" data-rc="go">Ajouter ${plural(n, 'carte')}</button>`);
   };
   const ask = async () => {
     if (busy || !sheets.includes(api)) return;
-    const todo = live().filter(x => info(x.k) === undefined && !asked.has(x.k)); if (!todo.length) return;
+    const seen = new Set(), todo = live().filter(x => info(x.k) === undefined && !asked.has(x.k) && !seen.has(x.k) && seen.add(x.k)); if (!todo.length) return;
     todo.forEach(x => asked.add(x.k));
     if (scryLeft() > 0) { err = 'Scryfall demande une pause'; paint(); return; }
     busy = true;
@@ -7845,8 +7914,8 @@ function openScan() {
   { let taps = 0, t0 = 0; $('.dv-title', wrap).onclick = () => { const n = performance.now(); taps = n - t0 < 2500 ? taps + 1 : 1; t0 = n; if (taps >= 5) { taps = 0; scanDiag($('.sc-diag', wrap).hidden); } }; }
   wrap.addEventListener('change', e => {
     const sel = e.target.closest && e.target.closest('.lchip select'); if (!sel) return;
-    const it = SC.items.get(sel.dataset.lk); if (!it) return;
-    it.l = sel.value; haptic('tap'); sel.blur(); SC.dirty = false; scanPaintList(); langImgFor(it.key, it.name, it.l);
+    const it = SC.items.get(scanId(sel.dataset.lk, sel.closest('.lchip').dataset.l)); if (!it) return;
+    const l = sel.value; haptic('tap'); sel.blur(); SC.dirty = false; scanSetLang(it, l); scanPaintList(); langImgFor(it.key, it.name, l);
   });
   wrap.addEventListener('focusout', e => { if (SC.dirty && e.target.matches && e.target.matches('.lchip select')) setTimeout(() => { SC.dirty = false; scanPaintList(); }, 0); });
   wrap.addEventListener('click', e => {
@@ -7864,7 +7933,7 @@ function openScan() {
     }
     const th = e.target.closest('.sc-item[data-k] .sc-th');                      // miniature d'une carte reconnue : en grand, et on peut passer aux autres
     if (th) {
-      const list = (SC.pm ? SC.pq.map(x => scanViewItem({ key: x.key, name: x.name, q: 1, l: x.l, maybe: false, score: 1 })) : [...SC.items.values()].reverse().map(scanViewItem)), i = list.findIndex(x => x.key === th.closest('.sc-item').dataset.k);
+      const list = (SC.pm ? SC.pq.map(x => scanViewItem({ key: x.key, name: x.name, q: 1, l: x.l, maybe: false, score: 1 })) : [...SC.items.values()].reverse().map(scanViewItem)), i = list.findIndex(x => x.lid === (th.closest('.sc-item').dataset.id || th.closest('.sc-item').dataset.k));
       if (i >= 0) openCardViewer(list, i);
       return;
     }
@@ -7872,7 +7941,7 @@ function openScan() {
       const a = e.target.closest('[data-a]'), k = a.closest('.sc-item').dataset.k, it = SC.pq.find(x => x.key === k); if (!it) return;
       haptic('tap');
       if (a.dataset.a === 'pdec') { it.n = Math.max(1, (it.n || 1) - 1); scanPaintList(); }
-      else if (a.dataset.a === 'padd') { const nn = it.n || 1; collBump(k, it.name, nn); if (it.l && it.l !== 'en') collSetLang(k, it.l); collEnrich(); toast(`${nn > 1 ? nn + ' × ' : ''}${it.name} ajoutée${nn > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => collBump(k, it.name, -nn) }); scanPaintList(); }
+      else if (a.dataset.a === 'padd') { const nn = it.n || 1, lang = it.l || ''; collBump(k, it.name, nn, { lang }); collEnrich(); toast(`${nn > 1 ? nn + ' × ' : ''}${it.name} ajoutée${nn > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => collBump(k, it.name, -nn, { lang }) }); scanPaintList(); }
       else { SC.pq = SC.pq.filter(x => x !== it); scanPaintList(); }
       return;
     }
@@ -7884,15 +7953,15 @@ function openScan() {
       else { SC.miss = SC.miss.filter(m => String(m.id) !== row.dataset.m); scanPaintList(); }
       return;
     }
-    const it = SC.items.get(row.dataset.k); if (!it) return;
+    const it = SC.items.get(row.dataset.id); if (!it) return;
     haptic('tap');
     if (a.dataset.a === 'inc') it.q = Math.min(999, it.q + 1);
     else if (a.dataset.a === 'dec') {                       // « − » : confirmation d'abord
-      confirmMinus(it.name, it.q, 'scan', () => { const c = SC.items.get(it.key); if (!c) return; if (c.q > 1) c.q--; else SC.items.delete(c.key); scanPaintList(); });
+      confirmMinus(it.name, it.q, 'scan', () => { const c = SC.items.get(it.id); if (!c) return; if (c.q > 1) c.q--; else SC.items.delete(c.id); scanPaintList(); });
       return;
     }
     else if (a.dataset.a === 'ok') { it.maybe = false; it.shot = ''; }
-    else if (a.dataset.a === 'del') SC.items.delete(it.key);
+    else if (a.dataset.a === 'del') SC.items.delete(it.id);
     scanPaintList();
   });
   scNoteShow(!scNoteOff());      // aide affichée sauf si elle a été fermée (état retenu)
