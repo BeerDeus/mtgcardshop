@@ -45,7 +45,8 @@ async function page(e) {
   const cache = await caches.open(SHELL), cached = await cache.match(ROOT);
   const net = fetch(e.request).then(async r => { if (r.ok && r.type === 'basic') await cache.put(ROOT, r.clone()); return r; });
   e.waitUntil(net.catch(() => {}));                          // laisse la mise à jour finir même si on a servi la copie
-  const wait = new Promise((_, no) => setTimeout(no, cached ? 4000 : 25000));
+  const share = /[?&]p=/.test(new URL(e.request.url).search);      // lien de partage : il faut la version à jour (une ancienne copie ne sait pas l'ouvrir)
+  const wait = new Promise((_, no) => setTimeout(no, cached && !share ? 4000 : 25000));
   try { const r = await Promise.race([net, wait]); if (r.ok || !cached) return r; } catch (_) { /* réseau absent ou trop lent */ }
   return cached || new Response('Deck Deal est hors ligne et n\'a pas encore été ouvert avec du réseau.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }

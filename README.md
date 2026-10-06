@@ -171,7 +171,7 @@ Ma collection › onglet **Échange** (`src/share.js`).
 
 - **À échanger** : pour chaque carte, possédées − exemplaires utilisés par **tous** tes decks (additionnés : chaque deck peut être monté en même temps ; réserve et commandant compris) − **réserve gardée** (0, **1** par défaut, 2, 3, 4). Avec 4 exemplaires utilisés par 2 decks : 2 à l'échange avec une réserve de 0, 1 avec une réserve de 1. **Terrains de base jamais proposés**. Les exemplaires gardés le sont d'abord en français (ordre des langues de la collection), le reste est proposé langue par langue.
 - **Garder** : retire une carte précise de la liste (elle passe dans « Gardées à la main », **Remettre** pour l'y remettre).
-- **Je recherche** : cartes qui manquent à tes decks (somme des decks − collection) + **liste de souhaits** (« Ajouter une carte recherchée », catalogue Scryfall, quantité ajustable). Barre de recherche et filtres de la collection valables dans les deux listes.
+- **Je recherche** : cartes qui manquent à tes decks (somme des decks − collection) + **liste de souhaits** : « Ajouter une carte recherchée » (catalogue Scryfall, quantité ajustable), ou bouton **☆ Liste de souhaits** de la **carte en grand** (decks, collection, résultats, decks EDHREC, partages) qui **retient l'illustration affichée** (image, extension et numéro, langue) ; « Souhaiter cette illustration » la remplace, « ★ Dans ta liste » la retire. L'illustration choisie apparaît dans « Je recherche » et sur le lien public. Barre de recherche et filtres de la collection valables dans les deux listes.
 - **Lien public** (compte requis) : **Créer le lien** → `<site>/?p=<id>` (identifiant aléatoire, non devinable). **Toujours à jour** : chaque changement de collection, de decks, de réserve ou de souhaits réécrit le partage (différé de quelques secondes, rien si le contenu n'a pas changé), depuis n'importe lequel de tes appareils. **Copier**, **Partager**, **Aperçu** (ce que voit le visiteur), **Nouveau lien** (l'ancien cesse de marcher), **Arrêter le partage**.
 - **Visiteur** (sans compte) : onglets **À échanger** / **Recherchées**, recherche par **nom français ou anglais**, filtres couleur / famille / coût, images (dans la langue de l'exemplaire), drapeau, quantités, carte en grand. **Lecture seule** : aucune écriture, ni chez lui ni chez toi. S'il utilise Deck Deal, les cartes qu'il possède déjà sont signalées. Lecture par l'API REST Firestore (ni SDK Firebase, ni compte).
 - **Partager un deck** : icône de partage du viewer (deck enregistré : le lien **suit ses modifications** ; liste en cours : partagée telle quelle) et bouton **Partager** d'un deck de l'onglet Decks (EDHREC / Archidekt). Le visiteur voit le viewer du deck en lecture seule (images, courbe, valeur estimée, groupes, filtres) et peut tirer une main de départ. Supprimer un deck arrête son lien.
@@ -180,6 +180,12 @@ Ma collection › onglet **Échange** (`src/share.js`).
 ### Règles Firestore à publier (une fois)
 
 Firebase › Firestore Database › **Règles** › coller le contenu de `firestore.rules` › **Publier**. Sans elles, « Créer le lien » affiche « Règles Firestore à publier ». Ajouts : `match /shares/{shareId}` (lecture par identifiant pour tous, jamais de liste, écriture et suppression par le propriétaire seul) et le document `trade` dans `users/{uid}/meta`. Vérifiées contre l'émulateur Firestore (`tests/rules-test.mjs`, voir `DEV.md`).
+
+## Illustrations d'une carte
+
+Carte en grand › **Illustrations · N** : les impressions dans la langue affichée (plus récentes d'abord), **puis celles qui n'existent qu'en anglais** (promos, séries spéciales…), marquées « anglais ». Une impression anglaise choisie depuis la vue française y reste rattachée (légende en anglais). **Gestes** : sur la carte, un glissé lent l'incline (reflet) ; seul un geste vif (ou les flèches) passe à la carte suivante.
+
+**Version** : Réglages › en bas (« Version xxxxxxxx », empreinte du code) pour vérifier ce qu'un téléphone exécute. Un lien de partage attend toujours la version à jour du site (le service worker ne sert pas une ancienne copie qui ne saurait pas l'ouvrir).
 
 ## Main de départ
 

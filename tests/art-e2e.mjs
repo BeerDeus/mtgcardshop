@@ -25,14 +25,15 @@ await p.click('.deck[data-id="d1"] [data-act="open"]'); await p.waitForSelector(
 await openCard('Wrath of God');
 await p.waitForFunction(() => /\/large\/front\/fr\/wrath-of-god\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 8000 });
 await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 6000 });
-assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 3', 'impressions françaises (pas les anglaises)');
+assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 4', 'impressions françaises, puis celles qui n\'existent qu\'en anglais (promos…)');
 assert.equal(await p.$('.imgv-vars:not([hidden])'), null, 'liste fermée tant qu\'on ne la demande pas');
 await p.click('.imgv-art'); await p.waitForSelector('.imgv-vars:not([hidden]) .imgv-v');
-assert.deepEqual(await p.$$eval('.imgv-v', b => b.map(x => x.querySelector('span').textContent)), ['CMM 100', '2X2 101', 'LEA 102'], 'les plus récentes d\'abord');
-assert.deepEqual(await p.$$eval('.imgv-v img', i => i.map(x => x.getAttribute('src').replace(/^.*\/front\//, ''))), ['fr/wrath-of-god-v0.jpg', 'fr/wrath-of-god-v1.jpg', 'fr/wrath-of-god-v2.jpg']);
+assert.deepEqual(await p.$$eval('.imgv-v', b => b.map(x => x.querySelector('span').textContent)), ['CMM 100', '2X2 101', 'LEA 102', 'M21 103'], 'françaises (plus récentes d\'abord), puis anglaises seules');
+assert.deepEqual(await p.$$eval('.imgv-v img', i => i.map(x => x.getAttribute('src').replace(/^.*\/front\//, ''))), ['fr/wrath-of-god-v0.jpg', 'fr/wrath-of-god-v1.jpg', 'fr/wrath-of-god-v2.jpg', 'en/wrath-of-god-v3.jpg']);
+assert.match(await txt(p, '.imgv-v >> nth=3'), /anglais/, 'impression anglaise seulement : marquée'); assert.doesNotMatch(await txt(p, '.imgv-v >> nth=0'), /anglais/);
 assert.match(await txt(p, '.imgv-v >> nth=0'), /étendue/); assert.match(await txt(p, '.imgv-v >> nth=1'), /plein art/); assert.match(await txt(p, '.imgv-v >> nth=2'), /sans bordure/);
 assert.equal(await p.$eval('.imgv-art', e => e.getAttribute('aria-expanded')), 'true');
-ok('bouton « Illustrations · 3 » : impressions françaises, plus récentes d\'abord, particularités (étendue, plein art, sans bordure)');
+ok('bouton « Illustrations · 4 » : impressions françaises, plus récentes d\'abord, puis celles qui n\'existent qu\'en anglais (marquées), particularités (étendue, plein art, sans bordure)');
 
 /* ── 2) choisir une illustration : l'image change, le choix est gardé ──────────────────────────────── */
 await p.click('.imgv-v >> nth=1'); await p.waitForFunction(() => /wrath-of-god-v1\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 6000 });
@@ -48,6 +49,15 @@ await p.evaluate(() => history.back()); await p.waitForFunction(() => !document.
 await p.click('.deck[data-id="d2"] [data-act="open"]'); await p.waitForSelector('.dv.on[aria-label^="Deck viewer"] .dvc');
 await openCard('Wrath of God'); await p.waitForFunction(() => /wrath-of-god-v1\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 6000 });
 ok('illustration choisie : image et extension changent, gardée pour cette carte (réouverture, autre deck)');
+
+/* ── 2b) impression qui n'existe qu'en anglais (promo…) : choisie depuis la vue française, légende anglaise, gardée pour la vue française ── */
+await p.waitForSelector('.imgv-art:not([hidden])'); await p.click('.imgv-art'); await p.waitForSelector('.imgv-v >> nth=4');
+await p.click('.imgv-v:not(.def) >> nth=3'); await p.waitForFunction(() => /\/en\/wrath-of-god-v3\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 6000 });
+assert.match(await txt(p, '.imgv-sub'), /anglais/i, 'légende : langue de l\'image'); assert.match(await txt(p, '.imgv-sub'), /M21 103/);
+{ const st2 = await store(); assert.deepEqual(Object.keys(st2), ['fr|wrath of god'], 'rattachée à la vue française'); assert.equal(st2['fr|wrath of god'].il, 'en'); }
+await closeImg(); await openCard('Wrath of God'); await p.waitForFunction(() => /\/en\/wrath-of-god-v3\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 6000 });
+assert.match(await txt(p, '.imgv-sub'), /anglais/i, 'réouverture : toujours légendée en anglais');
+ok('impression anglaise seulement (promo…) : choisie depuis la vue française, légende juste, retenue pour cette carte');
 
 /* ── 3) « Par défaut » ───────────────────────────────────────────────────────────────────────────────── */
 await p.waitForSelector('.imgv-art:not([hidden])'); await p.click('.imgv-art'); await p.waitForSelector('.imgv-v.def');
@@ -66,7 +76,7 @@ await p.click('.deck[data-id="d1"] [data-act="open"]'); await p.waitForSelector(
 await openCard('Llanowar Elves'); await p.waitForTimeout(1200); assert.equal(await p.$('.imgv-art:not([hidden])'), null, 'pas de version française : image anglaise, une seule impression → pas de bouton');
 await closeImg();
 // carte possédée en français (Sol Ring) : impressions françaises ; glissement vers la carte suivante : la liste ouverte suit
-await openCard('Sol Ring'); await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 6000 }); assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 3');
+await openCard('Sol Ring'); await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 6000 }); assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 4', '3 françaises + 1 anglaise seulement');
 await p.click('.imgv-art'); await p.waitForSelector('.imgv-v'); const first = await txt(p, '.imgv-cap b');
 let cur = first, kept = false;
 for (let i = 0; i < 4 && !kept; i++) {      // carte suivante : si elle a plusieurs illustrations, la liste reste ouverte
@@ -97,7 +107,7 @@ await p.locator('.crow', { hasText: 'Sol Ring' }).first().locator('.thumb').clic
 await p.waitForFunction(() => /\/fr\/sol-ring/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 8000 });
 assert.match(await txt(p, '.imgv-sub'), /français/i, 'exemplaire français : aperçu français');
 await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 5000 }); assert.ok(Date.now() - t0 < 6000, 'le bouton n\'attend pas la file de fond');
-assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 3');
+assert.equal(await txt(p, '.imgv-art'), 'Illustrations · 4', '3 françaises + 1 anglaise seulement');
 await p.click('.imgv-art'); await p.waitForSelector('.imgv-v'); await p.click('.imgv-v >> nth=2');
 await p.waitForFunction(() => /sol-ring-v2\.jpg/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 6000 });
 assert.deepEqual(Object.keys(await store()), ['fr|sol ring'], 'retenue pour la carte');

@@ -1326,6 +1326,10 @@ button,.btn,select,summary{touch-action:manipulation}
   .tilt,.imgv-card.tilt,.imgv.on .imgv-card.tilt{transform:none!important}.tilt::after{display:none}
   .thumb img,.dvc-art img{transform:none}
 }
+.imgv-wish{color:#fff;border-color:rgba(255,255,255,.35);transition:transform .32s var(--spring),background .2s,border-color .2s,color .2s}
+.imgv-wish.on{background:rgba(255,212,121,.16);border-color:#ffd479;color:#ffd479}
+.imgv-wish[hidden]{display:none}
+.set-ver{margin:14px 0 0;text-align:center;font-family:var(--font-code);font-size:11.5px}
 </style>
 </head>
 <body>
@@ -1533,6 +1537,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
+const DD_BUILD = 'b0ecae9a';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -3064,14 +3069,17 @@ function tradeLists(coll, use, keep, kept) {
   const byN = (a, b) => a.n.localeCompare(b.n, 'en');
   return { have: have.sort(byN), held: held.sort(byN) };
 }
-/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q }, exemplaires voulus en plus). [{ k, n, q, d (manque aux decks), w (souhait) }] triés par nom. */
+/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q, i?, w?, l? }, exemplaires voulus en plus ;
+ *  i/w/l : illustration retenue — image, « Extension · CODE 123 », langue). [{ k, n, q, d (manque aux decks), w (souhait), p? { i, w, l } }] triés par nom. */
 function tradeWant(coll, use, wish) {
   const out = new Map();
   for (const [k, u] of use || []) { const own = (coll && coll[k] && coll[k].q) || 0; if (u.q > own) out.set(k, { k, n: u.n, q: u.q - own, d: u.q - own, w: 0 }); }
   for (const [k, w] of Object.entries(wish || {})) {
     if (!w || BASIC_NAMES.has(k)) continue;
     const q = Math.max(1, Math.min(99, Math.floor(Number(w.q) || 1))), cur = out.get(k);
-    if (cur) { cur.w = q; cur.q += q; } else out.set(k, { k, n: String(w.n || k), q, d: 0, w: q });
+    const x = cur || { k, n: String(w.n || k), q: 0, d: 0, w: 0 };
+    x.w = q; x.q += q; if (w.i) x.p = { i: w.i, ...(w.w ? { w: w.w } : {}), ...(w.l ? { l: w.l } : {}) };      // illustration choisie (carte en grand)
+    if (!cur) out.set(k, x);
   }
   return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
 }
@@ -3079,6 +3087,8 @@ function tradeWant(coll, use, wish) {
 /* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
 const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/[\w./-]+(\?\d+)?$/;
 const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
+/** Image Scryfall en petit format (vignettes) : …/large/… ou …/normal/… → …/small/… */
+const scrySmall = u => String(u || '').replace(/\/(large|normal|png|border_crop)\//, '/small/');
 const shStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 const shNum = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, Math.round(x))) : null; };
 /** Une carte d'un partage : { n, q, l?, f? (nom français), i? (image), c? (coût), t? (type), o? (couleurs), m? (symboles) } → item d'affichage, null si illisible. */
@@ -3090,6 +3100,7 @@ function shareCard(x) {
   if (SHARE_LANGS.includes(x.l)) it.l = x.l;
   const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
   if (SHARE_IMG_RE.test(shStr(x.i, 300))) it.im = x.i;
+  const pw = shStr(x.w, 90).trim(); if (pw) it.pw = pw;      // illustration recherchée : « Extension · CODE 123 »
   const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
   const t = shStr(x.t, 120); if (t) it.tl = t;
   const o = shStr(x.o, 5); if (/^[WUBRG]*$/.test(o)) it.cl = o;
@@ -3136,7 +3147,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
@@ -3606,7 +3617,16 @@ async function scryImage({ set, num, lang }, signal) {
 async function scryArtPrints(name, lang, signal) {
   const sl = SCRY_LANG[lang] || 'en', n = String(name || '').split('//')[0].trim();
   if (!n || n.includes('"')) return [];
-  const key = 'pr:' + ownKey(n) + ':' + sl, hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
+  const key = 'pr2:' + ownKey(n) + ':' + sl, hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
+  const out = await scryPrintsIn(n, sl, signal);
+  if (sl !== 'en') {      // impressions qui n'existent qu'en anglais (promos, séries spéciales…) : après celles de la langue affichée, marquées « anglais »
+    const have = new Set(out.map(p => p.set + '/' + p.num));
+    for (const p of await scryPrintsIn(n, 'en', signal)) if (!have.has(p.set + '/' + p.num)) out.push({ ...p, l: 'en', fx: [...p.fx, 'anglais'] });
+  }
+  await Cache.set(key, out);
+  return out;
+}
+async function scryPrintsIn(n, sl, signal) {
   let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent('!"' + n + '" lang:' + sl + ' game:paper') + '&unique=prints&order=released&dir=desc';
   const out = [], seen = new Set();
   for (let pg = 0; url && pg < 3; pg++) {
@@ -3615,11 +3635,10 @@ async function scryArtPrints(name, lang, signal) {
       const urls = facesOf(c), im = c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {}, id = c.set + '/' + c.collector_number;
       if (!urls.length || seen.has(id)) continue; seen.add(id);
       const fe = c.frame_effects || [], fx = [c.full_art ? 'plein art' : '', c.border_color === 'borderless' ? 'sans bordure' : '', fe.includes('extendedart') ? 'étendue' : '', fe.includes('showcase') ? 'showcase' : '', c.promo ? 'promo' : ''].filter(Boolean);
-      out.push({ set: c.set, num: c.collector_number, sn: c.set_name || '', y: String(c.released_at || '').slice(0, 4), th: im.small || urls[0], urls, fx });
+      out.push({ set: c.set, num: c.collector_number, sn: c.set_name || '', y: String(c.released_at || '').slice(0, 4), th: im.small || urls[0], urls, fx, l: sl });
     }
     url = j.has_more ? j.next_page : '';
   }
-  await Cache.set(key, out);
   return out;
 }
 
@@ -5100,7 +5119,8 @@ function openSettings() {
       <div class="sec-title">Application</div>
       <div id="appBox" class="installbox"></div>
       <div class="sec-title">Panier CardTrader</div>
-      <div id="cartBox" class="cartbox"></div>`;
+      <div id="cartBox" class="cartbox"></div>
+      <p class="hint set-ver">Version ${esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev')}</p>`;
     const b = api.body;
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
     const appBox = $('#appBox', b);
@@ -6127,7 +6147,7 @@ const artAll = () => { if (!ART) { try { const o = JSON.parse(localStorage.getIt
 const artK = (l, n) => l + '|' + ownKey(n);
 const artGet = (l, n) => { const v = artAll()[artK(l, n)]; return v && Array.isArray(v.u) && v.u.length ? v : null; };
 function artSave() { try { localStorage.setItem(ART_KEY, JSON.stringify(artAll())); } catch (e) { /* stockage plein : le choix reste pour cette session */ } }
-function artSet(l, n, u, w) { const a = artAll(), k = artK(l, n); delete a[k]; a[k] = { u, w }; const ks = Object.keys(a); for (const x of ks.slice(0, Math.max(0, ks.length - 400))) delete a[x]; artSave(); }
+function artSet(l, n, u, w, il) { const a = artAll(), k = artK(l, n); delete a[k]; a[k] = { u, w, ...(il && il !== l ? { il } : {}) }; const ks = Object.keys(a); for (const x of ks.slice(0, Math.max(0, ks.length - 400))) delete a[x]; artSave(); }
 function artDrop(l, n) { if (delete artAll()[artK(l, n)]) artSave(); }
 
 /**
@@ -6145,14 +6165,14 @@ function openCardViewer(items, index) {
     ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
     <div class="imgv-card tilt" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
     <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
-    <div class="imgv-acts"><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
+    <div class="imgv-acts"><button class="btn ghost small imgv-wish" type="button" hidden aria-pressed="false"></button><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
     <div class="imgv-vars" hidden><div class="imgv-vh" aria-live="polite"></div><div class="imgv-vl"></div></div>`;
   const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
-  const artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
+  const wishB = $('.imgv-wish', wrap), artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
   const prevFocus = document.activeElement, from = pressOrigin(), fromEl = from ? MO.press : null, idx0 = Math.max(0, Math.min(items.length - 1, index | 0));
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
-  let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
+  let vl = 'en', idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
   const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
   if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
   const api = imgView = { close() {
@@ -6164,8 +6184,28 @@ function openCardViewer(items, index) {
     try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   } };
   const caption = (l0, note) => { const l = lk(l0); shown = l; sub.innerHTML = `<span class="imgv-lang">${flag(l)}${esc(LANGS[l] || l)}</span>${where ? `<span>${esc(where)}</span>` : ''}${note ? `<em>${esc(note)}</em>` : ''}`; };
+  /** Liste de souhaits : retient l'illustration affichée (image, « Extension · CODE 123 », langue). */
+  const samePrint = (a, b) => scrySmall(a).split('?')[0] === scrySmall(b).split('?')[0];      // même illustration, quel que soit le format (small, normal, large)
+  const wishKey = () => { const k = ownKey(it.ln || it.name); return k && !BASIC_NAMES.has(k) ? k : ''; };
+  const wishPaint = () => {
+    const k = wishKey(), img = urls[0] || ''; wishB.hidden = !k || !img || typeof TR === 'undefined'; if (wishB.hidden) return;
+    const w = TR.wish[k], same = !!w && !!w.i && samePrint(w.i, img);
+    wishB.classList.toggle('on', same); wishB.setAttribute('aria-pressed', String(same));
+    wishB.textContent = same ? '★ Dans ta liste de souhaits' : w ? '☆ Souhaiter cette illustration' : '☆ Liste de souhaits';
+  };
+  wishB.onclick = () => {
+    const k = wishKey(), img = urls[0]; if (!k || !img) return;
+    const name = it.ln || it.name, was = TR.wish[k], same = !!was && !!was.i && samePrint(was.i, img);
+    haptic(same ? 'tap' : 'ok');
+    if (same) { delete TR.wish[k]; toast(name + ' retirée de ta liste de souhaits', { label: 'Annuler', fn: () => { TR.wish[k] = was; trChanged(); wishPaint(); } }); }
+    else {
+      TR.wish[k] = { n: name, q: was ? was.q : 1, i: img.replace(/\/(large|png|border_crop)\//, '/normal/'), ...(where ? { w: where.slice(0, 90) } : {}), ...(shown && shown !== 'en' ? { l: shown } : {}) };
+      toast(was ? 'Illustration mise à jour dans ta liste de souhaits' : name + ' ajoutée à ta liste de souhaits' + (where ? ' (' + where + ')' : ''), { label: 'Annuler', fn: () => { if (was) TR.wish[k] = was; else delete TR.wish[k]; trChanged(); wishPaint(); } });
+    }
+    trChanged(); wishPaint();
+  };
   const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
-    face = i; const probe = new Image(), mine = it;
+    face = i; wishPaint(); const probe = new Image(), mine = it;
     probe.onload = () => { if (imgView !== api || it !== mine) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
     probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
     img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
@@ -6194,8 +6234,9 @@ function openCardViewer(items, index) {
       } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? 'Pas d\'image française sur Scryfall : version anglaise' : ''); }                                // image seule : la langue est celle de l'image fournie
       else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
       canSave = !!(it.plain || wu);      // l'aperçu d'une offre garde l'impression de l'offre : on peut feuilleter les illustrations, pas les retenir
-      const pf = canSave ? artGet(shown, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
-      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; }
+      vl = shown;      // langue de la vue : les illustrations retenues lui sont rattachées, même une impression anglaise (promo…)
+      const pf = canSave ? artGet(vl, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
+      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(pf.il || shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; }
       show(0);
       varT = setTimeout(() => loadVars(mine, my), wantOpen ? 120 : 320);      // pas de requête pendant un glissé rapide d'une carte à l'autre
     })();
@@ -6203,7 +6244,7 @@ function openCardViewer(items, index) {
   /** Impressions de la carte dans la langue affichée : le bouton « Illustrations · N » apparaît s'il y en a au moins deux. */
   const loadVars = async (mine, my) => {
     if (imgView !== api || it !== mine || my.signal.aborted || scryLeft() > 0) return;
-    let list = []; try { list = await scryArtPrints(it.ln || it.name, shown, my.signal); } catch (e) { return; }
+    let list = []; try { list = await scryArtPrints(it.ln || it.name, vl, my.signal); } catch (e) { return; }
     if (imgView !== api || it !== mine) return;
     vars = list;
     if (list.length < 2) { varsEl.hidden = true; wrap.classList.remove('has-vars'); return; }
@@ -6212,7 +6253,7 @@ function openCardViewer(items, index) {
   };
   const baseOf = u => String(u || '').split('?')[0];
   const varsPaint = () => {
-    const cur = baseOf(urls[0]), sel = vars.findIndex(p => baseOf(p.urls[0]) === cur), pf = canSave && artGet(shown, it.ln || it.name);
+    const cur = baseOf(urls[0]), sel = vars.findIndex(p => baseOf(p.urls[0]) === cur), pf = canSave && artGet(vl, it.ln || it.name);
     pickAt = sel;
     varsL.innerHTML = (pf ? '<button type="button" class="imgv-v def" data-i="-1" aria-label="Revenir à l\'illustration par défaut"><i>Par défaut</i></button>' : '')
       + vars.map((p, i) => `<button type="button" class="imgv-v" data-i="${i}" aria-pressed="${i === sel}" aria-label="${esc(p.sn)} ${esc(String(p.set).toUpperCase())} ${esc(p.num)}${p.fx.length ? ', ' + esc(p.fx.join(', ')) : ''}"><img alt="" loading="lazy" decoding="async" src="${esc(p.th)}"><span>${esc(String(p.set).toUpperCase())} ${esc(p.num)}</span><small>${esc(p.y)}${p.fx.length ? ' · ' + esc(p.fx.join(', ')) : ''}</small></button>`).join('');
@@ -6228,11 +6269,11 @@ function openCardViewer(items, index) {
   varsL.addEventListener('click', e => {
     const b = e.target.closest('.imgv-v'); if (!b) return; haptic('tap');
     const i = Number(b.dataset.i), name = it.ln || it.name;
-    if (i < 0) { artDrop(shown, name); go(idx); return; }      // « Par défaut » : l'aperçu repart de l'image d'origine
+    if (i < 0) { artDrop(vl, name); go(idx); return; }      // « Par défaut » : l'aperçu repart de l'image d'origine
     const p = vars[i]; if (!p) return;
     urls = p.urls.slice(); face = 0; where = [p.sn, String(p.set).toUpperCase() + ' ' + p.num].filter(Boolean).join(' · ');
-    caption(shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; show(0);
-    if (canSave) artSet(shown, name, urls.slice(), where);
+    caption(p.l || vl, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; show(0);
+    if (canSave) artSet(vl, name, urls.slice(), where, p.l);
     varsPaint();
   });
   const step = d => { const n = idx + d; if (!multi || n < 0 || n >= items.length) return; haptic('tap'); go(n); };
@@ -6247,9 +6288,13 @@ function openCardViewer(items, index) {
     if (e.target.closest('.imgv-nav.prev')) step(-1); else if (e.target.closest('.imgv-nav.next')) step(1);
   });
   flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
-  let sx = null, sy = 0;                                         // glissement horizontal : carte suivante / précédente
-  wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 && !e.target.closest('.imgv-vars') ? t.clientX : null; sy = t.clientY; }, { passive: true });
-  wrap.addEventListener('touchend', e => { if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1); }, { passive: true });
+  let sx = null, sy = 0, st = 0, onCard = false;                 // glissement horizontal : carte suivante / précédente
+  wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 && !e.target.closest('.imgv-vars') ? t.clientX : null; sy = t.clientY; st = e.timeStamp; onCard = !!e.target.closest('.imgv-card'); }, { passive: true });
+  wrap.addEventListener('touchend', e => {
+    if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy, dt = e.timeStamp - st; sx = null;
+    const flick = onCard ? dt < 260 && Math.abs(dx) > 70 : Math.abs(dx) > 55;      // sur la carte, un glissé lent l'incline (reflet) : seul un geste vif change de carte
+    if (flick && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
   document.body.appendChild(wrap); holdApp();
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); go(idx);
@@ -7655,7 +7700,7 @@ function openEdhDeck(r) {
     $('.ci-sum', api.body).insertAdjacentHTML('afterend', '<div class="tr-acts dk-acts"><button class="btn ghost" type="button" data-act="dkview"><svg class="i"><use href="#i-grid"/></svg>Voir le deck</button><button class="btn ghost" type="button" data-act="dkshare"><svg class="i"><use href="#i-share"/></svg>Partager</button></div>');
     $('.dk-acts', api.body).onclick = e => {
       const b = e.target.closest('[data-act]'); if (!b) return; haptic('tap');
-      if (b.dataset.act === 'dkview') openDeckViewer({ text: edhDeckText(r.deck), name });      // viewer : images, courbe, main de départ, partage
+      if (b.dataset.act === 'dkview') { api.close(); openDeckViewer({ text: edhDeckText(r.deck), name }); }      // viewer : images, courbe, main de départ, partage
       else shareDeck({ text: edhDeckText(r.deck), name });
     };
     let imgs = new Map(), settled = false;
@@ -9251,7 +9296,12 @@ const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: n
 
 const trWishClean = w => {
   const out = {}; if (!w || typeof w !== 'object' || Array.isArray(w)) return out;
-  for (const [k, v] of Object.entries(w).slice(0, 2000)) if (k && v && typeof v.n === 'string' && v.n.trim()) out[ownKey(v.n) || k] = { n: v.n.trim().slice(0, 160), q: Math.max(1, Math.min(99, Math.floor(Number(v.q) || 1))) };
+  for (const [k, v] of Object.entries(w).slice(0, 2000)) {
+    if (!k || !v || typeof v.n !== 'string' || !v.n.trim()) continue;
+    const e = { n: v.n.trim().slice(0, 160), q: Math.max(1, Math.min(99, Math.floor(Number(v.q) || 1))) };
+    if (typeof v.i === 'string' && SHARE_IMG_RE.test(v.i)) { e.i = v.i; if (typeof v.w === 'string' && v.w.trim()) e.w = v.w.trim().slice(0, 90); if (SHARE_LANGS.includes(v.l)) e.l = v.l; }      // illustration retenue
+    out[ownKey(v.n) || k] = e;
+  }
   return out;
 };
 const trDshClean = o => { const out = {}; if (o && typeof o === 'object' && !Array.isArray(o)) for (const [k, v] of Object.entries(o).slice(0, 200)) if (typeof v === 'string' && SHARE_ID_RE.test(v)) out[k] = v; return out; };
@@ -9314,7 +9364,7 @@ function trCard(k, n, q, l) {
 }
 /** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué. */
 function trPayload() {
-  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => trCard(x.k, x.n, x.q, ''));
+  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => { const o = trCard(x.k, x.n, x.q, ''); if (x.p) { o.i = scrySmall(x.p.i); if (x.p.w) o.w = x.p.w; if (x.p.l && x.p.l !== 'en') o.l = x.p.l; } return o; });      // souhait : l'illustration retenue
   let body = { have, want };
   if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, m, ...x }) => x), want: want.map(({ i, m, ...x }) => x) };
   while (JSON.stringify(body).length > TR_MAX && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
@@ -9440,10 +9490,10 @@ function trHaveRow(x) {
     <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="Garder ${esc(nm)} (ne plus la proposer)">Garder</button></span></div>`;
 }
 function trWantRow(x, mine) {
-  const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = it.im || '';
-  const tags = (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
+  const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = x.p ? scrySmall(x.p.i) : it.im || '';
+  const tags = (x.p && x.p.w ? `<span class="tag accent" title="Illustration recherchée">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
   const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="Un de moins">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="Un de plus">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
-  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln=""><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
 }
 /** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », listes filtrées (barre de recherche et filtres de la collection). */
@@ -9500,7 +9550,7 @@ function trClick(e) {
 function trOpenImg(row) {
   const rows = $$('.tr-row', row.parentNode), list = [];
   let at = 0;
-  for (const r of rows) { const im = $('img.ok', r); if (!im) continue; if (r === row) at = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: '' }); }
+  for (const r of rows) { const im = $('img.ok', r); if (!im) continue; if (r === row) at = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.big ? '' : r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), ...(r.dataset.big ? { big: r.dataset.big } : {}), lang: r.dataset.ln || 'en', plain: true, extra: '' }); }
   if (list.length) openCardViewer(list, at);
 }
 function openWishAdd() {
@@ -9540,8 +9590,11 @@ async function openPublicLink(id) {
     openSheet('Partage', '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
     return;
   }
-  if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at });
-  else openPublicTrade(sh, false);
+  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at }); else openPublicTrade(sh, false); }
+  catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
+    console.error(e);
+    openSheet('Partage', '', api => { api.body.innerHTML = `<p>Ce partage n'a pas pu s'afficher. Recharge la page ; si ça recommence, signale ce message :</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
+  }
 }
 /** Liste d'échange en lecture seule : « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand. */
 function openPublicTrade(sh, preview) {
@@ -9578,8 +9631,8 @@ function openPublicTrade(sh, preview) {
     if (b && b.dataset.act === 'close') return wrap.__close();
     if (b && b.dataset.act === 'more') { P.shown += TR_PAGE; paint(true); return; }
     const row = e.target.closest('.pub-row'); if (!row) return;
-    const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };
-    for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
+    const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };      // illustration recherchée (data-pw) : montrée telle quelle, sans version française
+    for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: !r.dataset.pw && r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
     if (list.length) { haptic('tap'); openCardViewer(list, at.i); } else toast('Pas d\'aperçu pour cette carte');
   });
   document.body.appendChild(wrap); holdApp(); paint(false);
@@ -9599,10 +9652,11 @@ function pubItem(x) {
 }
 function pubRow(it) {
   const nm = it.dn || it.n, img = it.im || '', sub = it.dn && it.dn !== it.n ? `<span class="tag">${esc(it.n)}</span>` : it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '';
+  const pw = it.pw ? `<span class="tag accent" title="Illustration recherchée">${esc(it.pw)}</span>` : '';
   const mine = it.mine ? `<span class="tag good">${TR.pub && TR.pub.sub === 'want' ? 'tu l\'as' : 'déjà à toi'} × ${it.mine}</span>` : '';
-  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}`;
-  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}" data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
+  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}${it.pw ? ' · illustration ' + it.pw : ''}`;
+  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
     <span class="tr-q"><b>× ${it.q}</b></span></div>`;
 }
 

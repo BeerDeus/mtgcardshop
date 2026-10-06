@@ -159,6 +159,34 @@ const tradeId = [...shares.keys()][0];
   ok('deck partagé : lien, suivi des modifications, viewer public en lecture seule, main de départ (7 cartes, sans commandant, terrains surlignés)');
 }
 
+/* ── Liste de souhaits depuis la carte en grand : l'illustration affichée est retenue ───────────── */
+{
+  await p.evaluate(() => openDeckViewer({ id: 'deck1' })); await p.waitForSelector('.dv.on .dvc[aria-label^="Craterhoof"]');
+  await p.click('.dv.on .dvc[aria-label^="Craterhoof"]'); await p.waitForSelector('.imgv.on .imgv-wish:not([hidden])');
+  assert.equal(await txt(p, '.imgv-wish'), '☆ Liste de souhaits');
+  await p.click('.imgv-wish');
+  const w1 = await p.evaluate(() => TR.wish['craterhoof behemoth']);
+  assert.equal(w1.n, 'Craterhoof Behemoth'); assert.equal(w1.q, 1); assert.match(w1.i, /^https:\/\/cards\.scryfall\.io\/normal\//, 'image retenue (format moyen)');
+  assert.equal(await txt(p, '.imgv-wish'), '★ Dans ta liste de souhaits');
+  await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 8000 }); await p.click('.imgv-art'); await p.waitForSelector('.imgv-v[data-i="1"]');
+  await p.click('.imgv-v[data-i="1"]'); await p.waitForTimeout(200);
+  assert.equal(await txt(p, '.imgv-wish'), '☆ Souhaiter cette illustration', 'autre illustration affichée');
+  const label = await p.evaluate(() => document.querySelector('.imgv-sub').textContent);
+  await p.click('.imgv-wish');
+  const w2 = await p.evaluate(() => TR.wish['craterhoof behemoth']);
+  assert.notEqual(w2.i, w1.i, 'illustration remplacée'); assert.ok(w2.w && label.includes(w2.w.split(' · ').pop()), 'extension et numéro retenus : ' + w2.w);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
+  for (let i = 0; i < 40 && !JSON.parse(shares.get(tradeId).d).want.some(x => x.w === w2.w); i++) await sleep(250);
+  const sw = JSON.parse(shares.get(tradeId).d).want.find(x => x.n === 'Craterhoof Behemoth');
+  assert.equal(sw.w, w2.w, 'partage : illustration recherchée'); assert.equal(sw.i, w2.i.replace('/normal/', '/small/'), 'partage : vignette de cette illustration');
+  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
+  await p.waitForSelector('.tr-row[data-k="craterhoof behemoth"]');
+  assert.match(await txt(p, '.tr-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.equal(await p.$eval('.tr-row[data-k="craterhoof behemoth"] .thumb img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'));
+  await p.click('.coll .dv-back'); await p.waitForTimeout(400);
+  ok('carte en grand : « Liste de souhaits » retient l\'illustration affichée (changeable), visible dans « Je recherche » et sur le lien');
+}
+
 /* ── Lien arrêté, lien invalide ───────────────────────────────────────────────────────────────── */
 {
   await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);

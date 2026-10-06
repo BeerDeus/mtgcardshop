@@ -70,7 +70,7 @@ const artAll = () => { if (!ART) { try { const o = JSON.parse(localStorage.getIt
 const artK = (l, n) => l + '|' + ownKey(n);
 const artGet = (l, n) => { const v = artAll()[artK(l, n)]; return v && Array.isArray(v.u) && v.u.length ? v : null; };
 function artSave() { try { localStorage.setItem(ART_KEY, JSON.stringify(artAll())); } catch (e) { /* stockage plein : le choix reste pour cette session */ } }
-function artSet(l, n, u, w) { const a = artAll(), k = artK(l, n); delete a[k]; a[k] = { u, w }; const ks = Object.keys(a); for (const x of ks.slice(0, Math.max(0, ks.length - 400))) delete a[x]; artSave(); }
+function artSet(l, n, u, w, il) { const a = artAll(), k = artK(l, n); delete a[k]; a[k] = { u, w, ...(il && il !== l ? { il } : {}) }; const ks = Object.keys(a); for (const x of ks.slice(0, Math.max(0, ks.length - 400))) delete a[x]; artSave(); }
 function artDrop(l, n) { if (delete artAll()[artK(l, n)]) artSave(); }
 
 /**
@@ -88,14 +88,14 @@ function openCardViewer(items, index) {
     ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
     <div class="imgv-card tilt" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
     <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
-    <div class="imgv-acts"><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
+    <div class="imgv-acts"><button class="btn ghost small imgv-wish" type="button" hidden aria-pressed="false"></button><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
     <div class="imgv-vars" hidden><div class="imgv-vh" aria-live="polite"></div><div class="imgv-vl"></div></div>`;
   const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
-  const artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
+  const wishB = $('.imgv-wish', wrap), artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
   const prevFocus = document.activeElement, from = pressOrigin(), fromEl = from ? MO.press : null, idx0 = Math.max(0, Math.min(items.length - 1, index | 0));
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
-  let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
+  let vl = 'en', idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
   const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
   if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
   const api = imgView = { close() {
@@ -107,8 +107,28 @@ function openCardViewer(items, index) {
     try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   } };
   const caption = (l0, note) => { const l = lk(l0); shown = l; sub.innerHTML = `<span class="imgv-lang">${flag(l)}${esc(LANGS[l] || l)}</span>${where ? `<span>${esc(where)}</span>` : ''}${note ? `<em>${esc(note)}</em>` : ''}`; };
+  /** Liste de souhaits : retient l'illustration affichée (image, « Extension · CODE 123 », langue). */
+  const samePrint = (a, b) => scrySmall(a).split('?')[0] === scrySmall(b).split('?')[0];      // même illustration, quel que soit le format (small, normal, large)
+  const wishKey = () => { const k = ownKey(it.ln || it.name); return k && !BASIC_NAMES.has(k) ? k : ''; };
+  const wishPaint = () => {
+    const k = wishKey(), img = urls[0] || ''; wishB.hidden = !k || !img || typeof TR === 'undefined'; if (wishB.hidden) return;
+    const w = TR.wish[k], same = !!w && !!w.i && samePrint(w.i, img);
+    wishB.classList.toggle('on', same); wishB.setAttribute('aria-pressed', String(same));
+    wishB.textContent = same ? '★ Dans ta liste de souhaits' : w ? '☆ Souhaiter cette illustration' : '☆ Liste de souhaits';
+  };
+  wishB.onclick = () => {
+    const k = wishKey(), img = urls[0]; if (!k || !img) return;
+    const name = it.ln || it.name, was = TR.wish[k], same = !!was && !!was.i && samePrint(was.i, img);
+    haptic(same ? 'tap' : 'ok');
+    if (same) { delete TR.wish[k]; toast(name + ' retirée de ta liste de souhaits', { label: 'Annuler', fn: () => { TR.wish[k] = was; trChanged(); wishPaint(); } }); }
+    else {
+      TR.wish[k] = { n: name, q: was ? was.q : 1, i: img.replace(/\/(large|png|border_crop)\//, '/normal/'), ...(where ? { w: where.slice(0, 90) } : {}), ...(shown && shown !== 'en' ? { l: shown } : {}) };
+      toast(was ? 'Illustration mise à jour dans ta liste de souhaits' : name + ' ajoutée à ta liste de souhaits' + (where ? ' (' + where + ')' : ''), { label: 'Annuler', fn: () => { if (was) TR.wish[k] = was; else delete TR.wish[k]; trChanged(); wishPaint(); } });
+    }
+    trChanged(); wishPaint();
+  };
   const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
-    face = i; const probe = new Image(), mine = it;
+    face = i; wishPaint(); const probe = new Image(), mine = it;
     probe.onload = () => { if (imgView !== api || it !== mine) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
     probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
     img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
@@ -137,8 +157,9 @@ function openCardViewer(items, index) {
       } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? 'Pas d\'image française sur Scryfall : version anglaise' : ''); }                                // image seule : la langue est celle de l'image fournie
       else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
       canSave = !!(it.plain || wu);      // l'aperçu d'une offre garde l'impression de l'offre : on peut feuilleter les illustrations, pas les retenir
-      const pf = canSave ? artGet(shown, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
-      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; }
+      vl = shown;      // langue de la vue : les illustrations retenues lui sont rattachées, même une impression anglaise (promo…)
+      const pf = canSave ? artGet(vl, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
+      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(pf.il || shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; }
       show(0);
       varT = setTimeout(() => loadVars(mine, my), wantOpen ? 120 : 320);      // pas de requête pendant un glissé rapide d'une carte à l'autre
     })();
@@ -146,7 +167,7 @@ function openCardViewer(items, index) {
   /** Impressions de la carte dans la langue affichée : le bouton « Illustrations · N » apparaît s'il y en a au moins deux. */
   const loadVars = async (mine, my) => {
     if (imgView !== api || it !== mine || my.signal.aborted || scryLeft() > 0) return;
-    let list = []; try { list = await scryArtPrints(it.ln || it.name, shown, my.signal); } catch (e) { return; }
+    let list = []; try { list = await scryArtPrints(it.ln || it.name, vl, my.signal); } catch (e) { return; }
     if (imgView !== api || it !== mine) return;
     vars = list;
     if (list.length < 2) { varsEl.hidden = true; wrap.classList.remove('has-vars'); return; }
@@ -155,7 +176,7 @@ function openCardViewer(items, index) {
   };
   const baseOf = u => String(u || '').split('?')[0];
   const varsPaint = () => {
-    const cur = baseOf(urls[0]), sel = vars.findIndex(p => baseOf(p.urls[0]) === cur), pf = canSave && artGet(shown, it.ln || it.name);
+    const cur = baseOf(urls[0]), sel = vars.findIndex(p => baseOf(p.urls[0]) === cur), pf = canSave && artGet(vl, it.ln || it.name);
     pickAt = sel;
     varsL.innerHTML = (pf ? '<button type="button" class="imgv-v def" data-i="-1" aria-label="Revenir à l\'illustration par défaut"><i>Par défaut</i></button>' : '')
       + vars.map((p, i) => `<button type="button" class="imgv-v" data-i="${i}" aria-pressed="${i === sel}" aria-label="${esc(p.sn)} ${esc(String(p.set).toUpperCase())} ${esc(p.num)}${p.fx.length ? ', ' + esc(p.fx.join(', ')) : ''}"><img alt="" loading="lazy" decoding="async" src="${esc(p.th)}"><span>${esc(String(p.set).toUpperCase())} ${esc(p.num)}</span><small>${esc(p.y)}${p.fx.length ? ' · ' + esc(p.fx.join(', ')) : ''}</small></button>`).join('');
@@ -171,11 +192,11 @@ function openCardViewer(items, index) {
   varsL.addEventListener('click', e => {
     const b = e.target.closest('.imgv-v'); if (!b) return; haptic('tap');
     const i = Number(b.dataset.i), name = it.ln || it.name;
-    if (i < 0) { artDrop(shown, name); go(idx); return; }      // « Par défaut » : l'aperçu repart de l'image d'origine
+    if (i < 0) { artDrop(vl, name); go(idx); return; }      // « Par défaut » : l'aperçu repart de l'image d'origine
     const p = vars[i]; if (!p) return;
     urls = p.urls.slice(); face = 0; where = [p.sn, String(p.set).toUpperCase() + ' ' + p.num].filter(Boolean).join(' · ');
-    caption(shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; show(0);
-    if (canSave) artSet(shown, name, urls.slice(), where);
+    caption(p.l || vl, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; show(0);
+    if (canSave) artSet(vl, name, urls.slice(), where, p.l);
     varsPaint();
   });
   const step = d => { const n = idx + d; if (!multi || n < 0 || n >= items.length) return; haptic('tap'); go(n); };
@@ -190,9 +211,13 @@ function openCardViewer(items, index) {
     if (e.target.closest('.imgv-nav.prev')) step(-1); else if (e.target.closest('.imgv-nav.next')) step(1);
   });
   flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
-  let sx = null, sy = 0;                                         // glissement horizontal : carte suivante / précédente
-  wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 && !e.target.closest('.imgv-vars') ? t.clientX : null; sy = t.clientY; }, { passive: true });
-  wrap.addEventListener('touchend', e => { if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null; if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1); }, { passive: true });
+  let sx = null, sy = 0, st = 0, onCard = false;                 // glissement horizontal : carte suivante / précédente
+  wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 && !e.target.closest('.imgv-vars') ? t.clientX : null; sy = t.clientY; st = e.timeStamp; onCard = !!e.target.closest('.imgv-card'); }, { passive: true });
+  wrap.addEventListener('touchend', e => {
+    if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy, dt = e.timeStamp - st; sx = null;
+    const flick = onCard ? dt < 260 && Math.abs(dx) > 70 : Math.abs(dx) > 55;      // sur la carte, un glissé lent l'incline (reflet) : seul un geste vif change de carte
+    if (flick && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
   document.body.appendChild(wrap); holdApp();
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.imgv-x', wrap).focus({ preventScroll: true }); }));
   haptic('tap'); go(idx);

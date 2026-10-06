@@ -12,7 +12,12 @@ const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: n
 
 const trWishClean = w => {
   const out = {}; if (!w || typeof w !== 'object' || Array.isArray(w)) return out;
-  for (const [k, v] of Object.entries(w).slice(0, 2000)) if (k && v && typeof v.n === 'string' && v.n.trim()) out[ownKey(v.n) || k] = { n: v.n.trim().slice(0, 160), q: Math.max(1, Math.min(99, Math.floor(Number(v.q) || 1))) };
+  for (const [k, v] of Object.entries(w).slice(0, 2000)) {
+    if (!k || !v || typeof v.n !== 'string' || !v.n.trim()) continue;
+    const e = { n: v.n.trim().slice(0, 160), q: Math.max(1, Math.min(99, Math.floor(Number(v.q) || 1))) };
+    if (typeof v.i === 'string' && SHARE_IMG_RE.test(v.i)) { e.i = v.i; if (typeof v.w === 'string' && v.w.trim()) e.w = v.w.trim().slice(0, 90); if (SHARE_LANGS.includes(v.l)) e.l = v.l; }      // illustration retenue
+    out[ownKey(v.n) || k] = e;
+  }
   return out;
 };
 const trDshClean = o => { const out = {}; if (o && typeof o === 'object' && !Array.isArray(o)) for (const [k, v] of Object.entries(o).slice(0, 200)) if (typeof v === 'string' && SHARE_ID_RE.test(v)) out[k] = v; return out; };
@@ -75,7 +80,7 @@ function trCard(k, n, q, l) {
 }
 /** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué. */
 function trPayload() {
-  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => trCard(x.k, x.n, x.q, ''));
+  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => { const o = trCard(x.k, x.n, x.q, ''); if (x.p) { o.i = scrySmall(x.p.i); if (x.p.w) o.w = x.p.w; if (x.p.l && x.p.l !== 'en') o.l = x.p.l; } return o; });      // souhait : l'illustration retenue
   let body = { have, want };
   if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, m, ...x }) => x), want: want.map(({ i, m, ...x }) => x) };
   while (JSON.stringify(body).length > TR_MAX && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
@@ -201,10 +206,10 @@ function trHaveRow(x) {
     <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="Garder ${esc(nm)} (ne plus la proposer)">Garder</button></span></div>`;
 }
 function trWantRow(x, mine) {
-  const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = it.im || '';
-  const tags = (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
+  const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = x.p ? scrySmall(x.p.i) : it.im || '';
+  const tags = (x.p && x.p.w ? `<span class="tag accent" title="Illustration recherchée">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
   const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="Un de moins">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="Un de plus">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
-  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln=""><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
 }
 /** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », listes filtrées (barre de recherche et filtres de la collection). */
@@ -261,7 +266,7 @@ function trClick(e) {
 function trOpenImg(row) {
   const rows = $$('.tr-row', row.parentNode), list = [];
   let at = 0;
-  for (const r of rows) { const im = $('img.ok', r); if (!im) continue; if (r === row) at = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: '' }); }
+  for (const r of rows) { const im = $('img.ok', r); if (!im) continue; if (r === row) at = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.big ? '' : r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), ...(r.dataset.big ? { big: r.dataset.big } : {}), lang: r.dataset.ln || 'en', plain: true, extra: '' }); }
   if (list.length) openCardViewer(list, at);
 }
 function openWishAdd() {
@@ -301,8 +306,11 @@ async function openPublicLink(id) {
     openSheet('Partage', '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
     return;
   }
-  if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at });
-  else openPublicTrade(sh, false);
+  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at }); else openPublicTrade(sh, false); }
+  catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
+    console.error(e);
+    openSheet('Partage', '', api => { api.body.innerHTML = `<p>Ce partage n'a pas pu s'afficher. Recharge la page ; si ça recommence, signale ce message :</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
+  }
 }
 /** Liste d'échange en lecture seule : « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand. */
 function openPublicTrade(sh, preview) {
@@ -339,8 +347,8 @@ function openPublicTrade(sh, preview) {
     if (b && b.dataset.act === 'close') return wrap.__close();
     if (b && b.dataset.act === 'more') { P.shown += TR_PAGE; paint(true); return; }
     const row = e.target.closest('.pub-row'); if (!row) return;
-    const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };
-    for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
+    const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };      // illustration recherchée (data-pw) : montrée telle quelle, sans version française
+    for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: !r.dataset.pw && r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
     if (list.length) { haptic('tap'); openCardViewer(list, at.i); } else toast('Pas d\'aperçu pour cette carte');
   });
   document.body.appendChild(wrap); holdApp(); paint(false);
@@ -360,10 +368,11 @@ function pubItem(x) {
 }
 function pubRow(it) {
   const nm = it.dn || it.n, img = it.im || '', sub = it.dn && it.dn !== it.n ? `<span class="tag">${esc(it.n)}</span>` : it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '';
+  const pw = it.pw ? `<span class="tag accent" title="Illustration recherchée">${esc(it.pw)}</span>` : '';
   const mine = it.mine ? `<span class="tag good">${TR.pub && TR.pub.sub === 'want' ? 'tu l\'as' : 'déjà à toi'} × ${it.mine}</span>` : '';
-  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}`;
-  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}" data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
+  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}${it.pw ? ' · illustration ' + it.pw : ''}`;
+  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
     <span class="tr-q"><b>× ${it.q}</b></span></div>`;
 }
 

@@ -1,6 +1,7 @@
 // Assemble src/* → deck-deal.html (document autonome, servi par proxy.mjs et versionné : l'hébergeur ne lance aucun build)
 //                + dist/deck-deal.artifact.html (fragment publiable, non versionné)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +13,7 @@ const css = rd('style.css').trim();
 const body = rd('body.html').trim();
 const js = ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
+const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
 const TITLE = 'Deck Deal';
 const FONTS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap';
 const DESC = 'Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.';
@@ -25,6 +27,7 @@ ${css}
 </style>
 ${body}
 <script>
+const DD_BUILD = '${BUILD}';
 ${js}
 </script>
 `;
@@ -60,6 +63,7 @@ ${css}
 <body>
 ${body}
 <script>
+const DD_BUILD = '${BUILD}';
 ${js}
 </script>
 </body>

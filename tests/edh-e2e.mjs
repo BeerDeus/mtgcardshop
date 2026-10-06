@@ -140,6 +140,11 @@ const miss = await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent)
 assert.match(await txt(p, '.dk-own summary'), /Déjà dans ta collection \(2\)/);
 assert.equal(await p.$eval('.sheet-foot a', a => a.href), 'https://edhrec.com/average-decks/edgar-markov'); assert.equal(await p.$eval('.sheet-foot a', a => a.rel), 'noopener noreferrer');
 await p.screenshot({ path: 'shots/edh-3-feuille.png' });
+// « Voir le deck » : la fiche se ferme, le viewer s'ouvre (images, courbe, main de départ)
+await p.click('.sheet [data-act="dkview"]'); await p.waitForSelector('.dv.on[aria-label="Deck viewer · Edgar Markov"]');
+await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.click('.dv.on[aria-label="Deck viewer · Edgar Markov"] [data-act="close"]'); await p.waitForTimeout(400);
+await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum');
 /* ── 4b) aperçu des cartes de la feuille, zoom, glissement ─────────────────────────────────── */
 assert.match(await txt(p, '.sheet-head p'), /^Tier S · n° 1 · 3 \/ 26 possédées/); assert.match(await txt(p, '.sheet .ci-sum'), /Tier S · n° 1 sur EDHREC · bracket ≈ 4 · 4 Game Changers/);
 assert.deepEqual(await p.$$eval('.sheet .crow[data-ik]:has(.tag.warn) .row-name', n => n.map(x => x.textContent).sort()), ['Arcane Signet', 'Command Tower', 'Swords to Plowshares', 'Wrath of God'], 'pastille « Game Changer »');

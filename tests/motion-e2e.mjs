@@ -32,8 +32,18 @@ const anims = (p, sel) => p.$eval(sel, e => e.getAnimations({ subtree: true }).m
   assert.equal(await p.$eval('.imgv-card img.imgv-img', i => getComputedStyle(i).pointerEvents), 'none', 'image non attrapable (le doigt reste sur la carte)');
   await p.mouse.move(5, 5); await p.waitForTimeout(100);
   assert.equal(await p.$eval('.imgv-card', e => e.classList.contains('tilting')), false, 'pointeur sorti : la carte revient à plat');
+  // doigt sur la carte : un glissé lent l'incline sans changer de carte, seul un geste vif passe à la suivante
+  const swipe = (ms, dx) => p.evaluate(async ([ms, dx]) => {
+    const el = document.querySelector('.imgv-card'), r = el.getBoundingClientRect(), x = r.left + r.width * 0.7, y = r.top + r.height / 2;
+    const T = cx => new Touch({ identifier: 1, target: el, clientX: cx, clientY: y }), ev = (type, t, list) => el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: list, changedTouches: [t] }));
+    ev('touchstart', T(x), [T(x)]); await new Promise(res => setTimeout(res, ms)); ev('touchend', T(x + dx), []);
+    return document.querySelector('.imgv-count').textContent;
+  }, [ms, dx]);
+  const n0 = await p.$eval('.imgv-count', e => e.textContent);
+  assert.equal(await swipe(600, -140), n0, 'glissé lent sur la carte : on reste sur la même carte (inclinaison)');
+  assert.notEqual(await swipe(120, -140), n0, 'geste vif : carte suivante');
   await p.keyboard.press('Escape'); await p.waitForTimeout(400);
-  ok('carte en grand : agrandie depuis la vignette, inclinaison foil qui suit le pointeur, revient à plat');
+  ok('carte en grand : agrandie depuis la vignette, inclinaison foil qui suit le pointeur, revient à plat ; glissé lent = inclinaison, geste vif = carte suivante');
 
   await p.click('.coll .dv-back'); await p.waitForTimeout(400);
   await p.click('#btnDecks'); await p.waitForSelector('.deck-main .tilt');

@@ -931,7 +931,8 @@ function openSettings() {
       <div class="sec-title">Application</div>
       <div id="appBox" class="installbox"></div>
       <div class="sec-title">Panier CardTrader</div>
-      <div id="cartBox" class="cartbox"></div>`;
+      <div id="cartBox" class="cartbox"></div>
+      <p class="hint set-ver">Version ${esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev')}</p>`;
     const b = api.body;
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
     const appBox = $('#appBox', b);

@@ -238,7 +238,16 @@ async function scryImage({ set, num, lang }, signal) {
 async function scryArtPrints(name, lang, signal) {
   const sl = SCRY_LANG[lang] || 'en', n = String(name || '').split('//')[0].trim();
   if (!n || n.includes('"')) return [];
-  const key = 'pr:' + ownKey(n) + ':' + sl, hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
+  const key = 'pr2:' + ownKey(n) + ':' + sl, hit = await Cache.get(key, 7 * DAY); if (hit) return hit;
+  const out = await scryPrintsIn(n, sl, signal);
+  if (sl !== 'en') {      // impressions qui n'existent qu'en anglais (promos, séries spéciales…) : après celles de la langue affichée, marquées « anglais »
+    const have = new Set(out.map(p => p.set + '/' + p.num));
+    for (const p of await scryPrintsIn(n, 'en', signal)) if (!have.has(p.set + '/' + p.num)) out.push({ ...p, l: 'en', fx: [...p.fx, 'anglais'] });
+  }
+  await Cache.set(key, out);
+  return out;
+}
+async function scryPrintsIn(n, sl, signal) {
   let url = 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent('!"' + n + '" lang:' + sl + ' game:paper') + '&unique=prints&order=released&dir=desc';
   const out = [], seen = new Set();
   for (let pg = 0; url && pg < 3; pg++) {
@@ -247,11 +256,10 @@ async function scryArtPrints(name, lang, signal) {
       const urls = facesOf(c), im = c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {}, id = c.set + '/' + c.collector_number;
       if (!urls.length || seen.has(id)) continue; seen.add(id);
       const fe = c.frame_effects || [], fx = [c.full_art ? 'plein art' : '', c.border_color === 'borderless' ? 'sans bordure' : '', fe.includes('extendedart') ? 'étendue' : '', fe.includes('showcase') ? 'showcase' : '', c.promo ? 'promo' : ''].filter(Boolean);
-      out.push({ set: c.set, num: c.collector_number, sn: c.set_name || '', y: String(c.released_at || '').slice(0, 4), th: im.small || urls[0], urls, fx });
+      out.push({ set: c.set, num: c.collector_number, sn: c.set_name || '', y: String(c.released_at || '').slice(0, 4), th: im.small || urls[0], urls, fx, l: sl });
     }
     url = j.has_more ? j.next_page : '';
   }
-  await Cache.set(key, out);
   return out;
 }
 

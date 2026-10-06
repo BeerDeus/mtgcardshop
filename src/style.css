@@ -1301,3 +1301,7 @@ button,.btn,select,summary{touch-action:manipulation}
   .tilt,.imgv-card.tilt,.imgv.on .imgv-card.tilt{transform:none!important}.tilt::after{display:none}
   .thumb img,.dvc-art img{transform:none}
 }
+.imgv-wish{color:#fff;border-color:rgba(255,255,255,.35);transition:transform .32s var(--spring),background .2s,border-color .2s,color .2s}
+.imgv-wish.on{background:rgba(255,212,121,.16);border-color:#ffd479;color:#ffd479}
+.imgv-wish[hidden]{display:none}
+.set-ver{margin:14px 0 0;text-align:center;font-family:var(--font-code);font-size:11.5px}

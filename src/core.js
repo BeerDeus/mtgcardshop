@@ -1529,14 +1529,17 @@ function tradeLists(coll, use, keep, kept) {
   const byN = (a, b) => a.n.localeCompare(b.n, 'en');
   return { have: have.sort(byN), held: held.sort(byN) };
 }
-/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q }, exemplaires voulus en plus). [{ k, n, q, d (manque aux decks), w (souhait) }] triés par nom. */
+/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q, i?, w?, l? }, exemplaires voulus en plus ;
+ *  i/w/l : illustration retenue — image, « Extension · CODE 123 », langue). [{ k, n, q, d (manque aux decks), w (souhait), p? { i, w, l } }] triés par nom. */
 function tradeWant(coll, use, wish) {
   const out = new Map();
   for (const [k, u] of use || []) { const own = (coll && coll[k] && coll[k].q) || 0; if (u.q > own) out.set(k, { k, n: u.n, q: u.q - own, d: u.q - own, w: 0 }); }
   for (const [k, w] of Object.entries(wish || {})) {
     if (!w || BASIC_NAMES.has(k)) continue;
     const q = Math.max(1, Math.min(99, Math.floor(Number(w.q) || 1))), cur = out.get(k);
-    if (cur) { cur.w = q; cur.q += q; } else out.set(k, { k, n: String(w.n || k), q, d: 0, w: q });
+    const x = cur || { k, n: String(w.n || k), q: 0, d: 0, w: 0 };
+    x.w = q; x.q += q; if (w.i) x.p = { i: w.i, ...(w.w ? { w: w.w } : {}), ...(w.l ? { l: w.l } : {}) };      // illustration choisie (carte en grand)
+    if (!cur) out.set(k, x);
   }
   return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
 }
@@ -1544,6 +1547,8 @@ function tradeWant(coll, use, wish) {
 /* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
 const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/[\w./-]+(\?\d+)?$/;
 const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
+/** Image Scryfall en petit format (vignettes) : …/large/… ou …/normal/… → …/small/… */
+const scrySmall = u => String(u || '').replace(/\/(large|normal|png|border_crop)\//, '/small/');
 const shStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 const shNum = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, Math.round(x))) : null; };
 /** Une carte d'un partage : { n, q, l?, f? (nom français), i? (image), c? (coût), t? (type), o? (couleurs), m? (symboles) } → item d'affichage, null si illisible. */
@@ -1555,6 +1560,7 @@ function shareCard(x) {
   if (SHARE_LANGS.includes(x.l)) it.l = x.l;
   const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
   if (SHARE_IMG_RE.test(shStr(x.i, 300))) it.im = x.i;
+  const pw = shStr(x.w, 90).trim(); if (pw) it.pw = pw;      // illustration recherchée : « Extension · CODE 123 »
   const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
   const t = shStr(x.t, 120); if (t) it.tl = t;
   const o = shStr(x.o, 5); if (/^[WUBRG]*$/.test(o)) it.cl = o;
@@ -1601,7 +1607,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,

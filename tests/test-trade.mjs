@@ -38,13 +38,17 @@ const use = C.deckUse(decks);
   assert.deepEqual(by('mana crypt'), { k: 'mana crypt', n: 'Mana Crypt', q: 1, d: 0, w: 1 }, 'souhait seul, 1 par défaut');
   assert.equal(by('atraxa praetors voice').q, 1, 'commandant non possédé : recherché');
   assert.ok(!by('forest') && !by('sol ring'), 'terrains de base et cartes déjà là : non');
-  console.log('✓ tradeWant : manquantes des decks + liste de souhaits');
+  const wp = C.tradeWant(coll, use, { 'mana crypt': { n: 'Mana Crypt', q: 1, i: 'https://cards.scryfall.io/normal/front/a/b/mc.jpg', w: 'Eternal Masters · EMA 225', l: 'fr' } });
+  assert.deepEqual(wp.find(x => x.k === 'mana crypt').p, { i: 'https://cards.scryfall.io/normal/front/a/b/mc.jpg', w: 'Eternal Masters · EMA 225', l: 'fr' }, 'illustration retenue');
+  assert.equal(C.scrySmall('https://cards.scryfall.io/normal/front/a/b/mc.jpg?1'), 'https://cards.scryfall.io/small/front/a/b/mc.jpg?1');
+  console.log('✓ tradeWant : manquantes des decks + liste de souhaits (avec l\'illustration retenue)');
 }
 {
   const ok = C.readShare('trade', JSON.stringify({ at: 5, have: [{ n: 'Sol Ring', q: 2, l: 'fr', f: 'Anneau solaire', i: 'https://cards.scryfall.io/small/front/a/b/x.jpg?123', c: 1, t: 'Artifact', o: '', m: '{1}' }, { n: '', q: 1 }, { n: 'Evil', q: 1, i: 'https://evil.example/p.gif', l: 'xx', o: '<b>' }], want: [{ n: 'Mana Crypt', q: 1 }] }));
   assert.equal(ok.have.length, 2, 'carte sans nom écartée');
   assert.deepEqual(ok.have[0], { k: 'sol ring', n: 'Sol Ring', q: 2, l: 'fr', fn: 'Anneau solaire', dn: 'Anneau solaire', im: 'https://cards.scryfall.io/small/front/a/b/x.jpg?123', cm: 1, tl: 'Artifact', cl: '', mc: '{1}' });
   assert.deepEqual(ok.have[1], { k: 'evil', n: 'Evil', q: 1 }, 'image hors Scryfall, langue et couleurs inconnues : ignorées');
+  assert.equal(C.readShare('trade', JSON.stringify({ want: [{ n: 'Mana Crypt', q: 1, w: 'Eternal Masters · EMA 225' }] })).want[0].pw, 'Eternal Masters · EMA 225', 'libellé de l\'illustration recherchée');
   assert.equal(C.readShare('trade', '{oops'), null); assert.equal(C.readShare('nope', '{}'), null);
   assert.deepEqual(C.readShare('deck', JSON.stringify({ name: 'Mon deck', text: '1 Sol Ring', at: 3 })), { kind: 'deck', at: 3, name: 'Mon deck', text: '1 Sol Ring' });
   assert.equal(C.readShare('deck', JSON.stringify({ name: 'Vide', text: '// rien' })), null, 'deck vide : illisible');
