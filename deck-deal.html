@@ -1266,7 +1266,7 @@ button,.btn,select,summary{touch-action:manipulation}
             <label class="label" for="optLang">Langue</label>
             <div class="sel"><select id="optLang">
               <option value="fr">Français</option><option value="en">Anglais</option><option value="de">Allemand</option>
-              <option value="es">Espagnol</option><option value="it">Italien</option><option value="pt">Portugais</option><option value="jp">Japonais</option>
+              <option value="es">Espagnol</option><option value="it">Italien</option><option value="pt">Portugais</option><option value="jp">Japonais</option><option value="zh-CN">Chinois</option>
             </select></div>
           </div>
           <div class="ctl">
@@ -1387,10 +1387,12 @@ function normPart(s) {
 function normName(s) { return String(s || '').split('//').map(normPart).filter(Boolean).join(' // '); }
 function frontName(s) { return normName(s).split(' // ')[0]; }
 
-/** Langue d'une carte de collection : code de l'app (fr en de es it pt jp) depuis un code (FR, ja, fra…) ou un nom (French, Français…), '' si inconnue. */
+/** Langue d'une carte de collection : code de l'app (fr en de es it pt jp zh-CN) depuis un code (FR, ja, fra…) ou un nom (French, Français…), '' si inconnue. */
 const LANG_ALIAS = { fr: 'fr', fra: 'fr', fre: 'fr', french: 'fr', francais: 'fr', en: 'en', eng: 'en', english: 'en', anglais: 'en', de: 'de', deu: 'de', ger: 'de', german: 'de', allemand: 'de', deutsch: 'de',
-  es: 'es', spa: 'es', spanish: 'es', espagnol: 'es', it: 'it', ita: 'it', italian: 'it', italien: 'it', pt: 'pt', por: 'pt', portuguese: 'pt', portugais: 'pt', ja: 'jp', jp: 'jp', jpn: 'jp', japanese: 'jp', japonais: 'jp' };
+  es: 'es', spa: 'es', spanish: 'es', espagnol: 'es', it: 'it', ita: 'it', italian: 'it', italien: 'it', pt: 'pt', por: 'pt', portuguese: 'pt', portugais: 'pt', ja: 'jp', jp: 'jp', jpn: 'jp', japanese: 'jp', japonais: 'jp', zh: 'zh-CN', zhs: 'zh-CN', zht: 'zh-CN', zhcn: 'zh-CN', zhtw: 'zh-CN', cn: 'zh-CN', chs: 'zh-CN', cht: 'zh-CN', chinese: 'zh-CN', chinois: 'zh-CN', simplifiedchinese: 'zh-CN', chinesesimplified: 'zh-CN', traditionalchinese: 'zh-CN', chinesetraditional: 'zh-CN' };
 const cardLang = x => LANG_ALIAS[String(x == null ? '' : x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '')] || '';
+/** Code court d'une langue pour l'affichage et le texte de la collection : « FR », « EN »… ; le chinois s'écrit « ZH » (lettres seules : le code CardTrader « zh-CN » a un tiret). */
+const langCode = l => (l === 'zh-CN' ? 'ZH' : String(l || '').toUpperCase());
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
@@ -1403,7 +1405,7 @@ function parseLine(raw) {
   const m = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
   if (m) { qty = parseInt(m[1], 10); name = m[2]; }
   let lang = '';
-  name = name.replace(/\s+\*([A-Za-z]+)\*\s*$/, (_, t) => { if (t.length > 1) lang = cardLang(t); return ''; })      // « *FR* » : langue ; « *F* » (foil) : ignoré
+  name = name.replace(/\s+\*([A-Za-z]+(?:-[A-Za-z]+)?)\*\s*$/, (_, t) => { if (t.length > 1) lang = cardLang(t); return ''; })      // « *FR* » : langue ; « *F* » (foil) : ignoré
     .replace(/\s+\([A-Za-z0-9]{2,8}\)(\s+[A-Za-z0-9★-]+)?\s*$/, '')
     .trim();
   if (!name || qty < 1 || qty > 999) return { ignored: true };
@@ -1664,7 +1666,7 @@ function makeDemoOffers(card, lang) {
 
 /* ── Decks enregistrés : normalisation, historique de prix, temps relatif ───────────────────── */
 const HISTORY_MAX = 40, NAME_MAX = 120, TEXT_MAX = 60000;
-const OPT_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
+const OPT_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
 const OPT_FOIL = ['no', 'any', 'yes'];
 const OPT_MODE = ['zero', 'direct'];
 
@@ -2077,11 +2079,11 @@ const QTY_COLS = ['quantity', 'qty', 'count', 'amount', 'quantite', 'reg qty', '
 const colNorm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
 /** Repère de date d'ajout dans le texte de la collection : « 3 Sol Ring (Dh7zqkx) *FR* », secondes en base 36. Une ligne que l'ancienne version lit encore : elle y voit un code d'extension et l'ignore. */
-const DATE_MARK_RE = /\s+\(D([0-9a-z]{5,7})\)(?=(?:\s+\*[A-Za-z]+\*)?\s*$)/;
+const DATE_MARK_RE = /\s+\(D([0-9a-z]{5,7})\)(?=(?:\s+\*[A-Za-z]+(?:-[A-Za-z]+)?\*)?\s*$)/;
 const dateNowSec = () => Math.floor(Date.now() / 1000);
 /* ── Une carte, plusieurs langues : entrée { n, q (total), l (langue la plus fournie), x? { langue: exemplaires } (seulement avec plusieurs langues), d? } ───
    Chaque langue est une « ligne » (« 2 Sol Ring *FR* » + « 1 Sol Ring *EN* » dans le texte) ; la langue '' = non précisée. Les totaux (q) servent partout ailleurs (decks, paniers, valeur). */
-const LINE_RANK = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', ''];
+const LINE_RANK = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN', ''];
 const lineRank = l => { const i = LINE_RANK.indexOf(l || ''); return i < 0 ? LINE_RANK.length : i; };
 /** Lignes d'une entrée : [[langue, exemplaires]] dans l'ordre d'affichage (fr, en, autres, non précisée) ; toujours au moins une ligne si la carte existe. */
 function collLines(x) {
@@ -2172,7 +2174,7 @@ function mergeColl(base, add, mode, now) {
   return out;
 }
 /** Texte compact d'une collection (une carte par ligne, « 3 Sol Ring ») pour le cloud, et son inverse. dates : ajoute la date d'ajout « (Dxxxxxx) » (stockage et compte ; pas l'export). */
-const collToText = (coll, dates) => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).flatMap(x => collLines(x).map(([l, q]) => q + ' ' + x.n + (dates && x.d > 0 ? ' (D' + Math.floor(x.d).toString(36) + ')' : '') + (l ? ' *' + l.toUpperCase() + '*' : ''))).join('\n');
+const collToText = (coll, dates) => Object.values(coll).filter(x => x && x.q > 0 && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')).flatMap(x => collLines(x).map(([l, q]) => q + ' ' + x.n + (dates && x.d > 0 ? ' (D' + Math.floor(x.d).toString(36) + ')' : '') + (l ? ' *' + langCode(l) + '*' : ''))).join('\n');
 const collFromText = text => { const o = {}; for (const it of parseCollection(text, { dates: true }).items) o[it.k] = { n: it.n, q: it.q, ...(it.l ? { l: it.l } : {}), ...(it.x ? { x: it.x } : {}), ...(it.d ? { d: it.d } : {}) }; return o; };
 
 /** Même carte au même état (quantité, langue) ? Deux absences sont identiques. */
@@ -2251,7 +2253,7 @@ function filterItems(items, f) {
   const q = normPart(f.q || ''), colors = f.colors && f.colors.size ? f.colors : null, type = f.type || '', cmc = f.cmc === '' || f.cmc == null ? null : Number(f.cmc), cmdr = f.cmdr === 'can' || f.cmdr === 'played' ? f.cmdr : '';
   if (!q && !colors && !type && cmc == null && !cmdr) return items;
   return items.filter(i => {
-    if (q && !normPart(i.n).includes(q) && !(i.dn && normPart(i.dn).includes(q))) return false;
+    if (q && !normPart(i.n).includes(q) && !(i.dn && normPart(i.dn).includes(q)) && !(i.fn && normPart(i.fn).includes(q))) return false;      // nom anglais, nom affiché (FR) ou nom français de la carte même si l'exemplaire est anglais
     if (cmdr && (i.cx || 0) < (cmdr === 'played' ? 2 : 1)) return false;      // cx : 0 pas commandant · 1 peut l'être · 2 joué comme commandant (EDHREC)
     if (colors || type || cmc != null) {
       if (!hasMeta(i)) return false;
@@ -2828,7 +2830,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkSideCards, dkBuildText, dkParse, dkCheck,
-    ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
+    ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
@@ -3809,7 +3811,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-const LANGS = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien', pt: 'portugais', jp: 'japonais' };
+const LANGS = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien', pt: 'portugais', jp: 'japonais', 'zh-CN': 'chinois' };
 const FLAGS = {
   fr: '<rect width="8" height="16" fill="#0055A4"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#EF4135"/>',
   en: '<rect width="24" height="16" fill="#012169"/><path d="M0 0L24 16M24 0L0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0L24 16M24 0L0 16" stroke="#C8102E" stroke-width="1.1"/><path d="M12 0V16M0 8H24" stroke="#fff" stroke-width="5.4"/><path d="M12 0V16M0 8H24" stroke="#C8102E" stroke-width="3.2"/>',
@@ -3818,6 +3820,7 @@ const FLAGS = {
   it: '<rect width="8" height="16" fill="#009246"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#CE2B37"/>',
   pt: '<rect width="24" height="16" fill="#FF0000"/><rect width="9.6" height="16" fill="#006600"/><circle cx="9.6" cy="8" r="2.7" fill="#FFCC29" stroke="#fff" stroke-width=".6"/>',
   jp: '<rect width="24" height="16" fill="#fff"/><circle cx="12" cy="8" r="4.7" fill="#BC002D"/>',
+  'zh-CN': '<rect width="24" height="16" fill="#DE2910"/><polygon points="4.20,1.30 4.85,3.30 6.96,3.30 5.25,4.54 5.90,6.55 4.20,5.31 2.50,6.55 3.15,4.54 1.44,3.30 3.55,3.30" fill="#FFDE00"/><polygon points="7.59,2.10 8.04,1.57 7.67,0.99 8.31,1.25 8.76,0.72 8.71,1.41 9.35,1.67 8.68,1.83 8.63,2.52 8.26,1.94" fill="#FFDE00"/><polygon points="9.06,3.70 9.69,3.42 9.62,2.73 10.08,3.25 10.71,2.97 10.36,3.56 10.82,4.08 10.15,3.93 9.80,4.53 9.73,3.84" fill="#FFDE00"/><polygon points="9.10,5.89 9.79,5.90 10.02,5.25 10.22,5.91 10.91,5.92 10.34,6.32 10.54,6.98 9.99,6.56 9.43,6.96 9.65,6.31" fill="#FFDE00"/><polygon points="7.70,7.36 8.33,7.64 8.79,7.13 8.71,7.82 9.34,8.10 8.67,8.24 8.60,8.93 8.25,8.33 7.58,8.47 8.04,7.96" fill="#FFDE00"/>',
 };
 /** Drapeau de la langue d'une carte (pas du pays du vendeur). */
 function flag(lang) {
@@ -6189,17 +6192,17 @@ function collInit() {
 /* ── Écran « Ma collection » ──────────────────────────────────────────────────────────────────── */
 /* ── Noms français : une carte marquée FR s'affiche sous son nom imprimé (« Anneau solaire »), les autres sous leur nom anglais ───── */
 const FRN = { map: null, p: null, fail: 0 };
-/** Nom imprimé français d'une carte de la collection ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas). */
-function frName(k, l) {
-  if (l !== 'fr') return '';
+/** Nom imprimé français d'une carte, quelle que soit la langue de l'exemplaire ('' si le catalogue ne la connaît pas) : sert à la recherche (« anneau solaire » trouve aussi une Sol Ring anglaise). */
+function frOf(k) {
   const m = FRN.map || (typeof FRC !== 'undefined' && FRC.cat && FRC.cat.fr) || null;
   return (m && m.get(k)) || '';
 }
-/** Charge les noms imprimés si la collection a des cartes FR : catalogue déjà sur l'appareil, sinon fichier du site (1 requête). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. */
+/** Nom affiché d'une ligne de la collection : l'imprimé français pour un exemplaire FR ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas). */
+const frName = (k, l) => (l === 'fr' ? frOf(k) : '');
+/** Charge les noms imprimés dès que la collection a des cartes (affichage des cartes FR et recherche en français) : catalogue déjà sur l'appareil, sinon fichier du site (1 requête, gardé ensuite). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. */
 function collFrLoad() {
   if (FRN.map || FRN.p || Date.now() - FRN.fail < 60000) return;
-  let any = false; for (const k in COLL.map) if (COLL.map[k].l === 'fr') { any = true; break; }
-  if (!any) return;
+  if (!collCount()) return;
   FRN.p = (async () => {
     const rec = (await scryFrCached().catch(() => null)) || (await scryFrStatic().catch(() => null));
     if (rec) { FRN.map = frNames(rec.rows); collPaint(); } else FRN.fail = Date.now();
@@ -6209,7 +6212,7 @@ const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['c
 const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
 function collItems() {
   return Object.entries(COLL.map).map(([k, x]) => {
-    const px = COLL.px[k], dn = frName(k, x.l), it = { k, n: x.n, ...(dn ? { dn } : {}), q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
+    const px = COLL.px[k], dn = frName(k, x.l), fn = frOf(k), it = { k, n: x.n, ...(dn ? { dn } : {}), ...(fn && fn !== dn ? { fn } : {}), q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
     return Object.assign(it, cmdrClass(it, EDH.data));      // cx : 0 · 1 peut être commandant · 2 joué comme commandant (EDHREC), ed : nombre de decks
   });
 }
@@ -6223,7 +6226,7 @@ function collSorted(items) {
   const by = { name: byName, qty: (a, b) => (b.q - a.q) || byName(a, b), price: (a, b) => (((srcPrice(b, COLL.src) || {}).u || 0) - ((srcPrice(a, COLL.src) || {}).u || 0)) || byName(a, b), cmc: (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b), decks: (a, b) => ((b.ed || 0) - (a.ed || 0)) || ((b.cx || 0) - (a.cx || 0)) || byName(a, b), new: (a, b) => ((b.d || 0) - (a.d || 0)) || byName(a, b), old: (a, b) => ((a.d || 0) - (b.d || 0)) || byName(a, b) }[COLL.sort] || byName;
   return items.slice().sort(by);
 }
-const CARD_LANG_LIST = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp'];
+const CARD_LANG_LIST = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
 /** Puce langue d'une carte : drapeau (ou « Langue ? »), et un <select> invisible par-dessus : un appui ouvre le choix natif de la langue. */
 function langChip(k, l, name, cls) {
   return `<label class="lchip${l ? '' : ' none'}${cls ? ' ' + cls : ''}" data-l="${esc(l)}">${l ? flag(l) : '<span>Langue ?</span>'}<select data-lk="${esc(k)}" aria-label="Langue de ${esc(name)}"><option value=""${l ? '' : ' selected'}>Non précisée</option>${CARD_LANG_LIST.map(x => `<option value="${x}"${x === l ? ' selected' : ''}>${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></label>`;
@@ -6276,7 +6279,7 @@ function collHeadText() {
 }
 function collPaintHead() {
   paintCollSection();
-  if (typeof BD !== 'undefined' && BD.el && BD.tab === 'coll') bdList();      // l'éditeur de deck liste la collection : il suit la lecture des cartes (commandants possibles…)
+  if (typeof BD !== 'undefined' && BD.el && BD.tab === 'coll') { BD.idx = null; bdList(); }      // l'éditeur de deck liste la collection : il suit la lecture des cartes (commandants possibles…)
   const el = COLL.el; if (!el) return;
   $('.dv-title span', el).textContent = collHeadText();
   const sy = $('.coll-sync', el), si = collSyncInfo();
@@ -6429,14 +6432,14 @@ function openCollection(tab) {
     if (st) {
       const rowEl = st.closest('.crow'), k = rowEl.dataset.k, ln = rowEl.dataset.ln || '', cur = COLL.map[k]; if (!cur) return;
       const lines = collLines(cur), line = lines.find(x => x[0] === ln); if (!line) return;
-      const d = Number(st.dataset.d), tag = lines.length > 1 ? (ln ? ln.toUpperCase() : 'sans langue') : '', same = r => r.dataset.k === k && (r.dataset.ln || '') === ln; haptic('tap');
+      const d = Number(st.dataset.d), tag = lines.length > 1 ? (ln ? langCode(ln) : 'sans langue') : '', same = r => r.dataset.k === k && (r.dataset.ln || '') === ln; haptic('tap');
       const step = () => {                                  // le « − » passe par une confirmation ; la ligne est retrouvée à ce moment-là (la liste a pu être repeinte)
         const c = COLL.map[k]; if (!c) return;
         const was = (collLines(c).find(x => x[0] === ln) || [ln, 0])[1], multi = collLines(c).length > 1, name = c.n, date = c.d, q = collBump(k, name, d, { paint: false, lang: ln }), row = $$('.crow', wrap).find(same);
         if (q) { if (row) $('.qstep b', row).textContent = q; }
         else {
           if (multi) collPaintBody(true); else if (row) row.remove();      // une langue de moins : les autres lignes de la carte se réorganisent
-          toast(`${name}${multi ? ' (' + (ln ? ln.toUpperCase() : 'sans langue') + ')' : ''} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date, lang: ln }); } });
+          toast(`${name}${multi ? ' (' + (ln ? langCode(ln) : 'sans langue') + ')' : ''} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date, lang: ln }); } });
         }
       };
       if (d < 0) confirmMinus(cur.n, line[1], 'coll', step, tag); else step();
@@ -6458,7 +6461,7 @@ function collViewItem(k, ln) {
   const x = COLL.map[k], m = COLL.meta[k]; if (!x || !m || !m.im) return null;
   const ls = collLines(x), line = ls.find(e => e[0] === (ln || '')) || ls[0] || [x.l || '', x.q], l = line[0], n = line[1];
   const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · image anglaise (pas d\'image ' + (LANGS[l] || l) + ' sur Scryfall)' : '';
-  const own = ls.length > 1 ? `${n} exemplaire${n > 1 ? 's' : ''} ${l ? l.toUpperCase() : 'sans langue'} · ${x.q} au total` : `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection`;
+  const own = ls.length > 1 ? `${n} exemplaire${n > 1 ? 's' : ''} ${l ? langCode(l) : 'sans langue'} · ${x.q} au total` : `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection`;
   return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
 }
 
@@ -7622,7 +7625,7 @@ function scanRecap() {
       ${rows.length && !wait ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${rows.slice(0, 3).map(({ x, eu }) => `<div class="crow ro"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}<img alt="" loading="lazy" decoding="async" src="${esc(scanThumb({ key: x.k, name: x.n, l: x.l }))}"></span><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta">${x.q > 1 ? `<span class="tag accent">× ${nf0(x.q)}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(eu, 'EUR'))}</b>${x.q > 1 ? `<small>${esc(fmt(eu * x.q, 'EUR'))} le lot</small>` : ''}</span></div>`).join('')}</div>` : ''}
       <dl class="rc-facts"><div><dt>Nouvelles dans ta collection</dt><dd>${plural(uniq.size - haveK.size, 'carte')}</dd></div>
         <div><dt>Déjà possédées</dt><dd>${haveK.size ? `${plural(haveK.size, 'carte')} · +${nf0(haveN)} ex.` : 'aucune'}</dd></div>
-        <div><dt>Langues</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(l.toUpperCase()) : 'Langue ?'} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
+        <div><dt>Langues</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(langCode(l)) : 'Langue ?'} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
     api.setFoot(`<button class="btn ghost" type="button" data-close>Retour</button><button class="btn" type="button" data-rc="go">Ajouter ${plural(n, 'carte')}</button>`);
   };
   const ask = async () => {
@@ -8275,7 +8278,7 @@ function bdDeckHtml() {
 }
 function bdIndex() {
   if (BD.idx) return BD.idx;
-  return (BD.idx = Object.entries(COLL.map).map(([k, x]) => { const dn = (x.l && frName(k, x.l)) || ''; return { k, n: x.n, dn, s: normPart(x.n + ' ' + dn) }; })
+  return (BD.idx = Object.entries(COLL.map).map(([k, x]) => { const dn = (x.l && frName(k, x.l)) || ''; return { k, n: x.n, dn, s: normPart(x.n + ' ' + dn + ' ' + frOf(k)) }; })
     .sort((a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' })));
 }
 function bdAddRow(k, name, label) {
