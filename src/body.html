@@ -1,0 +1,202 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11h10.6L20 8H6.2"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.4v.1"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17.5l4.5-4.5 3 3 2.5-2.5 4 4"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header class="bar">
+    <div class="bar-in">
+      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
+      <div class="bar-right">
+        <button class="chip" id="modeChip" type="button" data-live="0" aria-label="Mode de connexion"><span class="dot"></span><span id="modeLabel">Démo</span></button>
+        <button class="icon-btn avatar" id="btnAccount" type="button" aria-label="Compte" data-in="0"><svg class="i"><use href="#i-user"/></svg><span id="avatarLetter" aria-hidden="true"></span></button>
+        <button class="icon-btn" id="btnSettings" type="button" aria-label="Réglages"><svg class="i"><use href="#i-settings"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ── Saisie ─────────────────────────────────────── -->
+    <section class="view" id="viewInput" aria-label="Decklist">
+      <div class="intro">
+        <h1>Ta decklist au meilleur prix, en français.</h1>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+      </div>
+
+      <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
+        <aside class="installbar" id="installBar" aria-label="Installer l'application">
+          <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
+          <span class="ib-txt"><b>Installer Deck Deal</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
+          <button class="btn small" type="button" id="btnInstallBar">Installer</button>
+          <button class="ib-x" type="button" id="btnInstallX" aria-label="Plus tard"><svg class="i"><use href="#i-close"/></svg></button>
+        </aside>
+      </div></div>
+
+      <aside class="installbar buybar" id="buyBar" aria-label="Panier à valider" hidden></aside>
+
+      <section class="collsec" id="collSec" aria-label="Mes decks et ma collection">
+        <button class="coll-open" id="btnDecks" type="button" data-empty="1">
+          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-bookmark"/></svg></span>
+          <span class="coll-t"><b>Mes decks</b><span id="decksSub">Crée un deck ou colle une liste puis « Enregistrer ».</span></span>
+          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+        </button>
+        <button class="coll-open" id="btnColl" type="button" data-empty="1">
+          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-stack"/></svg></span>
+          <span class="coll-t"><b>Ma collection</b><span id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</span></span>
+          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+        </button>
+        <button class="coll-open coll-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
+          <span class="coll-ico" aria-hidden="true"><b>€</b></span>
+          <span class="coll-t"><b>Prix rapide</b><span>Scanne une carte : prix Cardmarket et CardTrader, sans l'ajouter.</span></span>
+          <svg class="i chev" aria-hidden="true"><use href="#i-camera"/></svg>
+        </button>
+      </section>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="label" for="deckText">Decklist</label>
+          <div class="tools">
+            <button class="link-btn" id="btnPaste" type="button">Coller</button>
+            <button class="link-btn" id="btnSample" type="button">Exemple</button>
+            <button class="link-btn" id="btnClear" type="button">Vider</button>
+            <button class="link-btn strong" id="btnSave" type="button">Enregistrer</button>
+          </div>
+        </div>
+        <textarea id="deckText" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="1 Sol Ring&#10;1 Swords to Plowshares&#10;25 Plains"></textarea>
+        <div class="stats" id="deckStats" aria-live="polite"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Critères</h2>
+        <div class="grid2">
+          <div class="ctl">
+            <label class="label" for="optLang">Langue</label>
+            <div class="sel"><select id="optLang">
+              <option value="fr">Français</option><option value="en">Anglais</option><option value="de">Allemand</option>
+              <option value="es">Espagnol</option><option value="it">Italien</option><option value="pt">Portugais</option><option value="jp">Japonais</option><option value="zh-CN">Chinois</option>
+            </select></div>
+          </div>
+          <div class="ctl">
+            <label class="label" for="optCond">État minimum</label>
+            <div class="sel"><select id="optCond">
+              <option value="Mint">Mint</option>
+              <option value="Near Mint">Near Mint</option>
+              <option value="Slightly Played">Slightly Played</option>
+              <option value="Moderately Played">Moderately Played</option>
+              <option value="Played">Played</option>
+            </select></div>
+          </div>
+          <div class="ctl span2">
+            <span class="label" id="lblFoil">Foil</span>
+            <div class="seg" id="segFoil" role="radiogroup" aria-labelledby="lblFoil"></div>
+          </div>
+          <div class="ctl span2">
+            <span class="label" id="lblMode">Livraison</span>
+            <div class="seg" id="segMode" role="radiogroup" aria-labelledby="lblMode"></div>
+            <p class="hint" id="modeHint"></p>
+          </div>
+          <div class="ctl" id="shipField" hidden>
+            <label class="label" for="optShip">Port par vendeur</label>
+            <div class="num"><input id="optShip" inputmode="decimal" autocomplete="off" value="2,80"><span>€</span></div>
+          </div>
+        </div>
+        <label class="switch-row" for="optFallback">
+          <span class="t"><b>Compléter en anglais</b><span class="hint">Si une carte n'a aucune offre dans la langue choisie.</span></span>
+          <span class="switch"><input type="checkbox" id="optFallback" checked><i></i></span>
+        </label>
+        <label class="switch-row" for="optColl" id="collRow" hidden>
+          <span class="t"><b>Déduire ma collection</b><span class="hint" id="collHint"></span></span>
+          <span class="switch"><input type="checkbox" id="optColl" checked><i></i></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Résultats ──────────────────────────────────── -->
+    <section class="view" id="viewResults" aria-label="Résultats" hidden>
+      <div class="crumb">
+        <button class="link-btn" id="btnBack" type="button"><svg class="i"><use href="#i-back"/></svg>Modifier</button>
+        <div class="crumb-r">
+          <button class="link-btn" id="btnViewer" type="button" disabled><svg class="i"><use href="#i-grid"/></svg>Viewer</button>
+          <button class="link-btn" id="btnSave2" type="button"><svg class="i"><use href="#i-bookmark"/></svg><span id="btnSave2Txt">Enregistrer</span></button>
+          <button class="link-btn" id="btnCopy" type="button"><svg class="i"><use href="#i-copy"/></svg>Copier</button>
+        </div>
+      </div>
+
+      <div class="collapsible" id="progressWrap"><div>
+        <div class="progress" id="progressCard">
+          <div class="prog-head"><h2 id="progTitle">Recherche des offres</h2><span class="pct" id="progPct">0 %</span></div>
+          <div class="track"><div class="fill" id="progFill"></div></div>
+          <ol class="steps" id="steps"></ol>
+          <p class="prog-hint" id="progHint" hidden>Le serveur lit les offres à ta place : tu peux quitter l'app, la recherche continue.</p>
+          <div class="prog-foot"><span id="progRate">Démarrage…</span><button class="link-btn" id="btnCancel" type="button">Arrêter</button></div>
+        </div>
+      </div></div>
+
+      <div class="hero" id="hero">
+        <div class="hero-in">
+          <div class="hero-label"><span id="heroLabel">Total articles</span><span class="partial" id="heroPartial" hidden>En cours</span></div>
+          <div class="hero-amt" id="heroAmt">0,00 €</div>
+          <div class="hero-sub"><span id="heroCount">—</span><i></i><span id="heroSellers">—</span></div>
+          <div class="save" id="heroSave" hidden></div>
+        <div class="delta-line" id="heroDelta" hidden></div>
+        </div>
+      </div>
+
+      <div class="recap" id="recap" hidden></div>
+
+      <div class="seg" id="segDeliv" role="radiogroup" aria-label="Mode de livraison"></div>
+
+      <div class="alerts" id="alerts"></div>
+
+      <div class="toolbar"><div class="seg" id="segTab" role="radiogroup" aria-label="Affichage"></div></div>
+
+      <div class="pane" id="cardsPane">
+        <div class="listbar" id="listbar">
+          <label class="sortsel"><span>Trier</span>
+            <select id="optSort" aria-label="Trier la liste"><option value="deck">Ma liste</option><option value="price-desc">Plus chères</option><option value="price-asc">Moins chères</option><option value="name">A → Z</option></select></label>
+          <div class="fchips" id="fchips" role="radiogroup" aria-label="Filtrer"></div>
+        </div>
+        <div class="undobar" id="undoBar" hidden><span id="undoTxt"></span><button class="link-btn" id="undoAll" type="button">Tout remettre</button></div>
+        <div class="list" id="list"></div>
+        <p class="hint listempty" id="listEmpty" hidden>Aucune carte ne correspond. <button class="link-btn" id="listAll" type="button">Tout afficher</button></p>
+      </div>
+      <div class="list" id="sellers" hidden></div>
+      <div class="basics" id="basicsNote" hidden></div>
+    </section>
+  </main>
+
+  <div class="dock" id="dock">
+    <div class="dock-in" id="dockInput">
+      <button class="btn block" id="btnRun" type="button"><svg class="i"><use href="#i-search"/></svg><span id="btnRunLabel">Chercher les offres</span></button>
+    </div>
+    <div class="dock-in" id="dockResults" hidden>
+      <div class="dock-sum"><small id="dockSmall">Panier</small><b id="dockTotal">0,00 €</b></div>
+      <button class="btn" id="btnCart" type="button"><svg class="i"><use href="#i-cart"/></svg>Remplir le panier</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-root" id="sheetRoot"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tasks" id="tasks" aria-live="polite"></div>

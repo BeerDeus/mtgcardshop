@@ -24,6 +24,7 @@ const TOKEN = (process.env.CARDTRADER_TOKEN || '').trim();
 const APP_KEY = (process.env.APP_KEY || '').trim();
 const UPSTREAM = (process.env.CT_UPSTREAM || 'https://api.cardtrader.com/api/v2').replace(/\/+$/, '') + '/'; // surchargeable pour les tests
 const PAGE = ['deck-deal.html', 'dist/deck-deal.html'].map(f => join(here, f)).find(existsSync);
+const PWA = process.env.PWA_DIR || join(here, 'pwa');                       // surchargeable pour les tests (dossier temporaire)
 
 // Fichiers PWA servis depuis ./pwa : correspondance EXACTE sur cette liste (aucun chemin n'est construit depuis l'URL → pas de traversée).
 const YEAR = 'public, max-age=604800', NOCACHE = 'no-cache';
@@ -46,7 +47,7 @@ const STATIC = new Map([
 // que celui servi. Copie gardée en mémoire et dans .data/ (non versionné : ne gêne jamais un « git pull » de déploiement). Panne ou fichier douteux : on garde l'ancien.
 const EDH_SRC = (process.env.EDH_SOURCE_URL === undefined ? 'https://raw.githubusercontent.com/BeerDeus/mtgcardshop/main/pwa/edh.bin.gz' : process.env.EDH_SOURCE_URL).trim();      // '' : désactivé
 const EDH_EVERY = Number(process.env.EDH_SYNC_MS) || 6 * 3600000, EDH_FIRST = process.env.EDH_SYNC_FIRST_MS === undefined ? 5000 : Number(process.env.EDH_SYNC_FIRST_MS);
-const EDH_DIR = process.env.EDH_DATA_DIR || join(here, '.data'), EDH_COPY = join(EDH_DIR, 'edh.bin.gz'), EDH_REPO = join(here, 'pwa', 'edh.bin.gz');
+const EDH_DIR = process.env.EDH_DATA_DIR || join(here, '.data'), EDH_COPY = join(EDH_DIR, 'edh.bin.gz'), EDH_REPO = join(PWA, 'edh.bin.gz');
 let EDHB = null; try { EDHB = createRequire(import.meta.url)('./edhbin.cjs'); } catch (e) { /* sans lecteur : contrôle minimal (gzip + EDH2) */ }
 let EDH_LIVE = null;                         // { buf, at, decks, cmds } : copie plus récente que celle du dépôt, servie à la place
 const EDH_ST = { from: 'none', at: '', decks: 0, cmds: 0, bytes: 0, check: '', err: '' };
@@ -788,7 +789,7 @@ async function sendFile(req, res, f, headers, compress) {
 /** Prépare la page et les gros fichiers dès le démarrage : le premier visiteur n'attend pas la compression. */
 function warmFiles() {
   if (PAGE) fileEntry(PAGE, true).catch(() => {});
-  for (const st of STATIC.values()) if (st[3] === true) fileEntry(join(here, 'pwa', st[0]), true).catch(() => {});
+  for (const st of STATIC.values()) if (st[3] === true) fileEntry(join(PWA, st[0]), true).catch(() => {});
 }
 
 const server = http.createServer(async (req, res) => {
@@ -803,7 +804,7 @@ const server = http.createServer(async (req, res) => {
     }
     const st = (req.method === 'GET' || req.method === 'HEAD') && STATIC.get(url.pathname);
     if (st) {
-      const f = join(here, 'pwa', st[0]), live = st[3] === 'pre' && EDH_LIVE;
+      const f = join(PWA, st[0]), live = st[3] === 'pre' && EDH_LIVE;
       if (!live && !existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
       const hd = { 'Content-Type': st[1], 'Cache-Control': st[2] };
       if (st[3] !== 'pre') return await sendFile(req, res, f, hd, !!st[3]);

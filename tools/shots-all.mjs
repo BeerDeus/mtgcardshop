@@ -1,0 +1,43 @@
+// Captures de tous les écrans (mobile 390×844) : node shots-all.mjs <dossier> — avant/après un lot de polish UI.
+import { readFileSync } from 'node:fs';
+import { chromium, startWorld, newPage } from '../tests/e2e-world.mjs';
+const out = 'shots/' + (process.argv[2] || 'after'), only = process.argv[3] || '';
+const world = await startWorld({ port: 18940 });
+const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+const BIN = readFileSync(new URL('../pwa/edh.bin.gz', import.meta.url));
+const errs = [];
+async function run(scheme) {
+  const c = await newPage(browser, world, { goto: false, perms: ['camera'], ctx: { colorScheme: scheme } }), p = c.p, t = scheme[0].toUpperCase();
+  p.on('pageerror', e => errs.push(t + ' ' + e.message));
+  await p.route('**/edh.bin.gz', r => r.fulfill({ status: 200, contentType: 'application/octet-stream', headers: { 'content-encoding': 'gzip' }, body: BIN }));
+  await p.route('**/edh.tsv', r => r.fulfill({ status: 404, body: '{}' }));
+  await p.goto(world.url); await p.waitForTimeout(900);
+  const shot = async (n, full) => { await p.waitForTimeout(450); await p.screenshot({ path: `${out}/${t}-${n}.png`, fullPage: !!full }); const o = await p.evaluate(() => [document.documentElement.scrollWidth, innerWidth]); if (o[0] > o[1]) errs.push(`${t} overflow-x @${n}: ${o}`); };
+  await shot('01-saisie-vide');
+  await p.click('#btnSample'); await shot('02-saisie'); await shot('02b-saisie-full', true);
+  await p.click('#btnRun'); await p.waitForTimeout(700); await shot('03-progression');
+  await p.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 60000 }); await p.waitForTimeout(1200);
+  await shot('04-resultats'); await shot('04b-resultats-full', true);
+  await p.click('#segTab [role=radio]:nth-of-type(2), #segTab button:nth-of-type(2)'); await shot('05-vendeurs');
+  await p.click('#segTab [role=radio]:nth-of-type(1), #segTab button:nth-of-type(1)'); await p.waitForTimeout(300);
+  await p.click('#list .row:not(.is-missing)'); await shot('06-carte'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('#btnCart'); await shot('07-panier'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('#btnSettings'); await shot('08-reglages'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('#btnAccount'); await shot('09-compte'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('#btnBack'); await p.waitForTimeout(500);
+  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await shot('10-collection-vide');
+  await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText'); await shot('11-import');
+  await p.fill('#ciText', '1 Edgar Markov\n2 Sol Ring\n1 Arcane Signet\n1 Llanowar Elves\n1 Craterhoof Behemoth\n3 Plains\n1 Wrath of God\n1 Command Tower'); await p.waitForTimeout(200); await p.click('#ciGo');
+  await p.waitForFunction(() => document.querySelectorAll('.crow:not(.dk)').length >= 7, null, { timeout: 15000 }); await p.waitForTimeout(1200); await shot('12-collection');
+  await p.click('#collSeg [data-v="stats"]'); await shot('13-stats');
+  await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk', { timeout: 15000 }); await shot('14-decks');
+  await p.click('.crow.dk'); await p.waitForSelector('.sheet'); await shot('15-deck-feuille'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('.dk-themes [data-act="dthall"]'); await p.waitForSelector('.sheet .th-list'); await shot('16-themes'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+  await p.click('#collSeg [data-v="list"]'); await p.waitForTimeout(300);
+  await p.click('.coll-tools [data-act="scan"], [data-act="scan"]'); await p.waitForSelector('.scan.on, .scan'); await p.waitForTimeout(1500); await shot('17-scan');
+  await c.ctx.close();
+}
+if (only !== 'dark') await run('light');
+if (only !== 'light') await run('dark');
+console.log(errs.length ? errs.join('\n') : 'ok sans erreur');
+await browser.close(); process.exit(0);

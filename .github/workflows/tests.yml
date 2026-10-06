@@ -1,0 +1,50 @@
+# Tests de Deck Deal (voir DEV.md).
+# · Chaque push / pull request : build à jour (deck-deal.html = build de src/), tests Node et jsdom (~2 min).
+# · Pull request et lancement manuel : suite complète avec navigateur (~20 min).
+name: Tests
+on:
+  push:
+    paths-ignore: ['pwa/edh.bin.gz', 'pwa/fr-names.tsv', '**.md']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Suite complète (navigateur)'
+        type: boolean
+        default: true
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Build à jour
+        run: |
+          node build.mjs
+          git diff --exit-code -- deck-deal.html edhbin.cjs || { echo "::error::deck-deal.html ou edhbin.cjs ne correspond pas à src/ : lance node build.mjs et committe le résultat"; exit 1; }
+      - name: Dépendances de test
+        run: cd tests && npm ci && npm run fb
+      - name: Tests Node et jsdom
+        run: bash tests/run-tests.sh test.mjs test-cloud.mjs test-jobs.mjs test-proxy.mjs test-push.mjs test-alerts.mjs test-edh-gen.mjs smoke.mjs
+      - name: Chromium
+        if: github.event_name == 'pull_request' || inputs.full
+        run: |
+          cd tests && npx playwright-core install --with-deps chromium
+          echo "CHROMIUM=$(node -p "require('playwright-core').chromium.executablePath()")" >> "$GITHUB_ENV"
+      - name: Tests navigateur
+        if: github.event_name == 'pull_request' || inputs.full
+        run: bash tests/run-tests.sh ui-e2e.mjs list-e2e.mjs value-e2e.mjs frcat-e2e.mjs alerts-e2e.mjs dklist-e2e.mjs back-e2e.mjs lang-e2e.mjs art-e2e.mjs viewer-e2e.mjs builder-e2e.mjs coll-e2e.mjs extras-e2e.mjs edh-e2e.mjs prix-e2e.mjs pwa-e2e.mjs sw-e2e.mjs push-client-e2e.mjs sync-e2e.mjs e2e-account.mjs scan-e2e.mjs live-e2e.mjs
+      - name: Journaux
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: tests/logs/

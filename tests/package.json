@@ -1,0 +1,23 @@
+{
+  "name": "deck-deal-tests",
+  "private": true,
+  "type": "module",
+  "description": "Outils de développement de Deck Deal (tests, bundle Firebase des tests). Jamais installé par l'hébergeur : le package.json de la racine n'a aucune dépendance.",
+  "scripts": {
+    "pretest": "node ../build.mjs && npm run fb",
+    "fb": "esbuild fb-entry.mjs --bundle --format=esm --log-level=warning --outfile=.tmp/fb-shared.js",
+    "test": "bash run-tests.sh",
+    "test:unit": "bash run-tests.sh test.mjs test-cloud.mjs test-jobs.mjs test-proxy.mjs test-push.mjs test-alerts.mjs test-edh-gen.mjs smoke.mjs"
+  },
+  "devDependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/fra": "1.0.0",
+    "esbuild": "0.28.2",
+    "firebase": "12.19.0",
+    "jsdom": "29.1.1",
+    "playwright-core": "1.56.0",
+    "tesseract.js": "5.1.1",
+    "tesseract.js-core": "5.1.1",
+    "web-push": "3.6.7"
+  }
+}
