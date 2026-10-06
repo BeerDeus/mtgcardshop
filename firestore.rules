@@ -30,16 +30,31 @@ service cloud.firestore {
                 && request.resource.data.snap.items.size() <= 400));
     }
 
-    // Deck Deal : collection possédée (un seul document par compte, liste « 3 Sol Ring » une carte par ligne)
+    // Deck Deal : données annexes du compte, un document chacune
+    //  · collection : cartes possédées (liste « 3 Sol Ring » une carte par ligne)
+    //  · engaged    : cartes réservées par des decks « montés » ({ decks: { idDeck: { n, at, q: { carte: exemplaires } } } })
+    //  · history    : valeur de la collection dans le temps ({ pts: [[t, centimes, cartes, exemplaires], …] }, un par jour, 420 au plus)
     match /users/{uid}/meta/{docId} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
-        && docId == 'collection'
-        && request.resource.data.keys().hasOnly(['text', 'count', 'updatedAt'])
-        && request.resource.data.keys().hasAll(['text', 'updatedAt'])
-        && request.resource.data.text is string && request.resource.data.text.size() <= 900000
         && request.resource.data.updatedAt is number
-        && (!('count' in request.resource.data) || request.resource.data.count is number);
+        && (
+          (docId == 'collection'
+            && request.resource.data.keys().hasOnly(['text', 'count', 'updatedAt'])
+            && request.resource.data.keys().hasAll(['text', 'updatedAt'])
+            && request.resource.data.text is string && request.resource.data.text.size() <= 900000
+            && (!('count' in request.resource.data) || request.resource.data.count is number))
+          || (docId == 'engaged'
+            && request.resource.data.keys().hasOnly(['decks', 'updatedAt'])
+            && request.resource.data.keys().hasAll(['decks', 'updatedAt'])
+            && request.resource.data.decks is map
+            && request.resource.data.decks.size() <= 80)
+          || (docId == 'history'
+            && request.resource.data.keys().hasOnly(['pts', 'updatedAt'])
+            && request.resource.data.keys().hasAll(['pts', 'updatedAt'])
+            && request.resource.data.pts is list
+            && request.resource.data.pts.size() <= 420)
+        );
     }
   }
 }
