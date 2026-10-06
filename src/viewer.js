@@ -199,7 +199,7 @@ function openCardViewer(items, index) {
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
+const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
 
 /** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
@@ -245,12 +245,12 @@ function buildSnap() {
 
 /** Relevé de référence d'un deck sans prix gardé (ou dont tout est possédé) : valeur estimée au prix tendance Cardmarket, image / coût / type lus sur Scryfall (cache des decks).
  *  c = valeur des q exemplaires (pas un coût d'achat) · ow = exemplaires libres dans la collection · ref : relevé de référence, jamais enregistré. */
-function refSnapOf(text, id) {
+function refSnapOf(text, id, pub) {
   const pd = parseDeck(text); if (!pd.cards.length && !pd.basics.length) return null;
   const cmd = dkFormat(text) === 'standard' ? new Set() : commandersOf(text, pd.cards, c => dmOf(ownKey(c.key)));
   const items = [];
   for (const c of pd.cards) {
-    const k = ownKey(c.key), m = dmOf(k) || {}, ow = Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
+    const k = ownKey(c.key), m = dmOf(k) || {}, ow = pub ? 0 : Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
     const it = { k: c.key, n: c.name, q: c.qty, s: Number.isFinite(m.eu) ? 'ok' : 'none' };
     if (it.s === 'ok') it.c = Math.round(m.eu * c.qty);
     if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
@@ -267,10 +267,10 @@ function refSnapOf(text, id) {
 /** Rien à acheter ni à chiffrer dans ce relevé (tout est possédé) : seul le relevé de référence a quelque chose à montrer. */
 const snapNothingToBuy = snap => !snap.items.some(i => i.s !== 'own' && i.s !== 'basic');
 /** Réserve (Standard, lignes « SB: ») : cartes à part, jamais comptées dans le total ; prix = tendance Cardmarket (la recherche d'offres ne la chiffre pas). sb : 1 · k préfixé « sb: ». */
-function sbItemsOf(text, id) {
+function sbItemsOf(text, id, pub) {
   const out = [];
   for (const c of dkSideCards(text)) {
-    const k = ownKey(c.key), m = dmOf(k) || {}, ow = Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
+    const k = ownKey(c.key), m = dmOf(k) || {}, ow = pub ? 0 : Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
     const it = { k: 'sb:' + k, n: c.name, q: Math.min(999, c.qty), s: Number.isFinite(m.eu) ? 'ok' : 'none', sb: 1 };
     if (it.s === 'ok') it.c = Math.round(m.eu * c.qty);
     if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
@@ -314,16 +314,17 @@ async function dvMetaLoad(wrap) {
     DV.loading = false; dvRebuild(); dvRender();
   }
   // cartes possédées dans une autre langue que l'anglais : leur image, dans cette langue, si Scryfall ne l'a pas encore donnée
+  if (DV.pub) return;
   const pd = parseDeck(DV.text); let got = false;
   try { got = await ownLangFetch([...pd.cards, ...dkSideCards(DV.text)]); } catch (e) { /* ignore */ }
   if (got && DV.el === wrap) { dvRebuild(); dvRender(); }
 }
 /** Relevé de référence, réserve et images des terrains recalculés d'après les fiches connues (le relevé de prix, lui, ne change pas). */
 function dvRebuild() {
-  if (DV.snap && DV.snap.ref) DV.snap = refSnapOf(DV.text, DV.deckId);
+  if (DV.snap && DV.snap.ref) DV.snap = refSnapOf(DV.text, DV.deckId, DV.pub);
   DV.snap = dvBasics(DV.snap);
-  if (DV.snap) DV.snap = { ...DV.snap, items: dvOwnIm(DV.snap.items) };
-  DV.sb = DV.snap ? dvOwnIm(sbItemsOf(DV.text, DV.deckId)) : []; DV.framed = null;
+  if (DV.snap && !DV.pub) DV.snap = { ...DV.snap, items: dvOwnIm(DV.snap.items) };
+  DV.sb = DV.snap ? (DV.pub ? sbItemsOf(DV.text, null, true) : dvOwnIm(sbItemsOf(DV.text, DV.deckId))) : []; DV.framed = null;
 }
 
 /* Relevés gardés sur cet appareil (toujours) ; ils sont aussi dans le document du deck quand le compte l'accepte (règles Firestore à jour). */
@@ -397,13 +398,14 @@ function dvFrame(snap) {
   DV.dl = snapDeltas(items, snap.pv);
   const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ` · réserve ${sbN}` : '';
   const todo = ref ? items.reduce((a, i) => a + (i.s === 'basic' ? 0 : Math.max(0, i.q - (i.ow || 0))), 0) : 0;
-  $('.dv-title span', el).textContent = ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
+  $('.dv-title span', el).textContent = DV.pub ? `${copies} carte${copies > 1 ? 's' : ''}${sbTxt} · partagé, lecture seule` : ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
     : `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
       <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}${esc(fmt(total))}${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
+      <button class="btn ghost block dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>
     </section>
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
@@ -438,7 +440,7 @@ function dvRender() {
   if (!snap) {
     DV.framed = null;
     $('.dv-body', el).innerHTML = '<div class="dv-empty"><b>Ce deck est vide</b><p>Ajoute des cartes à la liste pour les voir ici.</p></div>';
-    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live; return;
+    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live && !DV.adhoc; return;
   }
   if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
   dvGroups();
@@ -446,7 +448,7 @@ function dvRender() {
   const ref = !!snap.ref, todo = ref && snap.items.some(i => i.s !== 'basic' && i.q > (i.ow || 0));
   refresh.textContent = ref ? 'Chercher les offres' : 'Actualiser';
   foot.hidden = false; edit.hidden = DV.live || !DV.deckId; refresh.hidden = DV.live || !DV.deckId || (ref && !todo);
-  close.hidden = !DV.live;
+  close.hidden = !DV.live && !DV.adhoc;
 }
 function dvItemFor(it) {
   if (it.s === 'nf' || !it.im) return null;
@@ -465,27 +467,29 @@ function dvOpenCard(i) {
   if (at.has(i)) openCardViewer(list, at.get(i));
 }
 function closeDeckViewer() { if (DV.el) DV.el.__close(); }
-/** Ouvre le viewer d'un deck enregistré ({ id }) ou de la recherche en cours ({ live: true }). */
-function openDeckViewer({ id, live } = {}) {
+/** Ouvre le viewer d'un deck enregistré ({ id }), de la recherche en cours ({ live: true }) ou d'une liste quelconque ({ text, name } : deck EDHREC ;
+ *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil). */
+function openDeckViewer({ id, live, text, name, pub } = {}) {
   closeDeckViewer(); closeCardImage();
-  const d = id ? findDeck(id) : null;
-  DV.live = !!live; DV.deckId = id || (live ? S.deckId : null) || null;
-  DV.snap = live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
-  DV.name = d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
+  const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
+  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
+  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
+  DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
   if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
   // Pas de prix gardé (ou tout est possédé, donc rien à chiffrer) : même viewer, avec la valeur estimée du deck au prix tendance Cardmarket
-  DV.text = live ? S.run.text : d ? d.text : ''; DV.loading = false;
-  if (!DV.snap || snapNothingToBuy(DV.snap)) DV.snap = refSnapOf(DV.text, DV.deckId);
+  DV.text = adhoc ? text : live ? S.run.text : d ? d.text : ''; DV.loading = false;
+  if (!DV.snap || snapNothingToBuy(DV.snap)) DV.snap = refSnapOf(DV.text, DV.deckId, DV.pub);
   dvRebuild();
   const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Deck viewer · ' + DV.name);
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le viewer"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div></header>
+      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div>${DV.pub ? '' : '<button class="icon-btn" type="button" data-act="share" aria-label="Partager ce deck (lien en lecture seule)" title="Partager"><svg class="i"><use href="#i-share"/></svg></button>'}</header>
     <div class="dv-scroll"><div class="dv-body"></div></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">Modifier la liste</button><button class="btn" type="button" data-act="refresh">Actualiser</button><button class="btn" type="button" data-act="close">Fermer</button></footer>`;
   DV.el = wrap; DV.prevFocus = document.activeElement;
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (DV.el !== wrap) return; DV.el = null; document.removeEventListener('keydown', onKey, true);
+    if (DV.pub) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } }
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
     try { if (DV.prevFocus && DV.prevFocus.focus && DV.prevFocus.isConnected) DV.prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   };
@@ -502,13 +506,15 @@ function openDeckViewer({ id, live } = {}) {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const act = b.dataset.act, deck = DV.deckId;
     if (act === 'close') wrap.__close();
+    else if (act === 'hand') openHand();
+    else if (act === 'share') shareDeck(DV.deckId && !DV.live ? { id: DV.deckId } : { text: DV.text, name: DV.name });
     else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
     else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
   });
   document.body.appendChild(wrap); holdApp(); dvRender();
   dvMetaLoad(wrap);
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
-  haptic('tap');
+  if (!DV.pub) haptic('tap');      // ouvert par un lien au chargement : pas de geste, le navigateur refuserait la vibration
 }
 /** « Actualiser » : recharge le deck, relit les prix (cache serveur ignoré) puis propose de revenir au viewer. */
 async function refreshDeckPrices(id) {
@@ -518,4 +524,36 @@ async function refreshDeckPrices(id) {
   await startRun(true);
   const cur = findDeck(id), now = snapOf(cur);
   if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
+}
+
+/* ── Main de départ : 7 cartes au hasard dans la bibliothèque (commandant et réserve à part), et les chances d'avoir 0 à 7 terrains (loi hypergéométrique) ── */
+const pctTxt = p => (p >= 0.995 ? '100' : p < 0.005 && p > 0 ? '< 1' : String(Math.round(p * 100))) + ' %';
+function openHand() {
+  const snap = DV.snap; if (!snap) return;
+  const lib = libraryOf(snap.items), isLand = it => it.s === 'basic' || isLandType(it.tl);
+  if (lib.length < 7) { toast('Il faut au moins 7 cartes dans le deck'); return; }
+  const L = lib.filter(isLand).length, unknown = new Set(lib.filter(it => it.s !== 'basic' && it.tl == null).map(it => it.k)).size, odds = handLandOdds(lib.length, L, 7);
+  openSheet('Main de départ', `${lib.length} cartes dans la bibliothèque · ${L} terrain${L > 1 ? 's' : ''}`, api => {
+    let hand = [];
+    const paint = () => {
+      const lands = hand.filter(isLand).length, max = Math.max(...odds);
+      api.body.innerHTML = `<div class="hand-grid">${hand.map((it, i) => `<button type="button" class="dvc hand-c" data-i="${i}" aria-label="${esc(it.n)}"><span class="dvc-art" style="--h:${hash32(it.k) % 360}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${dvImg(it) ? `<img alt="" decoding="async" src="${esc(dvImg(it))}">` : ''}</span></button>`).join('')}</div>
+        <p class="hand-sum"><b>${lands} terrain${lands > 1 ? 's' : ''}</b> · ${7 - lands} sort${7 - lands > 1 ? 's' : ''}</p>
+        <h3 class="cs-h">Terrains en main de départ <small>sur 7 cartes</small></h3>
+        <div class="odds" role="img" aria-label="${odds.map((p, k) => k + ' terrain' + (k > 1 ? 's' : '') + ' : ' + pctTxt(p)).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
+        <p class="hint">Entre 2 et 4 terrains : ${pctTxt(odds[2] + odds[3] + (odds[4] || 0))} des mains.${unknown ? ` ${unknown} carte${unknown > 1 ? 's' : ''} au type pas encore lu, comptée${unknown > 1 ? 's' : ''} comme sort${unknown > 1 ? 's' : ''}.` : ''}</p>`;
+    };
+    const deal = () => { hand = drawHand(lib, 7); paint(); };
+    api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" data-act="redeal">Nouvelle main</button>');
+    api.foot.addEventListener('click', e => { if (e.target.closest('[data-act="redeal"]')) { haptic('tap'); deal(); } });
+    api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+    api.body.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+    api.body.addEventListener('click', e => {
+      const c = e.target.closest('.hand-c'); if (!c) return;
+      const list = [], at = new Map();
+      hand.forEach((it, i) => { const v = dvItemFor(it); if (v) { at.set(i, list.length); list.push(v); } });
+      const i = Number(c.dataset.i); if (at.has(i)) openCardViewer(list, at.get(i)); else toast('Pas d\'aperçu pour cette carte');
+    });
+    deal();
+  });
 }

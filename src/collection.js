@@ -68,7 +68,7 @@ function collChanged(o = {}) {
   COLL.u = Date.now(); collWrite();
   if (o.push !== false) collPushSoon();
   if (o.paint !== false) collPaint(); else collPaintHead();
-  paintCollSection(); refreshDeck(); alSoon();
+  paintCollSection(); refreshDeck(); alSoon(); trSoon();
   if (S.run && S.view === 'results') scheduleRecompute(true);
 }
 function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); collChanged(); }
@@ -184,7 +184,7 @@ function collFromCloud(uid, data, pending, fromCache, pulled) {
 }
 /** La collection de cet appareil vient de changer à cause du compte (autre appareil) : repeint, lit les infos des nouvelles cartes, prévient. */
 function collRemoteApplied(before, after, o = {}) {
-  collPaint(); paintCollSection(); refreshDeck(); if (S.run && S.view === 'results') scheduleRecompute(true);
+  collPaint(); paintCollSection(); refreshDeck(); trSoon(); if (S.run && S.view === 'results') scheduleRecompute(true);
   collEnrich();
   let add = 0, del = 0;
   for (const k in after) if (!before[k]) add++;
@@ -523,8 +523,9 @@ function collPaintBody(keep) {
   if (keep && document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && host.contains(document.activeElement)) { COLL.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas
   $('.coll-controls', el).hidden = !all.length;
   if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
-  $('.coll-fwrap', el).hidden = COLL.tab !== 'list'; valPaintAlert();
+  $('.coll-fwrap', el).hidden = COLL.tab !== 'list' && COLL.tab !== 'trade'; $('#collSort', el).closest('.coll-sort').hidden = COLL.tab === 'trade'; valPaintAlert();
   if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
+  else if (COLL.tab === 'trade') { host.innerHTML = trPanelHtml(); trMount(host); }
   else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) { res.innerHTML = edhResHtml(); edhThemesSync(); } else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
   else if (COLL.f.cmdr === 'played' && !EDH.data) { host.innerHTML = edhWaitHtml(); edhEnsure(); }
   else {
@@ -567,10 +568,10 @@ function openCollection(tab) {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
-  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
   COLL.fb = mountFilters($('#collF', wrap), COLL.f, () => {
     if (COLL.f.cmdr === 'played' && COLL.cmdrSeen !== 'played' && COLL.sort === 'name') { COLL.sort = 'decks'; $('#collSort', wrap).value = 'decks'; }      // les plus joués d'abord
-    COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; collPaintBody(true);
+    COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(true);
   }, { placeholder: 'Rechercher dans ma collection', commander: true });
   COLL.cmdrSeen = COLL.f.cmdr;
   $('#collSort', wrap).value = COLL.sort;
@@ -593,7 +594,7 @@ function openCollection(tab) {
   wrap.addEventListener('click', e => {
     if (e.target.closest('.lchip')) return;
     if (e.target.closest('.cs-val')) { collToggleSrc(); return; }
-    if (edhClick(e) || valClick(e)) return;
+    if (edhClick(e) || valClick(e) || trClick(e)) return;
     const b = e.target.closest('button[data-act]');
     if (b) {
       const act = b.dataset.act;

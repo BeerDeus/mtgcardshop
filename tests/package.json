@@ -7,7 +7,7 @@
     "pretest": "node ../build.mjs && npm run fb",
     "fb": "esbuild fb-entry.mjs --bundle --format=esm --log-level=warning --outfile=.tmp/fb-shared.js",
     "test": "bash run-tests.sh",
-    "test:unit": "bash run-tests.sh test.mjs test-cloud.mjs test-jobs.mjs test-proxy.mjs test-push.mjs test-alerts.mjs test-edh-gen.mjs smoke.mjs"
+    "test:unit": "bash run-tests.sh test.mjs test-trade.mjs test-cloud.mjs test-jobs.mjs test-proxy.mjs test-push.mjs test-alerts.mjs test-edh-gen.mjs smoke.mjs"
   },
   "devDependencies": {
     "@tesseract.js-data/eng": "1.0.0",

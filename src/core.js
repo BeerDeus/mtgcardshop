@@ -1501,8 +1501,108 @@ function extractShared(p) {
   return { text: parseDeck(body).cards.length >= 3 ? body : '', urls };
 }
 
+/* ── Liste d'échange : doublons à proposer, cartes recherchées ─────────────────────────────────────────────
+   Échangeable = possédé − exemplaires utilisés par tous les decks (additionnés : chaque deck peut être monté en même temps) − réserve de sécurité.
+   Terrains de base jamais proposés ni cherchés. Les exemplaires gardés le sont d'abord dans l'ordre des langues de la collection (fr, en, …). */
+/** Exemplaires utilisés par une liste de decks (textes) : Map clé → { n, q } (deck + réserve, commandant compris ; terrains de base exclus). */
+function deckUse(texts) {
+  const use = new Map();
+  const add = (name, q) => { const k = ownKey(name); if (!k || BASIC_NAMES.has(k) || !(q > 0)) return; const cur = use.get(k); if (cur) cur.q += q; else use.set(k, { n: name, q }); };
+  for (const t of texts || []) { for (const c of parseDeck(t).cards) add(c.name, c.qty); for (const c of dkSideCards(t)) add(c.name, c.qty); }
+  return use;
+}
+/**
+ * Cartes à échanger. coll : clé → { n, q, l?, x? } · use : deckUse(…) · keep : réserve gardée en plus des decks (0, 1, 2…) · kept : Set des clés que l'utilisateur garde.
+ * Retourne { have: [{ k, n, q, lines: [[langue, exemplaires]] }], held: [{ k, n, q }] } (held : cartes gardées à la main qui auraient été proposées), triés par nom.
+ */
+function tradeLists(coll, use, keep, kept) {
+  const have = [], held = [], kp = Math.max(0, Math.floor(Number(keep) || 0));
+  for (const [k, x] of Object.entries(coll || {})) {
+    if (!x || !(x.q > 0) || BASIC_NAMES.has(k)) continue;
+    const u = use && use.get(k), hold = (u ? u.q : 0) + kp, spare = x.q - hold;
+    if (spare <= 0) continue;
+    if (kept && kept.has(k)) { held.push({ k, n: x.n, q: spare }); continue; }
+    let skip = hold; const lines = [];
+    for (const [l, q] of collLines(x)) { const g = Math.max(0, q - skip); skip = Math.max(0, skip - q); if (g) lines.push([l, g]); }
+    have.push({ k, n: x.n, q: spare, lines });
+  }
+  const byN = (a, b) => a.n.localeCompare(b.n, 'en');
+  return { have: have.sort(byN), held: held.sort(byN) };
+}
+/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q }, exemplaires voulus en plus). [{ k, n, q, d (manque aux decks), w (souhait) }] triés par nom. */
+function tradeWant(coll, use, wish) {
+  const out = new Map();
+  for (const [k, u] of use || []) { const own = (coll && coll[k] && coll[k].q) || 0; if (u.q > own) out.set(k, { k, n: u.n, q: u.q - own, d: u.q - own, w: 0 }); }
+  for (const [k, w] of Object.entries(wish || {})) {
+    if (!w || BASIC_NAMES.has(k)) continue;
+    const q = Math.max(1, Math.min(99, Math.floor(Number(w.q) || 1))), cur = out.get(k);
+    if (cur) { cur.w = q; cur.q += q; } else out.set(k, { k, n: String(w.n || k), q, d: 0, w: q });
+  }
+  return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
+}
+
+/* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
+const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/[\w./-]+(\?\d+)?$/;
+const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
+const shStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+const shNum = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, Math.round(x))) : null; };
+/** Une carte d'un partage : { n, q, l?, f? (nom français), i? (image), c? (coût), t? (type), o? (couleurs), m? (symboles) } → item d'affichage, null si illisible. */
+function shareCard(x) {
+  if (!x || typeof x !== 'object') return null;
+  const n = shStr(x.n, 160).trim(), q = shNum(x.q, 1, 9999); if (!n || q == null) return null;
+  const it = { k: ownKey(n), n, q };
+  if (!it.k) return null;
+  if (SHARE_LANGS.includes(x.l)) it.l = x.l;
+  const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
+  if (SHARE_IMG_RE.test(shStr(x.i, 300))) it.im = x.i;
+  const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
+  const t = shStr(x.t, 120); if (t) it.tl = t;
+  const o = shStr(x.o, 5); if (/^[WUBRG]*$/.test(o)) it.cl = o;
+  const m = shStr(x.m, 80); if (/^(\{[^{}]{1,6}\})*$/.test(m) && m) it.mc = m;
+  return it;
+}
+/** Document de partage lu (champ d : JSON) → { kind: 'trade', at, have, want } | { kind: 'deck', at, name, text } ; null si illisible. */
+function readShare(kind, d) {
+  let o; try { o = typeof d === 'string' ? JSON.parse(d) : d; } catch (e) { return null; }
+  if (!o || typeof o !== 'object') return null;
+  const at = shNum(o.at, 0, 1e15) || 0;
+  if (kind === 'trade') {
+    const list = a => (Array.isArray(a) ? a.slice(0, 20000).map(shareCard).filter(Boolean) : []);
+    return { kind, at, have: list(o.have), want: list(o.want), ...(o.cut ? { cut: true } : {}) };      // cut : liste tronquée par le propriétaire (trop longue)
+  }
+  if (kind === 'deck') {
+    const text = shStr(o.text, 60000), name = shStr(o.name, 120).trim() || 'Deck';
+    return parseDeck(text).cards.length || parseDeck(text).basics.length ? { kind, at, name, text } : null;
+  }
+  return null;
+}
+
+/* ── Main de départ ────────────────────────────────────────────────────────────────────────────── */
+/** Terrain ? D'après la ligne de type de la face avant (« Land », « Legendary Land »… ; une carte modale « Sort // Terrain » n'en est pas un). */
+const isLandType = tl => /\bland\b/i.test(String(tl || '').split('//')[0]);
+/** Bibliothèque d'un deck : un élément par exemplaire (commandants retirés : ils restent dans la zone de commandement). */
+function libraryOf(items) {
+  const out = [];
+  for (const it of items || []) if (!it.cmd && !it.sb) for (let i = 0; i < Math.min(it.q || 0, 99); i++) out.push(it);
+  return out;
+}
+/** n cartes tirées au hasard sans remise (Fisher-Yates partiel). rnd() → [0, 1). */
+function drawHand(lib, n, rnd) {
+  const a = lib.slice(), m = Math.min(n, a.length), r = rnd || Math.random;
+  for (let i = 0; i < m; i++) { const j = i + Math.floor(r() * (a.length - i)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a.slice(0, m);
+}
+/** Loi hypergéométrique : probabilité d'avoir exactement k terrains (k = 0..n) en tirant n cartes d'un paquet de N cartes dont L terrains. */
+function handLandOdds(N, L, n = 7) {
+  const m = Math.min(n, N), lc = (a, b) => { if (b < 0 || b > a) return -Infinity; let s = 0; for (let i = 1; i <= b; i++) s += Math.log(a - b + i) - Math.log(i); return s; };
+  const tot = lc(N, m), out = [];
+  for (let k = 0; k <= m; k++) { const v = lc(L, k) + lc(N - L, m - k) - tot; out.push(Number.isFinite(v) ? Math.exp(v) : 0); }
+  return out;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
+  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, isLandType, libraryOf, drawHand, handLandOdds,
+    parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,

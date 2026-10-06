@@ -134,7 +134,7 @@ ok('recherche par carte : « swords » → 1 deck (étiquette « Contient »), �
 await p.click('.dk-ctl [data-act="dsort"][data-v="have"]');
 await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum');
 assert.match(await txt(p, '.sheet-head'), /Edgar Markov/); assert.match(await txt(p, '.sheet .ci-sum'), /23 cartes à acheter · ≈ 15,60 €/);
-assert.equal(await p.$eval('.sheet-body > *:nth-child(1)', e => e.className), 'ci-sum'); assert.equal(await p.$eval('.sheet-body > *:nth-child(2)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandant', 'le commandant est la 1re section');
+assert.equal(await p.$eval('.sheet-body > *:nth-child(1)', e => e.className), 'ci-sum'); assert.equal(await p.$eval('.sheet-body > *:nth-child(2)', e => e.className), 'tr-acts dk-acts', 'Voir le deck · Partager sous le résumé'); assert.equal(await p.$eval('.sheet-body > *:nth-child(3)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandant', 'le commandant est la 1re section');
 assert.deepEqual(await p.$$eval('.dk-cmd .row-name', n => n.map(x => x.textContent)), ['Edgar Markov']); assert.equal(await p.$eval('.dk-cmd .row-price b', e => e.textContent.trim()), '✓', 'commandant possédé : coche');
 const miss = await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent)); assert.equal(miss.length, 23); assert.equal(miss[0], 'Swords to Plowshares', 'la plus chère d\'abord'); assert.ok(!miss.includes('Sol Ring'));
 assert.match(await txt(p, '.dk-own summary'), /Déjà dans ta collection \(2\)/);
@@ -159,7 +159,7 @@ assert.equal(posts(), p0, 'images gardées sur l\'appareil : pas de nouvelle lec
 ok('feuille : Tier S · n° 1, bracket ≈ 4 (4 Game Changers, pastilles), vignettes lues sur Scryfall puis gardées ; appui = visionneuse (2 / 6, grande image, extra « À acheter · ≈ 1,90 € »), flèche = carte suivante, Échap garde la feuille, carte sans image : message');
 /* commandants partenaires : tous les deux en tête, avec prix (non possédé) ou « — » (prix inconnu) */
 await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet .ci-sum')); await p.click('.crow.dk:has-text("Tymna")'); await p.waitForSelector('.sheet .ci-sum');
-assert.equal(await p.$eval('.sheet-body > *:nth-child(2)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandants');
+assert.equal(await p.$eval('.sheet-body > *:nth-child(3)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandants');
 const tc = await p.$$eval('.dk-cmd .crow', r => r.map(x => [x.querySelector('.row-name').textContent, x.querySelector('.row-price b').textContent.replace(/\s+/g, ' ').trim(), x.querySelector('.tag').textContent])); assert.deepEqual(tc, [['Tymna the Weaver', '9,00 €', 'Commandant'], ['Thrasios, Triton Hero', '—', 'Commandant']]);
 assert.ok(!(await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent))).some(t => /Tymna|Thrasios/.test(t)), 'pas de doublon dans « À acheter »');
 await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet .ci-sum')); await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum'); assert.match(await txt(p, '.sheet-head'), /Edgar Markov/);

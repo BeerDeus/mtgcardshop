@@ -305,6 +305,12 @@ function openEdhDeck(r) {
       ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
       ${have.length ? `<details class="dk-own" open><summary>Déjà dans ta collection (${nf0(have.length)})</summary><div class="cs-top dk-have-l">${have.map(x => row(x, true)).join('')}</div></details>` : ''}
       <p class="hint dk-tap">Touche une carte pour la voir en grand.</p>`;
+    $('.ci-sum', api.body).insertAdjacentHTML('afterend', '<div class="tr-acts dk-acts"><button class="btn ghost" type="button" data-act="dkview"><svg class="i"><use href="#i-grid"/></svg>Voir le deck</button><button class="btn ghost" type="button" data-act="dkshare"><svg class="i"><use href="#i-share"/></svg>Partager</button></div>');
+    $('.dk-acts', api.body).onclick = e => {
+      const b = e.target.closest('[data-act]'); if (!b) return; haptic('tap');
+      if (b.dataset.act === 'dkview') openDeckViewer({ text: edhDeckText(r.deck), name });      // viewer : images, courbe, main de départ, partage
+      else shareDeck({ text: edhDeckText(r.deck), name });
+    };
     let imgs = new Map(), settled = false;
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
     api.body.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);

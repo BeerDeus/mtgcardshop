@@ -1217,6 +1217,48 @@ button,.btn,select,summary{touch-action:manipulation}
 .cv-card{position:relative;display:block;padding:0;border:0;background:transparent;border-radius:6px;transition:transform .15s}
 .cv-card:active{transform:scale(.96)}
 .cv-card[aria-pressed="true"] .dvc-art{box-shadow:0 0 0 3px var(--accent),0 8px 16px -10px rgba(16,21,43,.5)}
+
+/* ── Main de départ ── */
+.dv-hand{margin-top:2px}
+.hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (min-width:560px){.hand-grid{grid-template-columns:repeat(7,1fr)}}
+.hand-c .dvc-art i{bottom:10px;font-size:10px}
+.hand-sum{margin:10px 2px 0;font-size:14px;color:var(--ink-2)}
+.hand-sum b{color:var(--ink)}
+.odds{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.odd{display:grid;grid-template-columns:18px minmax(0,1fr) 46px;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-3)}
+.odd span{font-family:var(--font-mono);text-align:right}
+.odd i{display:block;height:10px;width:max(2px,var(--w));border-radius:99px;background:var(--surface-2)}
+.odd b{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.odd.on{color:var(--ink)}
+.odd.on i{background:var(--accent)}
+
+/* ── Liste d'échange (onglet de la collection) et écran public ── */
+.tr-box{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:12px}
+.tr-box.on{border-color:var(--accent)}
+.tr-box b{font-family:var(--font-display);font-size:16px}
+.tr-box .hint{margin:0}
+.tr-box .hint.warn,.hint.warn{color:var(--warn)}
+.tr-link input{width:100%;height:42px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-3);font-family:var(--font-code);font-size:12.5px;color:var(--ink-2)}
+.tr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.tr-acts .btn{height:40px;padding:0 14px;font-size:14px;flex:1 1 auto}
+.tr-acts.small{justify-content:space-between}
+.tr-keep{display:flex;flex-direction:column;gap:6px;margin:4px 2px 12px}
+.tr-keep .seg{--n:5;max-width:320px}
+.tr-keep .hint{margin:0}
+.tr-sub{margin-bottom:10px}
+.tr-addw{margin-bottom:10px}
+.tr-q{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tr-q b{font-family:var(--font-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.tr-q .link-btn{padding:4px 6px;font-size:12.5px}
+.tr-row .row-meta .flag{vertical-align:middle}
+.tr-held{margin-top:12px}
+.tr-held summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-2);padding:6px 2px}
+.tr-held .crow{grid-template-columns:minmax(0,1fr) auto}
+.pub-note{margin:0 2px 10px}
+.pubv #pubSub{margin-bottom:10px}
+.pub-row{cursor:pointer}
+.pub-row .row-top .flag{margin-top:2px}
 </style>
 </head>
 <body>
@@ -1240,6 +1282,7 @@ button,.btn,select,summary{touch-action:manipulation}
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.4"/></symbol>
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17.5l4.5-4.5 3 3 2.5-2.5 4 4"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
     <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
@@ -2926,8 +2969,108 @@ function extractShared(p) {
   return { text: parseDeck(body).cards.length >= 3 ? body : '', urls };
 }
 
+/* ── Liste d'échange : doublons à proposer, cartes recherchées ─────────────────────────────────────────────
+   Échangeable = possédé − exemplaires utilisés par tous les decks (additionnés : chaque deck peut être monté en même temps) − réserve de sécurité.
+   Terrains de base jamais proposés ni cherchés. Les exemplaires gardés le sont d'abord dans l'ordre des langues de la collection (fr, en, …). */
+/** Exemplaires utilisés par une liste de decks (textes) : Map clé → { n, q } (deck + réserve, commandant compris ; terrains de base exclus). */
+function deckUse(texts) {
+  const use = new Map();
+  const add = (name, q) => { const k = ownKey(name); if (!k || BASIC_NAMES.has(k) || !(q > 0)) return; const cur = use.get(k); if (cur) cur.q += q; else use.set(k, { n: name, q }); };
+  for (const t of texts || []) { for (const c of parseDeck(t).cards) add(c.name, c.qty); for (const c of dkSideCards(t)) add(c.name, c.qty); }
+  return use;
+}
+/**
+ * Cartes à échanger. coll : clé → { n, q, l?, x? } · use : deckUse(…) · keep : réserve gardée en plus des decks (0, 1, 2…) · kept : Set des clés que l'utilisateur garde.
+ * Retourne { have: [{ k, n, q, lines: [[langue, exemplaires]] }], held: [{ k, n, q }] } (held : cartes gardées à la main qui auraient été proposées), triés par nom.
+ */
+function tradeLists(coll, use, keep, kept) {
+  const have = [], held = [], kp = Math.max(0, Math.floor(Number(keep) || 0));
+  for (const [k, x] of Object.entries(coll || {})) {
+    if (!x || !(x.q > 0) || BASIC_NAMES.has(k)) continue;
+    const u = use && use.get(k), hold = (u ? u.q : 0) + kp, spare = x.q - hold;
+    if (spare <= 0) continue;
+    if (kept && kept.has(k)) { held.push({ k, n: x.n, q: spare }); continue; }
+    let skip = hold; const lines = [];
+    for (const [l, q] of collLines(x)) { const g = Math.max(0, q - skip); skip = Math.max(0, skip - q); if (g) lines.push([l, g]); }
+    have.push({ k, n: x.n, q: spare, lines });
+  }
+  const byN = (a, b) => a.n.localeCompare(b.n, 'en');
+  return { have: have.sort(byN), held: held.sort(byN) };
+}
+/** Cartes recherchées : ce qui manque aux decks (somme des decks − possédé) + la liste de souhaits (wish : clé → { n, q }, exemplaires voulus en plus). [{ k, n, q, d (manque aux decks), w (souhait) }] triés par nom. */
+function tradeWant(coll, use, wish) {
+  const out = new Map();
+  for (const [k, u] of use || []) { const own = (coll && coll[k] && coll[k].q) || 0; if (u.q > own) out.set(k, { k, n: u.n, q: u.q - own, d: u.q - own, w: 0 }); }
+  for (const [k, w] of Object.entries(wish || {})) {
+    if (!w || BASIC_NAMES.has(k)) continue;
+    const q = Math.max(1, Math.min(99, Math.floor(Number(w.q) || 1))), cur = out.get(k);
+    if (cur) { cur.w = q; cur.q += q; } else out.set(k, { k, n: String(w.n || k), q, d: 0, w: q });
+  }
+  return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
+}
+
+/* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
+const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/[\w./-]+(\?\d+)?$/;
+const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
+const shStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+const shNum = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, Math.round(x))) : null; };
+/** Une carte d'un partage : { n, q, l?, f? (nom français), i? (image), c? (coût), t? (type), o? (couleurs), m? (symboles) } → item d'affichage, null si illisible. */
+function shareCard(x) {
+  if (!x || typeof x !== 'object') return null;
+  const n = shStr(x.n, 160).trim(), q = shNum(x.q, 1, 9999); if (!n || q == null) return null;
+  const it = { k: ownKey(n), n, q };
+  if (!it.k) return null;
+  if (SHARE_LANGS.includes(x.l)) it.l = x.l;
+  const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
+  if (SHARE_IMG_RE.test(shStr(x.i, 300))) it.im = x.i;
+  const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
+  const t = shStr(x.t, 120); if (t) it.tl = t;
+  const o = shStr(x.o, 5); if (/^[WUBRG]*$/.test(o)) it.cl = o;
+  const m = shStr(x.m, 80); if (/^(\{[^{}]{1,6}\})*$/.test(m) && m) it.mc = m;
+  return it;
+}
+/** Document de partage lu (champ d : JSON) → { kind: 'trade', at, have, want } | { kind: 'deck', at, name, text } ; null si illisible. */
+function readShare(kind, d) {
+  let o; try { o = typeof d === 'string' ? JSON.parse(d) : d; } catch (e) { return null; }
+  if (!o || typeof o !== 'object') return null;
+  const at = shNum(o.at, 0, 1e15) || 0;
+  if (kind === 'trade') {
+    const list = a => (Array.isArray(a) ? a.slice(0, 20000).map(shareCard).filter(Boolean) : []);
+    return { kind, at, have: list(o.have), want: list(o.want), ...(o.cut ? { cut: true } : {}) };      // cut : liste tronquée par le propriétaire (trop longue)
+  }
+  if (kind === 'deck') {
+    const text = shStr(o.text, 60000), name = shStr(o.name, 120).trim() || 'Deck';
+    return parseDeck(text).cards.length || parseDeck(text).basics.length ? { kind, at, name, text } : null;
+  }
+  return null;
+}
+
+/* ── Main de départ ────────────────────────────────────────────────────────────────────────────── */
+/** Terrain ? D'après la ligne de type de la face avant (« Land », « Legendary Land »… ; une carte modale « Sort // Terrain » n'en est pas un). */
+const isLandType = tl => /\bland\b/i.test(String(tl || '').split('//')[0]);
+/** Bibliothèque d'un deck : un élément par exemplaire (commandants retirés : ils restent dans la zone de commandement). */
+function libraryOf(items) {
+  const out = [];
+  for (const it of items || []) if (!it.cmd && !it.sb) for (let i = 0; i < Math.min(it.q || 0, 99); i++) out.push(it);
+  return out;
+}
+/** n cartes tirées au hasard sans remise (Fisher-Yates partiel). rnd() → [0, 1). */
+function drawHand(lib, n, rnd) {
+  const a = lib.slice(), m = Math.min(n, a.length), r = rnd || Math.random;
+  for (let i = 0; i < m; i++) { const j = i + Math.floor(r() * (a.length - i)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a.slice(0, m);
+}
+/** Loi hypergéométrique : probabilité d'avoir exactement k terrains (k = 0..n) en tirant n cartes d'un paquet de N cartes dont L terrains. */
+function handLandOdds(N, L, n = 7) {
+  const m = Math.min(n, N), lc = (a, b) => { if (b < 0 || b > a) return -Infinity; let s = 0; for (let i = 1; i <= b; i++) s += Math.log(a - b + i) - Math.log(i); return s; };
+  const tot = lc(N, m), out = [];
+  for (let k = 0; k <= m; k++) { const v = lc(L, k) + lc(N - L, m - k) - tot; out.push(Number.isFinite(v) ? Math.exp(v) : 0); }
+  return out;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
+  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, isLandType, libraryOf, drawHand, handLandOdds,
+    parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
@@ -3115,6 +3258,10 @@ function makeCloud(m) {
     saveMeta: (uid, id, data) => m.fs.setDoc(m.fs.doc(db, 'users', uid, 'meta', id), data),
     pullMeta: (uid, id) => m.fs.getDocFromServer(m.fs.doc(db, 'users', uid, 'meta', id)).then(s => ({ data: s.exists() ? s.data() : null })),
     saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
+    /** Partages publics (shares/{id}) : identifiant aléatoire (non devinable), écriture, suppression. Lus par le visiteur via l'API REST (shareFetch). */
+    shareId: () => m.fs.doc(m.fs.collection(db, 'shares')).id,
+    saveShare: (id, data) => m.fs.setDoc(m.fs.doc(db, 'shares', id), data),
+    dropShare: id => m.fs.deleteDoc(m.fs.doc(db, 'shares', id)),
   };
 }
 
@@ -3133,7 +3280,23 @@ function loadCloud() {
   return cloudP;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud };
+/** Partage public lu sans SDK ni compte (API REST Firestore) : { kind, at, … } (readShare), ou lève une erreur { code: 'gone' | 'denied' | 'net' | 'bad' }. */
+const SHARE_ID_RE = /^[A-Za-z0-9]{12,40}$/;
+async function shareFetch(id, fetchFn) {
+  if (!SHARE_ID_RE.test(String(id || ''))) throw Object.assign(new Error('lien invalide'), { code: 'bad' });
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/shares/${id}?key=${FIREBASE_CONFIG.apiKey}`;
+  let r;
+  try { r = await (fetchFn || fetch)(url, { cache: 'no-store', credentials: 'omit' }); } catch (e) { throw Object.assign(new Error('réseau'), { code: 'net' }); }
+  if (r.status === 404) throw Object.assign(new Error('partage introuvable'), { code: 'gone' });
+  if (r.status === 403 || r.status === 401) throw Object.assign(new Error('accès refusé'), { code: 'denied' });
+  if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { code: 'net' });
+  const f = ((await r.json()) || {}).fields || {}, str = k => (f[k] && typeof f[k].stringValue === 'string' ? f[k].stringValue : '');
+  const out = (typeof readShare === 'function' ? readShare : require('./core.js').readShare)(str('kind'), str('d'));      // sous Node (tests) : core.js est un module à part
+  if (!out) throw Object.assign(new Error('partage illisible'), { code: 'bad' });
+  return out;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud, shareFetch, SHARE_ID_RE };
 
 
 /* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
@@ -5028,7 +5191,7 @@ function init() {
   };
   collInit();
   valInit();
-  xsInit(); alInit();
+  xsInit(); alInit(); trInit();
   initDecks();
   refreshDeck();
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
@@ -5244,7 +5407,7 @@ function putDeck(id, doc) {
 }
 function removeDeck(id) {
   if (S.deckId === id) S.deckId = null;
-  snapDrop(id); engClear(id, true);
+  snapDrop(id); engClear(id, true); trDeckGone(id);
   if (cloudOn()) return D.cloud.remove(D.user.uid, id).catch(err => toast(deckErr(err)));
   D.localList = D.localList.filter(d => d.id !== id);
   localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
@@ -5351,7 +5514,7 @@ function deckCard(d, i) {
 }
 /** Bouton « Mes decks » de l'accueil + écran des decks s'il est ouvert. */
 function renderDecks() {
-  alSoon();
+  alSoon(); trSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
   $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
@@ -5632,7 +5795,7 @@ function onUser(user) {
     });
   }
   renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
-  collUser(user); xsUser(user);
+  collUser(user); xsUser(user); trUser(user);
   if (!user && prev) updateHeroDelta();
 }
 async function connectCloud() {
@@ -5951,7 +6114,7 @@ function openCardViewer(items, index) {
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
+const DV = { el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
 
 /** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
@@ -5997,12 +6160,12 @@ function buildSnap() {
 
 /** Relevé de référence d'un deck sans prix gardé (ou dont tout est possédé) : valeur estimée au prix tendance Cardmarket, image / coût / type lus sur Scryfall (cache des decks).
  *  c = valeur des q exemplaires (pas un coût d'achat) · ow = exemplaires libres dans la collection · ref : relevé de référence, jamais enregistré. */
-function refSnapOf(text, id) {
+function refSnapOf(text, id, pub) {
   const pd = parseDeck(text); if (!pd.cards.length && !pd.basics.length) return null;
   const cmd = dkFormat(text) === 'standard' ? new Set() : commandersOf(text, pd.cards, c => dmOf(ownKey(c.key)));
   const items = [];
   for (const c of pd.cards) {
-    const k = ownKey(c.key), m = dmOf(k) || {}, ow = Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
+    const k = ownKey(c.key), m = dmOf(k) || {}, ow = pub ? 0 : Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
     const it = { k: c.key, n: c.name, q: c.qty, s: Number.isFinite(m.eu) ? 'ok' : 'none' };
     if (it.s === 'ok') it.c = Math.round(m.eu * c.qty);
     if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
@@ -6019,10 +6182,10 @@ function refSnapOf(text, id) {
 /** Rien à acheter ni à chiffrer dans ce relevé (tout est possédé) : seul le relevé de référence a quelque chose à montrer. */
 const snapNothingToBuy = snap => !snap.items.some(i => i.s !== 'own' && i.s !== 'basic');
 /** Réserve (Standard, lignes « SB: ») : cartes à part, jamais comptées dans le total ; prix = tendance Cardmarket (la recherche d'offres ne la chiffre pas). sb : 1 · k préfixé « sb: ». */
-function sbItemsOf(text, id) {
+function sbItemsOf(text, id, pub) {
   const out = [];
   for (const c of dkSideCards(text)) {
-    const k = ownKey(c.key), m = dmOf(k) || {}, ow = Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
+    const k = ownKey(c.key), m = dmOf(k) || {}, ow = pub ? 0 : Math.min(c.qty, engFree(collQty(k), XS.eng, k, id));
     const it = { k: 'sb:' + k, n: c.name, q: Math.min(999, c.qty), s: Number.isFinite(m.eu) ? 'ok' : 'none', sb: 1 };
     if (it.s === 'ok') it.c = Math.round(m.eu * c.qty);
     if (m.cm != null) { it.cm = m.cm; it.mc = m.mc; it.tl = m.tl; it.cl = m.cl; }
@@ -6066,16 +6229,17 @@ async function dvMetaLoad(wrap) {
     DV.loading = false; dvRebuild(); dvRender();
   }
   // cartes possédées dans une autre langue que l'anglais : leur image, dans cette langue, si Scryfall ne l'a pas encore donnée
+  if (DV.pub) return;
   const pd = parseDeck(DV.text); let got = false;
   try { got = await ownLangFetch([...pd.cards, ...dkSideCards(DV.text)]); } catch (e) { /* ignore */ }
   if (got && DV.el === wrap) { dvRebuild(); dvRender(); }
 }
 /** Relevé de référence, réserve et images des terrains recalculés d'après les fiches connues (le relevé de prix, lui, ne change pas). */
 function dvRebuild() {
-  if (DV.snap && DV.snap.ref) DV.snap = refSnapOf(DV.text, DV.deckId);
+  if (DV.snap && DV.snap.ref) DV.snap = refSnapOf(DV.text, DV.deckId, DV.pub);
   DV.snap = dvBasics(DV.snap);
-  if (DV.snap) DV.snap = { ...DV.snap, items: dvOwnIm(DV.snap.items) };
-  DV.sb = DV.snap ? dvOwnIm(sbItemsOf(DV.text, DV.deckId)) : []; DV.framed = null;
+  if (DV.snap && !DV.pub) DV.snap = { ...DV.snap, items: dvOwnIm(DV.snap.items) };
+  DV.sb = DV.snap ? (DV.pub ? sbItemsOf(DV.text, null, true) : dvOwnIm(sbItemsOf(DV.text, DV.deckId))) : []; DV.framed = null;
 }
 
 /* Relevés gardés sur cet appareil (toujours) ; ils sont aussi dans le document du deck quand le compte l'accepte (règles Firestore à jour). */
@@ -6149,13 +6313,14 @@ function dvFrame(snap) {
   DV.dl = snapDeltas(items, snap.pv);
   const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ` · réserve ${sbN}` : '';
   const todo = ref ? items.reduce((a, i) => a + (i.s === 'basic' ? 0 : Math.max(0, i.q - (i.ow || 0))), 0) : 0;
-  $('.dv-title span', el).textContent = ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
+  $('.dv-title span', el).textContent = DV.pub ? `${copies} carte${copies > 1 ? 's' : ''}${sbTxt} · partagé, lecture seule` : ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
     : `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
       <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}${esc(fmt(total))}${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
       <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
+      <button class="btn ghost block dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>
     </section>
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
@@ -6190,7 +6355,7 @@ function dvRender() {
   if (!snap) {
     DV.framed = null;
     $('.dv-body', el).innerHTML = '<div class="dv-empty"><b>Ce deck est vide</b><p>Ajoute des cartes à la liste pour les voir ici.</p></div>';
-    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live; return;
+    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live && !DV.adhoc; return;
   }
   if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
   dvGroups();
@@ -6198,7 +6363,7 @@ function dvRender() {
   const ref = !!snap.ref, todo = ref && snap.items.some(i => i.s !== 'basic' && i.q > (i.ow || 0));
   refresh.textContent = ref ? 'Chercher les offres' : 'Actualiser';
   foot.hidden = false; edit.hidden = DV.live || !DV.deckId; refresh.hidden = DV.live || !DV.deckId || (ref && !todo);
-  close.hidden = !DV.live;
+  close.hidden = !DV.live && !DV.adhoc;
 }
 function dvItemFor(it) {
   if (it.s === 'nf' || !it.im) return null;
@@ -6217,27 +6382,29 @@ function dvOpenCard(i) {
   if (at.has(i)) openCardViewer(list, at.get(i));
 }
 function closeDeckViewer() { if (DV.el) DV.el.__close(); }
-/** Ouvre le viewer d'un deck enregistré ({ id }) ou de la recherche en cours ({ live: true }). */
-function openDeckViewer({ id, live } = {}) {
+/** Ouvre le viewer d'un deck enregistré ({ id }), de la recherche en cours ({ live: true }) ou d'une liste quelconque ({ text, name } : deck EDHREC ;
+ *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil). */
+function openDeckViewer({ id, live, text, name, pub } = {}) {
   closeDeckViewer(); closeCardImage();
-  const d = id ? findDeck(id) : null;
-  DV.live = !!live; DV.deckId = id || (live ? S.deckId : null) || null;
-  DV.snap = live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
-  DV.name = d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
+  const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
+  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
+  DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter();
+  DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
   if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
   // Pas de prix gardé (ou tout est possédé, donc rien à chiffrer) : même viewer, avec la valeur estimée du deck au prix tendance Cardmarket
-  DV.text = live ? S.run.text : d ? d.text : ''; DV.loading = false;
-  if (!DV.snap || snapNothingToBuy(DV.snap)) DV.snap = refSnapOf(DV.text, DV.deckId);
+  DV.text = adhoc ? text : live ? S.run.text : d ? d.text : ''; DV.loading = false;
+  if (!DV.snap || snapNothingToBuy(DV.snap)) DV.snap = refSnapOf(DV.text, DV.deckId, DV.pub);
   dvRebuild();
   const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Deck viewer · ' + DV.name);
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le viewer"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div></header>
+      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div>${DV.pub ? '' : '<button class="icon-btn" type="button" data-act="share" aria-label="Partager ce deck (lien en lecture seule)" title="Partager"><svg class="i"><use href="#i-share"/></svg></button>'}</header>
     <div class="dv-scroll"><div class="dv-body"></div></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">Modifier la liste</button><button class="btn" type="button" data-act="refresh">Actualiser</button><button class="btn" type="button" data-act="close">Fermer</button></footer>`;
   DV.el = wrap; DV.prevFocus = document.activeElement;
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (DV.el !== wrap) return; DV.el = null; document.removeEventListener('keydown', onKey, true);
+    if (DV.pub) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } }
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
     try { if (DV.prevFocus && DV.prevFocus.focus && DV.prevFocus.isConnected) DV.prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   };
@@ -6254,13 +6421,15 @@ function openDeckViewer({ id, live } = {}) {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const act = b.dataset.act, deck = DV.deckId;
     if (act === 'close') wrap.__close();
+    else if (act === 'hand') openHand();
+    else if (act === 'share') shareDeck(DV.deckId && !DV.live ? { id: DV.deckId } : { text: DV.text, name: DV.name });
     else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
     else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
   });
   document.body.appendChild(wrap); holdApp(); dvRender();
   dvMetaLoad(wrap);
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
-  haptic('tap');
+  if (!DV.pub) haptic('tap');      // ouvert par un lien au chargement : pas de geste, le navigateur refuserait la vibration
 }
 /** « Actualiser » : recharge le deck, relit les prix (cache serveur ignoré) puis propose de revenir au viewer. */
 async function refreshDeckPrices(id) {
@@ -6270,6 +6439,38 @@ async function refreshDeckPrices(id) {
   await startRun(true);
   const cur = findDeck(id), now = snapOf(cur);
   if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
+}
+
+/* ── Main de départ : 7 cartes au hasard dans la bibliothèque (commandant et réserve à part), et les chances d'avoir 0 à 7 terrains (loi hypergéométrique) ── */
+const pctTxt = p => (p >= 0.995 ? '100' : p < 0.005 && p > 0 ? '< 1' : String(Math.round(p * 100))) + ' %';
+function openHand() {
+  const snap = DV.snap; if (!snap) return;
+  const lib = libraryOf(snap.items), isLand = it => it.s === 'basic' || isLandType(it.tl);
+  if (lib.length < 7) { toast('Il faut au moins 7 cartes dans le deck'); return; }
+  const L = lib.filter(isLand).length, unknown = new Set(lib.filter(it => it.s !== 'basic' && it.tl == null).map(it => it.k)).size, odds = handLandOdds(lib.length, L, 7);
+  openSheet('Main de départ', `${lib.length} cartes dans la bibliothèque · ${L} terrain${L > 1 ? 's' : ''}`, api => {
+    let hand = [];
+    const paint = () => {
+      const lands = hand.filter(isLand).length, max = Math.max(...odds);
+      api.body.innerHTML = `<div class="hand-grid">${hand.map((it, i) => `<button type="button" class="dvc hand-c" data-i="${i}" aria-label="${esc(it.n)}"><span class="dvc-art" style="--h:${hash32(it.k) % 360}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${dvImg(it) ? `<img alt="" decoding="async" src="${esc(dvImg(it))}">` : ''}</span></button>`).join('')}</div>
+        <p class="hand-sum"><b>${lands} terrain${lands > 1 ? 's' : ''}</b> · ${7 - lands} sort${7 - lands > 1 ? 's' : ''}</p>
+        <h3 class="cs-h">Terrains en main de départ <small>sur 7 cartes</small></h3>
+        <div class="odds" role="img" aria-label="${odds.map((p, k) => k + ' terrain' + (k > 1 ? 's' : '') + ' : ' + pctTxt(p)).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
+        <p class="hint">Entre 2 et 4 terrains : ${pctTxt(odds[2] + odds[3] + (odds[4] || 0))} des mains.${unknown ? ` ${unknown} carte${unknown > 1 ? 's' : ''} au type pas encore lu, comptée${unknown > 1 ? 's' : ''} comme sort${unknown > 1 ? 's' : ''}.` : ''}</p>`;
+    };
+    const deal = () => { hand = drawHand(lib, 7); paint(); };
+    api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" data-act="redeal">Nouvelle main</button>');
+    api.foot.addEventListener('click', e => { if (e.target.closest('[data-act="redeal"]')) { haptic('tap'); deal(); } });
+    api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+    api.body.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+    api.body.addEventListener('click', e => {
+      const c = e.target.closest('.hand-c'); if (!c) return;
+      const list = [], at = new Map();
+      hand.forEach((it, i) => { const v = dvItemFor(it); if (v) { at.set(i, list.length); list.push(v); } });
+      const i = Number(c.dataset.i); if (at.has(i)) openCardViewer(list, at.get(i)); else toast('Pas d\'aperçu pour cette carte');
+    });
+    deal();
+  });
 }
 
 
@@ -6343,7 +6544,7 @@ function collChanged(o = {}) {
   COLL.u = Date.now(); collWrite();
   if (o.push !== false) collPushSoon();
   if (o.paint !== false) collPaint(); else collPaintHead();
-  paintCollSection(); refreshDeck(); alSoon();
+  paintCollSection(); refreshDeck(); alSoon(); trSoon();
   if (S.run && S.view === 'results') scheduleRecompute(true);
 }
 function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); collChanged(); }
@@ -6459,7 +6660,7 @@ function collFromCloud(uid, data, pending, fromCache, pulled) {
 }
 /** La collection de cet appareil vient de changer à cause du compte (autre appareil) : repeint, lit les infos des nouvelles cartes, prévient. */
 function collRemoteApplied(before, after, o = {}) {
-  collPaint(); paintCollSection(); refreshDeck(); if (S.run && S.view === 'results') scheduleRecompute(true);
+  collPaint(); paintCollSection(); refreshDeck(); trSoon(); if (S.run && S.view === 'results') scheduleRecompute(true);
   collEnrich();
   let add = 0, del = 0;
   for (const k in after) if (!before[k]) add++;
@@ -6798,8 +6999,9 @@ function collPaintBody(keep) {
   if (keep && document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && host.contains(document.activeElement)) { COLL.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas
   $('.coll-controls', el).hidden = !all.length;
   if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
-  $('.coll-fwrap', el).hidden = COLL.tab !== 'list'; valPaintAlert();
+  $('.coll-fwrap', el).hidden = COLL.tab !== 'list' && COLL.tab !== 'trade'; $('#collSort', el).closest('.coll-sort').hidden = COLL.tab === 'trade'; valPaintAlert();
   if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
+  else if (COLL.tab === 'trade') { host.innerHTML = trPanelHtml(); trMount(host); }
   else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) { res.innerHTML = edhResHtml(); edhThemesSync(); } else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
   else if (COLL.f.cmdr === 'played' && !EDH.data) { host.innerHTML = edhWaitHtml(); edhEnsure(); }
   else {
@@ -6842,10 +7044,10 @@ function openCollection(tab) {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
-  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
   COLL.fb = mountFilters($('#collF', wrap), COLL.f, () => {
     if (COLL.f.cmdr === 'played' && COLL.cmdrSeen !== 'played' && COLL.sort === 'name') { COLL.sort = 'decks'; $('#collSort', wrap).value = 'decks'; }      // les plus joués d'abord
-    COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; collPaintBody(true);
+    COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(true);
   }, { placeholder: 'Rechercher dans ma collection', commander: true });
   COLL.cmdrSeen = COLL.f.cmdr;
   $('#collSort', wrap).value = COLL.sort;
@@ -6868,7 +7070,7 @@ function openCollection(tab) {
   wrap.addEventListener('click', e => {
     if (e.target.closest('.lchip')) return;
     if (e.target.closest('.cs-val')) { collToggleSrc(); return; }
-    if (edhClick(e) || valClick(e)) return;
+    if (edhClick(e) || valClick(e) || trClick(e)) return;
     const b = e.target.closest('button[data-act]');
     if (b) {
       const act = b.dataset.act;
@@ -7303,6 +7505,12 @@ function openEdhDeck(r) {
       ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
       ${have.length ? `<details class="dk-own" open><summary>Déjà dans ta collection (${nf0(have.length)})</summary><div class="cs-top dk-have-l">${have.map(x => row(x, true)).join('')}</div></details>` : ''}
       <p class="hint dk-tap">Touche une carte pour la voir en grand.</p>`;
+    $('.ci-sum', api.body).insertAdjacentHTML('afterend', '<div class="tr-acts dk-acts"><button class="btn ghost" type="button" data-act="dkview"><svg class="i"><use href="#i-grid"/></svg>Voir le deck</button><button class="btn ghost" type="button" data-act="dkshare"><svg class="i"><use href="#i-share"/></svg>Partager</button></div>');
+    $('.dk-acts', api.body).onclick = e => {
+      const b = e.target.closest('[data-act]'); if (!b) return; haptic('tap');
+      if (b.dataset.act === 'dkview') openDeckViewer({ text: edhDeckText(r.deck), name });      // viewer : images, courbe, main de départ, partage
+      else shareDeck({ text: edhDeckText(r.deck), name });
+    };
     let imgs = new Map(), settled = false;
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
     api.body.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
@@ -8879,6 +9087,381 @@ function bdSave() {
   bdClose(true); haptic('ok');
   const msg = prev ? 'Deck mis à jour' : `Deck créé${reserved ? ` · ${nf0(reserved)} carte${reserved > 1 ? 's' : ''} réservée${reserved > 1 ? 's' : ''} de ta collection` : ''}`;
   toast(nb && !prev ? msg + ' · incomplet' : msg, { label: 'Ouvrir', fn: () => loadDeck(id) });
+}
+
+
+/* ── share.js : liste d'échange (doublons, cartes recherchées) et liens publics en lecture seule (liste d'échange, deck) ──────────
+   · Onglet « Échange » de la collection : cartes à échanger (possédé − decks − réserve, terrains de base exclus), « Garder » carte par carte,
+     cartes recherchées (manquantes des decks + souhaits ajoutés à la main), lien public.
+     Réglages sur l'appareil (deckdeal:trade:v1) et dans le compte (users/{uid}/meta/trade : keep, kept, wish, share, dsh, updatedAt ; le plus récent l'emporte).
+   · Partages : shares/{id} { o (empreinte SHA-256 de l'UID du propriétaire), kind ('trade' | 'deck'), v, updatedAt, d (JSON) }. Lisibles par quiconque a le lien, jamais listables, modifiables
+     seulement par leur propriétaire (règles Firestore). Tenus à jour par les appareils du propriétaire : collection, decks, souhaits, réserve.
+     Un deck enregistré partagé suit ses modifications ; un deck EDHREC ou une liste en cours est partagé tel quel (figé).
+   · Visiteur : <site>/?p=<id>. Lecture par l'API REST Firestore (shareFetch : ni SDK, ni compte), écran en lecture seule ; rien n'est écrit, ni chez lui ni chez le propriétaire. */
+const TR_KEY = 'deckdeal:trade:v1', TR_KEEPS = [0, 1, 2, 3, 4], TR_PAGE = 120, TR_MAX = 880000;
+const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: new Set(), wish: {}, share: '', dsh: {}, u: 0, sig: {}, sub: 'have', shown: TR_PAGE, err: '', busy: false, again: false, syncT: 0,
+  doc: { unsub: null, uid: '', pushT: 0 }, pub: null };
+
+const trWishClean = w => {
+  const out = {}; if (!w || typeof w !== 'object' || Array.isArray(w)) return out;
+  for (const [k, v] of Object.entries(w).slice(0, 2000)) if (k && v && typeof v.n === 'string' && v.n.trim()) out[ownKey(v.n) || k] = { n: v.n.trim().slice(0, 160), q: Math.max(1, Math.min(99, Math.floor(Number(v.q) || 1))) };
+  return out;
+};
+const trDshClean = o => { const out = {}; if (o && typeof o === 'object' && !Array.isArray(o)) for (const [k, v] of Object.entries(o).slice(0, 200)) if (typeof v === 'string' && SHARE_ID_RE.test(v)) out[k] = v; return out; };
+function trApply(j) {
+  TR.keep = TR_KEEPS.includes(j.keep) ? j.keep : 1;
+  TR.kept = new Set(Array.isArray(j.kept) ? j.kept.filter(k => typeof k === 'string' && k).slice(0, 5000) : []);
+  TR.wish = trWishClean(j.wish);
+  TR.share = typeof j.share === 'string' && SHARE_ID_RE.test(j.share) ? j.share : '';
+  TR.dsh = trDshClean(j.dsh);
+  TR.u = Number(j.u || j.updatedAt) || 0;
+}
+const trDoc = () => ({ keep: TR.keep, kept: [...TR.kept], wish: TR.wish, share: TR.share, dsh: TR.dsh, updatedAt: TR.u || Date.now() });
+function trRead() {
+  try { const j = JSON.parse(localStorage.getItem(TR_KEY) || '{}') || {}; trApply(j); TR.sig = j.sig && typeof j.sig === 'object' ? j.sig : {}; TR.who = typeof j.who === 'string' ? j.who : ''; } catch (e) { /* neuf */ }
+}
+function trWrite() { try { localStorage.setItem(TR_KEY, JSON.stringify({ ...trDoc(), u: TR.u, sig: TR.sig, who: TR.who })); } catch (e) { /* stockage indisponible */ } }
+const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+/** Les écritures Firestore attendent le serveur : hors ligne, on prévient au lieu de laisser le bouton sans réponse. */
+function trNeedNet() { if (!trOffline()) return true; toast('Hors ligne : réessaie une fois connecté'); return false; }
+/** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
+function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
+function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); }
+
+/* ── Réglages dans le compte ───────────────────────────────────────────────────────────────────────── */
+function trUser(user) {
+  const d = TR.doc; if (d.unsub) { try { d.unsub(); } catch (e) { /* ignore */ } d.unsub = null; } clearTimeout(d.pushT); d.uid = '';
+  if (!user || !D.cloud || !D.cloud.watchMeta) return;
+  if (TR.who && TR.who !== user.uid) { trApply({}); TR.sig = {}; }                // autre compte sur cet appareil : ses réglages et liens ne sont pas les nôtres
+  TR.who = user.uid; trWrite();
+  d.uid = user.uid;
+  d.unsub = D.cloud.watchMeta(user.uid, 'trade', (data, pending, fromCache) => {
+    if (pending || fromCache || D.uid !== user.uid) return;
+    const ru = Number(data && data.updatedAt) || 0;
+    if (data && ru > TR.u) { const sig = TR.sig; trApply(data); TR.sig = sig; trWrite(); trRepaint(); trSoon(); }
+    else if (TR.u > ru) trPushSoon();
+  }, err => { if (err && err.code === 'permission-denied') TR.err = 'rules'; trRepaint(); });
+  trSoon(1500);
+}
+function trPushSoon() { const d = TR.doc; if (!d.uid) return; clearTimeout(d.pushT); d.pushT = setTimeout(trPush, 900); }
+async function trPush() {
+  const d = TR.doc; if (!d.uid || d.uid !== D.uid || !cloudOn() || !D.cloud.saveMeta) return;
+  try { await D.cloud.saveMeta(d.uid, 'trade', trDoc()); if (TR.err === 'rules') { TR.err = ''; trRepaint(); } }
+  catch (err) { if (err && err.code === 'permission-denied') { TR.err = 'rules'; trRepaint(); } }
+}
+
+/* ── Listes ────────────────────────────────────────────────────────────────────────────────────── */
+const trDeckTexts = () => allDecks().map(d => d.text || '');
+function trState() {
+  const use = deckUse(trDeckTexts()), { have, held } = tradeLists(COLL.map, use, TR.keep, TR.kept);
+  return { use, have, held, want: tradeWant(COLL.map, use, TR.wish), decks: allDecks().length };
+}
+/** Carte d'un partage : nom, exemplaires, langue, nom français, image (dans la langue de l'exemplaire si Scryfall l'a), coût, type, couleurs, symboles. */
+function trCard(k, n, q, l) {
+  const m = dmOf(k) || {}, o = { n, q };
+  if (l) o.l = l;
+  const f = frOf(k); if (f) o.f = f;
+  const im = (l && l !== 'en' && COLL.li[liKey(l, k)]) || m.im; if (im) o.i = im;
+  if (m.cm != null) o.c = m.cm; if (m.tl) o.t = m.tl; if (typeof m.cl === 'string') o.o = m.cl; if (m.mc) o.m = m.mc;
+  return o;
+}
+/** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué. */
+function trPayload() {
+  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => trCard(x.k, x.n, x.q, ''));
+  let body = { have, want };
+  if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, m, ...x }) => x), want: want.map(({ i, m, ...x }) => x) };
+  while (JSON.stringify(body).length > TR_MAX && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
+  return body;
+}
+
+/* ── Partages : écriture (propriétaire) ────────────────────────────────────────────────────────── */
+function trSoon(ms = 4000) { if (!TR.share && !Object.keys(TR.dsh).length) return; clearTimeout(TR.syncT); TR.syncT = setTimeout(trSync, ms); }
+/** Empreinte du propriétaire (SHA-256 de l'UID, en hexadécimal) : le document est public, l'UID n'y est jamais écrit. Les règles Firestore la recalculent. */
+const ownerTags = new Map();
+async function ownerTag(uid) {
+  if (!ownerTags.has(uid)) ownerTags.set(uid, crypto.subtle.digest('SHA-256', new TextEncoder().encode(uid)).then(b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('')));
+  return ownerTags.get(uid);
+}
+async function trPut(id, kind, body) {
+  const s = kind + ':' + hash32(JSON.stringify(body));
+  if (TR.sig[id] === s) return;
+  await D.cloud.saveShare(id, { o: await ownerTag(D.uid), kind, v: 1, updatedAt: Date.now(), d: JSON.stringify({ ...body, at: Date.now() }) });
+  TR.sig[id] = s; trWrite();
+}
+/** Avant d'écrire la liste : noms français (catalogue de l'appareil ou du site) et fiches Scryfall des cartes recherchées (images, types). */
+async function trPrep() {
+  collFrLoad(); if (FRN.p) await FRN.p.catch(() => {});
+  const need = trState().want.map(x => ({ key: x.k, name: x.n }));
+  for (let i = 0; i < 4 && dmMissing(need).length; i++) if (!(await dmFetch(need))) break;
+}
+/** Met à jour les partages de ce compte (liste d'échange, decks enregistrés partagés). Les cartes recherchées sans fiche Scryfall sont lues d'abord (images). */
+async function trSync() {
+  clearTimeout(TR.syncT);
+  if (!cloudOn() || !D.cloud.saveShare || trOffline()) return;
+  if (TR.busy) { TR.again = true; return; }
+  TR.busy = true; TR.again = false;
+  try {
+    if (TR.share) { await trPrep(); await trPut(TR.share, 'trade', trPayload()); }
+    for (const [key, id] of Object.entries(TR.dsh)) {
+      if (key.startsWith('txt:')) continue;                       // deck figé (EDHREC, liste en cours) : rien à suivre
+      const d = findDeck(key); if (!d) continue;
+      await trPut(id, 'deck', { name: d.name, text: d.text });
+    }
+    if (TR.err) { TR.err = ''; trRepaint(); }
+  } catch (err) {
+    TR.err = err && err.code === 'permission-denied' ? 'rules' : 'net'; trRepaint();
+    if (TR.err === 'net') setTimeout(() => trSoon(0), 60000);
+  } finally { TR.busy = false; if (TR.again) trSoon(500); }
+}
+const shareUrl = id => { try { return new URL('./?p=' + id, location.href).href.replace(/#.*$/, ''); } catch (e) { return '?p=' + id; } };
+/** Crée le lien de la liste d'échange (identifiant aléatoire, document écrit tout de suite). */
+async function trShareOn() {
+  if (!cloudOn()) { openAccount(); return; }
+  if (!trNeedNet() || TR.creating) return;
+  const id = D.cloud.shareId(); TR.creating = true;
+  try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast('Lien créé', { label: 'Copier', fn: () => copyText(shareUrl(id)) }); haptic('ok'); }
+  catch (err) { TR.share = ''; toast(err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour le partage (voir README)' : 'Lien impossible à créer : réessaie en ligne'); trRepaint(); }
+  finally { TR.creating = false; }
+}
+async function trShareOff(renew) {
+  const old = TR.share; if (!old || !trNeedNet()) return;
+  try { await D.cloud.dropShare(old); } catch (err) { toast('Arrêt impossible hors ligne : réessaie'); return; }
+  delete TR.sig[old]; TR.share = ''; trChanged();
+  if (renew) await trShareOn(); else toast('Partage arrêté : l\'ancien lien ne marche plus');
+}
+async function sendLink(url, title) {
+  if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  copyText(url);
+}
+/** Partage d'un deck : enregistré (suivi : chaque modification part sur le lien) ou figé (deck EDHREC, liste en cours). */
+async function shareDeck({ id, text, name }) {
+  if (!cloudOn()) { toast('Connecte-toi pour partager un deck', { label: 'Compte', fn: openAccount }); return; }
+  const d = id ? findDeck(id) : null, key = d ? d.id : 'txt:' + hash32(String(text || '')), body = d ? { name: d.name, text: d.text } : { name: String(name || 'Deck').slice(0, 120), text: String(text || '') };
+  if (!parseDeck(body.text).cards.length) { toast('Deck vide : rien à partager'); return; }
+  if (!trNeedNet()) return;
+  let sid = TR.dsh[key];
+  try {
+    if (!sid) { sid = D.cloud.shareId(); TR.dsh[key] = sid; }
+    await trPut(sid, 'deck', body); trChanged();
+  } catch (err) { if (!TR.sig[sid]) delete TR.dsh[key]; toast(err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour le partage (voir README)' : 'Partage impossible : réessaie en ligne'); return; }
+  openSheet('Partager le deck', d ? 'Lecture seule · le lien suit les modifications du deck' : 'Lecture seule · le deck est partagé tel qu\'il est maintenant', api => {
+    api.body.innerHTML = `<div class="tr-link"><input type="text" readonly value="${esc(shareUrl(sid))}" aria-label="Lien du deck"></div>
+      <p class="hint">Quiconque a ce lien voit le deck, ses images, sa courbe de mana et peut tirer une main de départ. Il ne peut rien modifier.</p>
+      <button class="link-btn link-inline" type="button" data-act="dstop">Arrêter ce partage</button>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-act="dcopy">Copier</button><button class="btn" type="button" data-act="dsend">Partager</button>`);
+    $('input', api.body).onfocus = e => e.target.select();
+    api.wrap.addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      if (b.dataset.act === 'dcopy') copyText(shareUrl(sid));
+      else if (b.dataset.act === 'dsend') sendLink(shareUrl(sid), body.name);
+      else if (b.dataset.act === 'dstop') {
+        if (!trNeedNet()) return;
+        try { await D.cloud.dropShare(sid); } catch (err) { toast('Arrêt impossible hors ligne : réessaie'); return; }
+        delete TR.dsh[key]; delete TR.sig[sid]; trChanged(); api.close(); toast('Partage arrêté : le lien ne marche plus');
+      }
+    });
+  });
+}
+/** Un deck enregistré supprimé : son lien aussi (appelé par removeDeck). */
+function trDeckGone(id) {
+  const sid = TR.dsh[id]; if (!sid) return;
+  delete TR.dsh[id]; delete TR.sig[sid]; trChanged();
+  if (cloudOn()) D.cloud.dropShare(sid).catch(() => {});
+}
+
+/* ── Onglet « Échange » de la collection (propriétaire) ────────────────────────────────────────── */
+/** Item d'affichage (filtres, vignette) d'une carte de la collection ou recherchée. */
+function trItem(k, n, q, l) {
+  const m = dmOf(k) || {}, dn = frName(k, l), fn = frOf(k), it = { k, n, q, l: l || '', ...m };
+  if (dn) it.dn = dn; if (fn && fn !== dn) it.fn = fn;
+  return it;
+}
+function trShareBoxHtml(st) {
+  const rules = TR.err === 'rules' ? '<p class="hint warn">Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.</p>' : '';
+  if (!D.user) return `<div class="tr-box"><b>Partager ta liste</b><p class="hint">Connecte-toi pour créer un lien public : tes amis voient tes doublons et ce que tu cherches, sans rien pouvoir modifier.</p><button class="btn ghost" type="button" data-act="login">Se connecter</button></div>`;
+  if (!TR.share) return `<div class="tr-box"><b>Partager ta liste</b><p class="hint">Un lien public, en lecture seule, toujours à jour : tes ${nf0(st.have.length)} doublons et les ${nf0(st.want.length)} cartes que tu cherches, avec recherche par nom.</p>${rules}<button class="btn" type="button" data-act="tron">Créer le lien</button></div>`;
+  return `<div class="tr-box on"><b>Lien public actif</b><div class="tr-link"><input type="text" readonly value="${esc(shareUrl(TR.share))}" aria-label="Lien de ta liste d'échange"></div>
+    ${rules}${TR.err === 'net' ? '<p class="hint warn">Mise à jour du lien en attente (hors ligne).</p>' : '<p class="hint">Mis à jour tout seul quand ta collection, tes decks ou ta liste changent. Lecture seule.</p>'}
+    <div class="tr-acts"><button class="btn ghost" type="button" data-act="trcopy">Copier</button><button class="btn ghost" type="button" data-act="trsend">Partager</button><button class="btn ghost" type="button" data-act="trview">Aperçu</button></div>
+    <div class="tr-acts small"><button class="link-btn link-inline" type="button" data-act="trnew">Nouveau lien</button><button class="link-btn link-inline" type="button" data-act="troff">Arrêter le partage</button></div></div>`;
+}
+function trHaveRow(x) {
+  const it = trItem(x.k, x.n, x.q, x.lines[0] ? x.lines[0][0] : ''), nm = it.dn || it.n, img = collImage(x.k, it.l, it.im).src;
+  const langs = x.lines.map(([l, q]) => `<span class="tag">${l ? flag(l) : 'sans langue'}${x.lines.length > 1 ? ' × ' + q : ''}</span>`).join('');
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${langs}${it.dn ? `<span class="tag">${esc(x.n)}</span>` : ''}</span></span>
+    <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="Garder ${esc(nm)} (ne plus la proposer)">Garder</button></span></div>`;
+}
+function trWantRow(x, mine) {
+  const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = it.im || '';
+  const tags = (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
+  const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="Un de moins">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="Un de plus">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln=""><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
+}
+/** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », listes filtrées (barre de recherche et filtres de la collection). */
+function trPanelHtml() {
+  const st = TR.st = trState(), f = COLL.f, act = filterActive(f);
+  const fil = list => filterItems(list.map(x => Object.assign(trItem(x.k, x.n, x.q, x.lines && x.lines[0] ? x.lines[0][0] : ''), { src: x })), f).map(i => i.src);
+  const have = fil(st.have), want = fil(st.want), held = st.held, sub = TR.sub;
+  const list = sub === 'want' ? want : have, shown = list.slice(0, TR.shown);
+  const copies = st.have.reduce((a, x) => a + x.q, 0);
+  const keepHint = `Échangeable = possédées − utilisées par ${st.decks > 1 ? `tes ${nf0(st.decks)} decks` : st.decks ? 'ton deck' : 'tes decks (aucun pour l\'instant)'} − réserve. Terrains de base jamais proposés.`;
+  return `${trShareBoxHtml(st)}
+    <div class="tr-keep"><span class="label">Réserve gardée en plus de tes decks</span><div class="seg" id="trKeep" role="radiogroup" aria-label="Réserve"></div><p class="hint">${esc(keepHint)}</p></div>
+    <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="Liste"></div>
+    ${act ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(sub === 'want' ? st.want.length : st.have.length)}</p>` : ''}
+    ${sub === 'want' ? '<button class="btn ghost block tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte recherchée</button>' : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
+    ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (sub === 'want' ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
+      : `<p class="hint listempty">${act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.'}</p>`}
+    ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}
+    ${sub === 'have' && held.length ? `<details class="tr-held"><summary>Gardées à la main (${nf0(held.length)})</summary><div class="coll-list">${held.map(x => `<div class="crow tr-row" data-k="${esc(x.k)}"><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta"><span class="tag">${x.q} en trop</span></span></span><span class="tr-q"><button class="link-btn" type="button" data-act="tunkeep">Remettre</button></span></div>`).join('')}</div></details>` : ''}`;
+}
+/** Après chaque peinture de l'onglet : les deux sélecteurs. */
+function trMount(host) {
+  const st = TR.st || trState();
+  mountSeg($('#trKeep', host), TR_KEEPS.map(v => ({ v: String(v), label: String(v) })), String(TR.keep), v => { TR.keep = Number(v); trChanged(); });
+  mountSeg($('#trSub', host), [{ v: 'have', label: 'À échanger', sub: nf0(st.have.length) }, { v: 'want', label: 'Je recherche', sub: nf0(st.want.length) }], TR.sub, v => { TR.sub = v; TR.shown = TR_PAGE; collPaintBody(true); });
+  const inp = $('.tr-link input', host); if (inp) inp.onfocus = e => e.target.select();
+  // cartes recherchées sans fiche (image, type) : lues sur Scryfall, puis l'onglet se repeint
+  const need = st.want.map(x => ({ key: x.k, name: x.n }));
+  if (dmMissing(need).length && !TR.dmBusy) { TR.dmBusy = true; dmFetch(need).then(got => { TR.dmBusy = false; if (got) trRepaint(); }, () => { TR.dmBusy = false; }); }
+}
+/** Clics de l'onglet (appelé depuis l'écran de la collection). Retourne true si le clic était pour lui. */
+function trClick(e) {
+  if (COLL.tab !== 'trade') return false;
+  const b = e.target.closest('[data-act]'); if (!b) { const th = e.target.closest('.tr-row .thumb'); if (th && th.querySelector('img.ok')) { trOpenImg(th.closest('.tr-row')); return true; } return false; }
+  const act = b.dataset.act, row = b.closest('.tr-row'), k = row && row.dataset.k;
+  if (act === 'tron') trShareOn();
+  else if (act === 'troff') trShareOff(false);
+  else if (act === 'trnew') trShareOff(true);
+  else if (act === 'trcopy') copyText(shareUrl(TR.share));
+  else if (act === 'trsend') sendLink(shareUrl(TR.share), 'Ma liste d\'échange Magic');
+  else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, at: Date.now() }), true); }
+  else if (act === 'trmore') { TR.shown += TR_PAGE; collPaintBody(true); }
+  else if (act === 'tkeep' && k) { TR.kept.add(k); haptic('tap'); trChanged(); toast('Gardée : elle n\'est plus proposée', { label: 'Annuler', fn: () => { TR.kept.delete(k); trChanged(); } }); }
+  else if (act === 'tunkeep' && k) { TR.kept.delete(k); haptic('tap'); trChanged(); }
+  else if ((act === 'wplus' || act === 'wminus') && k && TR.wish[k]) {
+    const q = TR.wish[k].q + (act === 'wplus' ? 1 : -1); haptic('tap');
+    if (q <= 0) { const was = TR.wish[k]; delete TR.wish[k]; trChanged(); toast(was.n + ' retirée de ta liste', { label: 'Annuler', fn: () => { TR.wish[k] = was; trChanged(); } }); }
+    else { TR.wish[k] = { ...TR.wish[k], q: Math.min(99, q) }; trChanged(); }
+  }
+  else if (act === 'wadd') openWishAdd();
+  else return false;
+  return true;
+}
+function trOpenImg(row) {
+  const rows = $$('.tr-row', row.parentNode), list = [];
+  let at = 0;
+  for (const r of rows) { const im = $('img.ok', r); if (!im) continue; if (r === row) at = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: '' }); }
+  if (list.length) openCardViewer(list, at);
+}
+function openWishAdd() {
+  openSheet('Ajouter une carte recherchée', 'Nom anglais ou français déjà connu de Scryfall', api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="waName">Nom de la carte</label><input type="text" id="waName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Mana Crypt" enterkeyhint="search"></div>
+      <div class="status" id="waStatus" data-ok="0" hidden><span class="dot"></span><span></span></div><div class="ca-list" id="waList" role="listbox" aria-label="Suggestions"></div>`;
+    const inp = $('#waName', api.body), list = $('#waList', api.body), stt = $('#waStatus', api.body); let cat = null;
+    const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
+    const paint = () => {
+      if (!cat) { list.innerHTML = ''; return; }
+      const q = inp.value.trim(), sug = collSuggest(cat, q);
+      list.innerHTML = sug.map(n => { const k = ownKey(n), w = TR.wish[k]; return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${w ? '× ' + w.q : '+'}</i></button>`; }).join('')
+        || (q.length >= 2 ? '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>' : '');
+    };
+    list.onclick = e => {
+      const b = e.target.closest('.ca-opt'); if (!b) return;
+      const n = b.dataset.n, k = ownKey(n); if (BASIC_NAMES.has(k)) { toast('Les terrains de base ne sont pas listés'); return; }
+      TR.wish[k] = { n, q: Math.min(99, ((TR.wish[k] || {}).q || 0) + 1) }; trChanged(); haptic('ok');
+      $('i', b).textContent = '× ' + TR.wish[k].q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); say(`${n} · ${TR.wish[k].q} recherchée${TR.wish[k].q > 1 ? 's' : ''}`, true);
+    };
+    inp.oninput = paint;
+    say('Chargement du catalogue (une seule fois)…', false);
+    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? 'Scryfall demande une pause, réessaie dans une minute.' : 'Catalogue Scryfall injoignable : réessaie plus tard.', false));
+    setTimeout(() => inp.focus(), 380);
+  });
+}
+
+/* ── Écran public (visiteur, ou aperçu du propriétaire) ─────────────────────────────────────────── */
+/** Ouverture par un lien ?p=<id> : lit le partage puis ouvre la liste d'échange ou le deck, en lecture seule. */
+async function openPublicLink(id) {
+  const t = Tasks.start('Lecture du partage');
+  let sh;
+  try { sh = await shareFetch(id); t.remove(); }
+  catch (e) {
+    t.remove();
+    const msg = e.code === 'gone' ? 'Ce lien ne marche plus : le partage a été arrêté.' : e.code === 'denied' ? 'Ce partage n\'est pas lisible (lien arrêté, ou partage pas encore activé sur ce site).' : e.code === 'bad' ? 'Lien de partage invalide.' : 'Partage injoignable : vérifie ta connexion puis recharge la page.';
+    openSheet('Partage', '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
+    return;
+  }
+  if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at });
+  else openPublicTrade(sh, false);
+}
+/** Liste d'échange en lecture seule : « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand. */
+function openPublicTrade(sh, preview) {
+  if (TR.pub && TR.pub.el) TR.pub.el.__close();
+  const P = TR.pub = { sh, sub: sh.have.length || !sh.want.length ? 'have' : 'want', f: newFilter(), shown: TR_PAGE, el: null };
+  const wrap = document.createElement('div'); wrap.className = 'dv coll pubv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Liste d\'échange');
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${preview ? 'Aperçu de ta liste' : 'Liste d\'échange'}</b><span>${sh.at ? 'Mise à jour ' + esc(relTime(sh.at)) : ''}</span></div></header>
+    <div class="dv-scroll"><div class="dv-body coll-body">
+      <p class="hint pub-note">${preview ? 'Ce que voient les personnes qui ont ton lien.' : 'Lecture seule. Touche une carte pour la voir en grand.'}${sh.cut ? ' Liste trop longue : seule une partie est affichée.' : ''}</p>
+      <div class="seg" id="pubSub" role="radiogroup" aria-label="Liste"></div><div id="pubF"></div><div class="pub-main"></div></div></div>`;
+  P.el = wrap;
+  const paint = keep => {
+    const sc = $('.dv-scroll', wrap), pos = keep && sc ? sc.scrollTop : 0, all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
+    $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(all.length)}</p>` : ''}
+      ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.'}</p>`}
+      ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}`;
+    if (sc) sc.scrollTop = pos;
+  };
+  mountSeg($('#pubSub', wrap), [{ v: 'have', label: 'À échanger', sub: nf0(sh.have.length) }, { v: 'want', label: 'Recherchées', sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
+  mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: 'Nom français ou anglais' });
+  const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
+  wrap.__close = () => {
+    if (P.el !== wrap) return; P.el = null; document.removeEventListener('keydown', onKey, true);
+    wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
+    if (!preview) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+  wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b && b.dataset.act === 'close') return wrap.__close();
+    if (b && b.dataset.act === 'more') { P.shown += TR_PAGE; paint(true); return; }
+    const row = e.target.closest('.pub-row'); if (!row) return;
+    const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };
+    for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
+    if (list.length) { haptic('tap'); openCardViewer(list, at.i); } else toast('Pas d\'aperçu pour cette carte');
+  });
+  document.body.appendChild(wrap); holdApp(); paint(false);
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  // cartes sans image ni type (partage trop gros, ou fiche pas encore lue chez le propriétaire) : lues sur Scryfall par lots, puis repeintes
+  (async () => {
+    const need = [...sh.have, ...sh.want].filter(x => !x.im || x.tl == null).map(x => ({ key: x.k, name: x.n }));
+    for (let i = 0; i < 40 && P.el === wrap && dmMissing(need).length; i++) { if (!(await dmFetch(need))) break; if (P.el === wrap) paint(true); }
+  })();
+}
+/** Item public : fiche du partage, complétée par le cache Scryfall de cet appareil ; « Dans ta collection » si le visiteur a la carte. */
+function pubItem(x) {
+  const m = dmOf(x.k) || {}, it = { ...x };
+  for (const f of ['im', 'cm', 'tl', 'cl', 'mc']) if (it[f] == null && m[f] != null) it[f] = m[f];
+  it.mine = collQty(x.k);
+  return it;
+}
+function pubRow(it) {
+  const nm = it.dn || it.n, img = it.im || '', sub = it.dn && it.dn !== it.n ? `<span class="tag">${esc(it.n)}</span>` : it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '';
+  const mine = it.mine ? `<span class="tag good">${TR.pub && TR.pub.sub === 'want' ? 'tu l\'as' : 'déjà à toi'} × ${it.mine}</span>` : '';
+  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}`;
+  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}" data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
+    <span class="tr-q"><b>× ${it.q}</b></span></div>`;
+}
+
+function trInit() {
+  trRead();
+  let id = ''; try { id = new URLSearchParams(location.search).get('p') || ''; } catch (e) { /* ignore */ }
+  if (id) setTimeout(() => openPublicLink(id), 0);
 }
 
 

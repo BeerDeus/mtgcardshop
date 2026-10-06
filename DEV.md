@@ -34,6 +34,8 @@ Toujours committer `src/` **et** `deck-deal.html` ensemble.
 - Navigateur : Chromium via `playwright-core` ; chemin du binaire dans `CHROMIUM` (défaut `/opt/pw-browsers/chromium`).
 - Ne jamais lancer deux tests en même temps (ports fixes 188xx/189xx).
 - `tests/setup-env.mjs` (importé en premier par chaque test) place le dossier courant à la racine et fait servir au proxy une **copie temporaire** de `pwa/` sans les fichiers générés (`PWA_DIR`) : aucun test ne touche au vrai `pwa/`.
+- `rules-test.mjs` (facultatif) vérifie `firestore.rules` contre l'émulateur Firestore (Java requis) :
+  `cd tests && npm i --no-save --legacy-peer-deps firebase-tools @firebase/rules-unit-testing && cd .. && tests/node_modules/.bin/firebase emulators:exec --only firestore --project demo-deckdeal "node tests/rules-test.mjs"` ; sans émulateur il s'ignore.
 - `scan-e2e.mjs` utilise Tesseract depuis `tests/node_modules` (`TESS_DIR` pour un autre dossier) ; `test-push.mjs` utilise `web-push` (`WEBPUSH_DIR`).
 
 ## CI

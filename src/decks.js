@@ -55,7 +55,7 @@ function putDeck(id, doc) {
 }
 function removeDeck(id) {
   if (S.deckId === id) S.deckId = null;
-  snapDrop(id); engClear(id, true);
+  snapDrop(id); engClear(id, true); trDeckGone(id);
   if (cloudOn()) return D.cloud.remove(D.user.uid, id).catch(err => toast(deckErr(err)));
   D.localList = D.localList.filter(d => d.id !== id);
   localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
@@ -162,7 +162,7 @@ function deckCard(d, i) {
 }
 /** Bouton « Mes decks » de l'accueil + écran des decks s'il est ouvert. */
 function renderDecks() {
-  alSoon();
+  alSoon(); trSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
   $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
@@ -443,7 +443,7 @@ function onUser(user) {
     });
   }
   renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
-  collUser(user); xsUser(user);
+  collUser(user); xsUser(user); trUser(user);
   if (!user && prev) updateHeroDelta();
 }
 async function connectCloud() {

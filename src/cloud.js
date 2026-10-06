@@ -80,6 +80,10 @@ function makeCloud(m) {
     saveMeta: (uid, id, data) => m.fs.setDoc(m.fs.doc(db, 'users', uid, 'meta', id), data),
     pullMeta: (uid, id) => m.fs.getDocFromServer(m.fs.doc(db, 'users', uid, 'meta', id)).then(s => ({ data: s.exists() ? s.data() : null })),
     saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
+    /** Partages publics (shares/{id}) : identifiant aléatoire (non devinable), écriture, suppression. Lus par le visiteur via l'API REST (shareFetch). */
+    shareId: () => m.fs.doc(m.fs.collection(db, 'shares')).id,
+    saveShare: (id, data) => m.fs.setDoc(m.fs.doc(db, 'shares', id), data),
+    dropShare: id => m.fs.deleteDoc(m.fs.doc(db, 'shares', id)),
   };
 }
 
@@ -98,4 +102,20 @@ function loadCloud() {
   return cloudP;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud };
+/** Partage public lu sans SDK ni compte (API REST Firestore) : { kind, at, … } (readShare), ou lève une erreur { code: 'gone' | 'denied' | 'net' | 'bad' }. */
+const SHARE_ID_RE = /^[A-Za-z0-9]{12,40}$/;
+async function shareFetch(id, fetchFn) {
+  if (!SHARE_ID_RE.test(String(id || ''))) throw Object.assign(new Error('lien invalide'), { code: 'bad' });
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/shares/${id}?key=${FIREBASE_CONFIG.apiKey}`;
+  let r;
+  try { r = await (fetchFn || fetch)(url, { cache: 'no-store', credentials: 'omit' }); } catch (e) { throw Object.assign(new Error('réseau'), { code: 'net' }); }
+  if (r.status === 404) throw Object.assign(new Error('partage introuvable'), { code: 'gone' });
+  if (r.status === 403 || r.status === 401) throw Object.assign(new Error('accès refusé'), { code: 'denied' });
+  if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { code: 'net' });
+  const f = ((await r.json()) || {}).fields || {}, str = k => (f[k] && typeof f[k].stringValue === 'string' ? f[k].stringValue : '');
+  const out = (typeof readShare === 'function' ? readShare : require('./core.js').readShare)(str('kind'), str('d'));      // sous Node (tests) : core.js est un module à part
+  if (!out) throw Object.assign(new Error('partage illisible'), { code: 'bad' });
+  return out;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud, shareFetch, SHARE_ID_RE };

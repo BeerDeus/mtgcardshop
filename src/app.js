@@ -1089,7 +1089,7 @@ function init() {
   };
   collInit();
   valInit();
-  xsInit(); alInit();
+  xsInit(); alInit(); trInit();
   initDecks();
   refreshDeck();
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };

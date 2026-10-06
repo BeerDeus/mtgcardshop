@@ -17,6 +17,9 @@ const hits = {}; let imgUp = true;
 const sockets = new Set();
 const img = https.createServer({ key: readFileSync(DIR + '/k.pem'), cert: readFileSync(DIR + '/c.pem') }, (req, res) => {
   hits[req.url] = (hits[req.url] || 0) + 1;
+  const host = String(req.headers.host || '').split(':')[0];
+  if (host === 'cdn.jsdelivr.net' || host === 'www.gstatic.com') { res.writeHead(200, { 'content-type': 'text/javascript', 'access-control-allow-origin': '*' }); return res.end('/* ' + req.url + ' */'); }
+  if (host === 'fonts.googleapis.com') { res.writeHead(200, { 'content-type': 'text/css', 'access-control-allow-origin': '*' }); return res.end('/* v' + hits[req.url] + ' */'); }
   if (req.url === '/small/front/a/b/cors-no.jpg') { res.writeHead(200, { 'content-type': 'image/svg+xml' }); return res.end(SVG('no cors')); }   // sans en-tête CORS
   res.writeHead(200, { 'content-type': 'image/svg+xml', 'access-control-allow-origin': '*', 'cache-control': 'no-store' }); res.end(SVG(req.url));
 });
@@ -30,7 +33,7 @@ process.on('exit', () => { try { proxy.kill(); } catch {} });
 await new Promise(r => setTimeout(r, 700));
 const URL0 = 'http://127.0.0.1:18802/';
 
-const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--host-resolver-rules=MAP cards.scryfall.io 127.0.0.1:18803', '--ignore-certificate-errors', '--no-proxy-server'] });
+const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--host-resolver-rules=MAP cards.scryfall.io 127.0.0.1:18803,MAP cdn.jsdelivr.net 127.0.0.1:18803,MAP fonts.googleapis.com 127.0.0.1:18803,MAP www.gstatic.com 127.0.0.1:18803', '--ignore-certificate-errors', '--no-proxy-server'] });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ['notifications'] });
 const p = await ctx.newPage(), errs = [];
 p.on('pageerror', e => errs.push('pageerror: ' + e.message));
@@ -55,6 +58,20 @@ assert.deepEqual(await load(U), [true, true, true]);
 assert.deepEqual(U.map(u => hits[new URL(u).pathname]), [1, 1, 1], 'deuxième affichage : servi par le cache, aucune requête');
 ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans réseau');
 
+/* ── Bibliothèques versionnées et polices ────────────────────────────────────────────────────── */
+{
+  const get = u => p.evaluate(async u => { try { const r = await fetch(u); return r.ok ? await r.text() : 'HTTP ' + r.status; } catch (e) { return 'ERR'; } }, u);
+  const JS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/x.js', FB = 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js', NOVER = 'https://cdn.jsdelivr.net/npm/tesseract.js/dist/y.js', CSS = 'https://fonts.googleapis.com/css2?family=X';
+  assert.match(await get(JS), /x\.js/); assert.match(await get(FB), /firebase-app/); assert.match(await get(NOVER), /y\.js/); assert.match(await get(CSS), /v1/);
+  await p.waitForTimeout(300);
+  assert.match(await get(JS), /x\.js/); assert.match(await get(FB), /firebase-app/); assert.match(await get(NOVER), /y\.js/);
+  const h = u => hits[new URL(u).pathname + new URL(u).search];
+  assert.equal(h(JS), 1, 'bibliothèque versionnée : servie par le cache'); assert.equal(h(FB), 1, 'SDK Firebase versionné : servi par le cache'); assert.equal(h(NOVER), 2, 'adresse sans version : jamais gardée');
+  assert.match(await get(CSS), /v1/, 'feuille de style : la copie locale d\'abord'); await p.waitForTimeout(400); assert.equal(h(CSS), 2, 'puis rafraîchie en arrière-plan');
+  assert.match(await get(CSS), /v2/, 'la version rafraîchie sert la fois suivante');
+  ok('SDK Firebase, Tesseract et polices : cache d\'abord aux adresses versionnées, feuille de style rafraîchie en arrière-plan, adresses sans version jamais gardées');
+}
+
 // hors ligne : le serveur d'images disparaît, les images déjà vues s'affichent encore
 await new Promise(r => { img.close(r); for (const s of sockets) s.destroy(); });
 await p.reload();
@@ -65,7 +82,7 @@ assert.equal(await p.evaluate(async () => (await (await caches.open((await cache
 
 // jamais intercepté : l'API Scryfall et le reste (pas de cache hors images de cartes)
 const keys = await p.evaluate(async () => { const out = []; for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(r.url); return out; });
-assert.ok(keys.every(u => !/api\.scryfall\.com|\/api\/|__ping|identitytoolkit|googleapis/.test(u)), 'aucune donnée vivante en cache: ' + keys.filter(u => /api|ping/.test(u)).join(','));
+assert.ok(keys.every(u => !/api\.scryfall\.com|\/api\/|__ping|identitytoolkit|securetoken|firestore\.googleapis/.test(u)), 'aucune donnée vivante en cache: ' + keys.filter(u => /api\.|\/api\/|ping|token|firestore/.test(u)).join(','));
 ok('aucune requête API / donnée vivante mise en cache');
 
 /* ── Push ────────────────────────────────────────────────────────────────────────────────────── */
