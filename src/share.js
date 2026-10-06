@@ -80,9 +80,12 @@ function trCard(k, n, q, l) {
 }
 /** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué. */
 function trPayload() {
-  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => { const o = trCard(x.k, x.n, x.q, ''); if (x.p) { o.i = scrySmall(x.p.i); if (x.p.w) o.w = x.p.w; if (x.p.l && x.p.l !== 'en') o.l = x.p.l; } return o; });      // souhait : l'illustration retenue
+  const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => { const o = trCard(x.k, x.n, x.q, ''); if (x.p) { o.i = scrySmall(x.p.i); o.w = x.p.w || ''; if (x.p.l && x.p.l !== 'en') o.l = x.p.l; } return o; });      // souhait : l'illustration retenue
+  for (const o of [...have, ...want]) if (o.i) { const sh = imgShort(o.i); if (sh) o.i = sh; else delete o.i; }      // adresses d'images raccourcies (≈ 2 fois moins de place)
   let body = { have, want };
-  if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, m, ...x }) => x), want: want.map(({ i, m, ...x }) => x) };
+  // trop gros : d'abord sans les images des doublons (le visiteur les relit sur Scryfall), puis sans les symboles ; jamais sans l'illustration d'une carte souhaitée
+  if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, ...x }) => x), want };
+  if (JSON.stringify(body).length > TR_MAX) body = { have: body.have.map(({ m, ...x }) => x), want: want.map(({ m, ...x }) => ('w' in x ? x : (({ i, ...y }) => y)(x))) };      // « w » présent : illustration choisie
   while (JSON.stringify(body).length > TR_MAX && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
   return body;
 }
@@ -103,9 +106,10 @@ async function trPut(id, kind, body) {
 }
 /** Avant d'écrire la liste : noms français (catalogue de l'appareil ou du site) et fiches Scryfall des cartes recherchées (images, types). */
 async function trPrep() {
-  collFrLoad(); if (FRN.p) await FRN.p.catch(() => {});
+  const within = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), sleep(ms)]);      // Scryfall lent : le lien est mis à jour quand même (sans ces infos-là)
+  collFrLoad(); if (FRN.p) await within(FRN.p, 8000);
   const need = trState().want.map(x => ({ key: x.k, name: x.n }));
-  for (let i = 0; i < 4 && dmMissing(need).length; i++) if (!(await dmFetch(need))) break;
+  for (let i = 0; i < 4 && dmMissing(need).length; i++) if (!(await within(dmFetch(need), 10000))) break;
 }
 /** Met à jour les partages de ce compte (liste d'échange, decks enregistrés partagés). Les cartes recherchées sans fiche Scryfall sont lues d'abord (images). */
 async function trSync() {

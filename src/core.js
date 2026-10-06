@@ -1545,9 +1545,12 @@ function tradeWant(coll, use, wish) {
 }
 
 /* ── Partage public (liste d'échange, deck) : document shares/{id}, lisible par quiconque a le lien. Le contenu vient d'un autre compte : tout est revérifié ici. ── */
-const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/[\w./-]+(\?\d+)?$/;
+const SHARE_IMG_RE = /^https:\/\/cards\.scryfall\.io\/(?![\w./-]*(?:\/\/|\.\.))[\w./-]+(\?\d+)?$/;      // images Scryfall seulement, sans « // » ni « .. »
 const SHARE_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
 /** Image Scryfall en petit format (vignettes) : …/large/… ou …/normal/… → …/small/… */
+const SCRY_IMG = 'https://cards.scryfall.io/';
+/** Adresse d'image raccourcie pour un partage : « small/front/6/d/….jpg » (sans le domaine ni le ?horodatage) ; '' si ce n'est pas une image Scryfall. */
+const imgShort = u => { const s = String(u || ''); return SHARE_IMG_RE.test(s) ? s.slice(SCRY_IMG.length).replace(/\?\d+$/, '') : ''; };
 const scrySmall = u => String(u || '').replace(/\/(large|normal|png|border_crop)\//, '/small/');
 const shStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 const shNum = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, Math.round(x))) : null; };
@@ -1559,7 +1562,7 @@ function shareCard(x) {
   if (!it.k) return null;
   if (SHARE_LANGS.includes(x.l)) it.l = x.l;
   const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
-  if (SHARE_IMG_RE.test(shStr(x.i, 300))) it.im = x.i;
+  { const iv = shStr(x.i, 300), full = !iv || /^https:/.test(iv) ? iv : SCRY_IMG + iv; if (SHARE_IMG_RE.test(full)) it.im = full; }      // adresse complète ou raccourcie (imgShort)
   const pw = shStr(x.w, 90).trim(); if (pw) it.pw = pw;      // illustration recherchée : « Extension · CODE 123 »
   const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
   const t = shStr(x.t, 120); if (t) it.tl = t;
@@ -1607,7 +1610,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,

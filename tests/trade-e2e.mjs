@@ -83,7 +83,7 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   assert.equal(s.o, (await import('node:crypto')).createHash('sha256').update('u1').digest('hex'), 'propriétaire : empreinte SHA-256 de l\'UID');
   const d = JSON.parse(s.d);
   assert.deepEqual(d.have.map(x => [x.n, x.q, x.l || '']), [['Llanowar Elves', 2, 'en'], ['Sol Ring', 3, 'fr']]);
-  const sol = d.have.find(x => x.n === 'Sol Ring'); assert.equal(sol.f, 'Anneau solaire', 'nom français'); assert.match(sol.i, /^https:\/\/cards\.scryfall\.io\//); assert.equal(sol.t, 'Artifact'); assert.equal(sol.c, 1);
+  const sol = d.have.find(x => x.n === 'Sol Ring'); assert.equal(sol.f, 'Anneau solaire', 'nom français'); assert.match(sol.i, /^small\/front\//, "image en adresse raccourcie"); assert.equal(sol.t, 'Artifact'); assert.equal(sol.c, 1);
   assert.deepEqual(d.want.map(x => [x.n, x.q]), [['Arcane Signet', 1], ['Command Tower', 1], ['Craterhoof Behemoth', 1], ['Edgar Markov', 1], ['Wrath of God', 1]]);
   await p.waitForFunction(() => true); await sleep(1200);
   assert.equal(meta.trade.share, id, 'le lien est gardé dans le compte'); assert.equal(meta.trade.keep, 1); assert.deepEqual(meta.trade.kept, ['wrath of god']); assert.deepEqual(meta.trade.wish, { 'wrath of god': { n: 'Wrath of God', q: 1 } });
@@ -178,7 +178,23 @@ const tradeId = [...shares.keys()][0];
   await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
   for (let i = 0; i < 40 && !JSON.parse(shares.get(tradeId).d).want.some(x => x.w === w2.w); i++) await sleep(250);
   const sw = JSON.parse(shares.get(tradeId).d).want.find(x => x.n === 'Craterhoof Behemoth');
-  assert.equal(sw.w, w2.w, 'partage : illustration recherchée'); assert.equal(sw.i, w2.i.replace('/normal/', '/small/'), 'partage : vignette de cette illustration');
+  assert.equal(sw.w, w2.w, 'partage : illustration recherchée'); assert.equal('https://cards.scryfall.io/' + sw.i, w2.i.replace('/normal/', '/small/'), 'partage : vignette de cette illustration (adresse raccourcie)');
+  // très grosse liste (doublons) : le partage s'allège, mais l'illustration souhaitée reste
+  const big = await p.evaluate(() => {
+    const keep = COLL.map, m = { ...keep };
+    for (let i = 0; i < 5000; i++) m['dup card ' + i] = { n: 'Dup Card ' + i + ' With A Rather Long Name For Size', q: 3 };
+    COLL.map = m; for (let i = 0; i < 5000; i++) DM['dup card ' + i] = { im: 'https://cards.scryfall.io/small/front/a/b/' + 'x'.repeat(36) + i + '.jpg?1562404626', cm: 3, tl: 'Creature — Long Type Line Here', cl: 'WUBRG', mc: '{2}{W}{U}{B}{R}{G}' };
+    const b = trPayload(); COLL.map = keep; for (let i = 0; i < 5000; i++) delete DM['dup card ' + i];
+    return { size: JSON.stringify(b).length, haveImgs: b.have.filter(x => x.i).length, have: b.have.length, crater: b.want.find(x => x.n === 'Craterhoof Behemoth') };
+  });
+  assert.ok(big.size <= 880000, 'sous la limite : ' + big.size); assert.ok(big.have >= 5000, 'toutes les cartes gardées');
+  assert.equal(big.crater.w, w2.w); assert.equal('https://cards.scryfall.io/' + big.crater.i, w2.i.replace('/normal/', '/small/'), 'illustration souhaitée conservée même allégé');
+  { const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs); await routeRest(V.p);
+    await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on'); await V.p.click('#pubSub [data-v="want"]');
+    await V.p.waitForSelector('.pub-row[data-k="craterhoof behemoth"] img');
+    assert.equal(await V.p.$eval('.pub-row[data-k="craterhoof behemoth"] img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'), 'visiteur : vignette de l\'illustration choisie');
+    assert.match(await txt(V.p, '.pub-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.split(' · ').pop()));
+    await V.ctx.close(); }
   await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
   await p.waitForSelector('.tr-row[data-k="craterhoof behemoth"]');
   assert.match(await txt(p, '.tr-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
