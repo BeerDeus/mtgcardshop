@@ -30,10 +30,30 @@ service cloud.firestore {
                 && request.resource.data.snap.items.size() <= 400));
     }
 
+    // Deck Deal : partages publics (liste d'échange, deck) — lisibles par quiconque a le lien (identifiant aléatoire),
+    // jamais listables, écrits et supprimés seulement par leur propriétaire. Le propriétaire est noté par l'empreinte SHA-256
+    // de son UID (champ o) : le document est public, l'UID n'y apparaît pas.
+    match /shares/{shareId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null && request.resource.data.o == ownerTag() && validShare();
+      allow update: if request.auth != null && resource.data.o == ownerTag() && request.resource.data.o == ownerTag() && validShare();
+      allow delete: if request.auth != null && resource.data.o == ownerTag();
+      function ownerTag() { return hashing.sha256(request.auth.uid).toHexString().lower(); }
+      function validShare() {
+        return request.resource.data.keys().hasOnly(['o', 'kind', 'v', 'updatedAt', 'd'])
+          && request.resource.data.keys().hasAll(['o', 'kind', 'updatedAt', 'd'])
+          && request.resource.data.kind in ['trade', 'deck']
+          && request.resource.data.updatedAt is number
+          && request.resource.data.d is string && request.resource.data.d.size() <= 900000;
+      }
+    }
+
     // Deck Deal : données annexes du compte, un document chacune
     //  · collection : cartes possédées (liste « 3 Sol Ring » une carte par ligne)
     //  · engaged    : cartes réservées par des decks « montés » ({ decks: { idDeck: { n, at, q: { carte: exemplaires } } } })
     //  · history    : valeur de la collection dans le temps ({ pts: [[t, centimes, cartes, exemplaires], …] }, un par jour, 420 au plus)
+    //  · trade      : liste d'échange ({ keep: réserve, kept: [cartes gardées], wish: { carte: { n, q } }, share: id du lien, dsh: { deck: id du lien } })
     match /users/{uid}/meta/{docId} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
@@ -54,7 +74,30 @@ service cloud.firestore {
             && request.resource.data.keys().hasAll(['pts', 'updatedAt'])
             && request.resource.data.pts is list
             && request.resource.data.pts.size() <= 420)
+          || (docId == 'trade'
+            && request.resource.data.keys().hasOnly(['keep', 'kept', 'wish', 'share', 'dsh', 'updatedAt'])
+            && request.resource.data.keep is number
+            && request.resource.data.kept is list && request.resource.data.kept.size() <= 5000
+            && request.resource.data.wish is map && request.resource.data.wish.size() <= 2000
+            && request.resource.data.share is string && request.resource.data.share.size() <= 40
+            && request.resource.data.dsh is map && request.resource.data.dsh.size() <= 200)
         );
+    }
+
+    // Classeur Full Art (autre appli du même projet Firebase, pas Deck Deal) : un seul document par compte
+    //   users/{uid}/binder/lands = { owned: { <scryfallId>: true }, pages: { <codeSet>: "12" }, updatedAt }
+    // Gardé ici : publier ce fichier remplace TOUTES les règles du projet.
+    match /users/{uid}/binder/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && docId == 'lands'
+        && request.resource.data.keys().hasOnly(['owned', 'pages', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['owned', 'updatedAt'])
+        && request.resource.data.owned is map
+        && request.resource.data.owned.size() <= 5000
+        && request.resource.data.updatedAt is number
+        && (!('pages' in request.resource.data)
+            || (request.resource.data.pages is map && request.resource.data.pages.size() <= 1500));
     }
   }
 }

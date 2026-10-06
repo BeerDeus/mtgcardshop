@@ -50,6 +50,7 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 
 - Clé invalide : délai de 400 ms, puis blocage 5 min de l'IP après 15 essais (nécessite `X-Forwarded-For`).
 - `APP_KEY` (si conservée) : 16 caractères ou plus recommandés (avertissement au démarrage sinon).
+- Page et catalogues (`fr-names.tsv`) : lus et compressés une seule fois (brotli, sinon gzip ; hors du fil principal, dès le démarrage), ETag → 304 au lieu de retélécharger ; relus si le fichier change sur le disque. Page : 750 Ko → ≈ 180 Ko transférés.
 - Scryfall : 2 requêtes/s max ; les cartes sont cherchées par lots de 12 noms (une recherche `(!"A" or !"B" …)` au lieu d'une par carte, soit ~10 requêtes pour un deck de 100 cartes), repli carte par carte pour les noms approximatifs ; pause automatique sur 429 ; résultats en cache 7 jours.
 
 ## Lecture des offres en tâche de fond
@@ -164,6 +165,26 @@ Bouton **Ma collection** sur l'accueil. Les cartes possédées sont retirées de
 
 **Synchro compte** : sans les règles Firestore à jour, decks montés et historique restent sur l'appareil et un toast l'indique une fois.
 
+## Liste d'échange et partages publics
+
+Ma collection › onglet **Échange** (`src/share.js`).
+
+- **À échanger** : pour chaque carte, possédées − exemplaires utilisés par **tous** tes decks (additionnés : chaque deck peut être monté en même temps ; réserve et commandant compris) − **réserve gardée** (0, **1** par défaut, 2, 3, 4). Avec 4 exemplaires utilisés par 2 decks : 2 à l'échange avec une réserve de 0, 1 avec une réserve de 1. **Terrains de base jamais proposés**. Les exemplaires gardés le sont d'abord en français (ordre des langues de la collection), le reste est proposé langue par langue.
+- **Garder** : retire une carte précise de la liste (elle passe dans « Gardées à la main », **Remettre** pour l'y remettre).
+- **Je recherche** : cartes qui manquent à tes decks (somme des decks − collection) + **liste de souhaits** (« Ajouter une carte recherchée », catalogue Scryfall, quantité ajustable). Barre de recherche et filtres de la collection valables dans les deux listes.
+- **Lien public** (compte requis) : **Créer le lien** → `<site>/?p=<id>` (identifiant aléatoire, non devinable). **Toujours à jour** : chaque changement de collection, de decks, de réserve ou de souhaits réécrit le partage (différé de quelques secondes, rien si le contenu n'a pas changé), depuis n'importe lequel de tes appareils. **Copier**, **Partager**, **Aperçu** (ce que voit le visiteur), **Nouveau lien** (l'ancien cesse de marcher), **Arrêter le partage**.
+- **Visiteur** (sans compte) : onglets **À échanger** / **Recherchées**, recherche par **nom français ou anglais**, filtres couleur / famille / coût, images (dans la langue de l'exemplaire), drapeau, quantités, carte en grand. **Lecture seule** : aucune écriture, ni chez lui ni chez toi. S'il utilise Deck Deal, les cartes qu'il possède déjà sont signalées. Lecture par l'API REST Firestore (ni SDK Firebase, ni compte).
+- **Partager un deck** : icône de partage du viewer (deck enregistré : le lien **suit ses modifications** ; liste en cours : partagée telle quelle) et bouton **Partager** d'un deck de l'onglet Decks (EDHREC / Archidekt). Le visiteur voit le viewer du deck en lecture seule (images, courbe, valeur estimée, groupes, filtres) et peut tirer une main de départ. Supprimer un deck arrête son lien.
+- **Données** : `shares/{id}` `{ o, kind ('trade' | 'deck'), v, updatedAt, d }` — `d` = contenu en JSON (cartes : nom, quantité, langue, nom français, image, coût, type, couleurs), `o` = empreinte SHA-256 de ton UID (le document est public : l'UID n'y est jamais écrit). Réglages (réserve, cartes gardées, souhaits, liens) : `users/{uid}/meta/trade`, synchronisés entre appareils. Le contenu lu par le visiteur est revérifié (images Scryfall seulement, langues, tailles).
+
+### Règles Firestore à publier (une fois)
+
+Firebase › Firestore Database › **Règles** › coller le contenu de `firestore.rules` › **Publier**. Sans elles, « Créer le lien » affiche « Règles Firestore à publier ». Ajouts : `match /shares/{shareId}` (lecture par identifiant pour tous, jamais de liste, écriture et suppression par le propriétaire seul) et le document `trade` dans `users/{uid}/meta`. Vérifiées contre l'émulateur Firestore (`tests/rules-test.mjs`, voir `DEV.md`).
+
+## Main de départ
+
+Viewer d'un deck (enregistré, en cours, deck EDHREC via **Voir le deck**, ou deck partagé) › **Main de départ** : 7 cartes tirées au hasard dans la bibliothèque (**commandant et réserve exclus**), **Nouvelle main** pour retirer ; nombre de terrains de la main, et **chances d'avoir 0 à 7 terrains** en main de départ (loi hypergéométrique, la ligne de la main tirée surlignée ; « entre 2 et 4 terrains : N % »). Terrain = face avant de type *Land* (une carte modale sort // terrain compte comme sort) ; cartes au type pas encore lu comptées comme sorts (signalé).
+
 ## Scan des cartes (OCR)
 
 Collection › icône appareil photo. Seul le **nom** de la carte est lu (bande du titre), jamais le reste : le texte est comparé au catalogue Scryfall et c'est la carte officielle qui est ajoutée, avec sa miniature Scryfall pour vérifier d'un coup d'œil.
@@ -214,13 +235,20 @@ Une fois l'app installée, elle apparaît dans le menu Partager d'Android : part
 - **Listes groupées** : cartes et offres forment un seul bloc à filets (plus une carte bordée par ligne) ; étiquettes en minuscules, chiffres dans la police de l'appli, pastilles de filtre pleines quand elles sont actives, total flottant au-dessus du dock. Lignes de la collection en `content-visibility:auto` (listes longues fluides).
 - **Feuilles** : se ferment en les tirant vers le bas par la poignée ou l'en-tête (seuil 28 % de la hauteur ou geste rapide ; le fond s'éclaircit pendant le glissé ; inactif sur grand écran et sur les boutons).
 - **Transitions** : saisie ↔ résultats glissent dans le sens de la navigation (`.fwd` / `.back`), onglets de la collection en fondu (`.tabin`), reflet unique sur le total des résultats (`.hero.shine`), filet sous la barre seulement quand le contenu passe dessous (`.bar.scrolled`), collection vide avec trois cartes en éventail. Tout est coupé par « réduire les animations » (CSS + `reduceMotion()`).
+- **Toucher** (`src/motion.js`) : boutons, cartes, pastilles, onglets s'enfoncent légèrement et reviennent avec un petit ressort.
+- **Carte en grand** : elle **grandit depuis la vignette touchée** et y retourne à la fermeture (même carte) ; **inclinaison 3D et reflet holographique** qui suivent le doigt ou la souris (aussi sur le commandant du viewer et les couvertures de « Mes decks »).
+- **Cascades** : listes de la collection, de l'échange, de l'écran public, grilles du viewer et blocs de l'accueil arrivent l'un après l'autre (14 premiers éléments, à l'ouverture d'un écran, d'un onglet ou d'un tri ; jamais pendant la frappe) ; **main de départ distribuée** carte par carte.
+- **Onglets de la collection** : arrivent du côté où l'on va ; **total du viewer** qui défile ; images en fondu avec léger zoom arrière ; en-têtes des écrans plein format avec filet seulement quand le contenu passe dessous.
+- Tout est en `transform` / `opacity` (aucun recalcul de mise en page) et coupé par « réduire les animations ».
 - **Scan** : bouton de capture rond agrandi à 84 px, repères d'angle sur la bande de lecture.
-- Tests : `ui-e2e.mjs` (feuille glissable, sens des vues, filet de barre, reflet, fondu des onglets, état vide) ; taille du bouton de capture dans `scan-e2e.mjs`.
+- Tests : `ui-e2e.mjs` (feuille glissable, sens des vues, filet de barre, reflet, fondu des onglets, état vide), `motion-e2e.mjs` (FLIP, inclinaison, cascades, sens des onglets, chiffres, réduire les animations) ; taille du bouton de capture dans `scan-e2e.mjs`.
 
 ## Installation (PWA)
 
 `pwa/` contient le manifeste, le service worker et les icônes, servis par `proxy.mjs` en liste blanche (aucun autre fichier du dépôt n'est exposé).
 Le dossier doit être déployé avec `proxy.mjs`.
+
+Service worker : page en réseau d'abord (copie locale hors ligne), images Scryfall en cache d'abord, et **bibliothèques aux adresses versionnées** (SDK Firebase, Tesseract) et **polices** en cache d'abord (feuille de style Google Fonts servie localement puis rafraîchie en arrière-plan) : démarrage plus rapide, polices et scan hors ligne. Jamais en cache : `/api/*`, API Scryfall, Firestore, authentification.
 
 - Chrome / Edge / Android : bannière « Installer Deck Deal » sur l'accueil, ou Réglages › Application, ou icône d'installation de la barre d'adresse. Fenêtre dédiée, icône, lancement direct.
 - iPhone / iPad : Apple n'autorise que Safari › Partager › « Sur l'écran d'accueil ».

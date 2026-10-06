@@ -4,3 +4,8 @@ node_modules/
 *.log
 .DS_Store
 .data/
+dist/
+tests/.tmp/
+tests/logs/
+tests/run-tests.out
+shots/

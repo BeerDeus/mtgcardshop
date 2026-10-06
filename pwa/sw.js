@@ -2,13 +2,24 @@
    • Page (navigation) : réseau d'abord, copie locale si le réseau échoue ou traîne → l'app s'ouvre hors ligne.
    • Icônes et manifeste : cache d'abord, rafraîchis en arrière-plan.
    • Images de cartes Scryfall (cards.scryfall.io) : cache d'abord → une carte déjà vue ne se retélécharge plus.
+   • Bibliothèques et polices aux adresses versionnées (SDK Firebase, Tesseract, fichiers de polices) : cache d'abord (elles ne changent jamais) ;
+     feuille de style Google Fonts : copie locale tout de suite, rafraîchie en arrière-plan. → polices et scan disponibles hors ligne, démarrage plus rapide.
      Le cache vit dans le stockage du navigateur : il saute si tu effaces les données du site, puis se reremplit tout seul.
    • Notifications push « recherche terminée » (un toucher rouvre l'app et reprend la recherche) et alertes de prix (rouvre la feuille des alertes).
    • Jamais interceptés : /api/*, /__ping, tout autre domaine (CardTrader, Firebase, polices, API Scryfall),
-     toute requête qui n'est pas un GET. Aucune donnée de recherche, token ou clé n'est mise en cache ici. */
+     toute requête qui n'est pas un GET. Aucune donnée de recherche, token ou clé n'est mise en cache ici (jamais l'API Firestore ni l'authentification). */
 const V = 'deckdeal-v1';
-const SHELL = V + '-shell', STATIC = V + '-static', IMG = V + '-img';
-const IMG_HOST = 'cards.scryfall.io', IMG_MAX = 1200;
+const SHELL = V + '-shell', STATIC = V + '-static', IMG = V + '-img', CDN = V + '-cdn';
+const IMG_HOST = 'cards.scryfall.io', IMG_MAX = 1200, CDN_MAX = 80;
+/** Ressources tierces immuables (adresse versionnée) ou presque (CSS Google Fonts) : 'imm' | 'swr' | null. */
+function cdnKind(u) {
+  if (u.protocol !== 'https:') return null;
+  if (u.hostname === 'fonts.gstatic.com') return 'imm';
+  if (u.hostname === 'fonts.googleapis.com' && u.pathname.startsWith('/css')) return 'swr';
+  if (u.hostname === 'www.gstatic.com' && /^\/firebasejs\/\d+\.\d+\.\d+\//.test(u.pathname)) return 'imm';
+  if (u.hostname === 'cdn.jsdelivr.net' && /^\/npm\/(@[\w.-]+\/)?[\w.-]+@\d[\w.-]*\//.test(u.pathname)) return 'imm';
+  return null;
+}
 const BASE = new URL('./', self.location).pathname;       // portée (« / » en production)
 const ROOT = new URL('./', self.location).href;
 const ASSETS = ['manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png', 'icons/icon.svg'];
@@ -25,7 +36,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k.startsWith('deckdeal-') && k !== SHELL && k !== STATIC && k !== IMG) await caches.delete(k);
+    for (const k of await caches.keys()) if (k.startsWith('deckdeal-') && k !== SHELL && k !== STATIC && k !== IMG && k !== CDN) await caches.delete(k);
     await self.clients.claim();
   })());
 });
@@ -62,12 +73,32 @@ async function cardImage(e) {
   return r;
 }
 
+/** Ressource tierce : réponse lisible (CORS) gardée ; opaque ou en erreur : servie sans être gardée. */
+let cdnTrimming = false;
+async function cdnTrim(cache) {
+  if (cdnTrimming) return; cdnTrimming = true;
+  try { const ks = await cache.keys(); for (const k of ks.slice(0, Math.max(0, ks.length - CDN_MAX))) await cache.delete(k); } catch (_) { /* ignore */ } finally { cdnTrimming = false; }
+}
+async function cdnFetch(e, cache) {
+  let r;
+  try { r = await fetch(e.request.url, { mode: 'cors', credentials: 'omit' }); } catch (_) { return fetch(e.request); }
+  if (r.ok && r.status === 200 && r.type === 'cors') e.waitUntil(cache.put(e.request.url, r.clone()).then(() => cdnTrim(cache)).catch(() => {}));
+  return r;
+}
+async function cdnAsset(e, kind) {
+  const cache = await caches.open(CDN), hit = await cache.match(e.request.url);
+  if (hit && kind === 'imm') return hit;
+  if (hit) { e.waitUntil(cdnFetch(e, cache).catch(() => {})); return hit; }          // feuille de style : tout de suite, rafraîchie pour la prochaine fois
+  return cdnFetch(e, cache);
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (u.origin !== self.location.origin) {
     if (u.protocol === 'https:' && u.hostname === IMG_HOST && (req.destination === 'image' || /\.(jpe?g|png|webp)$/i.test(u.pathname))) e.respondWith(cardImage(e));
+    else { const k = cdnKind(u); if (k) e.respondWith(cdnAsset(e, k)); }
     return;
   }
   const r = rel(u); if (r === null) return;
