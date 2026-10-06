@@ -28,7 +28,7 @@ img{max-width:100%}
   --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
   --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
   --accent:#3a46d6; --accent-ink:#ffffff; --accent-soft:#e6e8fb; --ring:rgba(58,70,214,.28);
-  --good:#0b8a5e; --good-soft:#dff5ec; --warn:#a46606; --warn-soft:#fbefd6; --bad:#c23a4b; --bad-soft:#fbe4e7;
+  --eng:#ee8a1d; --good:#0b8a5e; --good-soft:#dff5ec; --warn:#a46606; --warn-soft:#fbefd6; --bad:#c23a4b; --bad-soft:#fbe4e7;
   --bar-bg:rgba(241,243,248,.84); --scrim:rgba(10,14,30,.46);
   --shadow:0 1px 2px rgba(16,21,43,.06),0 10px 28px -14px rgba(16,21,43,.22);
   --thumb-l:90%; --thumb-ink:30%;
@@ -47,7 +47,7 @@ img{max-width:100%}
     --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
     --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
     --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
-    --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
+    --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
     --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
     --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.7);
     --thumb-l:22%; --thumb-ink:82%; --sheen:rgba(255,255,255,.2); --seg-thumb:#2b3658;
@@ -58,7 +58,7 @@ img{max-width:100%}
   --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
   --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
   --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
-  --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
+  --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
   --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
   --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.7);
   --thumb-l:22%; --thumb-ink:82%; --sheen:rgba(255,255,255,.2); --seg-thumb:#2b3658;
@@ -591,7 +591,8 @@ button.sync:active{background:var(--surface-2)}
 
 
 /* ── Cartes possédées, référence Cardmarket ───────────────────────────────────────────────────── */
-.collsec{display:block}
+.collsec{display:flex;flex-direction:column;gap:8px}
+.coll-quick .coll-ico b{font-family:var(--font-display);font-size:19px;font-weight:700;line-height:1}
 .coll-open{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:transform .15s,border-color .2s}
 .coll-open:active{transform:scale(.99)}
 .coll-ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
@@ -705,8 +706,10 @@ button.sync:active{background:var(--surface-2)}
 .crow.dk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dk-pips{display:inline-flex;align-items:center;gap:3px;height:19px}
 .dk-pips .mc{margin:0;width:15px;height:15px;font-size:9px;vertical-align:0}
-.dk-bar{display:block;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:3px}
-.dk-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+.dk-bar{display:flex;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:3px}
+.dk-bar i{display:block;height:100%;flex:none;background:var(--accent);transition:width .35s var(--ease,ease)}
+.dk-bar i.eng{background:var(--eng)}
+.dk-eng{font-style:normal;color:var(--warn);font-weight:600}
 .dk-have{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .dk-lab{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dk-px{min-width:62px;align-items:flex-end;text-align:right}
@@ -1110,6 +1113,22 @@ button,.btn,select,summary{touch-action:manipulation}
 .al-list.hits .al-row{padding-right:14px}
 .al-list,.buy-list{flex-shrink:0}
 #alertBox .switch-row{align-self:stretch}
+
+/* ── Drapeau collé au nom (à droite), loin de la vignette qu'on touche pour agrandir ─────── */
+.row-top,.sc-top{display:flex;align-items:flex-start;gap:7px;min-width:0}
+.row-top .row-name,.sc-top b{flex:0 1 auto;min-width:0}
+.row-top .lchip,.sc-top .lchip{flex:none;margin-top:-1px}
+.row-top .lchip select,.sc-top .lchip select{inset:-6px -4px;height:calc(100% + 12px)}
+.sc-top>.flag{margin-top:2px}
+
+/* ── Prix rapide : total du lot à côté de « Fermer » ─────── */
+.sc-total{flex:1.9;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:2px;text-align:right;line-height:1.15}
+.sc-total small{max-width:100%;font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-total .lot-v{display:flex;gap:12px}
+.sc-total .px b{font-size:15px;font-weight:700}
+.dv-foot .sc-total[hidden]{display:none}
+.sc-cnt{border:0;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;gap:5px}
+.dk-eng{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1181,6 +1200,11 @@ button,.btn,select,summary{touch-action:manipulation}
           <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-stack"/></svg></span>
           <span class="coll-t"><b>Ma collection</b><span id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</span></span>
           <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+        </button>
+        <button class="coll-open coll-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
+          <span class="coll-ico" aria-hidden="true"><b>€</b></span>
+          <span class="coll-t"><b>Prix rapide</b><span>Scanne une carte : prix Cardmarket et CardTrader, sans l'ajouter.</span></span>
+          <svg class="i chev" aria-hidden="true"><use href="#i-camera"/></svg>
         </button>
       </section>
 
@@ -1707,7 +1731,7 @@ function typeBucket(tl) {
   return 'Autres';
 }
 const isLand = i => i.s === 'basic' || (i.tl ? typeBucket(i.tl) === 'Terrains' : false);
-const byName = (a, b) => a.n.localeCompare(b.n, 'fr', { sensitivity: 'base' });
+const byName = (a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' });      // dn : nom affiché si différent de n (carte française)
 const byCmcName = (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b);
 const sumGroup = items => ({ count: items.reduce((a, i) => a + i.q, 0), cost: items.reduce((a, i) => a + (i.c || 0), 0) });
 /**
@@ -2066,7 +2090,7 @@ function filterItems(items, f) {
   const q = normPart(f.q || ''), colors = f.colors && f.colors.size ? f.colors : null, type = f.type || '', cmc = f.cmc === '' || f.cmc == null ? null : Number(f.cmc), cmdr = f.cmdr === 'can' || f.cmdr === 'played' ? f.cmdr : '';
   if (!q && !colors && !type && cmc == null && !cmdr) return items;
   return items.filter(i => {
-    if (q && !normPart(i.n).includes(q)) return false;
+    if (q && !normPart(i.n).includes(q) && !(i.dn && normPart(i.dn).includes(q))) return false;
     if (cmdr && (i.cx || 0) < (cmdr === 'played' ? 2 : 1)) return false;      // cx : 0 pas commandant · 1 peut l'être · 2 joué comme commandant (EDHREC)
     if (colors || type || cmc != null) {
       if (!hasMeta(i)) return false;
@@ -2307,35 +2331,35 @@ const edhWords = (s, toks) => { const w = ' ' + s; return toks.every(t => w.incl
 const edhCmdHas = (c, toks) => edhWords(c.keys.join(' '), toks);
 /** Une ligne du classement. Les listes `missing`, `owned` et `gc` (longues, utiles seulement à la feuille d'un deck) ne sont calculées qu'au premier accès. */
 class EdhRow {
-  constructor(deck, cmd, total, have, cost, unpriced, mine, br, hit, e, own) {
-    this.deck = deck; this.cmd = cmd; this.total = total; this.have = have; this.miss = total - have; this.cost = cost; this.unpriced = unpriced; this.mine = mine;
-    this.tier = cmd.tier; this.rank = cmd.rank; this.br = br; this.hit = hit; this._e = e; this._o = own;
+  constructor(deck, cmd, total, have, cost, unpriced, mine, br, hit, e, own, eng, held) {
+    this.deck = deck; this.cmd = cmd; this.total = total; this.have = have; this.eng = eng || 0; this.miss = total - have; this.cost = cost; this.unpriced = unpriced; this.mine = mine;
+    this.tier = cmd.tier; this.rank = cmd.rank; this.br = br; this.hit = hit; this._e = e; this._o = own; this._h = held || null;
   }
   get missing() { edhDetail(this); return this.missing; }
   get owned() { edhDetail(this); return this.owned; }
   get gc() { edhDetail(this); return this.gc; }
 }
 function edhDetail(r) {
-  const e = r._e, own = r._o, c = r.cmd, d = r.deck, missing = [], owned = [], gcs = [];
+  const e = r._e, own = r._o, hold = r._h, c = r.cmd, d = r.deck, missing = [], owned = [], gcs = [];
   const one = (id, q) => {
     if (e.bs[id]) return;
     const h = Math.min(q, own[id]), m = q - h, g = e.gcA[id] === 1; if (g) gcs.push(e.names[id]);
     if (m) { const u = e.pr[id]; missing.push({ k: e.keys[id], n: e.names[id], q: m, u: u > 0 ? u : null, gc: g }); }
-    if (h) owned.push({ k: e.keys[id], n: e.names[id], q: h, gc: g });
+    if (h) owned.push({ k: e.keys[id], n: e.names[id], q: h, gc: g, eg: h - Math.min(h, Math.max(0, own[id] - (hold ? hold[id] : 0))) });      // eg : parmi ces exemplaires, ceux déjà réservés par un deck monté
   };
   for (const id of c.ids) one(id, 1);
   for (let j = e.off[d.i], z = e.off[d.i + 1]; j < z; j++) one(e.ids[j], e.qty[j]);
   missing.sort((a, b) => ((b.u || 0) * b.q - (a.u || 0) * a.q) || a.n.localeCompare(b.n));
   Object.defineProperties(r, { missing: { value: missing, configurable: true }, owned: { value: owned, configurable: true }, gc: { value: gcs, configurable: true } });
 }
-/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur tier), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
+/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { held (clé → exemplaires réservés par des decks montés : sert à compter `eng`, les exemplaires possédés du deck déjà engagés ailleurs), cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur tier), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
  *  Terrains de base ignorés. Une ligne par deck : { deck, cmd, total, have, miss, cost, unpriced, mine, tier, rank, br (bracket estimé, 0 sans liste Game Changers), hit ([[clé, nom]] des cartes trouvées par une recherche « carte », sinon null), et à la demande : missing:[{ k, n, q, u, gc }], owned:[{ k, n, q, gc }], gc:[noms des Game Changers du deck, commandant compris] }.
  *  Calcul sur tableaux typés (un passage sur toutes les entrées de tous les decks) : quelques millisecondes pour 10 000 decks. */
 function edhRank(edh, qty, o = {}) {
   const rows = []; if (!edh || !edh.decks || !edh.decks.length) return rows;
   const cols = o.cols && o.cols.size ? o.cols : null, card = o.qm === 'card'; let toks = o.q ? edhTokens(o.q) : null; if (toks && !toks.length) toks = null;
-  const names = edh.names, keys = edh.keys, nn = names.length, own = new Uint16Array(nn);
-  for (let i = 0; i < nn; i++) { const q = qty(keys[i]); if (q > 0) own[i] = q > 65535 ? 65535 : q; }
+  const names = edh.names, keys = edh.keys, nn = names.length, own = new Uint16Array(nn), hold = typeof o.held === 'function' ? new Uint16Array(nn) : null;
+  for (let i = 0; i < nn; i++) { const q = qty(keys[i]); if (q > 0) { own[i] = q > 65535 ? 65535 : q; if (hold) { const h = o.held(keys[i]); if (h > 0) hold[i] = h > 65535 ? 65535 : h; } } }
   const { off, ids, qty: qa, pr, bs, gcA } = edh, gset = edh.gc && edh.gc.size > 0;
   let thIx = null;      // thèmes demandés (identifiants) → indices ; un thème absent du fichier ne correspond à aucun deck
   if (o.themes && o.themes.size) { thIx = []; for (const t of o.themes) { const i = edh.themeIx && edh.themeIx.get(t); if (i === undefined) return rows; thIx.push(i); } }
@@ -2354,16 +2378,17 @@ function edhRank(edh, qty, o = {}) {
       for (let j = a; j < z; j++) if (hitF[ids[j]]) hit.push([keys[ids[j]], names[ids[j]]]);
       if (!hit.length) continue;
     } else if (cmdOk) { if (!cmdOk[c.i]) cmdOk[c.i] = edhCmdHas(c, toks) ? 1 : -1; if (cmdOk[c.i] < 0) continue; }
-    let total = 0, have = 0, cost = 0, unpriced = 0, gcN = 0;
-    for (const id of c.ids) { if (bs[id]) continue; total++; if (gcA[id]) gcN++; if (own[id] > 0) have++; else { const u = pr[id]; if (u > 0) cost += u; else unpriced++; } }
+    let total = 0, have = 0, cost = 0, unpriced = 0, gcN = 0, eng = 0;
+    for (const id of c.ids) { if (bs[id]) continue; total++; if (gcA[id]) gcN++; if (own[id] > 0) { have++; if (hold && own[id] <= hold[id]) eng++; } else { const u = pr[id]; if (u > 0) cost += u; else unpriced++; } }
     for (let j = a; j < z; j++) {
       const id = ids[j]; if (bs[id]) continue;
       const q = qa[j], ow = own[id], h = ow < q ? ow : q; total += q; have += h; if (gcA[id]) gcN++;
+      if (hold && h) { const fr = ow > hold[id] ? ow - hold[id] : 0; eng += h - (fr < h ? fr : h); }
       if (h < q) { const m = q - h, u = pr[id]; if (u > 0) cost += u * m; else unpriced += m; }
     }
     if (total < 20 || total > 105) continue;      // liste tronquée, ou faussée (cartes en trop : un deck de Commander en compte 100)
     if (o.budget > 0 && cost > o.budget) continue;
-    rows.push(new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own));
+    rows.push(new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own, eng, hold));
   }
   const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (b.cmd.decks - a.cmd.decks) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
   return rows.sort((a, b) => by(a, b) || (b.cmd.decks - a.cmd.decks) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
@@ -2569,16 +2594,25 @@ function ocrMatches(lines, idx, spans = false) {
 function bestMatch(lines, idx) { return ocrMatches(lines, idx, false).sort((a, b) => b.score - a.score)[0] || null; }
 /** Préfixe des miniatures Scryfall gardées dans le catalogue français (seul le chemin « front/a/b/id.jpg » est stocké). */
 const FR_IMG = 'https://cards.scryfall.io/small/';
+/** Face avant d'un nom imprimé (« A // B » → « A ») : la collection ne garde que la face avant. */
+const frFront = p => String(p).split(/\s+\/\/\s+/)[0].trim();
+/** Nom anglais normalisé (ownKey) → nom imprimé français, sans l'index de recherche floue (léger) : sert à afficher les cartes FR de la collection. */
+function frNames(rows) {
+  const m = new Map();
+  for (const r of rows || []) { const [p, en] = String(r).split('\t'); if (!p || !en) continue; const ek = frontName(en); if (ek && !m.has(ek)) m.set(ek, frFront(p)); }
+  return m;
+}
 /** Catalogue français : lignes « nom imprimé \t nom anglais \t chemin de l'image » → { n, idx (recherche floue sur les noms imprimés), by (nom imprimé normalisé → { en, img }) }. */
 function frCatalog(rows) {
-  const by = new Map(), amb = new Set(), names = [];
+  const by = new Map(), amb = new Set(), names = [], fr = new Map();
   for (const r of rows || []) {
     const [p, en, img] = String(r).split('\t'); if (!p || !en) continue;
+    const ek = frontName(en); if (ek && !fr.has(ek)) fr.set(ek, frFront(p));      // nom anglais → nom imprimé français (affichage des cartes FR de la collection)
     const k = frontName(p); if (k.length < 2) continue;
     if (by.has(k)) { if (frontName(by.get(k).en) !== frontName(en)) amb.add(k); continue; }      // même nom français pour deux cartes différentes (≈ 0,1 %) : on garde la 1re mais on le sait
     by.set(k, { en, img: img || '' }); names.push(p);
   }
-  return { n: names.length, idx: nameIndex(names), by, amb };
+  return { n: names.length, idx: nameIndex(names), by, amb, fr };
 }
 function matchFr(lines, fc) {
   if (!fc || !fc.n) return null;
@@ -2632,7 +2666,7 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
     ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
-    lev, levw, nameIndex, lineVariants, matchName, frCatalog, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
+    lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
 
@@ -4702,6 +4736,7 @@ function init() {
   refreshDeck();
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
   $('#btnColl').onclick = () => openCollection();
+  $('#btnQuick').onclick = () => { haptic('tap'); openScan(); scanPriceMode(true); };      // accueil : scan directement en « prix rapide »
 
   $('#btnRun').onclick = startRun;
   $('#btnBack').onclick = () => { if (S.run && S.run.status === 'running') S.run.ctrl.abort(); showView('input'); };
@@ -5980,11 +6015,29 @@ function collInit() {
 }
 
 /* ── Écran « Ma collection » ──────────────────────────────────────────────────────────────────── */
+/* ── Noms français : une carte marquée FR s'affiche sous son nom imprimé (« Anneau solaire »), les autres sous leur nom anglais ───── */
+const FRN = { map: null, p: null, fail: 0 };
+/** Nom imprimé français d'une carte de la collection ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas). */
+function frName(k, l) {
+  if (l !== 'fr') return '';
+  const m = FRN.map || (typeof FRC !== 'undefined' && FRC.cat && FRC.cat.fr) || null;
+  return (m && m.get(k)) || '';
+}
+/** Charge les noms imprimés si la collection a des cartes FR : catalogue déjà sur l'appareil, sinon fichier du site (1 requête). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. */
+function collFrLoad() {
+  if (FRN.map || FRN.p || Date.now() - FRN.fail < 60000) return;
+  let any = false; for (const k in COLL.map) if (COLL.map[k].l === 'fr') { any = true; break; }
+  if (!any) return;
+  FRN.p = (async () => {
+    const rec = (await scryFrCached().catch(() => null)) || (await scryFrStatic().catch(() => null));
+    if (rec) { FRN.map = frNames(rec.rows); collPaint(); } else FRN.fail = Date.now();
+  })().catch(() => { FRN.fail = Date.now(); }).finally(() => { FRN.p = null; });
+}
 const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût'], ['decks', 'Decks EDHREC'], ['new', 'Ajout : récentes en haut'], ['old', 'Ajout : anciennes en haut']];
 const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
 function collItems() {
   return Object.entries(COLL.map).map(([k, x]) => {
-    const px = COLL.px[k], it = { k, n: x.n, q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
+    const px = COLL.px[k], dn = frName(k, x.l), it = { k, n: x.n, ...(dn ? { dn } : {}), q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
     return Object.assign(it, cmdrClass(it, EDH.data));      // cx : 0 · 1 peut être commandant · 2 joué comme commandant (EDHREC), ed : nombre de decks
   });
 }
@@ -5998,22 +6051,23 @@ function langChip(k, l, name, cls) {
   return `<label class="lchip${l ? '' : ' none'}${cls ? ' ' + cls : ''}" data-l="${esc(l)}">${l ? flag(l) : '<span>Langue ?</span>'}<select data-lk="${esc(k)}" aria-label="Langue de ${esc(name)}"><option value=""${l ? '' : ' selected'}>Non précisée</option>${CARD_LANG_LIST.map(x => `<option value="${x}"${x === l ? ' selected' : ''}>${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></label>`;
 }
 function crowHtml(it) {
-  const hue = hash32(it.k) % 360, letter = esc((it.n.trim()[0] || '?').toUpperCase()), img = collImage(it.k, it.l, it.im).src;
-  const tags = [langChip(it.k, it.l, it.n)];
+  const nm = it.dn || it.n, hue = hash32(it.k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase()), img = collImage(it.k, it.l, it.im).src;
+  const tags = [];      // le drapeau suit le nom (à droite, loin de la vignette qu'on touche pour agrandir) ; « Langue ? » finit la rangée de tags
   if (it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
   if (it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
   if (COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="Commandant dans des decks EDHREC">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
   if (isDateSort() && it.d) tags.push(`<span class="tag" title="Date d'ajout à la collection">${esc(new Date(it.d * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
   const mvv = valMove(it.k); if (mvv) tags.push(valTag(mvv));
   const mnt = engTag(it.k); if (mnt) tags.push(mnt);
+  if (!it.l) tags.push(langChip(it.k, '', it.n));
   const px = [];      // prix : CM (tendance Cardmarket, estimation) au-dessus, CT (offre CardTrader la plus basse, lue à la demande) en dessous
   if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="Cardmarket : prix tendance"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
   if (Number.isFinite(it.rp)) px.push(`<span class="px ct" title="CardTrader : offre la plus basse"><i>CT</i> <b>${esc(fmt(it.rp, it.rc || 'EUR'))}</b></span>`);
   else if (it.rp === null && it.rt) px.push('<span class="px ct none" title="CardTrader : aucune offre"><i>CT</i> <b>aucune offre</b></span>');
   return `<div class="crow${px.length ? ' has-px' : ''}" data-k="${esc(it.k)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-name">${esc(it.n)}</span><span class="row-meta">${tags.join('')}</span></span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? langChip(it.k, it.l, it.n) : ''}</span>${tags.length ? `<span class="row-meta">${tags.join('')}</span>` : ''}</span>
     ${px.length ? `<span class="row-px">${px.join('')}</span>` : ''}
-    <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(it.n)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(it.n)}">+</button></span></div>`;
+    <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(nm)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(nm)}">+</button></span></div>`;
 }
 /** État de la sauvegarde, en toutes lettres (le sous-titre du header est tronqué sur téléphone) : { k: 'ok'|'warn'|'bad', t, acts:[[act, label]] } ou null. */
 function collSyncInfo() {
@@ -6083,7 +6137,7 @@ function collStatsHtml(items) {
   const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="Valeur de la collection, source ${cm ? 'Cardmarket' : 'CardTrader'} : touche pour passer à ${cm ? 'CardTrader' : 'Cardmarket'}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? `valeur · tendance Cardmarket${st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}` : st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ tendance Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? `${cm ? 'CT' : 'CM'} : ${esc(fmt(st.alt.value, 'EUR'))} · ` : ''}touche pour changer</small></div></div></div>`;
   const note = miss ? `<p class="hint">Stats sur ${nf0(st.known)} cartes lues ; ${nf0(miss)} sans infos pour l'instant.</p>` : '';
   const byLot = COLL.topBy !== 'one', list = byLot ? st.top : st.topUnit, shown = list.slice(0, COLL.topN), cur = i => (i.rl ? i.rc || 'EUR' : 'EUR');
-  const top = list.length ? `<h3 class="cs-h">Les plus chères <span class="cs-sw" role="group" aria-label="Classer par"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">Par lot</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">Par carte</button></span></h3><p class="hint cs-topnote">${byLot ? 'Classées par valeur du lot : prix × exemplaires.' : 'Classées par prix d\'un exemplaire.'}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">Afficher ${nf0(Math.min(10, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}` : '';
+  const top = list.length ? `<h3 class="cs-h">Les plus chères <span class="cs-sw" role="group" aria-label="Classer par"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">Par lot</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">Par carte</button></span></h3><p class="hint cs-topnote">${byLot ? 'Classées par valeur du lot : prix × exemplaires.' : 'Classées par prix d\'un exemplaire.'}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.dn || i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">Afficher ${nf0(Math.min(10, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}` : '';
   return `${nums}${note}${valStatsHtml()}
     <h3 class="cs-h">Courbe de mana <small>${nf0(st.spells)} sorts</small></h3>${curveBars(st.curve, false)}
     <h3 class="cs-h">Couleurs <small>sorts</small></h3>${barsHtml(colorRows)}
@@ -6121,7 +6175,7 @@ function closeCollection() { if (COLL.el) COLL.el.__close(); }
 function openCollection(tab) {
   closeCollection();
   if (tab) COLL.tab = tab;
-  COLL.shown = COLL_PAGE;
+  COLL.shown = COLL_PAGE; collFrLoad();
   const wrap = document.createElement('div'); wrap.className = 'dv coll'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Ma collection');
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer la collection"><svg class="i"><use href="#i-back"/></svg></button>
       <div class="dv-title"><b>Ma collection</b><span></span></div>
@@ -6161,8 +6215,15 @@ function openCollection(tab) {
     const sel = e.target.closest && e.target.closest('.lchip select'); if (!sel) return;
     const k = sel.dataset.lk, l = sel.value; haptic('tap'); sel.blur(); COLL.dirty = false; collSetLang(k, l);
     const row = sel.closest('.crow'), chip = sel.closest('.lchip');
-    if (chip) { chip.outerHTML = langChip(k, l, (COLL.map[k] || {}).n || '', ''); }
-    if (row) { const it = collItems().find(x => x.k === k), th = $('.thumb', row); if (it && th) { const u = collImage(k, l, it.im).src; let im = $('img', th); if (u && im) { im.classList.remove('ok'); im.src = u; } else if (u) { im = document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.src = u; th.appendChild(im); } } }
+    if (row && chip) {
+      const it = collItems().find(x => x.k === k); if (!it) return;
+      chip.remove();
+      const nameEl = $('.row-name', row); if (nameEl) nameEl.textContent = it.dn || it.n;      // FR : nom imprimé ; sinon nom anglais
+      const html = langChip(k, l, it.n, '');
+      if (l) { const top = $('.row-top', row); if (top) top.insertAdjacentHTML('beforeend', html); }
+      else { let meta = $('.row-meta', row); if (!meta) { meta = document.createElement('span'); meta.className = 'row-meta'; $('.row-main', row).appendChild(meta); } meta.insertAdjacentHTML('beforeend', html); }
+      const th = $('.thumb', row); if (th) { const u = collImage(k, l, it.im).src; let im = $('img', th); if (u && im) { im.classList.remove('ok'); im.src = u; } else if (u) { im = document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.src = u; th.appendChild(im); } }
+    }
   });
   wrap.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -6450,9 +6511,9 @@ const edhDate = () => { const d = EDH.data && EDH.data.at ? new Date(EDH.data.at
 function edhRows() {
   if (!EDH.data) return [];
   for (const t of [...EDH.themes]) if (!EDH.data.themeIx.has(t)) EDH.themes.delete(t);      // un thème absent du fichier chargé (version plus ancienne ou plus récente) ne filtre plus rien
-  const q = edhQuery(), sig = [COLL.u, collCount(), EDH.at, EDH.sort, [...EDH.cols].sort().join(''), [...EDH.tiers].sort().join(''), [...EDH.themes].sort().join(','), EDH.mine, EDH.budget, q, EDH.qm].join('|');
+  const q = edhQuery(), sig = [COLL.u, collCount(), EDH.at, EDH.sort, engSig(), [...EDH.cols].sort().join(''), [...EDH.tiers].sort().join(''), [...EDH.themes].sort().join(','), EDH.mine, EDH.budget, q, EDH.qm].join('|');
   if (EDH.memo && EDH.memo.sig === sig) return EDH.memo.rows;
-  const rows = edhRank(EDH.data, collQty, { cols: EDH.cols, tiers: EDH.tiers, themes: EDH.themes, mine: EDH.mine, budget: EDH.budget, sort: EDH.sort, q, qm: EDH.qm });
+  const rows = edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), cols: EDH.cols, tiers: EDH.tiers, themes: EDH.themes, mine: EDH.mine, budget: EDH.budget, sort: EDH.sort, q, qm: EDH.qm });
   EDH.memo = { sig, rows }; return rows;
 }
 /** Recherche en cours, ou '' : un nom de commandant dès 1 lettre, une carte à partir de 2 (sinon presque tous les decks la contiennent). */
@@ -6546,14 +6607,14 @@ function edhResHtml() {
     ${rows.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="dmore">Afficher ${nf0(Math.min(30, rows.length - shown.length))} de plus · ${nf0(rows.length - shown.length)} restants</button>` : ''}`;
 }
 function edhRowHtml(r, i) {
-  const c = r.cmd, name = c.names.join(' + '), img = c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * r.have / r.total);
+  const c = r.cmd, name = c.names.join(' + '), img = c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
   const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC">n° ${nf0(c.rank)}</span>`); if (c.decks) tags.push(`<span class="tag">${nf0(c.decks)} decks</span>`);
   tags.push(`<span class="tag${r.deck.src === 'edhrec' ? '' : ' accent'}">${r.deck.src === 'edhrec' ? 'Deck moyen' : esc(edhSrcLabel(r.deck))}</span>`);
   if (r.br) tags.push(`<span class="tag${r.br >= 4 ? ' warn' : ''}" title="${esc(edhBracketNote(r))}">Bracket ${r.br}</span>`);
   if (r.mine) tags.push('<span class="tag good">Commandant possédé</span>');
   const right = r.miss ? `<b>${nf0(r.miss)}</b><small>à acheter</small><em>${r.cost ? '≈ ' + esc(fmt(r.cost, 'EUR')) : 'prix inconnu'}</em>${r.cost && r.unpriced ? `<small>+ ${nf0(r.unpriced)} sans prix</small>` : ''}` : '<b class="ok">✓</b><small>complet</small>';
-  return `<div class="crow dk" role="button" tabindex="0" data-dk="${i}" aria-label="${esc(name)} : tier ${esc(r.tier)}, ${r.have} cartes sur ${r.total}, ${r.miss} à acheter">${r.tier ? `<i class="dk-tier t-${esc(r.tier.toLowerCase())}" aria-hidden="true">${esc(r.tier)}</i>` : ''}<span class="thumb" style="--h:${hash32(c.slug) % 360}">${esc((name.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-name">${esc(name)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i></span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.deck.src !== 'edhrec' && r.deck.label ? `<span class="dk-lab">${esc(r.deck.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
+  return `<div class="crow dk" role="button" tabindex="0" data-dk="${i}" aria-label="${esc(name)} : tier ${esc(r.tier)}, ${r.have} cartes sur ${r.total}${r.eng ? ' (dont ' + r.eng + ' engagée' + (r.eng > 1 ? 's' : '') + ' dans un deck)' : ''}, ${r.miss} à acheter">${r.tier ? `<i class="dk-tier t-${esc(r.tier.toLowerCase())}" aria-hidden="true">${esc(r.tier)}</i>` : ''}<span class="thumb" style="--h:${hash32(c.slug) % 360}">${esc((name.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(name)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` <em class="dk-eng" title="Exemplaires déjà réservés par un de tes decks montés">· dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.deck.src !== 'edhrec' && r.deck.label ? `<span class="dk-lab">${esc(r.deck.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
     <span class="row-px dk-px">${right}</span></div>`;
 }
 
@@ -6585,10 +6646,10 @@ const edhBracketNote = r => `Bracket estimé ${r.br} : ${r.gc.length ? r.gc.leng
 /** Feuille d'un deck : cartes à acheter (les plus chères d'abord), déjà possédées, aperçu de chaque carte (appui = en grand, glisser = carte suivante) et deux actions. */
 function openEdhDeck(r) {
   const c = r.cmd, name = c.names.join(' + '), url = r.deck.url || (r.deck.src === 'edhrec' ? 'https://edhrec.com/average-decks/' + encodeURIComponent(c.slug) : '');
-  openSheet(name, `${r.tier ? 'Tier ' + r.tier + ' · n° ' + nf0(r.rank) + ' · ' : ''}${nf0(r.have)} / ${nf0(r.total)} possédées · ${edhSrcLabel(r.deck)}`, api => {
+  openSheet(name, `${r.tier ? 'Tier ' + r.tier + ' · n° ' + nf0(r.rank) + ' · ' : ''}${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` (dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''})` : ''} · ${edhSrcLabel(r.deck)}`, api => {
     const row = (x, own) => {
-      const tg = (c.keys.includes(x.k) ? '<span class="tag accent">Commandant</span>' : '') + (x.gc ? '<span class="tag warn" title="Liste Game Changers (brackets Commander)">Game Changer</span>' : '');
-      const ex = own ? 'Dans ta collection' + (x.q > 1 ? ' · × ' + x.q : '') : 'À acheter' + (x.q > 1 ? ' × ' + x.q : '') + (x.u ? ' · ≈ ' + fmt(x.u * x.q, 'EUR') : '');
+      const tg = (c.keys.includes(x.k) ? '<span class="tag accent">Commandant</span>' : '') + (own && x.eg ? `<span class="tag warn" title="Déjà réservé par un de tes decks montés">dont ${x.eg} engagée${x.eg > 1 ? 's' : ''}</span>` : '') + (x.gc ? '<span class="tag warn" title="Liste Game Changers (brackets Commander)">Game Changer</span>' : '');
+      const ex = own ? 'Dans ta collection' + (x.q > 1 ? ' · × ' + x.q : '') + (x.eg ? ' · dont ' + x.eg + ' engagée' + (x.eg > 1 ? 's' : '') : '') : 'À acheter' + (x.q > 1 ? ' × ' + x.q : '') + (x.u ? ' · ≈ ' + fmt(x.u * x.q, 'EUR') : '');
       return `<div class="crow ro dk-card" role="button" tabindex="0" data-ik="${esc(x.k)}" data-nm="${esc(x.n)}" data-ex="${esc(ex)}" aria-label="${esc(x.n)} : voir en grand"><span class="thumb" data-ik="${esc(x.k)}" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}</span><span class="row-main"><span class="row-name">${esc(x.n)}</span>${tg ? `<span class="row-meta">${tg}</span>` : ''}</span><span class="row-price"><b>${own ? '✓' : x.u ? esc(fmt(x.u * x.q, 'EUR')) : '—'}</b>${x.q > 1 ? `<small>× ${x.q}${!own && x.u ? ' · ' + esc(fmt(x.u, 'EUR')) : ''}</small>` : ''}</span></div>`;
     };
     const cmdSet = new Set(c.keys), byK = new Map([...r.missing.map(x => [x.k, [x, false]]), ...r.owned.map(x => [x.k, [x, true]])]);
@@ -6885,6 +6946,8 @@ function openBuySheet() {
 
 /* ── Decks montés : cartes de la collection réservées ─────────────────────────────────────────── */
 const engIsOn = id => !!(XS.eng[id] && Object.keys(XS.eng[id].q).length);
+/** Empreinte des decks montés (id + date de dernière modification) : sert à invalider les listes qui en dépendent. */
+const engSig = () => Object.keys(XS.eng).sort().map(id => id + ':' + XS.eng[id].at).join(',');
 const engCount = id => (XS.eng[id] ? Object.values(XS.eng[id].q).reduce((a, x) => a + x, 0) : 0);
 /** Exemplaires libres pour le deck en cours de recherche : possédés − réservés par les autres decks montés. */
 const engOwned = k => engFree(collQty(k), XS.eng, k, S.deckId);
@@ -7328,11 +7391,12 @@ function scanPaintList() {
     list.innerHTML = pend + miss + (SC.pq.length ? SC.pq.map(scanPriceRow).join('') : pend || miss ? '' : '<p class="hint sc-empty">Prix rapide : cadre une carte et appuie sur le cercle. Tu vois sa tendance Cardmarket et l\'offre CardTrader la moins chère ; rien n\'est ajouté à ta collection (le bouton + le fait si tu la gardes).</p>');
     const go = $('.dv-foot [data-act="done"]', el); go.hidden = true; $('.dv-foot [data-act="close"]', el).textContent = 'Fermer';
     $('.sc-sub', el).textContent = SC.pq.length ? `Prix rapide · ${nf0(SC.pq.length)} carte${SC.pq.length > 1 ? 's' : ''} lue${SC.pq.length > 1 ? 's' : ''}` : 'Prix rapide · rien n\'est ajouté';
+    const tot = $('.sc-total', el); tot.hidden = !SC.pq.length; if (SC.pq.length) tot.innerHTML = scanLotHtml(scanLot());
     const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = `Lecture : ${SC.pend.length} en attente`;
     return;
   }
-  { const go = $('.dv-foot [data-act="done"]', el); go.hidden = false; $('.dv-foot [data-act="close"]', el).textContent = 'Annuler'; }
-  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><b>${esc(e.name)}</b><span class="sc-meta">${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
+  { const go = $('.dv-foot [data-act="done"]', el); go.hidden = false; $('.dv-foot [data-act="close"]', el).textContent = 'Annuler'; $('.sc-total', el).hidden = true; }
+  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
       ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
       <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
     : pend || miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
@@ -7405,9 +7469,26 @@ function scanPriceMode(on) {
   el.classList.toggle('pm', SC.pm); const b = $('.sc-pmode', el); if (b) b.setAttribute('aria-pressed', String(SC.pm));
   scanHint('', ''); scanPaintList();
 }
+/** Total estimé du lot lu en « prix rapide » : tendance Cardmarket (CM) et offres CardTrader les plus basses (CT, en euros), exemplaires compris. */
+function scanLot() {
+  const t = { n: 0, cm: 0, ct: 0, cmN: 0, ctN: 0, noCm: 0, noCt: 0, wait: false, ctOn: false };
+  for (const e of SC.pq) {
+    const k = e.n || 1; t.n += k;
+    if (e.cm === undefined || e.cm === 'wait') t.wait = true; else if (Number.isFinite(e.cm)) { t.cm += e.cm * k; t.cmN++; } else t.noCm++;
+    if (e.ct === 'off') continue;
+    t.ctOn = true;
+    if (e.ct === undefined || e.ct === 'wait' || e.ct === 'busy') t.wait = true; else if (e.ct && Number.isFinite(e.ct.p) && (!e.ct.c || e.ct.c === 'EUR')) { t.ct += e.ct.p * k; t.ctN++; } else t.noCt++;
+  }
+  return t;
+}
+function scanLotHtml(t) {
+  const note = [`${nf0(t.n)} carte${t.n > 1 ? 's' : ''}`, t.wait ? 'calcul…' : '', !t.wait && t.noCm ? `${t.noCm} sans prix CM` : '', !t.wait && t.ctOn && t.noCt ? `${t.noCt} sans offre CT` : ''].filter(Boolean).join(' · ');
+  const part = (l, v, n) => `<span class="px ${l.toLowerCase()}"><i>${l}</i> <b>${n ? esc(fmt(v, 'EUR')) : '—'}</b></span>`;
+  return `<small>Lot : ${esc(note)}</small><span class="lot-v">${part('CM', t.cm, t.cmN)}${t.ctOn ? part('CT', t.ct, t.ctN) : ''}</span>`;
+}
 function scanPriceAdd(m) {
   const l = m.card || 'en'; let e = SC.pq.find(x => x.key === m.key);
-  if (e) { SC.pq = [e, ...SC.pq.filter(x => x !== e)]; e.maybe = m.score < 0.84; e.raw = m.raw; e.l = l; if (e.cm === 'err') e.cm = undefined; }
+  if (e) { SC.pq = [e, ...SC.pq.filter(x => x !== e)]; e.n = (e.n || 1) + 1; e.maybe = m.score < 0.84; e.raw = m.raw; e.l = l; if (e.cm === 'err') e.cm = undefined; }
   else { e = { key: m.key, name: m.name, l, maybe: m.score < 0.84, raw: m.raw, cm: undefined, ct: undefined, t: Date.now() }; SC.pq.unshift(e); if (SC.pq.length > 40) SC.pq.length = 40; }
   if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); }
   scanPaintList(); scanPriceFetch(e);
@@ -7439,12 +7520,14 @@ function scanCtPrice(e) {
     scanPaintList();
   }).catch(() => { /* la file continue */ });
 }
+/** Nom affiché d'une ligne du scan : nom imprimé français si la carte est lue en FR et que le catalogue la connaît, sinon le nom anglais. */
+const scanShown = e => frName(e.key, e.l) || e.name;
 function scanPriceRow(e) {
   const th = scanThumb({ key: e.key, name: e.name, l: e.l }), own = collQty(e.key);
   const cm = e.cm === 'wait' || e.cm === undefined ? '<span class="px cm wait"><i>CM</i> <b>…</b></span>' : Number.isFinite(e.cm) ? `<span class="px cm"><i>CM</i> <b>${esc(fmt(e.cm, 'EUR'))}</b></span>` : e.cm === 'err' ? '<span class="px cm none"><i>CM</i> <b>indisponible</b></span>' : '<span class="px cm none"><i>CM</i> <b>sans prix</b></span>';
   const ct = e.ct === 'wait' || e.ct === undefined ? '<span class="px ct wait"><i>CT</i> <b>…</b></span>' : e.ct && e.ct.p != null ? `<span class="px ct"><i>CT</i> <b>${esc(fmt(e.ct.p, e.ct.c || 'EUR'))}</b></span>`
     : e.ct === 'off' ? '' : e.ct === 'busy' ? '<span class="px ct none"><i>CT</i> <b>recherche en cours</b></span>' : e.ct === 'auth' ? '<span class="px ct none"><i>CT</i> <b>connexion requise</b></span>' : e.ct === 'err' ? '<span class="px ct none"><i>CT</i> <b>indisponible</b></span>' : '<span class="px ct none"><i>CT</i> <b>aucune offre</b></span>';
-  return `<div class="sc-item pr${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(th)}"><span class="sc-n"><b>${esc(e.name)}</b><span class="sc-meta">${e.l ? flag(e.l) : ''}${own ? `<span class="tag good">${own > 1 ? '× ' + nf0(own) + ' ' : ''}possédée</span>` : ''}</span>${e.maybe ? `<small>À vérifier · lu « ${esc(e.raw || '')} »</small>` : ''}</span>
+  return `<div class="sc-item pr${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(th)}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${e.l ? flag(e.l) : ''}</span>${own || e.n > 1 ? `<span class="sc-meta">${e.n > 1 ? `<button type="button" class="tag accent sc-cnt" data-a="pdec" aria-label="Ce lot compte ${e.n} exemplaires de ${esc(e.name)} : en retirer un">× ${e.n} <span aria-hidden="true">−</span></button>` : ''}${own ? `<span class="tag good">${own > 1 ? '× ' + nf0(own) + ' ' : ''}possédée</span>` : ''}</span>` : ''}${e.maybe ? `<small>À vérifier · lu « ${esc(e.raw || '')} »</small>` : ''}</span>
     <span class="row-px">${cm}${ct}</span>
     <button type="button" class="btn ghost small sc-keep" data-a="padd" aria-label="Ajouter ${esc(e.name)} à ma collection">+</button><button type="button" class="sc-x" data-a="prm" aria-label="Retirer ${esc(e.name)} de la liste"><svg class="i"><use href="#i-close"/></svg></button></div>`;
 }
@@ -7460,10 +7543,12 @@ const FRC = { cat: null, at: 0, p: null, state: 'idle', done: 0, total: 0, err: 
 const frcMetered = () => { try { const c = navigator.connection; return !!c && (c.saveData === true || c.type === 'cellular'); } catch (e) { return false; } };
 async function frcWarm() {
   if (!FRC.cat) { const c = await scryFrCached().catch(() => null); if (c && !FRC.cat) { FRC.cat = frCatalog(c.rows); FRC.at = c.at; } }
-  if (FRC.cat && Date.now() - FRC.at < FR_FRESH) { FRC.state = 'ready'; frcPaint(); return; }
+  if (FRC.cat && Date.now() - FRC.at < FR_FRESH) { FRC.state = 'ready'; frcPaint(); frcNames(); return; }
   frcStart(false);
 }
 /** Charge (ou reprend, ou met à jour) le catalogue en arrière-plan : fichier du site (fr-names.tsv) d'abord, sinon pages Scryfall ; le scan sert déjà pendant ce temps (recherche réseau mot par mot). force : malgré le réseau mobile. */
+/** Le catalogue vient d'arriver : les lignes FR déjà scannées passent sous leur nom imprimé. */
+function frcNames() { if (SC.el && FRC.cat && FRC.cat.fr && FRC.cat.fr.size) scanPaintList(); }
 function frcStart(force) {
   if (FRC.p) return FRC.p;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = 'Hors ligne'; frcPaint(); return null; }
@@ -7474,7 +7559,7 @@ function frcStart(force) {
     const rec = await scryFrCatalog(null, (d, t) => { FRC.done = d; FRC.total = t; frcPaint(); });
     FRC.cat = frCatalog(rec.rows); FRC.at = rec.at; FRC.state = 'ready';
   })().catch(e => { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? 'Scryfall demande une pause' : 'Téléchargement interrompu'; })
-    .finally(() => { FRC.p = null; frcPaint(); });
+    .finally(() => { FRC.p = null; frcPaint(); frcNames(); });
   return FRC.p;
 }
 function frcPaint() {
@@ -7737,7 +7822,7 @@ function openScan() {
       <div class="sc-flash"></div>
       <p class="sc-hint" hidden></p><p class="sc-prog" hidden></p><p class="sc-diag" hidden></p>
       <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.</p></div>
-    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><div class="sc-total" aria-live="polite" hidden></div><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>
     <div class="sc-cat coll-status" hidden></div>
     <div class="sc-note"><p class="hint">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p><button class="sc-x" type="button" data-act="note" aria-label="Fermer l'aide"><svg class="i"><use href="#i-close"/></svg></button></div>
     <div class="dv-scroll sc-list"></div>
@@ -7786,7 +7871,8 @@ function openScan() {
     if (SC.pm && e.target.closest('.sc-item.pr [data-a]')) {                      // liste de prix : garder la carte (+) ou la retirer de la liste
       const a = e.target.closest('[data-a]'), k = a.closest('.sc-item').dataset.k, it = SC.pq.find(x => x.key === k); if (!it) return;
       haptic('tap');
-      if (a.dataset.a === 'padd') { collBump(k, it.name, 1); if (it.l && it.l !== 'en') collSetLang(k, it.l); collEnrich(); toast(`${it.name} ajoutée à ta collection`, { label: 'Annuler', fn: () => collBump(k, it.name, -1) }); scanPaintList(); }
+      if (a.dataset.a === 'pdec') { it.n = Math.max(1, (it.n || 1) - 1); scanPaintList(); }
+      else if (a.dataset.a === 'padd') { const nn = it.n || 1; collBump(k, it.name, nn); if (it.l && it.l !== 'en') collSetLang(k, it.l); collEnrich(); toast(`${nn > 1 ? nn + ' × ' : ''}${it.name} ajoutée${nn > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => collBump(k, it.name, -nn) }); scanPaintList(); }
       else { SC.pq = SC.pq.filter(x => x !== it); scanPaintList(); }
       return;
     }
