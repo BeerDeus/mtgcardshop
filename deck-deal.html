@@ -1133,6 +1133,39 @@ button,.btn,select,summary{touch-action:manipulation}
 /* ── Une carte en plusieurs langues : lignes successives, la 2e allégée ─────── */
 .crow.ml.sub{border-top-color:transparent}
 .crow.sub .thumb{opacity:.92}
+
+/* ── Créateur de deck ────────────────────────────────────────────────────────── */
+.decks-tools{display:flex;align-items:center;gap:8px}
+.deck-new{width:34px;height:34px;border-radius:11px;background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.bd-body{gap:12px}
+.bd-save{flex:none;margin-left:auto}
+.bd-sum{display:flex;flex-direction:column;gap:9px;padding:13px 15px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.bd-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bd-count,.bd-side{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+.bd-count b{font-family:var(--font-display);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.bd-count span,.bd-side span{font-size:13px;color:var(--ink-3)}
+.bd-side b{font-family:var(--font-display);font-size:17px;font-weight:650}
+.bd-count.full b{color:var(--good)}
+.bd-count.over b,.bd-side.over b{color:var(--bad)}
+.bd-bar{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bd-bar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .25s}
+.bd-bar.full i{background:var(--good)}
+.bd-bar.over i{background:var(--bad)}
+.bd-issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.bd-issues li{position:relative;padding-left:15px;font-size:13px;line-height:1.3;color:var(--ink-2)}
+.bd-issues li::before{content:"";position:absolute;left:1px;top:.45em;width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.bd-issues li.bad{color:var(--bad)}
+.bd-issues li.bad::before{background:var(--bad)}
+.bd-ok{margin:0;font-size:13px;color:var(--good);font-weight:600}
+.bd-ctl{display:flex;flex-direction:column;gap:10px}
+.bd-add{display:flex;align-items:center;gap:10px}
+.bd-add>span{font-size:13px;font-weight:600;color:var(--ink-3);flex:none}
+.bd-add .seg{flex:1;min-width:0}
+.bd-list{display:flex;flex-direction:column;gap:8px}
+.bd-list .sec-title{margin-top:8px}
+.bd-opt{font-weight:500;color:var(--ink-3)}
+.bd-row .row-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.bd-row .row-name{-webkit-line-clamp:2}
 </style>
 </head>
 <body>
@@ -1194,7 +1227,7 @@ button,.btn,select,summary{touch-action:manipulation}
       <aside class="installbar buybar" id="buyBar" aria-label="Panier à valider" hidden></aside>
 
       <section class="decks" id="decksSec" aria-label="Mes decks" hidden>
-        <div class="decks-head"><h2>Mes decks</h2><button class="sync" id="decksSync" type="button" data-s="local"><i></i><span id="decksSyncTxt">Sur cet appareil</span></button></div>
+        <div class="decks-head"><h2>Mes decks</h2><div class="decks-tools"><button class="sync" id="decksSync" type="button" data-s="local"><i></i><span id="decksSyncTxt">Sur cet appareil</span></button><button class="icon-btn deck-new" id="btnNewDeck" type="button" aria-label="Créer un deck" title="Créer un deck"><svg class="i"><use href="#i-plus"/></svg></button></div></div>
         <div class="deck-list" id="deckList"></div>
         <button class="link-btn more-decks" id="btnMoreDecks" type="button" hidden></button>
       </section>
@@ -1943,6 +1976,85 @@ function commanderKeys(text) {
 /** Sans en-tête : la première carte de la liste (export EDHREC) est le commandant si elle est légendaire (créature ou planeswalker). */
 const canLead = tl => /legendary/i.test(String(tl || '')) && /(creature|planeswalker)/i.test(String(tl || ''));
 
+/* ── Créateur de deck (Standard / Commander) ──────────────────────────────────────────────────── */
+const DK_FORMATS = {
+  standard: { label: 'Standard', size: 60, copies: 4, side: 15, hint: '60 cartes, 4 exemplaires d\'une même carte au maximum (terrains de base exclus), réserve de 15 facultative.' },
+  commander: { label: 'Commander', size: 100, copies: 1, side: 0, hint: '100 cartes dont ton commandant, un seul exemplaire de chaque carte (terrains de base exclus).' },
+};
+/** Format noté en tête d'une liste par le créateur (« // Deck Deal : commander »), '' sinon. */
+function dkFormat(text) { const m = String(text || '').match(/^\/\/\s*Deck Deal\s*:\s*(standard|commander)\b/im); return m ? m[1].toLowerCase() : ''; }
+/** Lignes « SB: 2 Negate » d'une liste : [{ key, name, qty }] (réserve, additionnée par carte). Le reste de la liste ne les voit pas (parseLine les ignore). */
+function dkSideCards(text) {
+  const out = new Map();
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const m = raw.trim().match(/^SB:\s*(.+)$/i); if (!m) continue;
+    const p = parseLine(m[1]); if (!p || p.ignored) continue;
+    const k = ownKey(p.name), cur = out.get(k); if (cur) cur.qty += p.qty; else out.set(k, { key: k, name: p.name, qty: p.qty });
+  }
+  return [...out.values()];
+}
+/** Liste du créateur → texte : { fmt, main:[{ name, qty }], side:[{ name, qty }], cmdr:[{ name }] }.
+ *  Même syntaxe que les exports du marché (en-tête « Commander », lignes « SB: ») : le reste de l'app la lit sans rien savoir du créateur. */
+function dkBuildText({ fmt, main, side, cmdr }) {
+  const out = ['// Deck Deal : ' + (fmt === 'commander' ? 'commander' : 'standard')];
+  if (fmt === 'commander' && cmdr && cmdr.length) { out.push('Commander'); cmdr.forEach(c => out.push('1 ' + c.name)); out.push(''); }
+  out.push('Deck');
+  (main || []).forEach(c => out.push(c.qty + ' ' + c.name));
+  if (fmt !== 'commander' && side && side.length) { out.push(''); side.forEach(c => out.push('SB: ' + c.qty + ' ' + c.name)); }
+  return out.join('\n');
+}
+/** Texte → { fmt ('' si inconnu), main, side, cmdr } : cartes dans l'ordre de la liste, doublons additionnés, clé = clé de collection (face avant).
+ *  Lit aussi les listes venues d'ailleurs : en-têtes « Commander » / « Sideboard », lignes « SB: », sections (Creatures, Lands…) ; « Maybeboard » est laissé de côté. */
+function dkParse(text) {
+  const main = new Map(), side = new Map(), cmdr = [];
+  let sec = 'main';
+  const add = (m, p) => { const k = ownKey(p.name), cur = m.get(k); if (cur) cur.qty += p.qty; else m.set(k, { key: k, name: p.name, qty: p.qty }); };
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) { if (sec === 'cmdr') sec = 'main'; continue; }
+    if (/^(\/\/|#)/.test(line)) continue;
+    const sb = line.match(/^SB:\s*(.+)$/i);
+    if (sb) { const p = parseLine(sb[1]); if (p && !p.ignored) add(side, p); continue; }
+    if (HEADER_RE.test(line)) {
+      sec = /^(commanders?|commandants?)\b/i.test(line) ? 'cmdr' : /^(sideboard|companion)\b/i.test(line) ? 'side' : /^(maybeboard|considering)\b/i.test(line) ? 'skip' : 'main';
+      continue;
+    }
+    const p = parseLine(line); if (!p || p.ignored || sec === 'skip') continue;
+    if (sec === 'cmdr') { const k = ownKey(p.name); if (!cmdr.some(c => c.key === k)) cmdr.push({ key: k, name: p.name }); }
+    else add(sec === 'side' ? side : main, p);
+  }
+  return { fmt: dkFormat(text), main: [...main.values()], side: [...side.values()], cmdr };
+}
+/** Vérifie un deck du créateur. d = { main, side, cmdr } (comme dkParse) ; metaOf(clé) → { ci } ou null (identité de couleur, si connue).
+ *  Retourne { n (cartes du deck, commandant compris), side, size, issues: [{ lv: 'bad'|'warn', t }] } : « bad » = règle enfreinte, « warn » = deck pas fini. */
+function dkCheck(fmt, d, metaOf) {
+  const f = DK_FORMATS[fmt] || DK_FORMATS.standard, main = d.main || [], side = d.side || [], cmdr = d.cmdr || [], issues = [];
+  const sum = a => a.reduce((x, c) => x + c.qty, 0), n = sum(main) + cmdr.length, ns = sum(side);
+  const plural = (q, w) => q + ' ' + w + (q > 1 ? 's' : '');
+  if (fmt === 'commander') {
+    if (!cmdr.length) issues.push({ lv: 'bad', t: 'Aucun commandant : choisis-en un.' });
+    else if (cmdr.length > 2) issues.push({ lv: 'bad', t: 'Deux commandants au maximum (partenaires).' });
+    if (n < f.size) issues.push({ lv: 'warn', t: `Il manque ${plural(f.size - n, 'carte')} pour arriver à ${f.size}.` });
+    else if (n > f.size) issues.push({ lv: 'bad', t: `${plural(n - f.size, 'carte')} en trop (${f.size} exactement).` });
+    for (const c of main) {
+      if (BASIC_NAMES.has(c.key)) continue;
+      if (c.qty > 1) issues.push({ lv: 'bad', t: `${c.name} : ${c.qty} exemplaires (un seul en Commander).` });
+      if (cmdr.some(x => x.key === c.key)) issues.push({ lv: 'bad', t: `${c.name} est déjà ton commandant.` });
+    }
+    for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && m.cd === 0) issues.push({ lv: 'warn', t: `${c.name} ne peut normalement pas être commandant.` }); }      // cd : 0 = carte lue sur Scryfall et non éligible (absent = pas encore lue)
+    const ci = new Set(); let known = cmdr.length > 0;
+    for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && typeof m.ci === 'string') for (const x of m.ci) ci.add(x); else known = false; }
+    if (known) for (const c of main) { const m = metaOf(c.key); if (m && typeof m.ci === 'string' && [...m.ci].some(x => !ci.has(x))) issues.push({ lv: 'warn', t: `${c.name} sort de l'identité de couleur du commandant.` }); }
+  } else {
+    if (n < f.size) issues.push({ lv: 'warn', t: `Il manque ${plural(f.size - n, 'carte')} (${f.size} minimum).` });
+    if (ns > f.side) issues.push({ lv: 'bad', t: `Réserve de ${ns} cartes (${f.side} au maximum).` });
+    const tot = new Map(), nm = new Map();
+    for (const c of [...main, ...side]) { if (BASIC_NAMES.has(c.key)) continue; tot.set(c.key, (tot.get(c.key) || 0) + c.qty); nm.set(c.key, c.name); }
+    for (const [k, q] of tot) if (q > f.copies) issues.push({ lv: 'bad', t: `${nm.get(k)} : ${q} exemplaires (${f.copies} au maximum).` });
+  }
+  return { n, side: ns, size: f.size, issues };
+}
+
 /* ── Collection : lecture CSV / texte, cartes possédées ──────────────────────────────────────── */
 /** Clé d'une carte pour la collection : nom de la première face, normalisé (« Fire // Ice » et « Fire » se rejoignent). */
 const ownKey = name => frontName(name);
@@ -2248,11 +2360,13 @@ const engFree = (owned, eng, k, exceptId) => Math.max(0, (Number(owned) || 0) - 
 function engDecksOf(eng, k) { const out = []; for (const id in eng || {}) { const q = (eng[id].q && eng[id].q[k]) || 0; if (q > 0) out.push({ id, n: eng[id].n, q }); } return out; }
 /** Deck monté : pour chaque carte du texte (hors terrains de base), les exemplaires possédés, au plus la quantité du deck. ownedOf : clé → exemplaires possédés. */
 function engSnapshot(text, ownedOf) {
+  const want = new Map();      // clé → exemplaires voulus : deck + réserve (« SB: »), la réserve est dans la boîte du deck aussi
+  for (const c of parseDeck(text).cards) { const k = ownKey(c.key); if (k && !BASIC_NAMES.has(k)) want.set(k, (want.get(k) || 0) + c.qty); }
+  for (const c of dkSideCards(text)) if (c.key && !BASIC_NAMES.has(c.key)) want.set(c.key, (want.get(c.key) || 0) + c.qty);
   const q = {};
-  for (const c of parseDeck(text).cards) {
-    const k = ownKey(c.key); if (!k || BASIC_NAMES.has(k)) continue;
-    const n = Math.min(c.qty, Math.max(0, Math.floor(Number(ownedOf(k)) || 0)));
-    if (n > 0) q[k] = Math.min(999, (q[k] || 0) + n);
+  for (const [k, w] of want) {
+    const n = Math.min(w, Math.max(0, Math.floor(Number(ownedOf(k)) || 0)));
+    if (n > 0) q[k] = Math.min(999, n);
   }
   return q;
 }
@@ -2713,7 +2827,7 @@ if (typeof module !== 'undefined' && module.exports) {
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
-    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead,
+    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkSideCards, dkBuildText, dkParse, dkCheck,
     ownKey, cardLang, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
@@ -5095,15 +5209,14 @@ function renderDecks() {
   alSoon();
   const sec = $('#decksSec'), host = $('#deckList'), list = allDecks();
   const loading = !!D.hint && !D.authReady, imp = importable();
-  sec.hidden = !(list.length || D.user || loading || imp.length);
-  if (sec.hidden) { updateSaveButtons(); return; }
+  sec.hidden = false;      // toujours là : le « + » crée un deck même quand il n'y en a pas encore
   const shown = D.expanded ? list : list.slice(0, 4);
   let html = '';
   if (loading) html = '<div class="deck skel"><span class="sk name"></span><span class="sk meta"></span></div><div class="deck skel"><span class="sk name"></span><span class="sk meta"></span></div>';
   else {
     if (imp.length) html += `<div class="import-row"><span>${imp.length} deck${imp.length > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" data-act="import">Importer</button></div>`;
     html += shown.map(deckCard).join('');
-    if (!list.length && D.user) html += '<div class="deck-empty">Aucun deck pour le moment. Colle une liste, puis touche « Enregistrer ».</div>';
+    if (!list.length) html += '<div class="deck-empty">Aucun deck pour le moment. Touche « + » pour en créer un, ou colle une liste puis « Enregistrer ».</div>';
   }
   host.innerHTML = html;
   shown.forEach(d => D.seen.add(d.id));
@@ -5181,6 +5294,7 @@ function openDeckSheet(id) {
       <div class="sec-title">Historique des prix</div>
       ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${series.length} relevés · de ${esc(fmt(Math.min(...series)))} à ${esc(fmt(Math.max(...series)))}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
       ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.</p>'}
+      <button class="link-btn link-inline" type="button" id="dkEdit">Modifier les cartes (éditeur)</button>
       <button class="link-btn link-inline" type="button" id="dkDup">Dupliquer ce deck</button>
       <button class="link-btn link-inline" type="button" id="dkOwn">Ajouter ses cartes à ma collection</button>`;
     api.setFoot('<button class="btn ghost-danger" type="button" id="dkDel">Supprimer</button><button class="btn" type="button" id="dkOpen">Ouvrir</button>');
@@ -5199,6 +5313,7 @@ function openDeckSheet(id) {
       toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection (terrains de base exclus)`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
       collEnrich();
     };
+    $('#dkEdit', api.body).onclick = () => { api.close(); setTimeout(() => openBuilder({ id }), 200); };
     $('#dkDup', api.body).onclick = () => {
       const cur = findDeck(id) || d, nid = newIdFor();
       putDeck(nid, deckDoc({ ...cur, name: (cur.name + ' (copie)').slice(0, 120), history: [], createdAt: Date.now() }));
@@ -5347,6 +5462,7 @@ function initDecks() {
   };
   $('#btnAccount').onclick = openAccount;
   $('#decksSync').onclick = openAccount;
+  $('#btnNewDeck').onclick = openDeckNew;
   $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast('Deck mis à jour'); } else openSaveSheet(); };
   $('#btnViewer').onclick = () => openDeckViewer({ live: true });
   $('#btnSave2').onclick = () => {
@@ -6160,6 +6276,7 @@ function collHeadText() {
 }
 function collPaintHead() {
   paintCollSection();
+  if (typeof BD !== 'undefined' && BD.el && BD.tab === 'coll') bdList();      // l'éditeur de deck liste la collection : il suit la lecture des cartes (commandants possibles…)
   const el = COLL.el; if (!el) return;
   $('.dv-title span', el).textContent = collHeadText();
   const sy = $('.coll-sync', el), si = collSyncInfo();
@@ -7970,6 +8087,286 @@ function openScan() {
   haptic('tap'); scanCamera().finally(scanWarm);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden && SC.el && SC.watch) SC.watch.reset(); });
+
+
+/* ── builder.js : créer un deck dans l'app (Standard ou Commander) ────────────────────────────────
+   Écran plein format : onglets Deck · Collection (ajout en priorité) · Chercher (n'importe quelle carte).
+   Règles : Standard 60 cartes, 4 exemplaires max (réserve de 15 facultative) ; Commander 100 cartes, une seule de chaque, un commandant.
+   Le deck est enregistré comme les autres (texte), puis monté : ses cartes possédées sont réservées. */
+const BD = { el: null, id: null, name: '', fmt: 'standard', main: new Map(), side: new Map(), cmdr: [], tab: 'deck', tgt: 'main', q: '', shown: 60, dirty: false, meta: {}, tried: new Set(), cat: null, catErr: '', metaT: 0, issuesOpen: false, idx: null };
+const BD_PAGE = 60;
+const BD_BASICS = [['plains', 'Plains', 'Plaine'], ['island', 'Island', 'Île'], ['swamp', 'Swamp', 'Marais'], ['mountain', 'Mountain', 'Montagne'], ['forest', 'Forest', 'Forêt']];
+const bdMeta = k => COLL.meta[k] || BD.meta[k] || null;
+const bdCount = m => { let n = 0; for (const c of m.values()) n += c.qty; return n; };
+const bdData = () => ({ fmt: BD.fmt, main: [...BD.main.values()], side: [...BD.side.values()], cmdr: BD.cmdr });
+const bdTot = k => ((BD.main.get(k) || {}).qty || 0) + ((BD.side.get(k) || {}).qty || 0);
+/** Nom affiché : français si la carte est possédée en français (même règle que la collection), sinon anglais. */
+function bdLabel(k, name) { const x = COLL.map[k]; return (x && x.l && frName(k, x.l)) || name; }
+const bdCmp = (a, b) => bdLabel(a.key, a.name).localeCompare(bdLabel(b.key, b.name), 'fr', { sensitivity: 'base' });
+const bdFmtName = f => (DK_FORMATS[f] || DK_FORMATS.standard).label;
+
+/* ── Nouveau deck : nom + format ──────────────────────────────────────────────────────────────── */
+function openDeckNew() {
+  openSheet('Nouveau deck', 'Standard ou Commander', api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="ndName">Nom</label><input type="text" id="ndName" maxlength="120" autocomplete="off" placeholder="Mon deck" enterkeyhint="go"></div>
+      <div class="seg" id="ndFmt" role="radiogroup" aria-label="Format"></div>
+      <p class="hint" id="ndHint"></p>`;
+    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="ndGo">Créer</button>');
+    const seg = $('#ndFmt', api.body), hint = $('#ndHint', api.body), name = $('#ndName', api.body);
+    const paint = () => { const f = DK_FORMATS[seg._v || 'standard']; hint.textContent = f.hint; };
+    mountSeg(seg, [{ v: 'standard', label: 'Standard' }, { v: 'commander', label: 'Commander' }], 'standard', paint); paint();
+    const go = () => { const fmt = seg._v || 'standard'; api.close(); setTimeout(() => openBuilder({ name: name.value.trim(), fmt }), 200); };
+    $('#ndGo', api.foot).onclick = go; name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+    setTimeout(() => name.focus(), 380);
+  });
+}
+
+/* ── Ouverture ────────────────────────────────────────────────────────────────────────────────── */
+/** Ouvre l'éditeur : un nouveau deck { name, fmt } ou un deck enregistré { id }. */
+function openBuilder(o) {
+  if (BD.el) return;
+  const prev = o.id ? findDeck(o.id) : null;
+  Object.assign(BD, { id: prev ? prev.id : null, name: prev ? prev.name : (o.name || ''), tab: 'deck', tgt: 'main', q: '', shown: BD_PAGE, dirty: false, issuesOpen: false, idx: null, main: new Map(), side: new Map(), cmdr: [] });
+  if (prev) {
+    const p = dkParse(prev.text);
+    BD.fmt = p.fmt || (p.cmdr.length || p.main.reduce((a, c) => a + c.qty, 0) >= 99 ? 'commander' : 'standard');
+    p.main.forEach(c => BD.main.set(c.key, c)); p.side.forEach(c => BD.side.set(c.key, c)); BD.cmdr = p.cmdr;
+    if (BD.fmt === 'commander') BD.side.clear();      // pas de réserve en Commander
+  } else BD.fmt = o.fmt === 'commander' ? 'commander' : 'standard';
+  collFrLoad();
+  const wrap = document.createElement('div'); wrap.className = 'dv bd'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Créateur de deck');
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b id="bdTitle"></b><span id="bdSub"></span></div>
+      <button class="btn small bd-save" type="button" data-act="save" id="bdSave">Enregistrer</button></header>
+    <div class="dv-scroll"><div class="dv-body bd-body">
+      <div class="bd-sum" id="bdSum"></div>
+      <div class="seg" id="bdSeg" role="tablist" aria-label="Contenu"></div>
+      <div class="bd-ctl" id="bdCtl"></div>
+      <div class="bd-list" id="bdList"></div></div></div>`;
+  BD.el = wrap; const prevFocus = document.activeElement;
+  const onKey = e => { if (e.key === 'Escape' && !sheets.length && !imgView) { e.stopPropagation(); bdClose(); } };
+  wrap.__close = () => {
+    if (BD.el !== wrap) return; BD.el = null; clearTimeout(BD.metaT); document.removeEventListener('keydown', onKey, true);
+    wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
+    try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  };
+  document.addEventListener('keydown', onKey, true);
+  wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
+  wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+  mountSeg($('#bdSeg', wrap), [{ v: 'deck', label: 'Deck' }, { v: 'coll', label: 'Collection' }, { v: 'find', label: 'Chercher' }], 'deck', bdTab);
+  wrap.addEventListener('click', bdClick);
+  wrap.addEventListener('input', e => {
+    if (e.target.id === 'bdName') { BD.name = e.target.value; BD.dirty = true; bdHead(); }
+    else if (e.target.id === 'bdQ') { BD.q = e.target.value; BD.shown = BD_PAGE; bdList(); }
+  });
+  wrap.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'bdName') { e.preventDefault(); e.target.blur(); } });
+  document.body.appendChild(wrap); holdApp();
+  bdTab('deck'); bdPaint(); bdMetaSoon();
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  haptic('tap');
+}
+function bdClose(force) {
+  if (!BD.el) return;
+  if (!force && BD.dirty) {
+    openSheet('Quitter sans enregistrer ?', null, api => {
+      api.body.innerHTML = '<p class="hint">Les changements de ce deck seront perdus.</p>';
+      api.setFoot('<button class="btn ghost" type="button" data-close>Continuer</button><button class="btn danger" type="button" id="bdLeave">Quitter</button>');
+      $('#bdLeave', api.foot).onclick = () => { api.close(); bdClose(true); };
+    });
+    return;
+  }
+  BD.el.__close();
+}
+
+/* ── Données de la carte (couleurs, image) : collection d'abord, sinon Scryfall ───────────────── */
+function bdMetaSoon() {
+  clearTimeout(BD.metaT); BD.metaT = setTimeout(bdMetaLoad, 700);
+}
+async function bdMetaLoad() {
+  if (!BD.el) return;
+  const all = [...BD.main.values(), ...BD.cmdr].filter(c => !BASIC_NAMES.has(c.key) && !bdMeta(c.key) && !BD.tried.has(c.key));
+  if (!all.length || scryLeft() > 0) return;
+  all.forEach(c => BD.tried.add(c.key));
+  try {
+    const got = await scryCollection(all.slice(0, 150).map(c => c.name));
+    for (const [k, m] of got) if (m) BD.meta[k] = m;
+    if (BD.el) bdPaint();
+  } catch (e) { /* hors ligne ou limite Scryfall : le deck reste utilisable, sans contrôle des couleurs */ }
+}
+
+/* ── Modifications ────────────────────────────────────────────────────────────────────────────── */
+/** Ajoute (d = 1) ou retire (d = −1) un exemplaire de la carte k dans la zone tgt (main · side · cmdr). Retourne false si la règle du format l'interdit. */
+function bdChange(tgt, k, name, d) {
+  const f = DK_FORMATS[BD.fmt];
+  if (tgt === 'cmdr') {
+    const i = BD.cmdr.findIndex(c => c.key === k);
+    if (d > 0) {
+      if (i >= 0) return false;
+      if (BD.cmdr.length >= 2) { toast('Deux commandants au maximum (partenaires)'); haptic('warn'); return false; }
+      BD.cmdr.push({ key: k, name }); BD.main.delete(k);
+    } else if (i >= 0) BD.cmdr.splice(i, 1); else return false;
+  } else {
+    const m = BD[tgt], cur = m.get(k), q = cur ? cur.qty : 0;
+    if (q + d < 0) return false;
+    if (d > 0) {
+      if (BD.cmdr.some(c => c.key === k)) { toast('Cette carte est déjà ton commandant'); haptic('warn'); return false; }
+      if (!BASIC_NAMES.has(k) && bdTot(k) + 1 > f.copies) { toast(f.copies === 1 ? 'Commander : un seul exemplaire de chaque carte' : `${f.copies} exemplaires au maximum (deck et réserve)`); haptic('warn'); return false; }
+      if (tgt === 'side' && bdCount(BD.side) + 1 > f.side) { toast(`Réserve : ${f.side} cartes au maximum`); haptic('warn'); return false; }
+    }
+    if (q + d === 0) m.delete(k); else m.set(k, { key: k, name: cur ? cur.name : name, qty: q + d });
+  }
+  BD.dirty = true; bdPaint(); bdMetaSoon(); return true;
+}
+
+/* ── Affichage ────────────────────────────────────────────────────────────────────────────────── */
+function bdHead() {
+  const el = BD.el; if (!el) return;
+  const ck = dkCheck(BD.fmt, bdData(), bdMeta);
+  $('#bdTitle', el).textContent = BD.name.trim() || 'Nouveau deck';
+  $('#bdSub', el).textContent = `${bdFmtName(BD.fmt)} · ${ck.n}/${ck.size}`;
+  const sv = $('#bdSave', el), need = !ck.n || (BD.fmt === 'commander' && !BD.cmdr.length);
+  sv.disabled = need; sv.title = need ? (BD.fmt === 'commander' && !BD.cmdr.length ? 'Choisis un commandant' : 'Ajoute des cartes') : '';
+}
+function bdSumHtml() {
+  const ck = dkCheck(BD.fmt, bdData(), bdMeta), pct = Math.max(0, Math.min(100, Math.round(ck.n / ck.size * 100)));
+  const st = ck.n === ck.size ? 'full' : ck.n > ck.size ? 'over' : '';
+  const bad = ck.issues.filter(i => i.lv === 'bad').length;
+  const list = BD.issuesOpen ? ck.issues : ck.issues.slice(0, 3);
+  return `<div class="bd-top"><div class="bd-count ${st}"><b>${nf0(ck.n)}</b><span>/ ${ck.size} cartes</span></div>${BD.fmt === 'standard' ? `<div class="bd-side${ck.side > DK_FORMATS.standard.side ? ' over' : ''}"><b>${nf0(ck.side)}</b><span>/ ${DK_FORMATS.standard.side} en réserve</span></div>` : ''}</div>
+    <div class="bd-bar ${st}"><i style="width:${pct}%"></i></div>
+    ${ck.issues.length ? `<ul class="bd-issues">${list.map(i => `<li class="${i.lv}">${esc(i.t)}</li>`).join('')}</ul>${ck.issues.length > 3 ? `<button class="link-btn link-inline" type="button" data-act="issues">${BD.issuesOpen ? 'Réduire' : `Voir les ${ck.issues.length - 3} autres alertes`}</button>` : ''}`
+      : '<p class="bd-ok">Deck complet et conforme.</p>'}`;
+}
+/** Pastilles d'une carte : possédée ou non, engagée ailleurs. ctx : 'deck' (rangée du deck) · 'coll' / 'find' (liste de cartes à ajouter). */
+function bdTags(k, q, ctx) {
+  if (BASIC_NAMES.has(k)) return '';
+  const own = collQty(k), eg = engTotal(XS.eng, k, BD.id), out = [];
+  if (ctx !== 'deck' && BD.cmdr.some(c => c.key === k)) out.push('<span class="tag accent">Commandant</span>');
+  if (ctx === 'deck') out.push(own >= q ? '<span class="tag good">Possédée</span>' : own > 0 ? `<span class="tag warn">${own} possédée${own > 1 ? 's' : ''} sur ${q}</span>` : '<span class="tag">À acheter</span>');
+  else out.push(own ? `<span class="tag good">× ${own} possédée${own > 1 ? 's' : ''}</span>` : '<span class="tag">Pas dans ta collection</span>');
+  if (own && eg) out.push(`<span class="tag warn" title="Réservées par un autre deck monté">${eg} engagée${eg > 1 ? 's' : ''} ailleurs</span>`);
+  return out.join('');
+}
+function bdRow(k, name, q, tgt, ctx, label) {
+  const x = COLL.map[k], m = bdMeta(k), l = x ? x.l : '', nm = label || bdLabel(k, name), hue = hash32(k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase());
+  const img = m && m.im ? collImage(k, l, m.im).src : '', tags = bdTags(k, q, ctx);
+  return `<div class="crow bd-row" data-k="${esc(k)}" data-n="${esc(name)}" data-t="${tgt}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span></span>${tags ? `<span class="row-meta">${tags}</span>` : ''}</span>
+    <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(nm)}">−</button><b>${q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(nm)}">+</button></span></div>`;
+}
+function bdDeckHtml() {
+  const mainAll = [...BD.main.values()], basicKeys = new Set(BD_BASICS.map(b => b[0]));
+  const spells = mainAll.filter(c => !BASIC_NAMES.has(c.key)).sort(bdCmp), others = mainAll.filter(c => BASIC_NAMES.has(c.key) && !basicKeys.has(c.key)).sort(bdCmp);
+  let h = '';
+  if (BD.fmt === 'commander') {
+    h += `<div class="sec-title">Commandant${BD.cmdr.length > 1 ? 's' : ''}</div>`;
+    h += BD.cmdr.length ? BD.cmdr.map(c => bdRow(c.key, c.name, 1, 'cmdr', 'deck')).join('') : '<button class="btn ghost small" type="button" data-act="pick-cmdr" style="align-self:flex-start">Choisir un commandant</button>';
+  }
+  h += `<div class="sec-title">Deck · ${nf0(bdCount(BD.main))}</div>`;
+  h += spells.length ? spells.map(c => bdRow(c.key, c.name, c.qty, 'main', 'deck')).join('') : '<p class="hint">Ajoute des cartes depuis « Collection » (les tiennes) ou « Chercher » (toutes les cartes).</p>';
+  h += `<div class="sec-title">Terrains de base · ${nf0(mainAll.filter(c => BASIC_NAMES.has(c.key)).reduce((a, c) => a + c.qty, 0))}</div>`;
+  h += BD_BASICS.map(([k, en, fr]) => bdRow(k, en, (BD.main.get(k) || {}).qty || 0, 'main', 'deck', fr)).join('') + others.map(c => bdRow(c.key, c.name, c.qty, 'main', 'deck')).join('');
+  if (BD.fmt === 'standard') {
+    const side = [...BD.side.values()].sort(bdCmp);
+    h += `<div class="sec-title">Réserve · ${nf0(bdCount(BD.side))} <span class="bd-opt">facultative</span></div>`;
+    h += side.length ? side.map(c => bdRow(c.key, c.name, c.qty, 'side', 'deck')).join('') : '<p class="hint">Jusqu\'à 15 cartes. Choisis « Réserve » dans l\'onglet Collection ou Chercher.</p>';
+  }
+  return h;
+}
+function bdIndex() {
+  if (BD.idx) return BD.idx;
+  return (BD.idx = Object.entries(COLL.map).map(([k, x]) => { const dn = (x.l && frName(k, x.l)) || ''; return { k, n: x.n, dn, s: normPart(x.n + ' ' + dn) }; })
+    .sort((a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' })));
+}
+function bdAddRow(k, name, label) {
+  const tgt = BD.tgt, q = tgt === 'cmdr' ? (BD.cmdr.some(c => c.key === k) ? 1 : 0) : ((BD[tgt].get(k) || {}).qty || 0);
+  return bdRow(k, name, q, tgt, 'coll', label);
+}
+function bdCollHtml() {
+  if (!collCount()) return '<div class="deck-empty">Ta collection est vide. Utilise « Chercher » pour ajouter n\'importe quelle carte au deck.</div>';
+  const words = normPart(BD.q).split(' ').filter(Boolean);
+  let items = bdIndex().filter(it => words.every(w => it.s.includes(w)));
+  if (BD.tgt === 'cmdr') items = items.filter(it => (COLL.meta[it.k] || {}).cd);
+  const shown = items.slice(0, BD.shown);
+  let h = BD.tgt === 'cmdr' ? '<p class="hint">Les cartes de ta collection qui peuvent être commandant.' + (COLL.enrich ? ' Lecture des cartes en cours…' : '') + '</p>' : '';
+  h += shown.map(it => bdAddRow(it.k, it.n, it.dn)).join('');
+  if (!items.length) h += `<p class="hint">${words.length ? 'Aucune carte de ta collection ne correspond.' : BD.tgt === 'cmdr' ? 'Aucun commandant possible dans ta collection (ou cartes pas encore lues).' : ''}</p>`;
+  if (items.length > shown.length) h += `<button class="link-btn more-decks" type="button" data-act="more">Afficher ${Math.min(BD_PAGE, items.length - shown.length)} cartes de plus (${nf0(items.length - shown.length)} restantes)</button>`;
+  return h;
+}
+function bdFindHtml() {
+  if (BD.catErr) return `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(BD.catErr)}</span></div>`;
+  if (!BD.cat) return '<div class="status" data-ok="0"><span class="dot"></span><span>Chargement du catalogue (une seule fois)…</span></div>';
+  const q = BD.q.trim();
+  if (q.length < 2) return '<p class="hint">Tape au moins 2 lettres du nom (anglais) : toutes les cartes Magic sont cherchables ici.</p>';
+  const sug = collSuggest(BD.cat, q, 20);
+  return sug.map(n => bdAddRow(ownKey(n), n)).join('') || '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>';
+}
+function bdList() {
+  const el = BD.el; if (!el) return;
+  $('#bdList', el).innerHTML = BD.tab === 'deck' ? bdDeckHtml() : BD.tab === 'coll' ? bdCollHtml() : bdFindHtml();
+}
+function bdPaint() {
+  const el = BD.el; if (!el) return;
+  bdHead(); $('#bdSum', el).innerHTML = bdSumHtml(); bdList();
+}
+/** Changement d'onglet : contrôles (nom · cible + recherche) puis liste. */
+function bdTab(v) {
+  const el = BD.el; if (!el) return;
+  BD.tab = v; BD.q = ''; BD.shown = BD_PAGE;
+  const ctl = $('#bdCtl', el); $('#bdSeg', el).setValue(v);
+  if (v === 'deck') ctl.innerHTML = `<div class="field-in"><label class="label" for="bdName">Nom du deck</label><input type="text" id="bdName" maxlength="120" autocomplete="off" placeholder="Mon deck" value="${esc(BD.name)}"></div>`;
+  else {
+    const opts = BD.fmt === 'commander' ? [{ v: 'main', label: 'Deck' }, { v: 'cmdr', label: 'Commandant' }] : [{ v: 'main', label: 'Deck' }, { v: 'side', label: 'Réserve' }];
+    if (!opts.some(o => o.v === BD.tgt)) BD.tgt = 'main';
+    ctl.innerHTML = `<div class="bd-add"><span>Ajouter au</span><div class="seg" id="bdTgt" role="radiogroup" aria-label="Ajouter au"></div></div>
+      <div class="field-in"><label class="label" for="bdQ">${v === 'coll' ? 'Chercher dans ma collection' : 'Nom de la carte'}</label><input type="text" id="bdQ" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${v === 'coll' ? 'Nom français ou anglais' : 'Sol Ring'}" enterkeyhint="search"></div>`;
+    mountSeg($('#bdTgt', ctl), opts, BD.tgt, t => { BD.tgt = t; BD.shown = BD_PAGE; bdList(); });
+    if (v === 'find' && !BD.cat && !BD.catErr) collCatalog().then(c => { BD.cat = c; if (BD.el && BD.tab === 'find') bdList(); }).catch(e => { BD.catErr = e && e.code === 'rate' ? 'Scryfall demande une pause, réessaie dans une minute.' : 'Catalogue Scryfall injoignable : réessaie plus tard.'; if (BD.el && BD.tab === 'find') bdList(); });
+    if (v === 'coll') { BD.idx = null; if ((collMissing().length || collLangMissingCount()) && !COLL.enrichErr) collEnrich(); }
+  }
+  bdList();
+  const sc = $('.dv-scroll', el); if (sc) sc.scrollTop = 0;
+}
+
+/* ── Interactions ─────────────────────────────────────────────────────────────────────────────── */
+function bdClick(e) {
+  const st = e.target.closest('.qstep button[data-d]');
+  if (st) {
+    const row = st.closest('.bd-row'); if (!row) return;
+    const d = Number(st.dataset.d), k = row.dataset.k, tgt = row.dataset.t;
+    if (bdChange(tgt, k, row.dataset.n, d)) haptic('tap');
+    return;
+  }
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'close') bdClose();
+  else if (act === 'save') bdSave();
+  else if (act === 'issues') { BD.issuesOpen = !BD.issuesOpen; bdPaint(); }
+  else if (act === 'more') { BD.shown += BD_PAGE; bdList(); }
+  else if (act === 'pick-cmdr') { BD.tgt = 'cmdr'; $('#bdSeg', BD.el).setValue('coll'); bdTab('coll'); haptic('tap'); }
+}
+
+/* ── Enregistrement : comme un deck normal, puis monté ────────────────────────────────────────── */
+function bdSave() {
+  const ck = dkCheck(BD.fmt, bdData(), bdMeta);
+  if (!ck.n) { toast('Ajoute d\'abord des cartes'); return; }
+  if (BD.fmt === 'commander' && !BD.cmdr.length) { toast('Choisis d\'abord un commandant'); return; }
+  readOpts();
+  const prev = BD.id ? findDeck(BD.id) : null, text = dkBuildText(bdData());
+  const name = BD.name.trim().slice(0, 120) || (prev && prev.name) || ('Deck ' + bdFmtName(BD.fmt));
+  const doc = deckDoc({ name, text, opts: prev ? prev.opts : S.opts, history: prev ? prev.history : [], snap: prev && prev.snap, createdAt: prev && prev.createdAt });
+  const id = prev ? prev.id : newIdFor();
+  putDeck(id, doc);
+  let reserved = 0;
+  if (prev) engRefresh(id, name, text);                                   // deck déjà monté : ses cartes réservées suivent la liste
+  else { const q = engSnapshot(text, collQty); reserved = Object.values(q).reduce((a, x) => a + x, 0); if (reserved) engSet(id, name, text); }      // nouveau deck : monté automatiquement
+  if (S.deckId === id) { $('#deckText').value = text; refreshDeck(); updateSaveButtons(); }
+  const nb = ck.issues.filter(i => i.lv === 'bad' || i.lv === 'warn').length;
+  bdClose(true); haptic('ok');
+  const msg = prev ? 'Deck mis à jour' : `Deck créé${reserved ? ` · ${nf0(reserved)} carte${reserved > 1 ? 's' : ''} réservée${reserved > 1 ? 's' : ''} de ta collection` : ''}`;
+  toast(nb && !prev ? msg + ' · incomplet' : msg, { label: 'Ouvrir', fn: () => loadDeck(id) });
+}
 
 
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────

@@ -73,6 +73,16 @@ CardTrader limite `marketplace/products` à 10 requêtes/s (1 blueprint par requ
 
 Limite à connaître : le cache et les tâches vivent en mémoire du processus. Si l'hébergeur le redémarre ou le met en veille pendant une lecture, l'app relance la tâche pour ce qui manque (le cache est alors perdu).
 
+## Créer un deck dans l'app (bouton +)
+
+Accueil › **Mes decks** › **+** (la section est toujours visible) : nom + **Standard** ou **Commander**, puis un éditeur plein écran.
+
+- **Standard** : 60 cartes minimum, 4 exemplaires d'une même carte au maximum (terrains de base exclus), **réserve facultative** de 15 cartes (réserve comprise dans les 4 exemplaires). **Commander** : 100 cartes **dont le commandant**, un seul exemplaire de chaque carte (terrains de base exclus), **commandant obligatoire** pour enregistrer (2 au maximum pour les partenaires) ; alerte quand une carte sort de l'identité de couleur du commandant (couleurs lues sur Scryfall, alerte absente tant qu'elles sont inconnues).
+- Onglets **Deck** (nom, commandant, cartes, terrains de base 5 boutons, réserve) · **Collection** (tes cartes d'abord : recherche par nom français ou anglais, `+` / `−`, « Ajouter au : Deck | Réserve » ou « Deck | Commandant » ; en mode commandant, seules les cartes pouvant l'être) · **Chercher** (toute carte Magic, nom anglais). Les règles empêchent d'ajouter un 5e exemplaire (Standard) ou un 2e (Commander) ; le compteur, la barre et les alertes disent ce qu'il manque.
+- Chaque carte indique si elle est **possédée** ou **à acheter**, et combien d'exemplaires sont **engagés ailleurs** (autre deck monté).
+- Un deck incomplet peut être enregistré (brouillon). Le deck est **monté automatiquement** (ses cartes possédées sont réservées : « Deck créé · 3 cartes réservées de ta collection »), réserve comprise. Le toast propose **Ouvrir** (charge le deck dans la saisie, prêt pour la recherche de prix).
+- Un deck est un texte comme les autres (synchronisé avec le compte, sans nouveau champ Firestore) : première ligne `// Deck Deal : commander`, bloc `Commander`, bloc `Deck`, lignes `SB: 2 Negate` pour la réserve (jamais cherchée ni chiffrée). Feuille d'un deck › **Modifier les cartes (éditeur)** rouvre n'importe quel deck dans l'éditeur (sections « Sideboard » / « Maybeboard » d'un export lues ; le maybeboard n'est pas conservé).
+
 ## Deck viewer et prix gardés
 
 Chaque recherche live d'un deck enregistré garde les prix carte par carte (carte retenue, langue, état, vendeur, extension, coût de mana, type, image) : sur l'appareil (`deckdeal:snaps:v1`, 30 decks max) et, si les règles Firestore le permettent, dans le document du deck (champ `snap`, synchronisé entre appareils).
