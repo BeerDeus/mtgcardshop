@@ -1166,6 +1166,16 @@ button,.btn,select,summary{touch-action:manipulation}
 .bd-opt{font-weight:500;color:var(--ink-3)}
 .bd-row .row-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
 .bd-row .row-name{-webkit-line-clamp:2}
+
+/* ── Format et valeur des decks ──────────────────────────────────────────────── */
+.deck-top{display:flex;align-items:center;gap:8px;min-width:0}
+.deck-top .deck-name{min-width:0}
+.deck-fmt{flex:none;font-size:10.5px;font-weight:650;line-height:1;padding:3px 7px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.deck-fmt.standard{background:var(--surface-2);color:var(--ink-2)}
+.dk-val{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:var(--r-md);background:var(--surface-3);border:1px solid var(--line)}
+.dk-val b{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.dk-val span{font-size:12.5px;color:var(--ink-3)}
+.bd-val{font-family:var(--font-display);font-size:17px;font-weight:650;color:var(--ink-2);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -2027,6 +2037,16 @@ function dkParse(text) {
   }
   return { fmt: dkFormat(text), main: [...main.values()], side: [...side.values()], cmdr };
 }
+/** Valeur estimée d'un deck : prix tendance Cardmarket (centimes) × exemplaires de chaque carte du deck, terrains de base et réserve exclus, cartes possédées comprises.
+ *  metaOf(clé) → infos de la carte { eu } ; null/undefined = pas encore lue (à chercher : « missing »). → { cents, known (cartes chiffrées), total (cartes différentes), missing: [{ key, name }], noPrice (lues mais sans prix) } */
+function dkValue(text, metaOf) {
+  let cents = 0, known = 0, noPrice = 0; const missing = [], cards = parseDeck(text).cards;
+  for (const c of cards) {
+    const k = ownKey(c.key), m = metaOf(k);
+    if (!m) missing.push({ key: k, name: c.name }); else if (Number.isFinite(m.eu)) { cents += m.eu * c.qty; known++; } else noPrice++;
+  }
+  return { cents: Math.round(cents), known, total: cards.length, missing, noPrice };
+}
 /** Vérifie un deck du créateur. d = { main, side, cmdr } (comme dkParse) ; metaOf(clé) → { ci } ou null (identité de couleur, si connue).
  *  Retourne { n (cartes du deck, commandant compris), side, size, issues: [{ lv: 'bad'|'warn', t }] } : « bad » = règle enfreinte, « warn » = deck pas fini. */
 function dkCheck(fmt, d, metaOf) {
@@ -2829,7 +2849,7 @@ if (typeof module !== 'undefined' && module.exports) {
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
-    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkSideCards, dkBuildText, dkParse, dkCheck,
+    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkSideCards, dkBuildText, dkParse, dkCheck,
     ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
@@ -5200,10 +5220,11 @@ function deltaChip(h) {
   const d = deltaFor(h); if (!d || d.diff === 0) return '';
   return `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${fmt(Math.abs(d.diff))}</span>`;
 }
+const deckFmt = d => dkFormat(d.text) || (commanderKeys(d.text).length ? 'commander' : '');
 function deckCard(d, i) {
-  const dl = priceDelta(d.history), fresh = !D.seen.has(d.id);
+  const dl = priceDelta(d.history), fresh = !D.seen.has(d.id), fk = deckFmt(d), dv = dkValue(d.text, dmOf), vt = dv.total && !dv.missing.length ? dkValueText(dv) : '';
   return `<div class="deck${fresh ? ' fresh' : ''}" data-id="${esc(d.id)}" data-active="${d.id === S.deckId ? 1 : 0}" style="--i:${i}">
-    <button class="deck-main" type="button" data-act="open"><span class="deck-name">${esc(d.name)}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''}${engIsOn(d.id) ? ' · <b class="mounted">monté</b>' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
+    <button class="deck-main" type="button" data-act="open"><span class="deck-top"><span class="deck-name">${esc(d.name)}</span>${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}</span><span class="deck-meta">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">monté</b>' : ''} · ${esc(relTime(d.updatedAt))}</span></button>
     <span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span>
     <button class="deck-view" type="button" data-act="view" aria-label="Voir ${esc(d.name)} dans le viewer">Voir</button>
     <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
@@ -5226,6 +5247,13 @@ function renderDecks() {
   const more = $('#btnMoreDecks'); more.hidden = loading || list.length <= 4;
   more.textContent = D.expanded ? 'Réduire' : `Afficher les ${list.length - 4} autres`;
   paintSync(); updateSaveButtons();
+  dvSoon(shown);
+}
+let dvT = 0;
+/** Lit en arrière-plan les prix des cartes des decks affichés (hors collection) pour afficher leur valeur estimée. */
+function dvSoon(decks) {
+  clearTimeout(dvT); if (!decks.length) return;
+  dvT = setTimeout(async () => { await dmLoad(); const miss = decks.flatMap(d => dkValue(d.text, dmOf).missing); if (miss.length && await dmFetch(miss)) renderDecks(); }, 900);
 }
 function paintSync() {
   const el = $('#decksSync'), t = $('#decksSyncTxt');
@@ -5294,6 +5322,7 @@ function openDeckSheet(id) {
     }).join('');
     api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">Nom</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
       <label class="switch-row" for="dkMount"><span class="t"><b>Deck monté</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
+      <div class="dk-val" id="dkVal"></div>
       <div class="sec-title">Historique des prix</div>
       ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${series.length} relevés · de ${esc(fmt(Math.min(...series)))} à ${esc(fmt(Math.max(...series)))}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
       ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.</p>'}
@@ -5309,6 +5338,13 @@ function openDeckSheet(id) {
     name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } };
     $('#dkOpen', api.foot).onclick = () => { api.close(); loadDeck(id); };
     engBindSwitch(id, $('#dkMount', api.body), $('#dkMountHint', api.body));
+    const valEl = $('#dkVal', api.body);      // valeur estimée du deck (Cardmarket), même monté : pas besoin de chercher des offres
+    const paintVal = fetched => {
+      const cur = findDeck(id) || d, v = dkValue(cur.text, dmOf), fk = deckFmt(cur);
+      valEl.innerHTML = v.known ? `<b>${esc(dkValueText(v))}</b><span>valeur estimée${fk ? ' · ' + DK_FORMATS[fk].label : ''} · prix tendance Cardmarket de ${v.known} carte${v.known > 1 ? 's' : ''} sur ${v.total} (terrains de base exclus, cartes possédées comprises)</span>`
+        : v.missing.length && !fetched ? '<span>Estimation de la valeur du deck…</span>' : '<span>Valeur estimée indisponible (prix des cartes non lus : réessaie en ligne).</span>';
+    };
+    paintVal(false); dmLoad().then(() => { paintVal(false); return dmFetch(dkValue((findDeck(id) || d).text, dmOf).missing); }).then(() => paintVal(true));
     $('#dkOwn', api.body).onclick = () => {
       const cur = findDeck(id) || d, cards = parseDeck(cur.text).cards; if (!cards.length) return;
       const before = COLL.map, n = cards.reduce((a, c) => a + c.qty, 0);
@@ -5480,7 +5516,7 @@ function initDecks() {
   });
   $('#btnMoreDecks').onclick = () => { D.expanded = !D.expanded; renderDecks(); };
   $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
-  renderAccountBtn(); renderDecks();
+  renderAccountBtn(); renderDecks(); dmLoad();
   setTimeout(connectCloud, 0);
 }
 
@@ -8096,10 +8132,29 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && SC.
    Écran plein format : onglets Deck · Collection (ajout en priorité) · Chercher (n'importe quelle carte).
    Règles : Standard 60 cartes, 4 exemplaires max (réserve de 15 facultative) ; Commander 100 cartes, une seule de chaque, un commandant.
    Le deck est enregistré comme les autres (texte), puis monté : ses cartes possédées sont réservées. */
-const BD = { el: null, id: null, name: '', fmt: 'standard', main: new Map(), side: new Map(), cmdr: [], tab: 'deck', tgt: 'main', q: '', shown: 60, dirty: false, meta: {}, tried: new Set(), cat: null, catErr: '', metaT: 0, issuesOpen: false, idx: null };
+/** Infos Scryfall des cartes de decks qui ne sont pas dans la collection ({ eu, ci, cd, im }) : gardées sur l'appareil (prix du deck, couleurs, images). */
+const DM = {}; let dmReady = null;
+function dmLoad() {
+  if (!dmReady) dmReady = Cache.get('dm:meta', 30 * DAY).then(c => { if (c && typeof c === 'object') for (const k in c) if (!DM[k]) DM[k] = c[k]; renderDecks(); }).catch(() => {});
+  return dmReady;
+}
+const dmSave = () => { Cache.set('dm:meta', DM); };
+const dmTried = new Set();
+/** Lit sur Scryfall les cartes pas encore connues ([{ key, name }]) ; retourne vrai si quelque chose est arrivé. */
+async function dmFetch(list) {
+  const need = list.filter(c => !BASIC_NAMES.has(c.key) && !COLL.meta[c.key] && !DM[c.key] && !dmTried.has(c.key)).slice(0, 150);
+  if (!need.length || scryLeft() > 0) return false;
+  need.forEach(c => dmTried.add(c.key));
+  try { const got = await scryCollection(need.map(c => c.name)); let n = 0; for (const [k, m] of got) if (m) { DM[k] = { eu: m.eu, ci: m.ci, cd: m.cd, im: m.im }; n++; } if (n) dmSave(); return n > 0; }
+  catch (e) { return false; }      // hors ligne ou limite Scryfall : l'estimation reste partielle
+}
+const dmOf = k => COLL.meta[k] || DM[k] || null;
+/** Valeur estimée d'un texte de deck, en chaîne : « ≈ 84 € » (« ≈ 84 €+ » si des cartes n'ont pas de prix), '' tant que rien n'est lu. */
+function dkValueText(v) { return v.known ? `≈ ${fmt(v.cents, 'EUR')}${v.known < v.total ? '+' : ''}` : ''; }
+const BD = { el: null, id: null, name: '', fmt: 'standard', main: new Map(), side: new Map(), cmdr: [], tab: 'deck', tgt: 'main', q: '', shown: 60, dirty: false, meta: DM, tried: new Set(), cat: null, catErr: '', metaT: 0, issuesOpen: false, idx: null };
 const BD_PAGE = 60;
 const BD_BASICS = [['plains', 'Plains', 'Plaine'], ['island', 'Island', 'Île'], ['swamp', 'Swamp', 'Marais'], ['mountain', 'Mountain', 'Montagne'], ['forest', 'Forest', 'Forêt']];
-const bdMeta = k => COLL.meta[k] || BD.meta[k] || null;
+const bdMeta = dmOf;
 const bdCount = m => { let n = 0; for (const c of m.values()) n += c.qty; return n; };
 const bdData = () => ({ fmt: BD.fmt, main: [...BD.main.values()], side: [...BD.side.values()], cmdr: BD.cmdr });
 const bdTot = k => ((BD.main.get(k) || {}).qty || 0) + ((BD.side.get(k) || {}).qty || 0);
@@ -8187,14 +8242,8 @@ function bdMetaSoon() {
 }
 async function bdMetaLoad() {
   if (!BD.el) return;
-  const all = [...BD.main.values(), ...BD.cmdr].filter(c => !BASIC_NAMES.has(c.key) && !bdMeta(c.key) && !BD.tried.has(c.key));
-  if (!all.length || scryLeft() > 0) return;
-  all.forEach(c => BD.tried.add(c.key));
-  try {
-    const got = await scryCollection(all.slice(0, 150).map(c => c.name));
-    for (const [k, m] of got) if (m) BD.meta[k] = m;
-    if (BD.el) bdPaint();
-  } catch (e) { /* hors ligne ou limite Scryfall : le deck reste utilisable, sans contrôle des couleurs */ }
+  const list = [...BD.main.values(), ...BD.cmdr, ...(BD.want || [])];
+  if (await dmFetch(list) && BD.el) bdPaint();
 }
 
 /* ── Modifications ────────────────────────────────────────────────────────────────────────────── */
@@ -8235,7 +8284,8 @@ function bdSumHtml() {
   const st = ck.n === ck.size ? 'full' : ck.n > ck.size ? 'over' : '';
   const bad = ck.issues.filter(i => i.lv === 'bad').length;
   const list = BD.issuesOpen ? ck.issues : ck.issues.slice(0, 3);
-  return `<div class="bd-top"><div class="bd-count ${st}"><b>${nf0(ck.n)}</b><span>/ ${ck.size} cartes</span></div>${BD.fmt === 'standard' ? `<div class="bd-side${ck.side > DK_FORMATS.standard.side ? ' over' : ''}"><b>${nf0(ck.side)}</b><span>/ ${DK_FORMATS.standard.side} en réserve</span></div>` : ''}</div>
+  const val = dkValueText(dkValue(dkBuildText(bdData()), dmOf));
+  return `<div class="bd-top"><div class="bd-count ${st}"><b>${nf0(ck.n)}</b><span>/ ${ck.size} cartes</span></div>${val ? `<div class="bd-val" title="Prix tendance Cardmarket, cartes possédées comprises, terrains de base exclus">${esc(val)}</div>` : ''}${BD.fmt === 'standard' ? `<div class="bd-side${ck.side > DK_FORMATS.standard.side ? ' over' : ''}"><b>${nf0(ck.side)}</b><span>/ ${DK_FORMATS.standard.side} en réserve</span></div>` : ''}</div>
     <div class="bd-bar ${st}"><i style="width:${pct}%"></i></div>
     ${ck.issues.length ? `<ul class="bd-issues">${list.map(i => `<li class="${i.lv}">${esc(i.t)}</li>`).join('')}</ul>${ck.issues.length > 3 ? `<button class="link-btn link-inline" type="button" data-act="issues">${BD.issuesOpen ? 'Réduire' : `Voir les ${ck.issues.length - 3} autres alertes`}</button>` : ''}`
       : '<p class="bd-ok">Deck complet et conforme.</p>'}`;
@@ -8302,7 +8352,7 @@ function bdFindHtml() {
   if (!BD.cat) return '<div class="status" data-ok="0"><span class="dot"></span><span>Chargement du catalogue (une seule fois)…</span></div>';
   const q = BD.q.trim();
   if (q.length < 2) return '<p class="hint">Tape au moins 2 lettres du nom (anglais) : toutes les cartes Magic sont cherchables ici.</p>';
-  const sug = collSuggest(BD.cat, q, 20);
+  const sug = collSuggest(BD.cat, q, 20); BD.want = sug.map(n => ({ key: ownKey(n), name: n })); bdMetaSoon();
   return sug.map(n => bdAddRow(ownKey(n), n)).join('') || '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>';
 }
 function bdList() {
@@ -8332,6 +8382,14 @@ function bdTab(v) {
   const sc = $('.dv-scroll', el); if (sc) sc.scrollTop = 0;
 }
 
+/** Carte d'une rangée de l'éditeur pour la visionneuse (appui sur sa vignette) : image dans la langue possédée si Scryfall l'a donnée, sinon anglaise. */
+function bdViewItem(row) {
+  const k = row.dataset.k, m = bdMeta(k); if (!m || !m.im) return null;
+  const x = COLL.map[k], l = x ? x.l : '', im = collImage(k, l, m.im), own = collQty(k);
+  return { key: k, lid: k + '|' + row.dataset.t, name: bdLabel(k, row.dataset.n), small: im.src, lang: im.lang, plain: true,
+    extra: `${own ? own + ' exemplaire' + (own > 1 ? 's' : '') + ' dans ta collection' : 'Pas dans ta collection'}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}` };
+}
+
 /* ── Interactions ─────────────────────────────────────────────────────────────────────────────── */
 function bdClick(e) {
   const st = e.target.closest('.qstep button[data-d]');
@@ -8339,6 +8397,12 @@ function bdClick(e) {
     const row = st.closest('.bd-row'); if (!row) return;
     const d = Number(st.dataset.d), k = row.dataset.k, tgt = row.dataset.t;
     if (bdChange(tgt, k, row.dataset.n, d)) haptic('tap');
+    return;
+  }
+  const th = e.target.closest('.thumb');
+  if (th && th.querySelector('img.ok')) {
+    const rows = $$('.bd-row', BD.el), list = rows.map(bdViewItem), row = th.closest('.bd-row'), i = rows.indexOf(row);
+    if (i >= 0 && list[i]) { const L = list.filter(Boolean); openCardViewer(L, L.indexOf(list[i])); }
     return;
   }
   const b = e.target.closest('button[data-act]'); if (!b) return;
