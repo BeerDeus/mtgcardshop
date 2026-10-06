@@ -5732,8 +5732,46 @@ function openCardImage(key) {
   openCardViewer(items, i);
 }
 
+/* ── Aperçu en grand dans la langue voulue : la carte du même nom en français (ou la langue de la recherche), lue par lots sur Scryfall, une seule fois par carte, gardée 30 jours ───── */
+const LANGV = { m: new Map(), p: new Map(), loaded: null, t: 0 };
+/** Langue souhaitée pour l'aperçu d'une carte dont l'exemplaire n'impose pas la sienne : celle de la recherche (français par défaut) ; '' si anglais. */
+const wantLang = () => (S.opts.lang && S.opts.lang !== 'en' && SCRY_LANG[S.opts.lang] ? S.opts.lang : '');
+/** Langue de l'aperçu en grand : celle de ton exemplaire s'il en a une précisée (anglais : on ne cherche rien d'autre), sinon la langue de la recherche. owned : la carte est dans ta collection. */
+function viewLang(k, owned) { const x = owned ? COLL.map[ownKey(k)] : null; return x && x.q > 0 && x.l ? (x.l === 'en' ? '' : x.l) : wantLang(); }
+const langvKey = (l, n) => l + '|' + ownKey(n);
+function langvLoad() {
+  if (!LANGV.loaded) LANGV.loaded = (async () => { try { const o = await Cache.get('dv:lang', 30 * DAY); if (o && typeof o === 'object' && !Array.isArray(o)) for (const k in o) if (!LANGV.m.has(k)) LANGV.m.set(k, o[k]); } catch (e) { /* cache absent */ } })();
+  return LANGV.loaded;
+}
+function langvSave() {
+  clearTimeout(LANGV.t);
+  LANGV.t = setTimeout(() => { while (LANGV.m.size > 4000) LANGV.m.delete(LANGV.m.keys().next().value); try { Cache.set('dv:lang', Object.fromEntries(LANGV.m)); } catch (e) { /* ignore */ } }, 1200);
+}
+/** Lance la lecture (lots de 12) des images de ces cartes (names : dans l'ordre où elles serviront) ; ne refait ni le connu ni l'en-cours. */
+function langvPrefetch(names, lang) {
+  const todo = [], seen = new Set();
+  for (const n of names) { const k = langvKey(lang, n); if (seen.has(k) || LANGV.m.has(k) || LANGV.p.has(k)) continue; seen.add(k); todo.push({ k, n, ok: ownKey(n) }); }
+  if (!todo.length || scryLeft() > 0) return;
+  for (let i = 0; i < todo.length; i += 12) {
+    const chunk = todo.slice(i, i + 12);
+    const pr = (async () => {
+      try { const got = await scryLangImages(chunk.map(c => c.n), lang); for (const c of chunk) LANGV.m.set(c.k, got.get(c.ok) || ''); langvSave(); }
+      catch (e) { /* hors ligne ou limite Scryfall : l'aperçu reste anglais, réessayé à la prochaine ouverture */ }
+      finally { for (const c of chunk) LANGV.p.delete(c.k); }
+    })();
+    for (const c of chunk) LANGV.p.set(c.k, pr);
+  }
+}
+/** Petite image de la carte dans cette langue : url, '' si Scryfall n'en a pas, null si la lecture a échoué. */
+async function langvGet(name, lang) {
+  await langvLoad(); const k = langvKey(lang, name);
+  if (!LANGV.m.has(k)) { if (!LANGV.p.has(k)) langvPrefetch([name], lang); if (LANGV.p.has(k)) await LANGV.p.get(k); }
+  return LANGV.m.has(k) ? LANGV.m.get(k) : null;
+}
+
 /**
- * Visionneuse : items = [{ key, name, small, lang, set, num, setName, extra }] ; index de départ.
+ * Visionneuse : items = [{ key, name, small, lang, set, num, setName, extra, wl, ln }] ; index de départ.
+ * wl : langue souhaitée si la carte n'a pas la sienne (image seule en anglais, ou impression sans image dans la langue de l'offre) → la carte du même nom (ln : nom anglais à chercher) dans cette langue, si elle existe.
  * Précédent / suivant : boutons, flèches du clavier, glissement. Chaque carte est chargée dans sa langue (repli anglais signalé).
  */
 function openCardViewer(items, index) {
@@ -5751,6 +5789,8 @@ function openCardViewer(items, index) {
   const prevFocus = document.activeElement;
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
   let idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '';
+  const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
+  if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
   const api = imgView = { close() {
     if (imgView !== api) return; imgView = null; if (ctrl) ctrl.abort();
     wrap.classList.remove('on'); document.removeEventListener('keydown', onKey, true);
@@ -5779,10 +5819,13 @@ function openCardViewer(items, index) {
       let r = null;
       if (!it.plain && it.set && !scryLeft()) { try { r = await scryImage({ set: it.set, num: it.num, lang }, my.signal); } catch (e) { if (e.name === 'AbortError') return; } }   // plain : image seule (collection), pas de lecture Scryfall
       if (imgView !== api || it !== mine) return;
-      if (r && r.urls.length) {
+      let wu = null;      // carte seule en anglais, ou impression sans image française : la version dans la langue voulue
+      if (it.wl && ((it.plain && lang === 'en') || (r && r.missing && r.urls.length < 2))) { wu = await langvGet(it.ln || it.name, it.wl); if (imgView !== api || it !== mine) return; }
+      if (wu) { urls = [wu.replace('/small/', '/large/')]; lang = it.wl; caption(lang, ''); flipB.hidden = true; }
+      else if (r && r.urls.length) {
         urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
         flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
-      } else if (it.plain) { urls = [enBig]; caption(lang, ''); }                                // image seule : la langue est celle de l'image fournie
+      } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? 'Pas d\'image française sur Scryfall : version anglaise' : ''); }                                // image seule : la langue est celle de l'image fournie
       else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
       show(0);
     })();
@@ -6067,7 +6110,7 @@ function dvItemFor(it) {
   const extra = it.s === 'basic' ? 'Terrain de base' : rf2 ? [it.sb ? 'Réserve' : '', it.s === 'ok' ? fmt(it.c) + (it.q > 1 ? ' pour ' + it.q : '') + ' · prix tendance Cardmarket' : 'Prix inconnu', own].filter(Boolean).join(' · ') : it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + (it.q - (it.ow || 0)) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') + (it.ow ? ` · ${it.ow} possédée${it.ow > 1 ? 's' : ''}` : '') + ref + mv
     : it.s === 'own' ? 'Dans ta collection' : 'Aucune offre avec tes critères';
   const ol = !!it.ol;      // image de ta propre carte (sa langue) : pas la version de l'offre, donc ni extension ni numéro à relire sur Scryfall
-  return { key: it.k, name: it.n, small: it.im, lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
+  return { key: it.k, name: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: it.im, lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
 }
 function dvOpenCard(i) {
   const list = [], at = new Map();
@@ -7169,7 +7212,7 @@ function openEdhDeck(r) {
     const open = rw => {
       const u = imgs.get(rw.dataset.ik); if (!u) { toast(settled ? 'Pas d\'aperçu pour cette carte' : 'Aperçus en cours de chargement…'); return; }
       const items = []; let at = 0;
-      for (const x of $$('.crow[data-ik]', api.body)) { const v = imgs.get(x.dataset.ik); if (!v) continue; if (x === rw) at = items.length; items.push({ key: x.dataset.ik, name: x.dataset.nm, small: v, lang: 'en', plain: true, extra: x.dataset.ex }); }
+      for (const x of $$('.crow[data-ik]', api.body)) { const v = imgs.get(x.dataset.ik); if (!v) continue; if (x === rw) at = items.length; items.push({ key: x.dataset.ik, name: x.dataset.nm, wl: viewLang(x.dataset.ik, !!x.closest('.dk-have-l')), small: v, lang: 'en', plain: true, extra: x.dataset.ex }); }
       haptic('tap'); openCardViewer(items, at);
     };
     api.body.addEventListener('click', e => { const rw = e.target.closest('.crow[data-ik]'); if (rw) open(rw); });
@@ -8690,7 +8733,7 @@ function bdTab(v) {
 function bdViewItem(row) {
   const k = row.dataset.k, m = bdMeta(k); if (!m || !m.im) return null;
   const x = COLL.map[k], l = x ? x.l : '', im = collImage(k, l, m.im), own = collQty(k);
-  return { key: k, lid: k + '|' + row.dataset.t, name: bdLabel(k, row.dataset.n), small: im.src, lang: im.lang, plain: true,
+  return { key: k, lid: k + '|' + row.dataset.t, name: bdLabel(k, row.dataset.n), ln: row.dataset.n, wl: viewLang(k, true), small: im.src, lang: im.lang, plain: true,
     extra: `${own ? own + ' exemplaire' + (own > 1 ? 's' : '') + ' dans ta collection' : 'Pas dans ta collection'}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}` };
 }
 
