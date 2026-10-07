@@ -1117,10 +1117,14 @@ function edhModelFromTsv(text) {
   return m;
 }
 const EDHB = typeof module !== 'undefined' && module.exports ? require('./edhbin.js') : { edhPack, edhUnpack };
-/** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande. */
+/** Types de decks, dans l'ordre d'affichage du filtre : deck moyen EDHREC, Budget, Premium, cEDH, Populaire (un seul deck récent), Archidekt (ancien fichier). */
+const EDH_KINDS = ['avg', 'budget', 'premium', 'cedh', 'pop', 'arch'];
+/** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande.
+ *  k : type ('avg' deck moyen · 'budget' · 'premium' · 'pop' · 'cedh' · 'arch' deck Archidekt d'un ancien fichier) · u : mise à jour 'AAAA-MM-JJ' ('' inconnue) · v : vues · p : prix du deck en centimes (0 inconnu). */
 class EdhDeck {
-  constructor(e, i, cmd, src, label, url) {
+  constructor(e, i, cmd, src, label, url, k, u, v, p) {
     this._e = e; this.i = i; this.cmd = cmd; this.slug = cmd.slug; this.src = src || 'edhrec'; this.label = label || '';
+    this.k = EDH_KINDS.includes(k) ? k : this.src === 'edhrec' ? 'avg' : 'arch'; this.u = /^\d{4}-\d{2}-\d{2}$/.test(u || '') ? u : ''; this.v = Math.max(0, Number(v) || 0); this.p = Math.max(0, Number(p) || 0);
     this.url = url === 0 ? 'https://edhrec.com/average-decks/' + cmd.slug : typeof url === 'number' ? 'https://archidekt.com/decks/' + url : /^https:\/\//.test(url || '') ? url : '';
   }
   get cards() { const e = this._e, out = []; for (let j = e.off[this.i], z = e.off[this.i + 1]; j < z; j++) { const id = e.ids[j]; out.push([e.keys[id], e.names[id], e.qty[j]]); } return out; }
@@ -1145,7 +1149,7 @@ function edhIndex(raw) {
   }
   out.rk = raw.rk === 'month' && out.cmds.some(c => c.dm > 0) ? 'month' : '';      // classement du mois (à jour) ; ancien fichier : compte long
   [...out.cmds].sort((a, b) => (out.rk ? (b.dm - a.dm) : 0) || b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
-  raw.dk.forEach(([ci, src, label, url], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url)));
+  raw.dk.forEach(([ci, src, label, url, k, u, v, p], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url, k, u, v, p)));
   for (const d of out.decks) for (const t of d.cmd.th) themes[t[0]].decks++;
   out.themeOrder = themes.map((t, i) => i).filter(i => themes[i].decks > 0).sort((a, b) => themes[b].decks - themes[a].decks || themes[a].label.localeCompare(themes[b].label));      // les plus présents d'abord
   return out;

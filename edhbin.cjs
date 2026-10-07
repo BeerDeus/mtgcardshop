@@ -5,7 +5,9 @@
      'EDH2' · u32 longueur de l'en-tête · en-tête JSON { v, at, nc, nd, nn, ne, ng, sl:[octets cmds, decks, noms], tl?:[[slug, libellé]] (thèmes EDHREC, facultatif) }
      JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?, decks du mois?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
                            decks du mois : 7e champ (absent = 0, hors de la liste du mois ; thèmes alors [] s'il n'y en a pas). En-tête rk: 'month' = classement sur le mois
-     JSON des decks        [[indice du commandant, source, libellé, lien]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
+     JSON des decks        [[indice du commandant, source, libellé, lien, type?, mise à jour?, vues?, prix?]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
+                           type : 'avg' deck moyen · 'budget' · 'premium' · 'pop' (seul deck récent) · 'cedh' · '' (ancien fichier) ; mise à jour 'AAAA-MM-JJ' ; vues ; prix du deck en centimes (Cardmarket, d'après Archidekt)
+                           (4 derniers champs facultatifs : un ancien lecteur les ignore)
      noms des cartes       un par ligne (indice = numéro de la carte)
      u32 × (nd + 1)        début de chaque deck dans la liste des entrées
      u16 × ne              numéro de carte de chaque entrée        (ne = total des cartes de tous les decks, terrains de base compris)
@@ -16,7 +18,7 @@
 const EDHB_MAX_CARDS = 65535;
 const edhPad4 = n => (n + 3) & ~3;
 
-/** model : { v, at, cmds:[{ slug, decks, ci, names, img, themes?:[[slug, libellé, nombre]] }], decks:[{ slug, src, label, url, cards:[[nom, qté]] }], price:[[nom, centimes]] | Map, gc:[nom] } ; keyOf : nom → clé (la même que ownKey de l'appli). Retourne un Uint8Array. */
+/** model : { v, at, cmds:[{ slug, decks, ci, names, img, themes?:[[slug, libellé, nombre]] }], decks:[{ slug, src, label, url, cards:[[nom, qté]], k?, u?, v?, p? }], price:[[nom, centimes]] | Map, gc:[nom] } ; keyOf : nom → clé (la même que ownKey de l'appli). Retourne un Uint8Array. */
 function edhPack(model, keyOf) {
   const clean = n => String(n == null ? '' : n).replace(/[\r\n\t]+/g, ' ').trim();
   const kc = new Map(), kf = keyOf; keyOf = n => { let k = kc.get(n); if (k === undefined) { k = kf(n); kc.set(n, k); } return k; };      // les mêmes noms reviennent dans des centaines de decks
@@ -49,7 +51,10 @@ function edhPack(model, keyOf) {
     }
     off.push(ids.length);
     const url = d.url || '', m = /^https:\/\/archidekt\.com\/decks\/(\d+)$/.exec(url);
-    meta.push([ci, d.src || 'edhrec', d.label || '', !url ? '' : (d.src || 'edhrec') === 'edhrec' && url === 'https://edhrec.com/average-decks/' + d.slug ? 0 : m ? Number(m[1]) : url]);
+    const row = [ci, d.src || 'edhrec', d.label || '', !url ? '' : (d.src || 'edhrec') === 'edhrec' && url === 'https://edhrec.com/average-decks/' + d.slug ? 0 : m ? Number(m[1]) : url];
+    const k = clean(d.k).slice(0, 12), u = /^\d{4}-\d{2}-\d{2}$/.test(String(d.u || '')) ? d.u : '', v = Math.max(0, Math.round(Number(d.v) || 0)), pc = Math.max(0, Math.round(Number(d.p) || 0));
+    if (k || u || v || pc) row.push(k, u, v, pc);
+    meta.push(row);
   }
   const pr = new Uint32Array(names.length);
   for (const [n, v] of model.price instanceof Map ? model.price : model.price || []) { const id = idOf.get(keyOf(clean(n))); if (id !== undefined && v > 0) pr[id] = Math.round(v); }

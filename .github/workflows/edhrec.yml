@@ -1,19 +1,20 @@
-# Commandants EDHREC, decks moyens, decks réels Archidekt et prix (pwa/edh.bin.gz, format binaire EDH2 compressé), régénérés chaque semaine.
+# Commandants EDHREC, decks moyens, decks réels Archidekt (Budget, Premium, cEDH) et prix (pwa/edh.bin.gz, format binaire EDH2 compressé), régénérés deux fois par semaine (lundi et jeudi).
 # L'app (Ma collection › Decks, filtre « Joués en commandant ») le télécharge en une requête ; s'il manque, ces écrans l'indiquent et rien d'autre ne casse.
 # Lancement manuel : onglet Actions › « Commandants EDHREC » › Run workflow (top = nombre de commandants, arch = decks Archidekt par commandant, 0 = aucun).
-# Les decks Archidekt déjà lus sont gardés d'une semaine à l'autre (fichier précédent) : la 1re génération a duré 2 h 30 (plafond Archidekt de 130 min atteint, quelques commandants reportés), les suivantes ≈ 1 h à 1 h 20 (estimation).
+# Les decks Archidekt déjà lus sont gardés d'un passage à l'autre (fichier précédent) ; à chaque passage 1 commandant sur 8 est relu. Remplir tous les commandants prend
+# plusieurs passages (plafond Archidekt de 165 min par passage : les commandants reportés gardent leurs anciens decks et passent en tête la fois suivante).
 # Le journal et des échantillons de réponses sont poussés sur la branche « edh-debug » (même en cas d'échec) pour voir ce que les sites ont répondu.
 name: Commandants EDHREC
 on:
   schedule:
-    - cron: '41 4 * * 1'
+    - cron: '41 4 * * 1,4'
   workflow_dispatch:
     inputs:
       top:
         description: 'Nombre de commandants (decks moyens)'
         default: '2000'
       arch:
-        description: 'Decks Archidekt par commandant (0 = aucun)'
+        description: 'Decks Archidekt Budget / Premium / cEDH (0 = aucun)'
         default: '2'
       probe:
         description: 'Sonde Archidekt seulement (ne génère rien)'
@@ -38,8 +39,8 @@ jobs:
           EDH_TOP: ${{ inputs.top || '2000' }}
           EDH_ARCH: ${{ inputs.arch || '2' }}
           EDH_ARCH_TOP: '2000'
-          EDH_ARCH_MIN: '130'
-          EDH_BUDGET: '215'
+          EDH_ARCH_MIN: '165'
+          EDH_BUDGET: '225'
           EDH_DEBUG: edh-debug
         run: node gen-edhrec.mjs ${{ inputs.probe && '--probe' || '' }} 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
       - name: Erreur (dernières lignes du journal en annotation)

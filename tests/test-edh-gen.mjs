@@ -59,9 +59,10 @@ test('chaque thème général a sa description et un nom affichable côté appli
   const text = Object.fromEntries([...src.match(/const EDH_THEME_INFO = \{([\s\S]*?)\n\};/)[1].matchAll(/'([^']+)': '((?:[^'\\]|\\.)*)'/g)].map(m => [m[1], m[2]])); assert.ok(Object.values(text).every(v => v.length >= 200 && v.length <= 420 && / Ex\. : [^·]+( · [^·]+){0,2}$/.test(v)), 'description de 200 à 420 caractères, terminée par « Ex. : » et 1 à 3 cartes séparées par « · »'); assert.ok(!/"/.test(Object.values(text).join('')), 'pas de guillemets droits');
 });
 test('archidektDeck / archidektList / buildEdh : roundtrip avec parseEdh', () => {
-  const d = archidektDeck({ name: 'Mon\tdeck', viewCount: 1200, cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: 'Edgar Markov' } } }, { quantity: 1, categories: ['Ramp'], card: { oracleCard: { name: 'Sol Ring' } } }, { quantity: 1, categories: ['Maybeboard'], card: { oracleCard: { name: 'Nope' } } }, { quantity: 2, categories: [], card: { name: 'Plains' } }] });
+  const d = archidektDeck({ name: 'Mon\tdeck', viewCount: 1200, updatedAt: '2026-05-04T03:02:01.123Z', cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: 'Edgar Markov' }, prices: { cm: 3.5 } } }, { quantity: 1, categories: ['Ramp'], card: { oracleCard: { name: 'Sol Ring' }, prices: { cm: 0, cmMinimum: 1.2 } } }, { quantity: 1, categories: ['Maybeboard'], card: { oracleCard: { name: 'Nope' }, prices: { cm: 99 } } }, { quantity: 2, categories: [], card: { name: 'Plains', prices: { tcg: 0.1 } } }] });
   assert.deepEqual(d.cmd, ['Edgar Markov']); assert.deepEqual(d.cards, [['Sol Ring', 1], ['Plains', 2]]); assert.equal(d.name, 'Mon deck'); assert.equal(d.views, 1200);
-  assert.deepEqual(archidektList({ results: [{ id: 5, name: 'A', viewCount: 9 }, { id: 'x' }, null] }), [{ id: 5, name: 'A', views: 9 }]); assert.deepEqual(archidektList({ decks: [{ id: 7 }] }).map(x => x.id), [7]); assert.deepEqual(archidektList(null), []);
+  assert.equal(d.u, '2026-05-04'); assert.equal(d.eur, 350 + 120 + 20, 'prix : commandant compris, maybeboard exclu, repli minimum puis TCGplayer');
+  assert.deepEqual(archidektList({ results: [{ id: 5, name: 'A', viewCount: 9, updatedAt: '2025-01-02T00:00:00Z', size: 100, edhBracket: 5 }, { id: 'x' }, null] }), [{ id: 5, name: 'A', views: 9, u: '2025-01-02', size: 100, br: 5 }]); assert.deepEqual(archidektList({ decks: [{ id: 7 }] }).map(x => x.id), [7]); assert.deepEqual(archidektList(null), []);
   const txt = buildEdh({ at: '2026-10-05T00:00:00Z', cmds: [{ slug: 'edgar-markov', names: ['Edgar Markov'], decks: 10, ci: 'WBR' }, { slug: 'tt', names: ['A', 'B'], decks: 5, ci: '' }], decks: [{ slug: 'edgar-markov', src: 'archidekt', label: d.name + ' · 1 200 vues', url: 'https://archidekt.com/decks/1', cards: d.cards }, { slug: 'tt', src: 'edhrec', label: '', url: 'javascript:x', cards: [['Sol Ring', 1]] }], price: new Map([['Sol Ring', 150], ['Gratuit', 0]]), img: new Map([['edgar-markov', 'front/a/b/c.jpg']]) });
   const p = C.parseEdh(txt); assert.equal(p.v, 1); assert.equal(p.cmds.length, 2); assert.equal(p.cmds[0].img, 'https://cards.scryfall.io/small/front/a/b/c.jpg'); assert.deepEqual(p.cmds[1].keys, ['a', 'b']);
   assert.equal(p.decks[0].src, 'archidekt'); assert.equal(p.decks[0].url, 'https://archidekt.com/decks/1'); assert.equal(p.decks[1].url, ''); assert.equal(p.price.get('sol ring'), 150); assert.ok(!p.price.has('gratuit'));
@@ -71,7 +72,8 @@ test('archidektDeck / archidektList / buildEdh : roundtrip avec parseEdh', () =>
 const NAMES = Array.from({ length: 120 }, (_, i) => `Commandant ${String.fromCharCode(65 + i % 26)}${i}`);
 const slugOf = n => edhSlug(n);
 const CARDS = Array.from({ length: 80 }, (_, i) => `Carte ${i}`);
-function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN = 1, month = '' } = {}) {
+const REC = new Date(Date.now() - 7 * 86400000).toISOString();      // decks Archidekt « récents » : mis à jour il y a une semaine
+function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN = 1, month = '', oldArch = false } = {}) {
   const seen = { avg: 0, scry: 0, arch: 0, search: 0, archDeck: 0 };
   const srv = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), send = (o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
@@ -102,16 +104,27 @@ function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN
         return send({ has_more: false, data: Array.from({ length: gc === 'few' ? 3 : 25 }, (_, i) => ({ name: i === 0 ? 'Fire // Ice' : i === 1 ? 'Carte 1' : 'Game Changer ' + i })) });
       }
       if (u.pathname === '/scry/cards/search') { seen.search++; return send({ has_more: false, data: scryList ? NAMES.map(n => ({ name: n, color_identity: ['G'] })) : [] }); }
-      if (u.pathname === '/arch/decks/v3/') { seen.arch++; if (noArch) return send({ error: 'x' }, 500); const c = u.searchParams.get('commanderName'); assert.equal(u.searchParams.get('deckFormat'), '3'); return send({ results: [{ id: 100 + NAMES.indexOf(c), name: 'Deck ' + c, viewCount: 4200 }, ...(archN > 1 ? [{ id: 1100 + NAMES.indexOf(c), name: 'Autre deck ' + c, viewCount: 900 }] : [])] }); }
+      // Archidekt : archN decks par commandant (ids 100 + i + 1000 j, du plus au moins vu, le j-ième coûte 1 + 2j € la carte) ; bracket 5 : un deck cEDH (id 20100 + i).
+      // Le 3e commandant (carte à deux faces) n'est trouvé que sous son nom complet « Recto // Verso » ; oldArch : decks mis à jour il y a 2 ans.
+      if (u.pathname === '/arch/decks/v3/') {
+        seen.arch++; if (noArch) return send({ error: 'x' }, 500); let c = u.searchParams.get('commanderName'); assert.equal(u.searchParams.get('deckFormat'), '3'); (seen.archQ = seen.archQ || []).push(c);
+        if (c === NAMES[2]) return send({ count: -1, next: null, results: [], message: 'No commander name `' + c + '` was found' });
+        if (c === NAMES[2] + ' // Verso') c = NAMES[2];
+        const i = NAMES.indexOf(c), at = oldArch ? '2024-01-02T03:04:05Z' : REC;
+        if (u.searchParams.get('edhBracket') === '5') return send({ results: [{ id: 20100 + i, name: 'cEDH ' + c, viewCount: 8000, updatedAt: at, size: 100, edhBracket: 5 }] });
+        return send({ count: archN, next: null, results: Array.from({ length: archN }, (_, j) => ({ id: 100 + i + 1000 * j, name: (j ? 'Autre deck ' : 'Deck ') + c, viewCount: 4200 - j * 100, updatedAt: at, size: 100, edhBracket: j === 0 ? 3 : null })) });
+      }
+      if (u.pathname === '/scry/cards/named') return u.searchParams.get('exact') === NAMES[2] ? send({ name: NAMES[2] + ' // Verso' }) : send({ object: 'error' }, 404);
+      if (u.pathname === '/top16/api/graphql' && req.method === 'POST') { seen.top16 = (seen.top16 || 0) + 1; assert.match(JSON.parse(body).query, /SIX_MONTHS/); return send({ data: { commanders: { edges: [{ node: { name: NAMES[0] } }, { node: { name: 'Inconnu / Personne' } }] } } }); }
       const a = /^\/arch\/decks\/(\d+)\/$/.exec(u.pathname);
-      if (a) { seen.archDeck++; const n = NAMES[(Number(a[1]) - 100) % 1000]; return send({ name: 'Deck ' + n, viewCount: 4200, cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: n } } }, ...CARDS.slice(10, 80).map(c => ({ quantity: 1, categories: [], card: { oracleCard: { name: c } } })), { quantity: Number(a[1]) === 101 ? 80 : 25, categories: [], card: { oracleCard: { name: 'Forest' } } }] }); }      // 70 + 25 = 95 cartes ; le 2e commandant : 150 (écarté)
+      if (a) { seen.archDeck++; const id = Number(a[1]), n = NAMES[(id - 100) % 1000], eur = id >= 20000 ? 9 : 1 + 2 * Math.floor(id / 1000), pr = { prices: { cm: eur } }, at = oldArch ? '2024-01-02T03:04:05Z' : REC; return send({ name: 'Deck ' + n, viewCount: 4200, updatedAt: at, cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: n }, ...pr } }, ...CARDS.slice(10, 80).map(c => ({ quantity: 1, categories: [], card: { oracleCard: { name: c }, ...pr } })), { quantity: id === 101 ? 80 : 25, categories: [], card: { oracleCard: { name: 'Forest' }, prices: { cm: 0.02 } } }] }); }      // 70 + 25 = 95 cartes ; le 1er deck du 2e commandant : 150 (écarté)
       send({ error: 'nf' }, 404);
     });
   });
   return new Promise(r => srv.listen(0, '127.0.0.1', () => r({ srv, seen, base: `http://127.0.0.1:${srv.address().port}` })));
 }
 const run = (base, env, out) => new Promise(res => {
-  const p = spawn('node', ['gen-edhrec.mjs', out], { env: { ...process.env, EDH_BASE: base + '/edh/', SCRY_BASE: base + '/scry/', ARCH_BASE: base + '/arch/', EDH_GAP: '0', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const p = spawn('node', ['gen-edhrec.mjs', out], { env: { ...process.env, EDH_BASE: base + '/edh/', SCRY_BASE: base + '/scry/', ARCH_BASE: base + '/arch/', EDH_TOP16_BASE: base + '/top16/', EDH_GAP: '0', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
   let o = ''; p.stdout.on('data', d => o += d); p.stderr.on('data', d => o += d); p.on('close', code => res({ code, o }));
 });
 test('exécution complète : liste paginée, decks moyens, Archidekt, prix et images Scryfall', async () => {
@@ -126,7 +139,9 @@ test('exécution complète : liste paginée, decks moyens, Archidekt, prix et im
     assert.ok(!edh[0].cards.some(c => C.ownKey(c[1]) === C.ownKey(NAMES[0])), 'commandant retiré du deck');
     assert.ok(edh[0].cards.some(c => c[1] === 'Forest' && c[2] === 12), 'basics avec leur quantité');
     assert.ok(!arch.some(d => d.slug === C.parseEdh(readFileSync(out, 'utf8')).cmds[1].slug), 'deck Archidekt de 150 cartes écarté (taille hors 90-101)');
-    assert.ok(arch.length >= 2 && arch.length <= 3 && arch.every(d => /vues/.test(d.label) && /^https:\/\/archidekt\.com\/decks\/\d+$/.test(d.url)), 'Archidekt : 1 deck pour les 3 premiers commandants (moins les 404)');
+    assert.ok(arch.every(d => /^https:\/\/archidekt\.com\/decks\/\d+$/.test(d.url)), 'liens Archidekt');
+    assert.deepEqual(arch.map(d => [d.cmd.names[0], d.label]).sort(), [[NAMES[0], 'Deck ' + NAMES[0]], [NAMES[0], 'Deck ' + NAMES[0]], [NAMES[2], 'Deck ' + NAMES[2]]].sort(), 'un deck récent par commandant (le 2e : 150 cartes, écarté), le cEDH du 1er ; le 3e retrouvé sous son nom à deux faces');
+    assert.ok(f.seen.archQ.includes(NAMES[2] + ' // Verso'), 'nom complet demandé à Scryfall puis cherché'); assert.equal(f.seen.top16, 1, 'EDHTop16 interrogé une fois');
     assert.equal(p.price.get('carte 1'), 250); assert.equal(p.price.get('carte 0'), 10); assert.ok(!p.price.has('carte 2'), 'sans prix : absent'); assert.equal(p.price.get('carte 3'), 999, 'repli sur le prix foil'); assert.ok(!p.price.has('carte 7'), 'inconnue de Scryfall');
     assert.equal(p.price.get('fire'), 10, 'DFC : clé = première face');
     assert.equal(p.cmds[0].img, 'https://cards.scryfall.io/small/front/a/b/commandant-a0.jpg', 'image sans paramètre ?');
@@ -201,33 +216,50 @@ test('sortie binaire : même contenu que le texte (commandants, decks, prix, ima
     assert.ok(b.themes.every(t => t.decks > 0 && t.cmds > 0)); assert.match(r1.o, /avec des thèmes EDHREC/); assert.match(r1.o, /thèmes \(exemple\)/);
   } finally { f.srv.close(); rmSync(dir, { recursive: true, force: true }); }
 });
-test('Archidekt incrémental : les decks déjà lus ne sont pas relus, l\'ancien est gardé si le site tombe, 1 commandant sur N est relu', async () => {
+test('Archidekt : Budget / Premium / Populaire / cEDH, incrémental (decks connus pas relus), rotation, ancien gardé si le site tombe', async () => {
   const f = await fake({ archN: 2 }), dir = mkdtempSync(join(tmpdir(), 'edh-')), out = join(dir, 'edh.bin.gz');
   try {
     const env = { EDH_TOP: '60', EDH_ARCH: '2', EDH_ARCH_TOP: '4', EDH_MIN_DECKS: '30', EDH_MIN_CMDS: '100', EDH_ARCH_ROT: '1000000' };
-    const arch = () => readBin(out).decks.filter(d => d.src === 'archidekt');
-    assert.equal((await run(f.base, env, out)).code, 0);
-    // commandants 0 à 3 : 2 decks chacun, sauf le n° 1 dont le 1er deck (150 cartes) est écarté → 1 seul
-    const a1 = arch(); assert.equal(a1.length, 7, a1.map(d => d.url).join(' ')); assert.equal(f.seen.arch, 4); assert.equal(f.seen.archDeck, 8, '8 decks lus (dont celui écarté)');
-    // 2e passage : seuls les commandants sans quota (le n° 1) sont cherchés ; son 2e deck est déjà connu
+    const arch = () => readBin(out).decks.filter(d => d.src === 'archidekt'), raw = () => EB.edhUnpack(gunzipSync(readFileSync(out)));
+    const r1 = await run(f.base, env, out); assert.equal(r1.code, 0, r1.o);
+    // commandants 0, 2, 3 : 2 decks récents de prix différents → Budget + Premium ; le 1 : son 1er deck (150 cartes) écarté → un seul, « Populaire » ; le 0 a aussi son deck cEDH
+    const kinds = arch().map(d => [d.cmd.names[0], d.k]).sort(); assert.deepEqual(kinds, [[NAMES[0], 'budget'], [NAMES[0], 'cedh'], [NAMES[0], 'premium'], [NAMES[1], 'pop'], [NAMES[2], 'budget'], [NAMES[2], 'premium'], [NAMES[3], 'budget'], [NAMES[3], 'premium']].sort());
+    const b0 = arch().find(d => d.cmd.names[0] === NAMES[0] && d.k === 'budget'), p0 = arch().find(d => d.cmd.names[0] === NAMES[0] && d.k === 'premium');
+    assert.ok(b0.p > 0 && p0.p > b0.p * 1.25, 'Budget moins cher que Premium : ' + b0.p + ' / ' + p0.p); assert.equal(b0.u, REC.slice(0, 10)); assert.equal(b0.v, 4200); assert.equal(arch().find(d => d.k === 'cedh').url, 'https://archidekt.com/decks/20100');
+    assert.equal(readBin(out).decks.find(d => d.src === 'edhrec').k, 'avg', 'deck moyen : type avg');
+    assert.equal(raw().dk.find(d => d[1] === 'archidekt').length, 8, 'type, date, vues, prix écrits');
+    assert.equal(f.seen.arch, 6, '4 commandants (le 3e cherché deux fois : nom à deux faces) + 1 cEDH'); assert.equal(f.seen.archDeck, 9, '8 decks lus (dont celui écarté) + le cEDH');
+    // 2e passage, hors rotation : tout est gardé, rien n'est cherché
     f.seen.arch = 0; f.seen.archDeck = 0; const r2 = await run(f.base, env, out); assert.equal(r2.code, 0, r2.o);
-    assert.equal(f.seen.arch, 1, 'une seule recherche'); assert.equal(f.seen.archDeck, 1, 'seul le deck écarté est relu (il n\'est pas gardé)'); assert.deepEqual(arch().map(d => d.url).sort(), a1.map(d => d.url).sort()); assert.match(r2.o, /3 commandants gardés du fichier précédent, 1 à chercher/);
-    // rotation : tout le monde est cherché mais aucun deck connu n'est relu
+    assert.equal(f.seen.arch, 0); assert.equal(f.seen.archDeck, 0); assert.deepEqual(arch().map(d => d.url + d.k).sort(), kinds.length && arch().map(d => d.url + d.k).sort()); assert.match(r2.o, /4 commandants gardés du fichier précédent, 0 à chercher/);
+    // rotation : tout le monde est cherché, mais un deck connu et pas modifié n'est pas relu (seul celui écarté l'est)
+    const before = arch().map(d => d.url + d.k).sort();
     f.seen.arch = 0; f.seen.archDeck = 0; assert.equal((await run(f.base, { ...env, EDH_ARCH_ROT: '1' }, out)).code, 0);
-    assert.equal(f.seen.arch, 4); assert.equal(f.seen.archDeck, 1, 'decks connus réutilisés'); assert.equal(arch().length, 7);
-    assert.deepEqual(arch().find(d => d.cards.length).cards.slice(0, 2), a1.find(d => d.url === arch()[0].url).cards.slice(0, 2), 'cartes reprises à l\'identique');
+    assert.equal(f.seen.arch, 6); assert.equal(f.seen.archDeck, 1, 'decks connus réutilisés'); assert.deepEqual(arch().map(d => d.url + d.k).sort(), before);
     const pv = loadPrev(out), cs = [...pv.keys()].map(slug => ({ slug }));
-    assert.equal(prevArch(pv, cs, 2), 7); assert.equal(prevArch(pv, cs.slice(0, 2), 2), [...pv.values()].slice(0, 2).reduce((a, l) => a + l.length, 0), 'garde-fou : seuls les commandants traités comptent (top plus court ≠ baisse)'); assert.equal(prevArch(pv, cs, 1), 4);
-    assert.equal(loadPrev(join(dir, 'absent.bin.gz')).size, 0); assert.equal(loadPrev(out).size, 4); assert.equal(loadPrev(join(dir, 'x.tsv')).size, 0);
+    assert.equal(prevArch(pv, cs), 4, 'commandants avec un deck (hors cEDH)'); assert.equal(prevArch(pv, cs.slice(0, 2)), 2, 'garde-fou : seuls les commandants traités comptent');
+    assert.equal(loadPrev(join(dir, 'absent.bin.gz')).size, 0); assert.equal(pv.size, 4); assert.equal(loadPrev(join(dir, 'x.tsv')).size, 0); assert.equal(pv.get(slugOf(NAMES[0])).find(d => d.k === 'budget').u, REC.slice(0, 10));
   } finally { f.srv.close(); rmSync(dir, { recursive: true, force: true }); }
+  // decks anciens seulement : le plus vu, « Populaire » ; pas de cEDH ancien
+  const o = await fake({ archN: 2, oldArch: true }), dirO = mkdtempSync(join(tmpdir(), 'edh-')), outO = join(dirO, 'edh.bin.gz');
+  try {
+    assert.equal((await run(o.base, { EDH_TOP: '60', EDH_ARCH: '2', EDH_ARCH_TOP: '4', EDH_MIN_DECKS: '30', EDH_MIN_CMDS: '100' }, outO)).code, 0);
+    const a = readBin(outO).decks.filter(d => d.src === 'archidekt'); assert.ok(a.length >= 3 && a.every(d => d.k === 'pop' && d.u === '2024-01-02'), a.map(d => d.k + d.u).join(' '));
+  } finally { o.srv.close(); rmSync(dirO, { recursive: true, force: true }); }
   // Archidekt en panne : les anciens decks restent
   const g = await fake({ archN: 2, noArch: true }), dir2 = mkdtempSync(join(tmpdir(), 'edh-')), out2 = join(dir2, 'edh.bin.gz'), f2 = await fake({ archN: 2 });
   try {
     const env = { EDH_TOP: '60', EDH_ARCH: '2', EDH_ARCH_TOP: '4', EDH_MIN_DECKS: '30', EDH_MIN_CMDS: '100', EDH_ARCH_ROT: '1' };
-    assert.equal((await run(f2.base, env, out2)).code, 0); const before = readBin(out2).decks.filter(d => d.src === 'archidekt').map(d => d.url).sort(); assert.equal(before.length, 7);
+    assert.equal((await run(f2.base, env, out2)).code, 0); const before = readBin(out2).decks.filter(d => d.src === 'archidekt').map(d => d.url + d.k).sort(); assert.equal(before.length, 8);
     const r = await run(g.base, env, out2); assert.equal(r.code, 0, r.o); assert.match(r.o, /abandon de cette source \(les anciens decks sont gardés\)/);
-    assert.deepEqual(readBin(out2).decks.filter(d => d.src === 'archidekt').map(d => d.url).sort(), before, 'rien perdu');
+    assert.deepEqual(readBin(out2).decks.filter(d => d.src === 'archidekt').map(d => d.url + d.k).sort(), before, 'rien perdu');
   } finally { g.srv.close(); f2.srv.close(); rmSync(dir2, { recursive: true, force: true }); }
+});
+test('pickBudget : le moins cher et le plus cher ; un seul, prix inconnu ou écart < 25 % → le plus vu, « Populaire »', async () => {
+  const { pickBudget } = await import('../gen-edhrec.mjs'), d = (id, p) => ({ id, p });
+  assert.deepEqual(pickBudget([d(1, 300), d(2, 100), d(3, 900), d(4, 500)]).map(x => [x.id, x.k]), [[2, 'budget'], [3, 'premium']]);
+  assert.deepEqual(pickBudget([d(1, 300)]).map(x => [x.id, x.k]), [[1, 'pop']]); assert.deepEqual(pickBudget([d(1, 300), d(2, 320)]).map(x => [x.id, x.k]), [[1, 'pop']]);
+  assert.deepEqual(pickBudget([d(1, 300), d(2, 0)]).map(x => [x.id, x.k]), [[1, 'pop']], 'prix inconnu'); assert.deepEqual(pickBudget([]), []);
 });
 test('sameCmd : le deck doit avoir exactement le commandant (ou la paire) cherché', async () => {
   const { sameCmd } = await import('../gen-edhrec.mjs'), pair = ['Tymna the Weaver', 'Thrasios, Triton Hero'];

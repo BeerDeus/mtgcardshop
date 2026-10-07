@@ -1539,7 +1539,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = '7cb325da';
+const DD_BUILD = '031d4223';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -2659,10 +2659,14 @@ function edhModelFromTsv(text) {
   return m;
 }
 const EDHB = typeof module !== 'undefined' && module.exports ? require('./edhbin.js') : { edhPack, edhUnpack };
-/** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande. */
+/** Types de decks, dans l'ordre d'affichage du filtre : deck moyen EDHREC, Budget, Premium, cEDH, Populaire (un seul deck récent), Archidekt (ancien fichier). */
+const EDH_KINDS = ['avg', 'budget', 'premium', 'cedh', 'pop', 'arch'];
+/** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande.
+ *  k : type ('avg' deck moyen · 'budget' · 'premium' · 'pop' · 'cedh' · 'arch' deck Archidekt d'un ancien fichier) · u : mise à jour 'AAAA-MM-JJ' ('' inconnue) · v : vues · p : prix du deck en centimes (0 inconnu). */
 class EdhDeck {
-  constructor(e, i, cmd, src, label, url) {
+  constructor(e, i, cmd, src, label, url, k, u, v, p) {
     this._e = e; this.i = i; this.cmd = cmd; this.slug = cmd.slug; this.src = src || 'edhrec'; this.label = label || '';
+    this.k = EDH_KINDS.includes(k) ? k : this.src === 'edhrec' ? 'avg' : 'arch'; this.u = /^\d{4}-\d{2}-\d{2}$/.test(u || '') ? u : ''; this.v = Math.max(0, Number(v) || 0); this.p = Math.max(0, Number(p) || 0);
     this.url = url === 0 ? 'https://edhrec.com/average-decks/' + cmd.slug : typeof url === 'number' ? 'https://archidekt.com/decks/' + url : /^https:\/\//.test(url || '') ? url : '';
   }
   get cards() { const e = this._e, out = []; for (let j = e.off[this.i], z = e.off[this.i + 1]; j < z; j++) { const id = e.ids[j]; out.push([e.keys[id], e.names[id], e.qty[j]]); } return out; }
@@ -2687,7 +2691,7 @@ function edhIndex(raw) {
   }
   out.rk = raw.rk === 'month' && out.cmds.some(c => c.dm > 0) ? 'month' : '';      // classement du mois (à jour) ; ancien fichier : compte long
   [...out.cmds].sort((a, b) => (out.rk ? (b.dm - a.dm) : 0) || b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
-  raw.dk.forEach(([ci, src, label, url], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url)));
+  raw.dk.forEach(([ci, src, label, url, k, u, v, p], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url, k, u, v, p)));
   for (const d of out.decks) for (const t of d.cmd.th) themes[t[0]].decks++;
   out.themeOrder = themes.map((t, i) => i).filter(i => themes[i].decks > 0).sort((a, b) => themes[b].decks - themes[a].decks || themes[a].label.localeCompare(themes[b].label));      // les plus présents d'abord
   return out;
@@ -3192,7 +3196,9 @@ if (typeof module !== 'undefined' && module.exports) {
      'EDH2' · u32 longueur de l'en-tête · en-tête JSON { v, at, nc, nd, nn, ne, ng, sl:[octets cmds, decks, noms], tl?:[[slug, libellé]] (thèmes EDHREC, facultatif) }
      JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?, decks du mois?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
                            decks du mois : 7e champ (absent = 0, hors de la liste du mois ; thèmes alors [] s'il n'y en a pas). En-tête rk: 'month' = classement sur le mois
-     JSON des decks        [[indice du commandant, source, libellé, lien]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
+     JSON des decks        [[indice du commandant, source, libellé, lien, type?, mise à jour?, vues?, prix?]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
+                           type : 'avg' deck moyen · 'budget' · 'premium' · 'pop' (seul deck récent) · 'cedh' · '' (ancien fichier) ; mise à jour 'AAAA-MM-JJ' ; vues ; prix du deck en centimes (Cardmarket, d'après Archidekt)
+                           (4 derniers champs facultatifs : un ancien lecteur les ignore)
      noms des cartes       un par ligne (indice = numéro de la carte)
      u32 × (nd + 1)        début de chaque deck dans la liste des entrées
      u16 × ne              numéro de carte de chaque entrée        (ne = total des cartes de tous les decks, terrains de base compris)
@@ -3203,7 +3209,7 @@ if (typeof module !== 'undefined' && module.exports) {
 const EDHB_MAX_CARDS = 65535;
 const edhPad4 = n => (n + 3) & ~3;
 
-/** model : { v, at, cmds:[{ slug, decks, ci, names, img, themes?:[[slug, libellé, nombre]] }], decks:[{ slug, src, label, url, cards:[[nom, qté]] }], price:[[nom, centimes]] | Map, gc:[nom] } ; keyOf : nom → clé (la même que ownKey de l'appli). Retourne un Uint8Array. */
+/** model : { v, at, cmds:[{ slug, decks, ci, names, img, themes?:[[slug, libellé, nombre]] }], decks:[{ slug, src, label, url, cards:[[nom, qté]], k?, u?, v?, p? }], price:[[nom, centimes]] | Map, gc:[nom] } ; keyOf : nom → clé (la même que ownKey de l'appli). Retourne un Uint8Array. */
 function edhPack(model, keyOf) {
   const clean = n => String(n == null ? '' : n).replace(/[\r\n\t]+/g, ' ').trim();
   const kc = new Map(), kf = keyOf; keyOf = n => { let k = kc.get(n); if (k === undefined) { k = kf(n); kc.set(n, k); } return k; };      // les mêmes noms reviennent dans des centaines de decks
@@ -3236,7 +3242,10 @@ function edhPack(model, keyOf) {
     }
     off.push(ids.length);
     const url = d.url || '', m = /^https:\/\/archidekt\.com\/decks\/(\d+)$/.exec(url);
-    meta.push([ci, d.src || 'edhrec', d.label || '', !url ? '' : (d.src || 'edhrec') === 'edhrec' && url === 'https://edhrec.com/average-decks/' + d.slug ? 0 : m ? Number(m[1]) : url]);
+    const row = [ci, d.src || 'edhrec', d.label || '', !url ? '' : (d.src || 'edhrec') === 'edhrec' && url === 'https://edhrec.com/average-decks/' + d.slug ? 0 : m ? Number(m[1]) : url];
+    const k = clean(d.k).slice(0, 12), u = /^\d{4}-\d{2}-\d{2}$/.test(String(d.u || '')) ? d.u : '', v = Math.max(0, Math.round(Number(d.v) || 0)), pc = Math.max(0, Math.round(Number(d.p) || 0));
+    if (k || u || v || pc) row.push(k, u, v, pc);
+    meta.push(row);
   }
   const pr = new Uint32Array(names.length);
   for (const [n, v] of model.price instanceof Map ? model.price : model.price || []) { const id = idOf.get(keyOf(clean(n))); if (id !== undefined && v > 0) pr[id] = Math.round(v); }
