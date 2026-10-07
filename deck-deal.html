@@ -1539,7 +1539,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = 'ed1c4d9c';
+const DD_BUILD = '7cb325da';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -7678,7 +7678,7 @@ function edhRowHtml(r, i) {
   const c = r.cmd, name = c.names.join(' + '), img = (ownLangImg(c.keys[0]) || {}).src || c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
   const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; const mo = EDH.data && EDH.data.rk === 'month';
   if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC${mo ? ' ce mois-ci' : ''}">n° ${nf0(c.rank)}${mo ? ' du mois' : ''}</span>`);
-  if (mo ? c.dm : c.decks) tags.push(`<span class="tag" title="${mo ? 'Decks EDHREC du mois (' + nf0(c.decks) + ' au total)' : 'Decks EDHREC'}">${nf0(mo ? c.dm : c.decks)} decks${mo ? ' ce mois' : ''}</span>`);
+  if (mo ? c.dm : c.decks) tags.push(`<span class="tag" title="${mo ? 'Decks EDHREC du mois' : 'Decks EDHREC'}">${nf0(mo ? c.dm : c.decks)} decks${mo ? ' ce mois' : ''}</span>`);
   tags.push(`<span class="tag${r.deck.src === 'edhrec' ? '' : ' accent'}">${r.deck.src === 'edhrec' ? 'Deck moyen' : esc(edhSrcLabel(r.deck))}</span>`);
   if (r.br) tags.push(`<span class="tag${r.br >= 4 ? ' warn' : ''}" title="${esc(edhBracketNote(r))}">Bracket ${r.br}</span>`);
   if (r.mine) tags.push('<span class="tag good">Commandant possédé</span>');
@@ -7726,7 +7726,7 @@ function openEdhDeck(r) {
     const hitSet = new Set((r.hit || []).map(h => h[0]).filter(k => !cmdSet.has(k))), hitRows = [...hitSet].map(k => byK.get(k)).filter(Boolean);      // cartes cherchées : juste sous le commandant
     const cmdRows = c.keys.map(k => byK.get(k)).filter(Boolean), buy = r.missing.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k)), have = r.owned.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k));      // le commandant est toujours en tête, avec son prix ou ✓
     const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC${EDH.data && EDH.data.rk === 'month' ? ' ce mois-ci' : ''}` : '', r.br ? `<span title="${esc(edhBracketNote(r))}">bracket ≈ ${r.br}${r.gc.length ? ' · ' + r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') : ''}</span>` : ''].filter(Boolean).join(' · ');
-    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.dm ? nf0(c.dm) + ' decks ce mois · ' : ''}${c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
+    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.dm ? nf0(c.dm) + ' decks ce mois · ' : c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
       ${cmdRows.length ? `<h3 class="cs-h">${cmdRows.length > 1 ? 'Commandants' : 'Commandant'}</h3><div class="cs-top dk-cmd">${cmdRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${hitRows.length ? `<h3 class="cs-h">${hitRows.length > 1 ? 'Cartes cherchées' : 'Carte cherchée'}</h3><div class="cs-top dk-hit">${hitRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
