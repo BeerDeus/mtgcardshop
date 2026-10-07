@@ -149,7 +149,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const backoff = ms => (GAP == null ? ms : Math.min(ms, 20));      // tests : pas d'attente réelle entre les essais
 const log = (...a) => { const s = a.join(' '); console.log(s); if (DEBUG) { try { mkdirSync(DEBUG, { recursive: true }); appendFileSync(join(DEBUG, 'log.txt'), s + '\n'); } catch { /* ignore */ } } };
 let nSamples = 0;
-const sample = (name, data) => { if (!DEBUG || (!/^(avg|archidekt|gc)/.test(name) && ++nSamples > 6)) return; try { mkdirSync(DEBUG, { recursive: true }); writeFileSync(join(DEBUG, name.replace(/[^\w.-]+/g, '_') + '.json'), JSON.stringify(data, null, 1).slice(0, 60000)); } catch { /* ignore */ } };
+const sample = (name, data) => { if (!DEBUG || (!/^(avg|archidekt|gc|edhtop)/.test(name) && ++nSamples > 6)) return; try { mkdirSync(DEBUG, { recursive: true }); writeFileSync(join(DEBUG, name.replace(/[^\w.-]+/g, '_') + '.json'), JSON.stringify(data, null, 1).slice(0, 60000)); } catch { /* ignore */ } };
 let lastReq = 0;
 /** GET JSON poli : espacement minimal gap ms entre deux requêtes, nouvel essai sur 429/5xx/réseau. null si 404 ; erreur (avec .status) sinon. */
 async function getJson(url, { gap = 350, tries = 5, headers = {}, method = 'GET', body } = {}) {
@@ -347,23 +347,41 @@ async function gameChangers() {
   log('  Game Changers : liste indisponible (bracket non calculé)'); return [];
 }
 
-/** Sonde Archidekt : essaie plusieurs formes de requête pour un commandant connu et dit lesquelles filtrent vraiment (journal + échantillons sur la branche edh-debug). */
+/** Sonde : Game Changers, champs des recherches et des decks Archidekt (dates, vues, bracket, prix), casse des noms, filtres bracket / date, schéma EDHTop16 (cEDH). Journal + échantillons sur la branche edh-debug. */
 async function probe() {
   log('Sonde Game Changers'); const gc = await gameChangers(); log(`→ ${gc.length} Game Changers`);
-  if (!process.env.EDH_PROBE_ARCH) return;
-  const AR = ARCH_BASE, hd = { Accept: 'application/json' }, name = 'Edgar Markov', target = normKey(name);
-  const variants = [{ commanders: name }, { commanderName: name }, { commanders: name, deckFormat: '3' }, { commanders: name, formats: '3' }, { name, deckFormat: '3' }, { cards: name, deckFormat: '3' }, { commanders: edhSlug(name) }, { commanderName: name, deckFormat: '3' }, { commanders: '"' + name + '"' }];
-  let i = 0;
-  for (const base of ['decks/v3/', 'decks/v2/', 'decks/']) for (const v of variants) {
-    i++; const q = AR + base + '?' + new URLSearchParams({ ...v, orderBy: '-viewCount', pageSize: '5' });
+  const AR = ARCH_BASE, hd = { Accept: 'application/json' }, keysOf = o => o && typeof o === 'object' ? Object.keys(o).join(',') : String(o);
+  const show = (o, ks) => ks.map(k => k + '=' + JSON.stringify(o && o[k])).join(' ');
+  const search = async (tag, v) => {
+    const q = AR + 'decks/v3/?' + new URLSearchParams({ deckFormat: '3', ...v });
     try {
-      const j = await getJson(q, { gap: 1500, headers: hd, tries: 1 }); if (i <= 3) sample('archidekt-probe-' + i, j);
-      const list = archidektList(j), keys = j ? Object.keys(j).slice(0, 10).join(',') : '';
-      let hit = '?';
-      if (list.length) { const d = archidektDeck(await getJson(AR + 'decks/' + list[0].id + '/', { gap: 1500, headers: hd, tries: 1 })); hit = d.cmd.some(x => normKey(x) === target) ? 'OUI' : 'non (' + d.cmd.join(' + ') + ')'; }
-      log(`  ${base}?${new URLSearchParams(v)} → ${list.length} decks [${keys}] · premier = ${list[0] ? list[0].name : '-'} · bon commandant : ${hit}`);
-    } catch (e) { log(`  ${base}?${new URLSearchParams(v)} → ${e.message}`); }
+      const j = await getJson(q, { gap: 1200, headers: hd, tries: 2 }); sample('archidekt-probe-' + tag, j);
+      const r = (j && j.results) || []; log(`  [${tag}] ${new URLSearchParams(v)} → ${r.length} decks · count=${j && j.count} · next=${!!(j && j.next)} · message=${j && j.message || ''}`);
+      if (r[0]) { log('     clés : ' + keysOf(r[0])); for (const d of r.slice(0, 4)) log('     · ' + show(d, ['id', 'name', 'viewCount', 'updatedAt', 'createdAt', 'edhBracket', 'bracket', 'price', 'size'])); }
+      return r;
+    } catch (e) { log(`  [${tag}] ${new URLSearchParams(v)} → ${e.message}`); return []; }
+  };
+  log('Sonde Archidekt');
+  const r = await search('base', { commanderName: 'Edgar Markov', orderBy: '-viewCount' });
+  await search('page2', { commanderName: 'Edgar Markov', orderBy: '-viewCount', page: '2' });
+  await search('updated', { commanderName: 'Edgar Markov', orderBy: '-updatedAt' });
+  for (const [k, v] of [['b5', { edhBracket: '5' }], ['br5', { bracket: '5' }], ['upd', { updatedAfter: '2025-10-01' }], ['upd2', { updatedAtAfter: '2025-10-01' }], ['tag', { tags: 'cEDH' }]]) await search(k, { commanderName: 'Kinnan, Bonder Prodigy', orderBy: '-viewCount', ...v });
+  for (const n of ['Sephiroth, Fabled SOLDIER', 'Sephiroth, Fabled Soldier', 'Esika, God of the Tree // The Prismatic Bridge', 'Esika, God of the Tree', 'Tymna the Weaver', 'Jace, Multiverse Architect']) await search('nom-' + edhSlug(n).slice(0, 20), { commanderName: n, orderBy: '-viewCount' });
+  if (r[0]) {
+    try {
+      const d = await getJson(AR + 'decks/' + r[0].id + '/', { gap: 1200, headers: hd, tries: 2 }); sample('archidekt-probe-deck', d);
+      log('  deck : clés ' + keysOf(d)); log('  deck : ' + show(d, ['id', 'name', 'viewCount', 'updatedAt', 'createdAt', 'edhBracket', 'bracket', 'price', 'deckFormat']));
+      const c = d && d.cards && d.cards[0]; log('  carte : clés ' + keysOf(c) + ' · card : ' + keysOf(c && c.card) + ' · prix : ' + JSON.stringify(c && c.card && c.card.prices));
+    } catch (e) { log('  deck : ' + e.message); }
   }
+  log('Sonde EDHTop16');
+  const gql = async (tag, query) => {
+    try { const j = await getJson('https://edhtop16.com/api/graphql', { gap: 1200, tries: 2, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) }); sample('edhtop16-' + tag, j); log(`  [${tag}] → ${JSON.stringify(j).slice(0, 700)}`); return j; }
+    catch (e) { log(`  [${tag}] → ${e.message}`); return null; }
+  };
+  await gql('schema', '{ __schema { queryType { fields { name args { name type { name kind ofType { name kind } } } } } } }');
+  await gql('cmds', '{ commanders(first: 5, sortBy: POPULARITY, timePeriod: SIX_MONTHS) { edges { node { name colorId stats(filters: { timePeriod: SIX_MONTHS }) { count metaShare conversionRate } } } } }');
+  await gql('enum', '{ a: __type(name: "TimePeriod") { enumValues { name } } b: __type(name: "CommandersSortBy") { enumValues { name } } c: __type(name: "Commander") { fields { name } } d: __type(name: "Entry") { fields { name } } }');
 }
 async function main() {
   const out = process.argv.slice(2).find(a => !a.startsWith('--')) || join(here, 'pwa', 'edh.bin.gz'), legacy = /\.tsv$/.test(out);
