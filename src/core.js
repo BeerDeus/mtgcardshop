@@ -468,6 +468,16 @@ function relTime(ts, now) {
   return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
+/** Ancienneté d'une date 'AAAA-MM-JJ' en mots : « aujourd'hui », « hier », « il y a 5 jours », « il y a 3 semaines », « il y a 2 mois », « il y a 1 an » ('' si illisible). */
+function agoDay(day, now) {
+  const t = Date.parse(String(day || '') + 'T12:00:00Z'); if (!Number.isFinite(t)) return '';
+  const d = Math.max(0, Math.floor(((now || Date.now()) - t) / 86400000));
+  if (d < 1) return 'aujourd\'hui'; if (d < 2) return 'hier'; if (d < 14) return 'il y a ' + d + ' jours';
+  if (d < 60) return 'il y a ' + Math.floor(d / 7) + ' semaines';
+  if (d < 365) return 'il y a ' + Math.floor(d / 30.44) + ' mois';
+  const y = Math.floor(d / 365.25); return 'il y a ' + y + ' an' + (y > 1 ? 's' : '');
+}
+
 /** Identifiant de document : valable pour Firestore, sans dépendre d'une API. */
 function newDeckId() {
   const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let out = '';
@@ -1199,7 +1209,7 @@ function edhDetail(r) {
   missing.sort((a, b) => ((b.u || 0) * b.q - (a.u || 0) * a.q) || a.n.localeCompare(b.n));
   Object.defineProperties(r, { missing: { value: missing, configurable: true }, owned: { value: owned, configurable: true }, gc: { value: gcs, configurable: true } });
 }
-/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { held (clé → exemplaires réservés par des decks montés : sert à compter `eng`, les exemplaires possédés du deck déjà engagés ailleurs), cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur rang : celui du mois si le fichier en a un), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
+/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { held (clé → exemplaires réservés par des decks montés : sert à compter `eng`, les exemplaires possédés du deck déjà engagés ailleurs), cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur rang : celui du mois si le fichier en a un), then (second tri, même choix : le premier se fait alors par paliers, voir EDH_SORT_STEP), kinds:Set (types de decks, voir EDH_KINDS), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
  *  Terrains de base ignorés. Une ligne par deck : { deck, cmd, total, have, miss, cost, unpriced, mine, tier, rank, br (bracket estimé, 0 sans liste Game Changers), hit ([[clé, nom]] des cartes trouvées par une recherche « carte », sinon null), et à la demande : missing:[{ k, n, q, u, gc }], owned:[{ k, n, q, gc }], gc:[noms des Game Changers du deck, commandant compris] }.
  *  Calcul sur tableaux typés (un passage sur toutes les entrées de tous les decks) : quelques millisecondes pour 10 000 decks. */
 function edhRank(edh, qty, o = {}) {
@@ -1218,6 +1228,7 @@ function edhRank(edh, qty, o = {}) {
     if (o.mine && !mine) continue;
     if (cols && ![...c.ci].every(x => cols.has(x))) continue;
     if (o.tiers && o.tiers.size && !o.tiers.has(c.tier)) continue;
+    if (o.kinds && o.kinds.size && !o.kinds.has(d.k)) continue;
     if (thIx && !thIx.every(i => c.thSet.has(i))) continue;
     const a = off[d.i], z = off[d.i + 1]; let hit = null;
     if (hitF) {
@@ -1235,11 +1246,23 @@ function edhRank(edh, qty, o = {}) {
     }
     if (total < 20 || total > 105) continue;      // liste tronquée, ou faussée (cartes en trop : un deck de Commander en compte 100)
     if (o.budget > 0 && cost > o.budget) continue;
-    rows.push(new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own, eng, hold));
+    const row = new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own, eng, hold); row.gcn = gset ? gcN : 0; rows.push(row);
   }
-  const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (a.cmd.rank - b.cmd.rank) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
+  const exact = EDH_SORT_BY, sort = exact[o.sort] ? o.sort : 'have', then = o.then && o.then !== sort && exact[o.then] ? o.then : '';
+  const by = then ? (a, b) => (EDH_SORT_STEP[sort](a) - EDH_SORT_STEP[sort](b)) || exact[then](a, b) || exact[sort](a, b) : exact[sort];
   return rows.sort((a, b) => by(a, b) || (a.cmd.rank - b.cmd.rank) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
 }
+/** Tris des decks EDHREC : have (le plus de cartes possédées), miss, cost (le moins cher à compléter), pop (meilleur rang : celui du mois si le fichier en a un). */
+const EDH_SORT_BY = {
+  have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost),
+  cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (a.cmd.rank - b.cmd.rank) || (a.miss - b.miss),
+};
+/** Paliers d'un tri suivi d'un second (« Meilleur tier, puis moins cher ») : à palier égal, le second départage. Tier (S → D) · part possédée par tranches de 10 % · cartes manquantes par 10 · coût à compléter par tranches (30 / 60 / 100 / 200 / 400 €). */
+const EDH_COST_STEPS = [0, 3000, 6000, 10000, 20000, 40000];
+const EDH_SORT_STEP = {
+  pop: r => 'SABCD'.indexOf(r.tier || 'D'), have: r => -Math.floor(10 * r.have / Math.max(1, r.total)), miss: r => Math.floor(r.miss / 10),
+  cost: r => { const i = EDH_COST_STEPS.findIndex(x => r.cost <= x); return i < 0 ? EDH_COST_STEPS.length : i; },
+};
 /** Nombre de decks de `rows` (résultat d'edhRank) qui portent chaque thème, indexé comme edh.themes. Les compteurs de la liste des thèmes en dépendent : ils suivent tous les filtres en cours (couleurs, tiers, budget, recherche, thèmes déjà choisis). */
 function edhThemeCounts(edh, rows) {
   const n = new Array(edh && edh.themes ? edh.themes.length : 0).fill(0);
@@ -1642,6 +1665,6 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
     eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkColors, dkSideCards, dkBuildText, dkParse, dkCheck, dkFmtOf, dkMatch, dkCover, dkSetCover, dkCoverCard,
-    ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
+    ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, EDH_KINDS, EDH_SORT_STEP, agoDay, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }

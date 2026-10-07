@@ -3,6 +3,16 @@
    deck moyen de chacun et prix Cardmarket des cartes. Une seule requête, gardée sur l'appareil ; tout le calcul se fait ici, sans réseau. */
 const EDH_KEY = 'edh:v1', EDH_BIN_KEY = 'edh:v2', EDH_FILE = 'edh.tsv', EDH_BIN = 'edh.bin.gz', EDH_FRESH = DAY;      // v2 : fichier binaire (EDH2) ; v1 : ancien texte, gardé en repli
 const EDH_SORTS = [['have', 'Plus possédées'], ['cost', 'Moins cher'], ['pop', 'Meilleur tier']];
+/** Types de decks : nom court (ligne et filtre) et explication. */
+const EDH_KIND_NAMES = { avg: 'Moyen', budget: 'Budget', premium: 'Premium', cedh: 'cEDH', pop: 'Populaire', arch: 'Archidekt' };
+const EDH_KIND_HELP = {
+  avg: 'Deck moyen EDHREC : calculé à partir de tous les decks du commandant sur EDHREC (les cartes les plus jouées et les quantités habituelles). Ce n\'est pas une liste testée telle quelle : il mélange les styles. Utile pour repérer les incontournables du commandant.',
+  budget: 'Budget : le moins cher des 10 decks Archidekt les plus vus parmi ceux mis à jour depuis moins d\'un an (prix Cardmarket).',
+  premium: 'Premium : le plus cher des 10 decks Archidekt les plus vus parmi ceux mis à jour depuis moins d\'un an (prix Cardmarket).',
+  cedh: 'cEDH : deck compétitif (bracket 5) le plus vu sur Archidekt et mis à jour depuis moins d\'un an, pour les commandants les plus joués en tournoi ces 6 derniers mois (EDHTop16).',
+  pop: 'Populaire : le deck Archidekt le plus vu du commandant (un seul deck récent trouvé, ou Budget et Premium trop proches en prix). S\'il n\'a rien de récent, sa date le dit.',
+  arch: 'Archidekt : deck réel parmi les plus vus (ancien fichier, avant Budget / Premium).',
+};
 const EDH_TIER_NAMES = ['S', 'A', 'B', 'C', 'D'], EDH_IM_KEY = 'edh:im', EDH_SMALL = 'https://cards.scryfall.io/small/';
 /** Thèmes EDHREC (style du commandant, vaut pour tous ses decks) : noms affichés en français, par libellé EDHREC en minuscules ; un libellé absent s'affiche tel que l'écrit EDHREC. */
 const EDH_THEME_FR = { 'control': 'Contrôle', 'discard': 'Défausse', 'mill': 'Meule', 'self-mill': 'Auto-meule', 'lifegain': 'Gain de vie', 'lifedrain': 'Drain de vie', 'card draw': 'Pioche', 'counterspells': 'Contresorts', 'reanimator': 'Réanimation', 'extra turns': 'Tours supplémentaires', 'politics': 'Politique', 'theft': 'Vol', 'blink': 'Blink', 'equipment': 'Équipements', 'artifacts': 'Artefacts', 'tokens': 'Jetons', 'graveyard': 'Cimetière', '+1/+1 counters': 'Marqueurs +1/+1', 'proliferate': 'Prolifération', 'lands matter': 'Terrains', 'treasure': 'Trésors', 'big mana': 'Gros mana', 'vehicles': 'Véhicules', 'forced combat': 'Combat forcé', 'land destruction': 'Destruction de terrains', 'x spells': 'Sorts à X', 'bounce': 'Rebond', 'exile': 'Exil', 'infect': 'Poison', 'poison': 'Poison', 'food': 'Nourriture', 'blood': 'Sang', 'curses': 'Malédictions', 'donate': 'Don', 'enchantress': 'Enchantements', 'monarch': 'Monarque', 'superfriends': 'Superfriends', 'planeswalkers': 'Planeswalkers' };
@@ -80,7 +90,7 @@ const edhThemeInfo = t => EDH_THEME_INFO[t.label.toLowerCase()] || '';
 /** Description d'un thème en HTML : le texte, puis « Ex. : cartes » sur sa propre ligne. */
 const edhInfoHtml = x => { const i = x.indexOf(' Ex. : '); return i < 0 ? esc(x) : `${esc(x.slice(0, i))} <span class="th-ex">Ex. : ${esc(x.slice(i + 7))}</span>`; };
 const EDH_BUDGETS = [[0, 'Budget illimité'], [3000, '≤ 30 €'], [6000, '≤ 60 €'], [10000, '≤ 100 €'], [20000, '≤ 200 €']];
-const EDH = { data: null, p: null, err: '', at: 0, sort: 'have', cols: new Set(), tiers: new Set(), mine: false, budget: 0, shown: 30, memo: null, im: null, q: '', qm: 'cmd', themes: new Set() };
+const EDH = { data: null, p: null, err: '', at: 0, sort: 'have', then: '', kinds: new Set(), cols: new Set(), tiers: new Set(), mine: false, budget: 0, shown: 30, memo: null, im: null, q: '', qm: 'cmd', themes: new Set() };
 
 /** Fichier du site (null hors http, ou s'il manque) : { buf, etag }. same : ETag déjà connu ; si le site répond avec le même, le corps n'est pas lu → { same: true }. */
 async function edhGet(file, same) {
@@ -154,9 +164,9 @@ const edhDate = () => { const d = EDH.data && EDH.data.at ? new Date(EDH.data.at
 function edhRows() {
   if (!EDH.data) return [];
   for (const t of [...EDH.themes]) if (!EDH.data.themeIx.has(t)) EDH.themes.delete(t);      // un thème absent du fichier chargé (version plus ancienne ou plus récente) ne filtre plus rien
-  const q = edhQuery(), sig = [COLL.u, collCount(), EDH.at, EDH.sort, engSig(), [...EDH.cols].sort().join(''), [...EDH.tiers].sort().join(''), [...EDH.themes].sort().join(','), EDH.mine, EDH.budget, q, EDH.qm].join('|');
+  const q = edhQuery(), sig = [COLL.u, collCount(), EDH.at, EDH.sort, EDH.then, [...EDH.kinds].sort().join(''), engSig(), [...EDH.cols].sort().join(''), [...EDH.tiers].sort().join(''), [...EDH.themes].sort().join(','), EDH.mine, EDH.budget, q, EDH.qm].join('|');
   if (EDH.memo && EDH.memo.sig === sig) return EDH.memo.rows;
-  const rows = edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), cols: EDH.cols, tiers: EDH.tiers, themes: EDH.themes, mine: EDH.mine, budget: EDH.budget, sort: EDH.sort, q, qm: EDH.qm });
+  const rows = edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), cols: EDH.cols, tiers: EDH.tiers, kinds: EDH.kinds, themes: EDH.themes, mine: EDH.mine, budget: EDH.budget, sort: EDH.sort, then: EDH.then, q, qm: EDH.qm });
   EDH.memo = { sig, rows }; return rows;
 }
 /** Recherche en cours, ou '' : un nom de commandant dès 1 lettre, une carte à partir de 2 (sinon presque tous les decks la contiennent). */
@@ -209,7 +219,9 @@ function openEdhThemes() {
   });
 }
 const edhPips = ci => manaHtml(ci ? '{' + ci.split('').join('}{') + '}' : '{C}');
-const edhSrcLabel = d => d.src === 'archidekt' ? 'Archidekt' : 'EDHREC · deck moyen';
+const edhSrcLabel = d => d.k === 'avg' ? 'EDHREC · deck moyen' : 'Archidekt · ' + (EDH_KIND_NAMES[d.k] || 'deck réel');
+/** Ligne du type de deck : « Premium · màj il y a 2 mois » (deck moyen : « Moyen »). */
+const edhKindLine = d => esc(EDH_KIND_NAMES[d.k] || 'Deck') + (d.k !== 'avg' && d.u ? ' · màj ' + esc(agoDay(d.u)) : '');
 function edhPanelHtml() {
   if (!EDH.data) {
     return EDH.err ? `<div class="dv-empty"><b>Decks indisponibles</b><p>${esc(EDH.err)}</p><div class="coll-cta"><button class="btn ghost" type="button" data-act="dretry">Réessayer</button></div></div>`
@@ -218,12 +230,15 @@ function edhPanelHtml() {
   const all = EDH.data.cmds.length, mineN = EDH.data.cmds.filter(c => c.keys.some(k => collQty(k) > 0)).length;
   const gcOn = !!(EDH.data.gc && EDH.data.gc.size);
   const tiersHave = EDH.data.tiers || (EDH.data.tiers = new Set(EDH.data.decks.map(d => d.cmd.tier)));      // seuls les tiers qui ont des decks : pas de bouton « D » vide
+  const kindsHave = EDH.data.kindsHave || (EDH.data.kindsHave = new Set(EDH.data.decks.map(d => d.k)));
   const qm = EDH_QMODES.find(m => m[0] === EDH.qm) || EDH_QMODES[0];
   const search = `<div class="dk-search"><div class="fbar-row"><label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" id="dkQ" data-act="dq" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(EDH.q)}" placeholder="${esc(qm[2])}" aria-label="${esc(qm[2])}"><button type="button" class="fclear" data-act="dqx" aria-label="Effacer la recherche"${EDH.q ? '' : ' hidden'}><svg class="i"><use href="#i-close"/></svg></button></label></div>
       <div class="fopts" role="group" aria-label="Chercher par">${EDH_QMODES.map(([v, l]) => `<button type="button" class="fopt" data-act="dqm" data-v="${v}" aria-pressed="${EDH.qm === v}">${l}</button>`).join('')}</div></div>`;
-  const ctl = `${search}<p class="hint">Deck moyen EDHREC des commandants les plus joués (et decks réels Archidekt pour les premiers), comparés à ta collection (terrains de base ignorés). Prix : tendance Cardmarket${edhDate() ? ' au ' + edhDate() : ''}.</p>
-    <details class="dk-help"><summary>Tier${gcOn ? ', bracket' : ''} et thèmes : comment lire</summary><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks${EDH.data && EDH.data.rk === 'month' ? ' du dernier mois : le classement suit la tendance du moment' : ''}). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Bracket</b> : estimation d\'après le nombre de Game Changers du deck (0 → 2, 1 à 3 → 3, 4 et plus → 4) ; les terrains détruits, tours supplémentaires et combos ne sont pas lus.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés. Dans la liste complète, le nombre à côté d\'un thème = decks qui l\'ont parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…).' : ''}</p></details>
+  const ctl = `${search}<p class="hint">Decks des commandants les plus joués comparés à ta collection (terrains de base ignorés) : deck moyen EDHREC, et decks réels Archidekt récents (Budget, Premium, cEDH). Prix : tendance Cardmarket${edhDate() ? ' au ' + edhDate() : ''}.</p>
+    <details class="dk-help"><summary>Decks, tier${gcOn ? ', Game Changers' : ''} et thèmes : comment lire</summary><p class="hint">${EDH_KINDS.filter(k => kindsHave.has(k)).map(k => `<b>${EDH_KIND_NAMES[k]}</b> : ${esc(EDH_KIND_HELP[k].replace(/^[^:]+ : /, ''))}`).join(' ')} <b>Classer par… puis…</b> : le 1er tri se fait par paliers (tier S → D, tranches de 10 % possédées, tranches de prix 30 / 60 / 100 / 200 / 400 €), le 2nd départage dans chaque palier : « Meilleur tier, puis moins cher » = les tiers S du moins cher au plus cher, puis les A…</p><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks${EDH.data && EDH.data.rk === 'month' ? ' du dernier mois : le classement suit la tendance du moment' : ''}). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Game Changers</b> : cartes de la liste officielle (brackets Commander) présentes dans le deck ; aucune = deck plutôt « casual » (bracket 2 au plus), 4 et plus = deck optimisé.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés. Dans la liste complète, le nombre à côté d\'un thème = decks qui l\'ont parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…).' : ''}</p></details>
     <div class="dk-ctl"><div class="fopts" role="group" aria-label="Classer par">${EDH_SORTS.map(([v, l]) => `<button type="button" class="fopt" data-act="dsort" data-v="${v}" aria-pressed="${EDH.sort === v}">${l}</button>`).join('')}</div>
+      <div class="fopts dk-then" role="group" aria-label="Puis par"><span class="dk-lbl">Puis</span>${EDH_SORTS.filter(([v]) => v !== EDH.sort).map(([v, l]) => `<button type="button" class="fopt" data-act="dthen" data-v="${v}" aria-pressed="${EDH.then === v}">${l}</button>`).join('')}</div>
+      ${kindsHave.size > 1 ? `<div class="fopts" role="group" aria-label="Type de deck"><span class="dk-lbl">Deck</span>${EDH_KINDS.filter(k => kindsHave.has(k)).map(k => `<button type="button" class="fopt" data-act="dkind" data-k="${k}" aria-pressed="${EDH.kinds.has(k)}" title="${esc(EDH_KIND_HELP[k])}">${EDH_KIND_NAMES[k]}</button>`).join('')}</div>` : ''}
       <div class="fopts" role="group" aria-label="Tier du commandant"><span class="dk-lbl">Tier</span>${EDH_TIER_NAMES.filter(t => tiersHave.has(t)).map(t => `<button type="button" class="fopt tier t-${t.toLowerCase()}" data-act="dtier" data-t="${t}" aria-pressed="${EDH.tiers.has(t)}" aria-label="Tier ${t}">${t}</button>`).join('')}</div>
       ${edhThemesHtml()}
       <div class="dk-row"><div class="fcols" role="group" aria-label="Couleurs permises">${COLOR_DEF.filter(c => c[0] !== 'C').map(([c, n]) => `<button type="button" class="fcol mc-${c.toLowerCase()}" data-act="dcol" data-c="${c}" aria-pressed="${EDH.cols.has(c)}" aria-label="${n}" title="${n}">${c}</button>`).join('')}</div>
@@ -234,12 +249,12 @@ function edhPanelHtml() {
 /** Résultats (résumé, liste, « Afficher plus ») : repeints seuls pendant la frappe, pour que le champ de recherche garde le focus. */
 function edhResHtml() {
   const rows = edhRows(), shown = rows.slice(0, EDH.shown), near = rows.filter(r => r.miss <= 10).length, q = edhQuery(), card = EDH.qm === 'card';
-  const sum = `<p class="hint dk-sum">${nf0(rows.length)} deck${rows.length > 1 ? 's' : ''} sur ${nf0(EDH.data.decks.length)}${q ? ` · ${card ? 'contenant' : 'commandant'} « ${esc(EDH.q.trim())} »` : ''}${EDH.cols.size ? ' · couleurs ⊆ ' + [...EDH.cols].join('') : ''}${EDH.tiers.size ? ' · tier ' + EDH_TIER_NAMES.filter(t => EDH.tiers.has(t)).join(' ') : ''}${EDH.themes.size ? ' · thème' + (EDH.themes.size > 1 ? 's' : '') + ' : ' + esc([...EDH.themes].map(s => { const i = EDH.data.themeIx.get(s); return i === undefined ? s : edhThemeName(EDH.data.themes[i]); }).join(' + ')) : ''}${near ? ` · <b>${nf0(near)}</b> à 10 cartes ou moins` : ''}</p>`;
+  const sum = `<p class="hint dk-sum">${nf0(rows.length)} deck${rows.length > 1 ? 's' : ''} sur ${nf0(EDH.data.decks.length)}${q ? ` · ${card ? 'contenant' : 'commandant'} « ${esc(EDH.q.trim())} »` : ''}${EDH.cols.size ? ' · couleurs ⊆ ' + [...EDH.cols].join('') : ''}${EDH.tiers.size ? ' · tier ' + EDH_TIER_NAMES.filter(t => EDH.tiers.has(t)).join(' ') : ''}${EDH.kinds.size ? ' · ' + EDH_KINDS.filter(k => EDH.kinds.has(k)).map(k => EDH_KIND_NAMES[k]).join(' / ') : ''}${EDH.themes.size ? ' · thème' + (EDH.themes.size > 1 ? 's' : '') + ' : ' + esc([...EDH.themes].map(s => { const i = EDH.data.themeIx.get(s); return i === undefined ? s : edhThemeName(EDH.data.themes[i]); }).join(' + ')) : ''}${near ? ` · <b>${nf0(near)}</b> à 10 cartes ou moins` : ''}</p>`;
   let note = '', none = 'Aucun deck ne correspond à ces réglages.';
   if (q && !card) {
     const toks = edhTokens(q), found = EDH.data.cmds.filter(c => edhCmdHas(c, toks)), has = EDH.data.withDeck || (EDH.data.withDeck = new Set(EDH.data.decks.map(d => d.cmd.slug))), nod = found.filter(c => !has.has(c.slug)).sort((a, b) => a.rank - b.rank);
     if (!found.length) none = 'Aucun commandant ne correspond à « ' + esc(EDH.q.trim()) + ' ».';
-    else if (nod.length) note = `<p class="hint dk-note">Sans deck dans le fichier (fourni pour les 1 000 commandants les plus joués) : ${nod.slice(0, 6).map(c => esc(c.names.join(' + ')) + ' (n° ' + nf0(c.rank) + ')').join(', ')}${nod.length > 6 ? ' et ' + (nod.length - 6) + ' autres' : ''}.</p>`;
+    else if (nod.length) note = `<p class="hint dk-note">Sans deck dans le fichier (fourni pour les 2 000 commandants les plus joués) : ${nod.slice(0, 6).map(c => esc(c.names.join(' + ')) + ' (n° ' + nf0(c.rank) + ')').join(', ')}${nod.length > 6 ? ' et ' + (nod.length - 6) + ' autres' : ''}.</p>`;
   } else if (q) {
     none = 'Aucun deck ne contient « ' + esc(EDH.q.trim()) + ' » avec ces réglages.';
     const cnt = new Map(); for (const r of rows) for (const [k, n] of r.hit) { const e = cnt.get(k); if (e) e[1]++; else cnt.set(k, [n, 1]); }
@@ -251,15 +266,13 @@ function edhResHtml() {
 }
 function edhRowHtml(r, i) {
   const c = r.cmd, name = c.names.join(' + '), img = (ownLangImg(c.keys[0]) || {}).src || c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
-  const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; const mo = EDH.data && EDH.data.rk === 'month';
-  if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC${mo ? ' ce mois-ci' : ''}">n° ${nf0(c.rank)}${mo ? ' du mois' : ''}</span>`);
-  if (mo ? c.dm : c.decks) tags.push(`<span class="tag" title="${mo ? 'Decks EDHREC du mois' : 'Decks EDHREC'}">${nf0(mo ? c.dm : c.decks)} decks${mo ? ' ce mois' : ''}</span>`);
-  tags.push(`<span class="tag${r.deck.src === 'edhrec' ? '' : ' accent'}">${r.deck.src === 'edhrec' ? 'Deck moyen' : esc(edhSrcLabel(r.deck))}</span>`);
-  if (r.br) tags.push(`<span class="tag${r.br >= 4 ? ' warn' : ''}" title="${esc(edhBracketNote(r))}">Bracket ${r.br}</span>`);
+  const mo = EDH.data && EDH.data.rk === 'month', d = r.deck, tags = [];
+  tags.push(`<span class="tag dk-kind k-${esc(d.k)}" title="${esc(EDH_KIND_HELP[d.k] || '')}">${edhKindLine(d)}</span>`);
+  if (r.gcn) tags.push(`<span class="tag warn" title="Cartes de la liste Game Changers (brackets Commander) dans ce deck">${nf0(r.gcn)} Game Changer${r.gcn > 1 ? 's' : ''}</span>`);
   if (r.mine) tags.push('<span class="tag good">Commandant possédé</span>');
   const right = r.miss ? `<b>${nf0(r.miss)}</b><small>à acheter</small><em>${r.cost ? '≈ ' + esc(fmt(r.cost, 'EUR')) : 'prix inconnu'}</em>${r.cost && r.unpriced ? `<small>+ ${nf0(r.unpriced)} sans prix</small>` : ''}` : '<b class="ok">✓</b><small>complet</small>';
   return `<div class="crow dk" role="button" tabindex="0" data-dk="${i}" aria-label="${esc(name)} : tier ${esc(r.tier)}, ${r.have} cartes sur ${r.total}${r.eng ? ' (dont ' + r.eng + ' engagée' + (r.eng > 1 ? 's' : '') + ' dans un deck)' : ''}, ${r.miss} à acheter">${r.tier ? `<i class="dk-tier t-${esc(r.tier.toLowerCase())}" aria-hidden="true">${esc(r.tier)}</i>` : ''}<span class="thumb" style="--h:${hash32(c.slug) % 360}">${esc((name.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-name">${esc(name)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` <em class="dk-eng" title="Exemplaires déjà réservés par un de tes decks complets">· dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.deck.src !== 'edhrec' && r.deck.label ? `<span class="dk-lab">${esc(r.deck.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(name)}${c.rank ? ` <small class="dk-rank" title="Rang de popularité du commandant sur EDHREC${mo ? ' ce mois-ci' : ''}">#${nf0(c.rank)}</small>` : ''}</span><span class="dk-pips">${edhPips(c.ci)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${nf0(r.have)} / ${nf0(r.total)} possédées${r.eng ? ` <em class="dk-eng" title="Exemplaires déjà réservés par un de tes decks complets">· dont ${nf0(r.eng)} engagée${r.eng > 1 ? 's' : ''}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${d.src !== 'edhrec' && d.label ? `<span class="dk-lab">${esc(d.label)}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">Contient : ${esc(r.hit.slice(0, 2).map(h => h[1]).join(' · '))}${r.hit.length > 2 ? ' +' + (r.hit.length - 2) : ''}</span>` : ''}</span>
     <span class="row-px dk-px">${right}</span></div>`;
 }
 
@@ -286,7 +299,7 @@ async function edhImages(entries, seed) {
 function edhPaintThumbs(root, m) {
   for (const th of $$('.thumb[data-ik]', root)) { const u = m.get(th.dataset.ik); if (u && !$('img', th)) { const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.decoding = 'async'; im.src = u; th.appendChild(im); } }
 }
-const edhBracketNote = r => `Bracket estimé ${r.br} : ${r.gc.length ? r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') + ' (' + r.gc.join(', ') + ')' : 'aucun Game Changer'}. Estimation : terrains détruits, tours supplémentaires et combos ne sont pas lus.`;
+const edhBracketNote = r => r.gc.length ? 'Game Changers : ' + r.gc.join(', ') : 'Aucun Game Changer';
 
 /** Feuille d'un deck : cartes à acheter (les plus chères d'abord), déjà possédées, aperçu de chaque carte (appui = en grand, glisser = carte suivante) et deux actions. */
 function openEdhDeck(r) {
@@ -300,8 +313,9 @@ function openEdhDeck(r) {
     const cmdSet = new Set(c.keys), byK = new Map([...r.missing.map(x => [x.k, [x, false]]), ...r.owned.map(x => [x.k, [x, true]])]);
     const hitSet = new Set((r.hit || []).map(h => h[0]).filter(k => !cmdSet.has(k))), hitRows = [...hitSet].map(k => byK.get(k)).filter(Boolean);      // cartes cherchées : juste sous le commandant
     const cmdRows = c.keys.map(k => byK.get(k)).filter(Boolean), buy = r.missing.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k)), have = r.owned.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k));      // le commandant est toujours en tête, avec son prix ou ✓
-    const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC${EDH.data && EDH.data.rk === 'month' ? ' ce mois-ci' : ''}` : '', r.br ? `<span title="${esc(edhBracketNote(r))}">bracket ≈ ${r.br}${r.gc.length ? ' · ' + r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') : ''}</span>` : ''].filter(Boolean).join(' · ');
-    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.dm ? nf0(c.dm) + ' decks ce mois · ' : c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
+    const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC${EDH.data && EDH.data.rk === 'month' ? ' ce mois-ci' : ''}` : '', r.gc.length ? `<span title="${esc(edhBracketNote(r))}">${r.gc.length} Game Changer${r.gc.length > 1 ? 's' : ''}</span>` : ''].filter(Boolean).join(' · ');
+    const dk = r.deck, info = [`<b>${esc(EDH_KIND_NAMES[dk.k] || 'Deck')}</b>`, dk.u ? 'mis à jour ' + esc(agoDay(dk.u)) + ' (' + esc(new Date(dk.u + 'T12:00:00Z').toLocaleDateString('fr-FR')) + ')' : '', dk.v ? nf0(dk.v) + ' vues' : '', dk.p ? 'deck complet ≈ ' + esc(fmt(dk.p, 'EUR')) : ''].filter(Boolean).join(' · ');
+    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.dm ? nf0(c.dm) + ' decks ce mois · ' : c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}<span class="dk-info">${info}${dk.src !== 'edhrec' && dk.label ? ' · « ' + esc(dk.label) + ' »' : ''}</span><p class="hint dk-kinfo">${esc(EDH_KIND_HELP[dk.k] || '')}</p>${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
       ${cmdRows.length ? `<h3 class="cs-h">${cmdRows.length > 1 ? 'Commandants' : 'Commandant'}</h3><div class="cs-top dk-cmd">${cmdRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${hitRows.length ? `<h3 class="cs-h">${hitRows.length > 1 ? 'Cartes cherchées' : 'Carte cherchée'}</h3><div class="cs-top dk-hit">${hitRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}
@@ -342,7 +356,9 @@ function edhClick(e) {
   if (row) { const r = edhRows()[Number(row.dataset.dk)]; if (r) { haptic('tap'); openEdhDeck(r); } return true; }
   const b = e.target.closest('button[data-act]'); if (!b) return false;
   const act = b.dataset.act;
-  if (act === 'dsort') { if (EDH.sort !== b.dataset.v) { EDH.sort = b.dataset.v; EDH.shown = 30; haptic('tap'); collPaintBody(true); } }
+  if (act === 'dsort') { if (EDH.sort !== b.dataset.v) { EDH.sort = b.dataset.v; if (EDH.then === EDH.sort) EDH.then = ''; EDH.shown = 30; haptic('tap'); collPaintBody(true); } }
+  else if (act === 'dthen') { EDH.then = EDH.then === b.dataset.v ? '' : b.dataset.v; EDH.shown = 30; haptic('tap'); collPaintBody(true); }
+  else if (act === 'dkind') { const k = b.dataset.k; if (EDH.kinds.has(k)) EDH.kinds.delete(k); else EDH.kinds.add(k); EDH.shown = 30; haptic('tap'); collPaintBody(true); }
   else if (act === 'dcol') { const c = b.dataset.c; if (EDH.cols.has(c)) EDH.cols.delete(c); else EDH.cols.add(c); EDH.shown = 30; haptic('tap'); collPaintBody(true); }
   else if (act === 'dtier') { const t = b.dataset.t; if (EDH.tiers.has(t)) EDH.tiers.delete(t); else EDH.tiers.add(t); EDH.shown = 30; haptic('tap'); collPaintBody(true); }
   else if (act === 'dth') { const t = b.dataset.s; if (EDH.themes.has(t)) EDH.themes.delete(t); else EDH.themes.add(t); EDH.shown = 30; haptic('tap'); collPaintBody(true); }

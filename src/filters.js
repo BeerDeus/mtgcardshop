@@ -8,7 +8,7 @@ function manaHtml(mc) {
   const out = [];
   for (const m of String(mc || '').matchAll(/\{([^}]+)\}/g)) {
     const t = m[1].toUpperCase(), c = (t.match(/[WUBRG]/) || [])[0];
-    out.push(`<i class="mc mc-${/^\d+$/.test(t) || t === 'X' || t === 'C' || t === 'S' ? 'n' : (c || 'n').toLowerCase()}">${esc(/^\d+$/.test(t) || t === 'X' ? t : (c || t[0] || ''))}</i>`);
+    out.push(`<i class="mc mc-${t === 'C' ? 'c' : /^\d+$/.test(t) || t === 'X' || t === 'S' ? 'n' : (c || 'n').toLowerCase()}">${esc(/^\d+$/.test(t) || t === 'X' ? t : (c || t[0] || ''))}</i>`);
   }
   return out.join('');
 }

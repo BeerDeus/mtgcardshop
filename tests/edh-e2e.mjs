@@ -22,7 +22,7 @@ const FILE = ['#edh\t1\t2026-10-03T04:00:00Z',
 let hits = 0, mode = 'ok';
 await p.route('**/edh.tsv', r => { hits++; if (mode === 'ok') return r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: FILE }); return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"asset_missing"}' }); });
 const rows = () => p.$$eval('.crow:not(.dk)', r => r.map(x => ({ name: x.querySelector('.row-name').textContent, tags: [...x.querySelectorAll('.tag')].map(t => t.textContent.replace(/\s+/g, ' ').trim()) })));
-const dks = () => p.$$eval('.crow.dk', r => r.map(x => ({ name: x.querySelector('.row-name').textContent, have: x.querySelector('.dk-have').textContent.replace(/\s+/g, ' ').trim(), lab: (x.querySelector('.dk-lab') || { textContent: '' }).textContent, px: x.querySelector('.dk-px').innerText.replace(/\s+/g, ' ').trim(), tier: (x.querySelector('.dk-tier') || { textContent: '' }).textContent, tags: [...x.querySelectorAll('.tag')].map(t => t.textContent.replace(/\s+/g, ' ').trim()) })));
+const dks = () => p.$$eval('.crow.dk', r => r.map(x => ({ name: x.querySelector('.row-name').firstChild.textContent.trim(), rank: (x.querySelector('.dk-rank') || { textContent: '' }).textContent, pips: x.querySelectorAll('.dk-pips .mc').length, have: x.querySelector('.dk-have').textContent.replace(/\s+/g, ' ').trim(), lab: (x.querySelector('.dk-lab') || { textContent: '' }).textContent, px: x.querySelector('.dk-px').innerText.replace(/\s+/g, ' ').trim(), tier: (x.querySelector('.dk-tier') || { textContent: '' }).textContent, tags: [...x.querySelectorAll('.tag')].map(t => t.textContent.replace(/\s+/g, ' ').trim()) })));
 
 /* ── collection : Edgar Markov, Sol Ring ×2, Arcane Signet, Llanowar Elves, Craterhoof ──────── */
 await p.click('#btnColl'); await p.waitForSelector('.coll.on');
@@ -52,15 +52,26 @@ let d = await dks(); assert.equal(d.length, 4, 'craterhoof : 24 cartes ≥ 20 �
 // Edgar : Edgar + Sol Ring + Arcane Signet + Command Tower + Swords + Wrath + 20 fillers = 26 (Plains ignorés) ; possédées 3 (Edgar, Sol Ring, Arcane Signet) → 23 à acheter
 // Tymna : 2 + Sol Ring + Llanowar + 25 = 29 ; possédées 2 → 27 · Craterhoof : Craterhoof + Llanowar + Sol Ring + 22 = 25 ; possédées 3 → 22
 assert.deepEqual(d.map(x => x.name), ['Craterhoof Behemoth', 'Edgar Markov', 'Edgar Markov', 'Tymna the Weaver + Thrasios, Triton Hero'], 'moins de cartes manquantes d\'abord (22, 23, 24, 27)');
-assert.match(d[0].have, /^3 \/ 25 possédées/); assert.match(d[0].px, /^22 à acheter/); assert.match(d[1].have, /^3 \/ 26 possédées/); assert.match(d[1].px, /^23 à acheter/); assert.match(d[2].have, /^3 \/ 27 possédées/); assert.equal(d[2].lab, 'Upping the Average · 4 200 vues', 'deck Archidekt : libellé sous le compte'); assert.ok(d[2].tags.includes('Archidekt') && d[1].tags.includes('Deck moyen')); assert.match(d[3].have, /^2 \/ 29 possédées/);
-assert.ok(d[1].tags.includes('12 345 decks') && d[1].tags.includes('Commandant possédé')); assert.ok(!d[3].tags.includes('Commandant possédé'));
+assert.match(d[0].have, /^3 \/ 25 possédées/); assert.match(d[0].px, /^22 à acheter/); assert.match(d[1].have, /^3 \/ 26 possédées/); assert.match(d[1].px, /^23 à acheter/); assert.match(d[2].have, /^3 \/ 27 possédées/); assert.equal(d[2].lab, 'Upping the Average · 4 200 vues', 'deck Archidekt : libellé sous le compte'); assert.ok(d[2].tags.includes('Archidekt') && d[1].tags.includes('Moyen'), 'type de deck : ' + d[2].tags + ' / ' + d[1].tags); assert.match(d[3].have, /^2 \/ 29 possédées/);
+assert.ok(!d[1].tags.some(t => /decks/.test(t)) && d[1].tags.includes('Commandant possédé'), 'plus de nombre de decks sur la ligne'); assert.ok(!d[3].tags.includes('Commandant possédé'));
 assert.deepEqual(d.map(x => x.tier), ['A', 'S', 'S', 'S'], 'tier d\'après le rang de popularité : Craterhoof n° 33 → A ; Edgar n° 1 et Tymna n° 2 → S');
-assert.ok(d[0].tags.includes('n° 33') && d[1].tags.includes('n° 1') && d[3].tags.includes('n° 2'), 'rang affiché');
-assert.deepEqual(d.map(x => x.tags.find(t => /^Bracket/.test(t))), ['Bracket 2', 'Bracket 4', 'Bracket 3', 'Bracket 2'], 'Game Changers : Craterhoof 0 → 2 ; Edgar 4 → 4 ; Edgar (Archidekt) 1 → 3 ; Tymna 0 → 2');
-assert.match(await p.$eval('.crow.dk:nth-child(2) .tag[title^="Bracket"]', e => e.title), /4 Game Changers \(Arcane Signet, Command Tower, Swords to Plowshares, Wrath of God\)/);
+assert.deepEqual(d.map(x => x.rank), ['#33', '#1', '#1', '#2'], 'rang à côté du nom'); assert.deepEqual(d.map(x => x.pips), [1, 3, 3, 4], 'symboles de mana de l\'identité');
+assert.equal(await p.$eval('.crow.dk .dk-pips .mc-g', e => getComputedStyle(e).backgroundImage.startsWith('url("data:image/svg+xml')), true, 'symbole dessiné (SVG), lettre gardée dans le texte'); assert.equal(await p.$eval('.crow.dk .dk-pips .mc-g', e => e.textContent), 'G');
+assert.deepEqual(d.map(x => x.tags.find(t => /Game Changer/.test(t))), [undefined, '4 Game Changers', '1 Game Changer', undefined], 'Game Changers : affichés seulement s\'il y en a');
 assert.deepEqual(await p.$$eval('.dk-ctl [data-act="dsort"]', b => b.map(x => x.textContent + ':' + x.getAttribute('aria-pressed'))), ['Plus possédées:true', 'Moins cher:false', 'Meilleur tier:false'], 'tri par défaut : le plus de cartes possédées');
-assert.match(await txt(p, '.dk-sum'), /4 decks sur 4/); assert.match(await txt(p, '.coll-main > p.hint'), /Deck moyen EDHREC.*Prix : tendance Cardmarket au 03\/10\/2026/);
+assert.match(await txt(p, '.dk-sum'), /4 decks sur 4/); assert.match(await txt(p, '.coll-main > p.hint'), /deck moyen EDHREC.*Prix : tendance Cardmarket au 03\/10\/2026/);
 await p.screenshot({ path: 'shots/edh-2-decks.png' });
+// type de deck (filtre) et tri combiné « Meilleur tier, puis moins cher »
+assert.deepEqual(await p.$$eval('.dk-ctl [data-act="dkind"]', b => b.map(x => x.textContent)), ['Moyen', 'Archidekt'], 'types présents seulement');
+await p.click('.dk-ctl [data-act="dkind"][data-k="arch"]'); d = await dks(); assert.deepEqual(d.map(x => x.name), ['Edgar Markov'], 'filtre Archidekt'); assert.match(await txt(p, '.dk-sum'), /1 deck sur 4 · Archidekt/);
+await p.click('.dk-ctl [data-act="dkind"][data-k="arch"]'); assert.equal((await dks()).length, 4);
+await p.click('.dk-ctl [data-act="dsort"][data-v="pop"]'); assert.deepEqual(await p.$$eval('.dk-then [data-act="dthen"]', b => b.map(x => x.dataset.v)), ['have', 'cost'], '« Puis » : les deux autres tris');
+await p.click('.dk-then [data-act="dthen"][data-v="cost"]'); d = await dks();
+const eur = x => Number((/≈ ([\d\s ,]+) €/.exec(x.px) || [, '0'])[1].replace(/\s| /g, '').replace(',', '.'));
+assert.deepEqual(d.map(x => x.tier), ['S', 'S', 'S', 'A'], 'tiers S d\'abord'); assert.ok(eur(d[0]) <= eur(d[1]) && eur(d[1]) <= eur(d[2]), 'dans le tier S : du moins cher au plus cher : ' + d.map(x => x.px).join(' | '));
+await p.click('.dk-then [data-act="dthen"][data-v="cost"]'); assert.equal(await p.$$eval('.dk-then [aria-pressed="true"]', b => b.length), 0, '« Puis » se décoche');
+await p.click('.dk-ctl [data-act="dsort"][data-v="have"]');
+ok('filtre par type de deck (Moyen / Archidekt…) ; « Meilleur tier, puis moins cher » : paliers de tier, prix croissant dedans');
 ok('onglet Decks : classement selon la collection (22 · 23 · 24 · 27 cartes à acheter), deck Archidekt libellé, commandant possédé signalé');
 
 /* ── 3b) cartes possédées mais engagées dans un deck monté : « dont N engagées », barre bleue + orange ── */
@@ -146,7 +157,7 @@ await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { ti
 await p.click('.dv.on[aria-label="Deck viewer · Edgar Markov"] [data-act="close"]'); await p.waitForTimeout(400);
 await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum');
 /* ── 4b) aperçu des cartes de la feuille, zoom, glissement ─────────────────────────────────── */
-assert.match(await txt(p, '.sheet-head p'), /^Tier S · n° 1 · 3 \/ 26 possédées/); assert.match(await txt(p, '.sheet .ci-sum'), /Tier S · n° 1 sur EDHREC · bracket ≈ 4 · 4 Game Changers/);
+assert.match(await txt(p, '.sheet-head p'), /^Tier S · n° 1 · 3 \/ 26 possédées/); assert.match(await txt(p, '.sheet .ci-sum'), /Tier S · n° 1 sur EDHREC · 4 Game Changers.*Moyen/);
 assert.deepEqual(await p.$$eval('.sheet .crow[data-ik]:has(.tag.warn) .row-name', n => n.map(x => x.textContent).sort()), ['Arcane Signet', 'Command Tower', 'Swords to Plowshares', 'Wrath of God'], 'pastille « Game Changer »');
 assert.equal(await p.$$eval('.sheet .crow[data-ik]', n => n.length), 26, '23 à acheter + 3 possédées'); assert.equal(await p.$eval('.sheet .crow[data-ik="edgar markov"] .tag', e => e.textContent), 'Commandant');
 await p.waitForSelector('.sheet .thumb[data-ik="swords to plowshares"] img.ok', { timeout: 8000 }); await p.waitForSelector('.sheet .thumb[data-ik="wrath of god"] img.ok');
@@ -198,7 +209,7 @@ const openDecks = async pg => {
   await pg.waitForFunction(() => document.querySelectorAll('.crow:not(.dk)').length === 6); await pg.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 });
   await pg.click('#collSeg [data-v="decks"]'); await pg.waitForSelector('.crow.dk', { timeout: 8000 });
 };
-const names = async pg => (await pg.$$eval('.crow.dk', r => r.map(x => x.querySelector('.row-name').textContent + ' ' + x.querySelector('.dk-have').textContent.replace(/\s+/g, ' ').trim())));
+const names = async pg => (await pg.$$eval('.crow.dk', r => r.map(x => x.querySelector('.row-name').firstChild.textContent.trim() + ' ' + x.querySelector('.dk-have').textContent.replace(/\s+/g, ' ').trim())));
 for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip' }], ['gzip brut', {}]]) {
   const c = await newPage(browser, world); let binHits = 0, tsvHits = 0;
   await c.p.route('**/edh.bin.gz', r => { binHits++; return r.fulfill({ status: 200, contentType: 'application/octet-stream', headers, body: BIN }); });
@@ -252,7 +263,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   const sum = () => txt(c.p, '.dk-sum');
   assert.deepEqual(await chips(), ['Contrôle', 'Aristocrats', 'Gain de vie', 'Sacrifice', 'Jetons'], '5 puces : les thèmes les plus présents (nombre de decks), noms français ; Archidekt compte avec son commandant');
   assert.equal(await txt(c.p, '.dk-themes [data-act="dthall"]'), 'Tous (9)');
-  const rowsTh = await c.p.$$eval('.crow.dk', r => r.map(x => x.querySelector('.row-name').textContent + ' | ' + (x.querySelector('.dk-th') ? x.querySelector('.dk-th').textContent : '-')));
+  const rowsTh = await c.p.$$eval('.crow.dk', r => r.map(x => x.querySelector('.row-name').firstChild.textContent.trim() + ' | ' + (x.querySelector('.dk-th') ? x.querySelector('.dk-th').textContent : '-')));
   assert.deepEqual(rowsTh.sort(), ['Craterhoof Behemoth | -', 'Edgar Markov | Aristocrats · Gain de vie · Contrôle', 'Edgar Markov | Aristocrats · Gain de vie · Contrôle', 'Tymna the Weaver + Thrasios, Triton Hero | Contrôle · Combo · Ramp'], '3 thèmes au plus par deck ; commandant sans thème : rien ; les decks Archidekt portent ceux de leur commandant');
   // puce : un thème
   await c.p.click('.dk-themes [data-s="control"]'); await c.p.waitForFunction(() => document.querySelectorAll('.crow.dk').length === 3);
