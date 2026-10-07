@@ -31,6 +31,8 @@ jobs:
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main      # le dernier état de main au démarrage (pas celui du déclenchement) : un passage en file repart du fichier du passage précédent
       - uses: actions/setup-node@v4
         with:
           node-version: 22
