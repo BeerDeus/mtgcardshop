@@ -1539,7 +1539,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = 'b85481b9';
+const DD_BUILD = '9a1d187d';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -2675,17 +2675,18 @@ function edhIndex(raw) {
   const names = raw.names, nn = names.length, keys = new Array(nn), idOf = new Map(), bs = new Uint8Array(nn), gcA = new Uint8Array(nn);
   for (let i = 0; i < nn; i++) { const k = ownKey(names[i]); keys[i] = k; if (!idOf.has(k)) idOf.set(k, i); if (BASIC_NAMES.has(k)) bs[i] = 1; }
   const themes = (raw.themes || []).map(t => ({ slug: String(t && t[0]), label: String((t && t[1]) || (t && t[0])), cmds: 0, decks: 0 })), themeIx = new Map(themes.map((t, i) => [t.slug, i]));
-  const out = { v: raw.v, at: raw.at, cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set(), names, keys, idOf, off: raw.off, ids: raw.ids, qty: raw.qty, pr: raw.pr, bs, gcA, themes, themeIx, themeOrder: [] };
+  const out = { v: raw.v, at: raw.at, rk: '', cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set(), names, keys, idOf, off: raw.off, ids: raw.ids, qty: raw.qty, pr: raw.pr, bs, gcA, themes, themeIx, themeOrder: [] };
   for (let i = 0; i < nn; i++) if (raw.pr[i] > 0) out.price.set(keys[i], raw.pr[i]);
   for (const id of raw.gc) { gcA[id] = 1; out.gc.add(keys[id]); }
   for (const r of raw.cmds) {
     const ck = r.names.map(ownKey), th = (r.th || []).filter(t => Array.isArray(t) && themes[t[0]] && t[1] > 0).map(t => [t[0], t[1]]).sort((a, b) => b[1] - a[1]);
-    const c = { slug: r.slug, decks: r.decks, ci: String(r.ci || '').replace(/[^WUBRG]/g, ''), names: r.names, keys: ck, ids: ck.map(k => idOf.get(k)).filter(x => x !== undefined), img: r.img && /^[\w\-./]+$/.test(r.img) ? FR_IMG + r.img : '', i: out.cmds.length, th, thSet: new Set(th.map(t => t[0])) };
+    const c = { slug: r.slug, decks: r.decks, dm: r.dm || 0, ci: String(r.ci || '').replace(/[^WUBRG]/g, ''), names: r.names, keys: ck, ids: ck.map(k => idOf.get(k)).filter(x => x !== undefined), img: r.img && /^[\w\-./]+$/.test(r.img) ? FR_IMG + r.img : '', i: out.cmds.length, th, thSet: new Set(th.map(t => t[0])) };
     out.cmds.push(c); out.bySlug.set(c.slug, c);
     for (const t of th) themes[t[0]].cmds++;
     for (const k of c.keys) { const p = out.by.get(k); if (!p || c.decks > p.decks) out.by.set(k, c); }
   }
-  [...out.cmds].sort((a, b) => b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
+  out.rk = raw.rk === 'month' && out.cmds.some(c => c.dm > 0) ? 'month' : '';      // classement du mois (à jour) ; ancien fichier : compte long
+  [...out.cmds].sort((a, b) => (out.rk ? (b.dm - a.dm) : 0) || b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
   raw.dk.forEach(([ci, src, label, url], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url)));
   for (const d of out.decks) for (const t of d.cmd.th) themes[t[0]].decks++;
   out.themeOrder = themes.map((t, i) => i).filter(i => themes[i].decks > 0).sort((a, b) => themes[b].decks - themes[a].decks || themes[a].label.localeCompare(themes[b].label));      // les plus présents d'abord
@@ -3189,7 +3190,8 @@ if (typeof module !== 'undefined' && module.exports) {
    dictionnaire, chaque deck une tranche d'un grand tableau : ~2 Mo compressé pour 10 000 decks, lu en quelques millisecondes, sans créer d'objet par carte.
    Fichier (petit-boutiste, sections alignées sur 4 octets) :
      'EDH2' · u32 longueur de l'en-tête · en-tête JSON { v, at, nc, nd, nn, ne, ng, sl:[octets cmds, decks, noms], tl?:[[slug, libellé]] (thèmes EDHREC, facultatif) }
-     JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
+     JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?, decks du mois?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
+                           decks du mois : 7e champ (absent = 0, hors de la liste du mois ; thèmes alors [] s'il n'y en a pas). En-tête rk: 'month' = classement sur le mois
      JSON des decks        [[indice du commandant, source, libellé, lien]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
      noms des cartes       un par ligne (indice = numéro de la carte)
      u32 × (nd + 1)        début de chaque deck dans la liste des entrées
@@ -3220,7 +3222,8 @@ function edhPack(model, keyOf) {
   };
   for (const c of model.cmds || []) {
     if (slugIx.has(c.slug)) continue; slugIx.set(c.slug, cmds.length); for (const n of c.names) add(n);
-    const th = (c.themes || []).map(themeOf).filter(Boolean), row = [c.slug, Math.max(0, Math.round(Number(c.decks) || 0)), c.ci || '', c.names.map(clean), c.img || '']; if (th.length) row.push(th);
+    const th = (c.themes || []).map(themeOf).filter(Boolean), dm = Math.max(0, Math.round(Number(c.dm) || 0)), row = [c.slug, Math.max(0, Math.round(Number(c.decks) || 0)), c.ci || '', c.names.map(clean), c.img || ''];
+    if (th.length || dm) row.push(th); if (dm) row.push(dm);
     cmds.push(row); cmdKeys.push(c.names.map(n => keyOf(clean(n))));
   }
   const meta = [], off = [0], ids = [], qty = [];
@@ -3239,7 +3242,7 @@ function edhPack(model, keyOf) {
   for (const [n, v] of model.price instanceof Map ? model.price : model.price || []) { const id = idOf.get(keyOf(clean(n))); if (id !== undefined && v > 0) pr[id] = Math.round(v); }
   const gcIds = []; for (const n of model.gc || []) { const k = keyOf(clean(n)); if (k) gcIds.push(add(n)); }
   const enc = new TextEncoder(), cm = enc.encode(JSON.stringify(cmds)), dk = enc.encode(JSON.stringify(meta)), nm = enc.encode(names.join('\n'));
-  const head = enc.encode(JSON.stringify({ v: model.v || 0, at: model.at || '', nc: cmds.length, nd: meta.length, nn: names.length, ne: ids.length, ng: gcIds.length, sl: [cm.length, dk.length, nm.length], ...(tl.length ? { tl } : {}) }));
+  const head = enc.encode(JSON.stringify({ v: model.v || 0, at: model.at || '', nc: cmds.length, nd: meta.length, nn: names.length, ne: ids.length, ng: gcIds.length, sl: [cm.length, dk.length, nm.length], ...(tl.length ? { tl } : {}), ...(model.rk ? { rk: String(model.rk) } : {}) }));
   const hp = edhPad4(8 + head.length), cp = edhPad4(cm.length), dp = edhPad4(dk.length), np = edhPad4(nm.length);
   const total = hp + cp + dp + np + 4 * off.length + edhPad4(2 * ids.length) + edhPad4(ids.length) + 4 * names.length + edhPad4(2 * gcIds.length);
   const buf = new Uint8Array(total), dv = new DataView(buf.buffer);
@@ -3266,7 +3269,7 @@ function edhUnpack(input) {
   if (need !== len) throw new Error('tronqué');
   let p = edhPad4(8 + hl);
   const text = n => { const s = dec.decode(new Uint8Array(buf, base + p, n)); p += edhPad4(n); return s; };
-  const cmds = JSON.parse(text(lc)).map(([slug, decks, ci, names, img, th]) => ({ slug, decks, ci, names, img, th: Array.isArray(th) ? th : [] })), dk = JSON.parse(text(ld)), nmText = text(ln), names = nn ? nmText.split('\n') : [];
+  const cmds = JSON.parse(text(lc)).map(([slug, decks, ci, names, img, th, dm]) => ({ slug, decks, ci, names, img, th: Array.isArray(th) ? th : [], dm: Math.max(0, Number(dm) || 0) })), dk = JSON.parse(text(ld)), nmText = text(ln), names = nn ? nmText.split('\n') : [];
   if (names.length !== nn) throw new Error('noms');
   const off = new Uint32Array(buf, base + p, nd + 1); p += 4 * (nd + 1);
   const ids = new Uint16Array(buf, base + p, ne); p += edhPad4(2 * ne);
@@ -3274,7 +3277,7 @@ function edhUnpack(input) {
   const pr = new Uint32Array(buf, base + p, nn); p += 4 * nn;
   const gc = new Uint16Array(buf, base + p, ng);
   if (off[nd] !== ne || dk.length !== nd) throw new Error('decks');
-  return { v: head.v, at: head.at, themes: Array.isArray(head.tl) ? head.tl : [], cmds, dk, names, off, ids, qty, pr, gc };
+  return { v: head.v, at: head.at, rk: typeof head.rk === 'string' ? head.rk : '', themes: Array.isArray(head.tl) ? head.tl : [], cmds, dk, names, off, ids, qty, pr, gc };
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { edhPack, edhUnpack, EDHB_MAX_CARDS };
@@ -7644,7 +7647,7 @@ function edhPanelHtml() {
   const search = `<div class="dk-search"><div class="fbar-row"><label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" id="dkQ" data-act="dq" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(EDH.q)}" placeholder="${esc(qm[2])}" aria-label="${esc(qm[2])}"><button type="button" class="fclear" data-act="dqx" aria-label="Effacer la recherche"${EDH.q ? '' : ' hidden'}><svg class="i"><use href="#i-close"/></svg></button></label></div>
       <div class="fopts" role="group" aria-label="Chercher par">${EDH_QMODES.map(([v, l]) => `<button type="button" class="fopt" data-act="dqm" data-v="${v}" aria-pressed="${EDH.qm === v}">${l}</button>`).join('')}</div></div>`;
   const ctl = `${search}<p class="hint">Deck moyen EDHREC des commandants les plus joués (et decks réels Archidekt pour les premiers), comparés à ta collection (terrains de base ignorés). Prix : tendance Cardmarket${edhDate() ? ' au ' + edhDate() : ''}.</p>
-    <details class="dk-help"><summary>Tier${gcOn ? ', bracket' : ''} et thèmes : comment lire</summary><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Bracket</b> : estimation d\'après le nombre de Game Changers du deck (0 → 2, 1 à 3 → 3, 4 et plus → 4) ; les terrains détruits, tours supplémentaires et combos ne sont pas lus.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés. Dans la liste complète, le nombre à côté d\'un thème = decks qui l\'ont parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…).' : ''}</p></details>
+    <details class="dk-help"><summary>Tier${gcOn ? ', bracket' : ''} et thèmes : comment lire</summary><p class="hint"><b>Tier</b> : popularité du commandant sur EDHREC (nombre de decks${EDH.data && EDH.data.rk === 'month' ? ' du dernier mois : le classement suit la tendance du moment' : ''}). S = les 30 plus joués, A jusqu'au 150ᵉ, B jusqu'au 500ᵉ, C jusqu'au 1 500ᵉ, D au-delà. C'est un classement de popularité, pas de puissance.${gcOn ? ' <b>Bracket</b> : estimation d\'après le nombre de Game Changers du deck (0 → 2, 1 à 3 → 3, 4 et plus → 4) ; les terrains détruits, tours supplémentaires et combos ne sont pas lus.' : ''}${(EDH.data.themeOrder || []).length ? ' <b>Thèmes</b> : le style du commandant d\'après EDHREC (contrôle, gain de vie, défausse, meule…), les mêmes pour tous ses decks, Archidekt compris. Seuls les thèmes généraux portés par au moins 1 % de ses decks sont gardés. Dans la liste complète, le nombre à côté d\'un thème = decks qui l\'ont parmi ceux qui restent avec tes autres réglages (couleurs, tier, recherche…).' : ''}</p></details>
     <div class="dk-ctl"><div class="fopts" role="group" aria-label="Classer par">${EDH_SORTS.map(([v, l]) => `<button type="button" class="fopt" data-act="dsort" data-v="${v}" aria-pressed="${EDH.sort === v}">${l}</button>`).join('')}</div>
       <div class="fopts" role="group" aria-label="Tier du commandant"><span class="dk-lbl">Tier</span>${EDH_TIER_NAMES.filter(t => tiersHave.has(t)).map(t => `<button type="button" class="fopt tier t-${t.toLowerCase()}" data-act="dtier" data-t="${t}" aria-pressed="${EDH.tiers.has(t)}" aria-label="Tier ${t}">${t}</button>`).join('')}</div>
       ${edhThemesHtml()}
@@ -7673,7 +7676,9 @@ function edhResHtml() {
 }
 function edhRowHtml(r, i) {
   const c = r.cmd, name = c.names.join(' + '), img = (ownLangImg(c.keys[0]) || {}).src || c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
-  const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC">n° ${nf0(c.rank)}</span>`); if (c.decks) tags.push(`<span class="tag">${nf0(c.decks)} decks</span>`);
+  const tags = [`<span class="dk-pips">${edhPips(c.ci)}</span>`]; const mo = EDH.data && EDH.data.rk === 'month';
+  if (c.rank) tags.push(`<span class="tag" title="Rang de popularité du commandant sur EDHREC${mo ? ' ce mois-ci' : ''}">n° ${nf0(c.rank)}${mo ? ' du mois' : ''}</span>`);
+  if (mo ? c.dm : c.decks) tags.push(`<span class="tag" title="${mo ? 'Decks EDHREC du mois (' + nf0(c.decks) + ' au total)' : 'Decks EDHREC'}">${nf0(mo ? c.dm : c.decks)} decks${mo ? ' ce mois' : ''}</span>`);
   tags.push(`<span class="tag${r.deck.src === 'edhrec' ? '' : ' accent'}">${r.deck.src === 'edhrec' ? 'Deck moyen' : esc(edhSrcLabel(r.deck))}</span>`);
   if (r.br) tags.push(`<span class="tag${r.br >= 4 ? ' warn' : ''}" title="${esc(edhBracketNote(r))}">Bracket ${r.br}</span>`);
   if (r.mine) tags.push('<span class="tag good">Commandant possédé</span>');
@@ -7720,8 +7725,8 @@ function openEdhDeck(r) {
     const cmdSet = new Set(c.keys), byK = new Map([...r.missing.map(x => [x.k, [x, false]]), ...r.owned.map(x => [x.k, [x, true]])]);
     const hitSet = new Set((r.hit || []).map(h => h[0]).filter(k => !cmdSet.has(k))), hitRows = [...hitSet].map(k => byK.get(k)).filter(Boolean);      // cartes cherchées : juste sous le commandant
     const cmdRows = c.keys.map(k => byK.get(k)).filter(Boolean), buy = r.missing.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k)), have = r.owned.filter(x => !cmdSet.has(x.k) && !hitSet.has(x.k));      // le commandant est toujours en tête, avec son prix ou ✓
-    const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC` : '', r.br ? `<span title="${esc(edhBracketNote(r))}">bracket ≈ ${r.br}${r.gc.length ? ' · ' + r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') : ''}</span>` : ''].filter(Boolean).join(' · ');
-    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
+    const lvl = [r.tier ? `Tier ${esc(r.tier)} · n° ${nf0(r.rank)} sur EDHREC${EDH.data && EDH.data.rk === 'month' ? ' ce mois-ci' : ''}` : '', r.br ? `<span title="${esc(edhBracketNote(r))}">bracket ≈ ${r.br}${r.gc.length ? ' · ' + r.gc.length + ' Game Changer' + (r.gc.length > 1 ? 's' : '') : ''}</span>` : ''].filter(Boolean).join(' · ');
+    api.body.innerHTML = `<div class="ci-sum"><div><b>${nf0(r.miss)}</b> carte${r.miss > 1 ? 's' : ''} à acheter${r.cost ? ' · ≈ <b>' + esc(fmt(r.cost, 'EUR')) + '</b>' : ''}</div><span>${r.unpriced ? `${r.unpriced} sans prix connu · ` : ''}${c.dm ? nf0(c.dm) + ' decks ce mois · ' : ''}${c.decks ? nf0(c.decks) + ' decks EDHREC · ' : ''}couleurs ${esc(c.ci || 'incolore')}</span>${lvl ? `<span>${lvl}</span>` : ''}${c.th.length ? `<details class="ci-thd"><summary title="Nombre de decks EDHREC du commandant qui ont ce thème">Thèmes EDHREC : ${c.th.map(([i, n]) => esc(edhThemeName(EDH.data.themes[i])) + ' (' + nf0(n) + ')').join(' · ')}</summary><dl class="ci-thl">${c.th.map(([i]) => { const t = EDH.data.themes[i], inf = edhThemeInfo(t); return `<dt>${esc(edhThemeName(t))}</dt>${inf ? `<dd>${edhInfoHtml(inf)}</dd>` : ''}`; }).join('')}</dl></details>` : ''}</div>
       ${cmdRows.length ? `<h3 class="cs-h">${cmdRows.length > 1 ? 'Commandants' : 'Commandant'}</h3><div class="cs-top dk-cmd">${cmdRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${hitRows.length ? `<h3 class="cs-h">${hitRows.length > 1 ? 'Cartes cherchées' : 'Carte cherchée'}</h3><div class="cs-top dk-hit">${hitRows.map(([x, o]) => row(x, o)).join('')}</div>` : ''}
       ${buy.length ? `<h3 class="cs-h">À acheter <small>${nf0(buy.length)} cartes</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : '<p class="hint">Tu as déjà toutes les cartes de ce deck.</p>'}

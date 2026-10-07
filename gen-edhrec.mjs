@@ -140,7 +140,7 @@ export function buildEdh({ at, cmds, decks, price, img, gc }) {
 
 /** Fichier binaire compressé (EDH2 + gzip). Mêmes paramètres que buildEdh ; price : Map(nom → centimes) · img : Map(slug → chemin) · gc : noms. */
 export function buildBin({ at, cmds, decks, price, img, gc }) {
-  const model = { v: 1, at, cmds: cmds.map(c => ({ slug: c.slug, decks: c.decks, ci: c.ci, names: c.names, img: (img && img.get(c.slug)) || '', themes: c.themes || [] })), decks: decks.map(d => ({ slug: d.slug, src: d.src, label: d.label, url: /^https:\/\//.test(d.url || '') ? d.url : '', cards: d.cards })), price: price || [], gc: gc || [] };
+  const model = { v: 1, at, rk: cmds.some(c => c.dm > 0) ? 'month' : '', cmds: cmds.map(c => ({ slug: c.slug, decks: c.decks, dm: c.dm || 0, ci: c.ci, names: c.names, img: (img && img.get(c.slug)) || '', themes: c.themes || [] })), decks: decks.map(d => ({ slug: d.slug, src: d.src, label: d.label, url: /^https:\/\//.test(d.url || '') ? d.url : '', cards: d.cards })), price: price || [], gc: gc || [] };
   return gzipSync(Buffer.from(edhPack(model, normKey)), { level: 9 });
 }
 
@@ -166,8 +166,17 @@ async function getJson(url, { gap = 350, tries = 5, headers = {}, method = 'GET'
   throw Object.assign(new Error(last + ' · ' + url), { status });
 }
 
-/* ── 1) Commandants : liste EDHREC (période, pages suivantes), sinon par identité de couleur, sinon Scryfall ────────────── */
-const LISTS = ['commanders/year', 'commanders/past2years', 'commanders/month', 'commanders/week', 'commanders'];
+/* ── 1) Commandants : liste EDHREC du mois (classement et choix), complétée par la liste longue, puis par identité de couleur, sinon Scryfall ──────
+   EDHREC : `commanders/year.json` est en fait « Past 2 Years » (en-tête et pages suivantes year-past2years-N) ; le mois est la seule vue « à jour ».
+   Chaque commandant garde decks (compte long, sert aux seuils des thèmes et à l'affichage) et dm (decks du mois : 0 = absent de la liste du mois). */
+const LISTS = ['commanders/year', 'commanders/past2years', 'commanders'];
+const MONTH_LISTS = ['commanders/month', 'commanders/pastmonth'];
+/** Période d'une page de liste EDHREC d'après son en-tête / tag (« Past Month », « pastmonth », « Past 2 Years »…) : 'month' | 'long' | ''. */
+export function listPeriod(j) {
+  const cl = j && j.container && j.container.json_dict && j.container.json_dict.cardlists, l = Array.isArray(cl) && cl[0] ? cl[0] : {};
+  const t = [l.header, l.tag, j && j.header].filter(Boolean).join(' ').toLowerCase();
+  return /month/.test(t) ? 'month' : /year|2 ?years|past2/.test(t) ? 'long' : '';
+}
 const COLOR_NAMES = {   // identité → noms que EDHREC peut utiliser dans ses adresses (on essaie dans l'ordre)
   '': ['colorless'], W: ['white', 'mono-white', 'w'], U: ['blue', 'mono-blue', 'u'], B: ['black', 'mono-black', 'b'], R: ['red', 'mono-red', 'r'], G: ['green', 'mono-green', 'g'],
   WU: ['azorius', 'wu'], UB: ['dimir', 'ub'], BR: ['rakdos', 'br'], RG: ['gruul', 'rg'], WG: ['selesnya', 'gw'], WB: ['orzhov', 'wb'], UR: ['izzet', 'ur'], BG: ['golgari', 'bg'], WR: ['boros', 'rw'], UG: ['simic', 'gu'],
@@ -175,22 +184,28 @@ const COLOR_NAMES = {   // identité → noms que EDHREC peut utiliser dans ses 
   WBG: ['abzan', 'wbg'], WUR: ['jeskai', 'urw'], UBG: ['sultai', 'bgu'], WBR: ['mardu', 'rwb'], URG: ['temur', 'gur'],
   WUBR: ['yore-tiller', 'wubr'], UBRG: ['glint-eye', 'ubrg'], WBRG: ['dune-brood', 'wbrg'], WURG: ['ink-treader', 'wurg'], WUBG: ['witch-maw', 'wubg'], WUBRG: ['five-color', 'wubrg'],
 };
-async function crawlList(path, out, stat, limit = Infinity) {
+async function crawlList(path, out, stat, limit = Infinity, min = MIN_DECKS_LISTED, expect = '') {
   let next = path + '.json', pages = 0;
   while (next && pages < 80 && out.size < limit) {
     let j; try { j = await getJson(EDH_BASE + next); } catch (e) { stat.push(`${next} → ${e.message}`); break; }
     if (!j) { stat.push(`${next} → 404`); break; }
     const list = commandersOf(j);
+    if (!pages && expect && listPeriod(j) !== expect) { stat.push(`${next} → période « ${listPeriod(j) || '?'} » au lieu de « ${expect} » : ignorée`); break; }
     if (!pages) { sample('list-' + path, j); const lists = j && j.container && j.container.json_dict && j.container.json_dict.cardlists, cv = cardviewsOf(j)[0]; stat.push(`forme : ${Object.keys(j).slice(0, 12).join(',')} · cardlists ${Array.isArray(lists) ? lists.length + ' (' + Object.keys(lists[0] || {}).join(',') + ')' : 'absent'} · carte ${cv ? Object.keys(cv).slice(0, 14).join(',') : 'aucune'}`); }
     if (pages < 3 || !moreOf(j)) stat.push(`${next} → ${list.length} commandants${moreOf(j) ? ' · suite ' + moreOf(j) : ''}`);
-    let add = 0; for (const c of list) if (!out.has(c.slug) && c.decks >= MIN_DECKS_LISTED) { out.set(c.slug, c); add++; }
+    let add = 0; for (const c of list) if (!out.has(c.slug) && c.decks >= min) { out.set(c.slug, c); add++; }
     pages++; const more = moreOf(j); next = more && more !== next && add ? more : '';
   }
 }
 async function discover() {
-  const out = new Map(), stat = [];
-  for (const p of LISTS) { await crawlList(p, out, stat, LIST_MAX); if (out.size >= TOP) break; }
-  log(`  listes : ${out.size} commandants`); for (const s of stat) log('   ·', s);
+  const month = new Map(), long = new Map(), stat = [];
+  for (const p of MONTH_LISTS) { await crawlList(p, month, stat, LIST_MAX, 1, 'month'); if (month.size) break; }
+  for (const p of LISTS) { await crawlList(p, long, stat, LIST_MAX); if (long.size >= Math.max(TOP, month.size)) break; }
+  // le mois d'abord (classement à jour), puis le reste de la liste longue ; decks = compte long quand EDHREC le donne, sinon celui du mois (commandant récent)
+  const out = new Map();
+  for (const c of [...month.values()].sort((a, b) => b.decks - a.decks)) { const l = long.get(c.slug); out.set(c.slug, { ...(l || c), dm: c.decks, decks: l ? l.decks : c.decks, ci: (l && l.ci) || c.ci }); }
+  for (const c of long.values()) if (!out.has(c.slug)) out.set(c.slug, { ...c, dm: 0 });
+  log(`  listes : ${out.size} commandants (${month.size} dans la liste du mois${month.size ? '' : ' : classement sur la liste longue'})`); for (const s of stat) log('   ·', s);
   if (out.size < TOP) {      // la liste globale s'arrête à N : on complète couleur par couleur
     const st2 = [];
     for (const [ci, names] of Object.entries(COLOR_NAMES)) {
@@ -201,7 +216,7 @@ async function discover() {
     }
     for (const s of st2.slice(0, 60)) log('   ·', s);
   }
-  return [...out.values()].sort((a, b) => b.decks - a.decks);
+  return [...out.values()].sort((a, b) => (b.dm || 0) - (a.dm || 0) || b.decks - a.decks);      // mois d'abord, puis compte long
 }
 /** Dernier recours : les commandants les mieux classés par EDHREC d'après Scryfall (order:edhrec) ; nombre de decks inconnu (0 → lu sur la page du commandant). */
 async function discoverScryfall() {

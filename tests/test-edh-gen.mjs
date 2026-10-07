@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { normKey, edhSlug, namesOf, cardviewsOf, commandersOf, moreOf, avgLines, archidektDeck, archidektList, buildEdh, themesOf, GENERAL_THEMES } from '../gen-edhrec.mjs';
-const C = createRequire(import.meta.url)('../src/core.js');
+const C = createRequire(import.meta.url)('../src/core.js'), EB = createRequire(import.meta.url)('../src/edhbin.js');
 
 test('normKey = ownKey de l\'app ; edhSlug', () => {
   for (const n of ["Atraxa, Praetors' Voice", 'Fire // Ice', 'Lim-Dûl the Necromancer', 'Æther Vial', 'Jötun Grunt', 'Sol Ring', "Y'shtola, Night's Blessed", 'Kenrith, the Returned King']) assert.equal(normKey(n), C.ownKey(n), n);
@@ -71,7 +71,7 @@ test('archidektDeck / archidektList / buildEdh : roundtrip avec parseEdh', () =>
 const NAMES = Array.from({ length: 120 }, (_, i) => `Commandant ${String.fromCharCode(65 + i % 26)}${i}`);
 const slugOf = n => edhSlug(n);
 const CARDS = Array.from({ length: 80 }, (_, i) => `Carte ${i}`);
-function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN = 1 } = {}) {
+function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN = 1, month = '' } = {}) {
   const seen = { avg: 0, scry: 0, arch: 0, search: 0, archDeck: 0 };
   const srv = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x'), send = (o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
@@ -79,6 +79,11 @@ function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN
       const cv = (from, to) => NAMES.slice(from, to).map((n, i) => ({ sanitized: slugOf(n), name: n, num_decks: 5000 - (from + i) * 10, color_identity: ['W', 'U'].slice(0, 1 + (from + i) % 2) }));
       if (u.pathname === '/edh/commanders/year.json') return lists ? send({ container: { json_dict: { cardlists: [{ cardviews: cv(0, 70), more: '/pages/commanders/year-2.json' }] } } }) : send({}, 404);
       if (u.pathname === '/edh/commanders/year-2.json') return lists ? send({ container: { json_dict: { cardlists: [{ cardviews: cv(70, 120) }] } } }) : send({}, 404);
+      // liste du mois : 'ok' (en-tête « Past Month », un commandant récent absent de la liste longue) · 'wrong' (EDHREC renvoie en fait la liste longue)
+      const mv = (n, d) => ({ sanitized: slugOf(n), name: n, num_decks: d, color_identity: ['B'] });
+      if (u.pathname === '/edh/commanders/month.json' && month === 'ok') return send({ container: { json_dict: { cardlists: [{ header: 'Past Month', tag: 'pastmonth', more: '/pages/commanders/month-pastmonth-1.json', cardviews: [mv('Nouveau Commandant', 900), mv(NAMES[50], 800), mv(NAMES[0], 100)] }] } } });
+      if (u.pathname === '/edh/commanders/month-pastmonth-1.json' && month === 'ok') return send({ container: { json_dict: { cardlists: [{ header: 'Past Month', cardviews: [mv(NAMES[10], 3)] }] } } });
+      if (u.pathname === '/edh/commanders/month.json' && month === 'wrong') return send({ container: { json_dict: { cardlists: [{ header: 'Past 2 Years', tag: 'past2years', cardviews: [mv(NAMES[99], 99999)] }] } } });
       if (u.pathname.startsWith('/edh/commanders/')) return send({}, 404);
       const m = /^\/edh\/average-decks\/(.+)\.json$/.exec(u.pathname);
       if (m) {
@@ -130,6 +135,27 @@ test('exécution complète : liste paginée, decks moyens, Archidekt, prix et im
     assert.equal(p.gc.size, 25, 'Game Changers lus'); assert.ok(p.gc.has('fire') && p.gc.has('carte 1') && p.gc.has('game changer 24'), 'clé = première face'); assert.deepEqual(f.seen.gcq, ['is:gamechanger']);
     assert.match(readFileSync(out, 'utf8'), /\nG\tFire\n/, 'nom de première face écrit');
   } finally { f.srv.close(); rmSync(dir, { recursive: true, force: true }); }
+});
+test('classement du mois : la liste du mois d\'abord (commandant récent compris), compte long gardé, rang et tier sur le mois ; liste « du mois » qui n\'en est pas une : ignorée', async () => {
+  const f = await fake({ month: 'ok' }), dir = mkdtempSync(join(tmpdir(), 'edh-')), out = join(dir, 'edh.bin.gz');
+  try {
+    const r = await run(f.base, { EDH_TOP: '40', EDH_ARCH: '0', EDH_MIN_DECKS: '30', EDH_MIN_CMDS: '100' }, out); assert.equal(r.code, 0, r.o);
+    assert.match(r.o, /4 dans la liste du mois/);
+    const raw = EB.edhUnpack(gunzipSync(readFileSync(out))), p = C.parseEdhBin(gunzipSync(readFileSync(out)));
+    assert.equal(raw.rk, 'month'); assert.equal(p.rk, 'month');
+    assert.deepEqual(raw.cmds.slice(0, 4).map(c => [c.names[0], c.dm]), [['Nouveau Commandant', 900], [NAMES[50], 800], [NAMES[0], 100], [NAMES[10], 3]], 'le mois d\'abord, dans son ordre');
+    const by = n => p.cmds.find(c => c.names[0] === n);
+    assert.equal(by(NAMES[50]).decks, 5000 - 500, 'compte long conservé (seuils des thèmes, affichage)'); assert.equal(by(NAMES[50]).dm, 800);
+    assert.equal(by(NAMES[50]).rank, 2); assert.equal(by(NAMES[0]).rank, 3); assert.equal(by(NAMES[10]).rank, 4); assert.equal(by(NAMES[1]).rank, 5, 'hors du mois : après, sur le compte long');
+    assert.equal(by(NAMES[50]).tier, 'S'); assert.equal(by('Nouveau Commandant').decks, 900, 'commandant récent : compte du mois');
+    assert.ok(p.decks.some(d => d.cmd.names[0] === NAMES[50]), 'deck moyen lu pour un commandant du mois classé loin sur la liste longue');
+  } finally { f.srv.close(); rmSync(dir, { recursive: true, force: true }); }
+  const g = await fake({ month: 'wrong' }), dir2 = mkdtempSync(join(tmpdir(), 'edh-')), out2 = join(dir2, 'edh.bin.gz');
+  try {
+    const r = await run(g.base, { EDH_TOP: '40', EDH_ARCH: '0', EDH_MIN_DECKS: '30', EDH_MIN_CMDS: '100' }, out2); assert.equal(r.code, 0, r.o);
+    assert.match(r.o, /période « long » au lieu de « month » : ignorée/); assert.match(r.o, /classement sur la liste longue/);
+    const raw = EB.edhUnpack(gunzipSync(readFileSync(out2))); assert.equal(raw.rk, ''); assert.ok(raw.cmds.every(c => c.dm === 0)); assert.equal(raw.cmds[0].names[0], NAMES[0]);
+  } finally { g.srv.close(); rmSync(dir2, { recursive: true, force: true }); }
 });
 const edhMissing = n => { let c = 0; for (let i = 0; i < n; i++) if (i % 17 === 5) c++; return c; };
 test('Game Changers : 2e écriture si la 1re est refusée ; liste absente ou trop courte → pas de lignes G (le fichier reste valide)', async () => {

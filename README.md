@@ -181,6 +181,10 @@ Ma collection › onglet **Échange** (`src/share.js`).
 
 Firebase › Firestore Database › **Règles** › coller le contenu de `firestore.rules` › **Publier**. Sans elles, « Créer le lien » affiche « Règles Firestore à publier ». Ajouts : `match /shares/{shareId}` (lecture par identifiant pour tous, jamais de liste, écriture et suppression par le propriétaire seul) et le document `trade` dans `users/{uid}/meta`. Vérifiées contre l'émulateur Firestore (`tests/rules-test.mjs`, voir `DEV.md`).
 
+## Classement des commandants : le mois en cours
+
+EDHREC sert deux vues : `commanders/year.json` est en réalité **« Past 2 Years »** (en-tête et pages `year-past2years-N`), sans valeur pour la tendance du moment. Le générateur lit donc d'abord **la liste du mois** (`commanders/month`, pages suivantes comprises ; une page dont l'en-tête n'est pas mensuel est ignorée et signalée dans le journal) : elle décide **quels commandants** reçoivent un deck moyen (un commandant sorti récemment y figure) et **leur rang / tier** (S = 30 premiers du mois…). La liste longue complète ensuite (commandants peu joués ce mois-ci, classés après) et fournit le **compte total** de decks (seuils des thèmes, affichage). Fichier EDH2 : 7ᵉ champ « decks du mois » par commandant et `rk: 'month'` dans l'en-tête (un ancien fichier reste lu : classement sur le compte total). App : « n° N du mois », « N decks ce mois » (total en info-bulle et dans la fiche).
+
 ## Illustrations d'une carte
 
 Carte en grand › **Illustrations · N** : les impressions dans la langue affichée (plus récentes d'abord), **puis celles qui n'existent qu'en anglais** (promos, séries spéciales…), marquées « anglais ». Une impression anglaise choisie depuis la vue française y reste rattachée (légende en anglais). **Gestes** : sur la carte, un glissé lent l'incline (reflet) ; seul un geste vif (ou les flèches) passe à la carte suivante.

@@ -3,7 +3,8 @@
    dictionnaire, chaque deck une tranche d'un grand tableau : ~2 Mo compressé pour 10 000 decks, lu en quelques millisecondes, sans créer d'objet par carte.
    Fichier (petit-boutiste, sections alignées sur 4 octets) :
      'EDH2' · u32 longueur de l'en-tête · en-tête JSON { v, at, nc, nd, nn, ne, ng, sl:[octets cmds, decks, noms], tl?:[[slug, libellé]] (thèmes EDHREC, facultatif) }
-     JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
+     JSON des commandants  [[slug, decks, identité, [noms], chemin d'image, thèmes?, decks du mois?]]     thèmes : [[indice dans tl, nombre de decks EDHREC]] (absent = aucun ; un ancien lecteur ignore ce 6e champ)
+                           decks du mois : 7e champ (absent = 0, hors de la liste du mois ; thèmes alors [] s'il n'y en a pas). En-tête rk: 'month' = classement sur le mois
      JSON des decks        [[indice du commandant, source, libellé, lien]]   lien : '' aucun · 0 deck moyen EDHREC · n archidekt.com/decks/n · sinon texte
      noms des cartes       un par ligne (indice = numéro de la carte)
      u32 × (nd + 1)        début de chaque deck dans la liste des entrées
@@ -34,7 +35,8 @@ function edhPack(model, keyOf) {
   };
   for (const c of model.cmds || []) {
     if (slugIx.has(c.slug)) continue; slugIx.set(c.slug, cmds.length); for (const n of c.names) add(n);
-    const th = (c.themes || []).map(themeOf).filter(Boolean), row = [c.slug, Math.max(0, Math.round(Number(c.decks) || 0)), c.ci || '', c.names.map(clean), c.img || '']; if (th.length) row.push(th);
+    const th = (c.themes || []).map(themeOf).filter(Boolean), dm = Math.max(0, Math.round(Number(c.dm) || 0)), row = [c.slug, Math.max(0, Math.round(Number(c.decks) || 0)), c.ci || '', c.names.map(clean), c.img || ''];
+    if (th.length || dm) row.push(th); if (dm) row.push(dm);
     cmds.push(row); cmdKeys.push(c.names.map(n => keyOf(clean(n))));
   }
   const meta = [], off = [0], ids = [], qty = [];
@@ -53,7 +55,7 @@ function edhPack(model, keyOf) {
   for (const [n, v] of model.price instanceof Map ? model.price : model.price || []) { const id = idOf.get(keyOf(clean(n))); if (id !== undefined && v > 0) pr[id] = Math.round(v); }
   const gcIds = []; for (const n of model.gc || []) { const k = keyOf(clean(n)); if (k) gcIds.push(add(n)); }
   const enc = new TextEncoder(), cm = enc.encode(JSON.stringify(cmds)), dk = enc.encode(JSON.stringify(meta)), nm = enc.encode(names.join('\n'));
-  const head = enc.encode(JSON.stringify({ v: model.v || 0, at: model.at || '', nc: cmds.length, nd: meta.length, nn: names.length, ne: ids.length, ng: gcIds.length, sl: [cm.length, dk.length, nm.length], ...(tl.length ? { tl } : {}) }));
+  const head = enc.encode(JSON.stringify({ v: model.v || 0, at: model.at || '', nc: cmds.length, nd: meta.length, nn: names.length, ne: ids.length, ng: gcIds.length, sl: [cm.length, dk.length, nm.length], ...(tl.length ? { tl } : {}), ...(model.rk ? { rk: String(model.rk) } : {}) }));
   const hp = edhPad4(8 + head.length), cp = edhPad4(cm.length), dp = edhPad4(dk.length), np = edhPad4(nm.length);
   const total = hp + cp + dp + np + 4 * off.length + edhPad4(2 * ids.length) + edhPad4(ids.length) + 4 * names.length + edhPad4(2 * gcIds.length);
   const buf = new Uint8Array(total), dv = new DataView(buf.buffer);
@@ -80,7 +82,7 @@ function edhUnpack(input) {
   if (need !== len) throw new Error('tronqué');
   let p = edhPad4(8 + hl);
   const text = n => { const s = dec.decode(new Uint8Array(buf, base + p, n)); p += edhPad4(n); return s; };
-  const cmds = JSON.parse(text(lc)).map(([slug, decks, ci, names, img, th]) => ({ slug, decks, ci, names, img, th: Array.isArray(th) ? th : [] })), dk = JSON.parse(text(ld)), nmText = text(ln), names = nn ? nmText.split('\n') : [];
+  const cmds = JSON.parse(text(lc)).map(([slug, decks, ci, names, img, th, dm]) => ({ slug, decks, ci, names, img, th: Array.isArray(th) ? th : [], dm: Math.max(0, Number(dm) || 0) })), dk = JSON.parse(text(ld)), nmText = text(ln), names = nn ? nmText.split('\n') : [];
   if (names.length !== nn) throw new Error('noms');
   const off = new Uint32Array(buf, base + p, nd + 1); p += 4 * (nd + 1);
   const ids = new Uint16Array(buf, base + p, ne); p += edhPad4(2 * ne);
@@ -88,7 +90,7 @@ function edhUnpack(input) {
   const pr = new Uint32Array(buf, base + p, nn); p += 4 * nn;
   const gc = new Uint16Array(buf, base + p, ng);
   if (off[nd] !== ne || dk.length !== nd) throw new Error('decks');
-  return { v: head.v, at: head.at, themes: Array.isArray(head.tl) ? head.tl : [], cmds, dk, names, off, ids, qty, pr, gc };
+  return { v: head.v, at: head.at, rk: typeof head.rk === 'string' ? head.rk : '', themes: Array.isArray(head.tl) ? head.tl : [], cmds, dk, names, off, ids, qty, pr, gc };
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { edhPack, edhUnpack, EDHB_MAX_CARDS };

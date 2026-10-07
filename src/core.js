@@ -1133,17 +1133,18 @@ function edhIndex(raw) {
   const names = raw.names, nn = names.length, keys = new Array(nn), idOf = new Map(), bs = new Uint8Array(nn), gcA = new Uint8Array(nn);
   for (let i = 0; i < nn; i++) { const k = ownKey(names[i]); keys[i] = k; if (!idOf.has(k)) idOf.set(k, i); if (BASIC_NAMES.has(k)) bs[i] = 1; }
   const themes = (raw.themes || []).map(t => ({ slug: String(t && t[0]), label: String((t && t[1]) || (t && t[0])), cmds: 0, decks: 0 })), themeIx = new Map(themes.map((t, i) => [t.slug, i]));
-  const out = { v: raw.v, at: raw.at, cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set(), names, keys, idOf, off: raw.off, ids: raw.ids, qty: raw.qty, pr: raw.pr, bs, gcA, themes, themeIx, themeOrder: [] };
+  const out = { v: raw.v, at: raw.at, rk: '', cmds: [], by: new Map(), bySlug: new Map(), decks: [], price: new Map(), gc: new Set(), names, keys, idOf, off: raw.off, ids: raw.ids, qty: raw.qty, pr: raw.pr, bs, gcA, themes, themeIx, themeOrder: [] };
   for (let i = 0; i < nn; i++) if (raw.pr[i] > 0) out.price.set(keys[i], raw.pr[i]);
   for (const id of raw.gc) { gcA[id] = 1; out.gc.add(keys[id]); }
   for (const r of raw.cmds) {
     const ck = r.names.map(ownKey), th = (r.th || []).filter(t => Array.isArray(t) && themes[t[0]] && t[1] > 0).map(t => [t[0], t[1]]).sort((a, b) => b[1] - a[1]);
-    const c = { slug: r.slug, decks: r.decks, ci: String(r.ci || '').replace(/[^WUBRG]/g, ''), names: r.names, keys: ck, ids: ck.map(k => idOf.get(k)).filter(x => x !== undefined), img: r.img && /^[\w\-./]+$/.test(r.img) ? FR_IMG + r.img : '', i: out.cmds.length, th, thSet: new Set(th.map(t => t[0])) };
+    const c = { slug: r.slug, decks: r.decks, dm: r.dm || 0, ci: String(r.ci || '').replace(/[^WUBRG]/g, ''), names: r.names, keys: ck, ids: ck.map(k => idOf.get(k)).filter(x => x !== undefined), img: r.img && /^[\w\-./]+$/.test(r.img) ? FR_IMG + r.img : '', i: out.cmds.length, th, thSet: new Set(th.map(t => t[0])) };
     out.cmds.push(c); out.bySlug.set(c.slug, c);
     for (const t of th) themes[t[0]].cmds++;
     for (const k of c.keys) { const p = out.by.get(k); if (!p || c.decks > p.decks) out.by.set(k, c); }
   }
-  [...out.cmds].sort((a, b) => b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
+  out.rk = raw.rk === 'month' && out.cmds.some(c => c.dm > 0) ? 'month' : '';      // classement du mois (à jour) ; ancien fichier : compte long
+  [...out.cmds].sort((a, b) => (out.rk ? (b.dm - a.dm) : 0) || b.decks - a.decks).forEach((c, i) => { c.rank = i + 1; c.tier = edhTier(c.rank); });      // le tri est stable : à égalité, l'ordre du fichier (celui d'EDHREC)
   raw.dk.forEach(([ci, src, label, url], i) => out.decks.push(new EdhDeck(out, i, out.cmds[ci], src, label, url)));
   for (const d of out.decks) for (const t of d.cmd.th) themes[t[0]].decks++;
   out.themeOrder = themes.map((t, i) => i).filter(i => themes[i].decks > 0).sort((a, b) => themes[b].decks - themes[a].decks || themes[a].label.localeCompare(themes[b].label));      // les plus présents d'abord
