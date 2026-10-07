@@ -110,8 +110,9 @@ export function themesOf(j, decks = 0) {
   }
   return out.sort((a, b) => b[2] - a[2] || a[1].localeCompare(b[1])).slice(0, 8);
 }
-/** Prix Cardmarket d'une carte Archidekt (euros) : tendance, sinon le minimum, sinon TCGplayer (dollars, à peu près comparable) ; 0 si inconnu. */
-const archEur = c => { const p = (c && c.card && c.card.prices) || {}; return Number(p.cm) || Number(p.cmMinimum) || Number(p.tcg) || 0; };
+/** Prix Cardmarket d'une carte Archidekt (euros) : celui de l'impression la moins chère (« minimum »), pas celle choisie par l'auteur (foil, édition rare…) :
+ *  le prix d'un deck = ce qu'il coûte à monter ; sinon la tendance de l'impression, sinon TCGplayer (dollars, à peu près comparable) ; 0 si inconnu. */
+const archEur = c => { const p = (c && c.card && c.card.prices) || {}; return Number(p.cmMinimum) || Number(p.cm) || Number(p.tcgMinimum) || Number(p.tcg) || 0; };
 /** Date 'AAAA-MM-JJ' d'un horodatage Archidekt ('' si absent ou illisible). */
 export const archDay = t => { const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(t || '')); return m ? m[1] : ''; };
 /** Deck Archidekt (/api/decks/{id}/) → { name, views, u (mise à jour 'AAAA-MM-JJ'), eur (prix du deck en centimes, commandant compris), cmd:[noms], cards:[[nom, qté]] } ; banc, maybeboard et « considering » exclus. */
