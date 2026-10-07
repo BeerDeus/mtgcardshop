@@ -57,6 +57,7 @@ jobs:
           fi
       - name: Journal et échantillons (branche edh-debug)
         if: always()
+        continue-on-error: true
         run: |
           mkdir -p /tmp/dbg && cp -r edh-debug/. /tmp/dbg/ 2>/dev/null || true
           cp gen.log /tmp/dbg/gen.log 2>/dev/null || true
@@ -68,4 +69,4 @@ jobs:
           cp -r /tmp/dbg/. .
           git add -A -f .
           git commit --quiet -m "Débogage EDHREC" || true
-          git push --force origin edh-debug
+          for i in 1 2 3; do git push --force origin edh-debug && break; sleep 10; done

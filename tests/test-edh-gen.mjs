@@ -180,7 +180,7 @@ test('liste EDHREC absente → repli Scryfall ; Archidekt en panne → ignoré ;
 
 /* ── sortie binaire (EDH2 + gzip) et cache incrémental des decks Archidekt ───────────────────────── */
 import { gunzipSync } from 'node:zlib';
-import { buildBin, loadPrev } from '../gen-edhrec.mjs';
+import { buildBin, loadPrev, prevArch } from '../gen-edhrec.mjs';
 const readBin = f => C.parseEdhBin(new Uint8Array(gunzipSync(readFileSync(f))).buffer);
 test('sortie binaire : même contenu que le texte (commandants, decks, prix, images, Game Changers), nettement plus petite', async () => {
   const f = await fake(), dir = mkdtempSync(join(tmpdir(), 'edh-')), bin = join(dir, 'edh.bin.gz'), txt = join(dir, 'edh.tsv');
@@ -216,6 +216,8 @@ test('Archidekt incrémental : les decks déjà lus ne sont pas relus, l\'ancien
     f.seen.arch = 0; f.seen.archDeck = 0; assert.equal((await run(f.base, { ...env, EDH_ARCH_ROT: '1' }, out)).code, 0);
     assert.equal(f.seen.arch, 4); assert.equal(f.seen.archDeck, 1, 'decks connus réutilisés'); assert.equal(arch().length, 7);
     assert.deepEqual(arch().find(d => d.cards.length).cards.slice(0, 2), a1.find(d => d.url === arch()[0].url).cards.slice(0, 2), 'cartes reprises à l\'identique');
+    const pv = loadPrev(out), cs = [...pv.keys()].map(slug => ({ slug }));
+    assert.equal(prevArch(pv, cs, 2), 7); assert.equal(prevArch(pv, cs.slice(0, 2), 2), [...pv.values()].slice(0, 2).reduce((a, l) => a + l.length, 0), 'garde-fou : seuls les commandants traités comptent (top plus court ≠ baisse)'); assert.equal(prevArch(pv, cs, 1), 4);
     assert.equal(loadPrev(join(dir, 'absent.bin.gz')).size, 0); assert.equal(loadPrev(out).size, 4); assert.equal(loadPrev(join(dir, 'x.tsv')).size, 0);
   } finally { f.srv.close(); rmSync(dir, { recursive: true, force: true }); }
   // Archidekt en panne : les anciens decks restent

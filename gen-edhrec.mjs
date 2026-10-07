@@ -268,6 +268,8 @@ export function loadPrev(file) {
   } catch (e) { log('  fichier précédent illisible (' + e.message + ') : cache Archidekt ignoré'); return new Map(); }
   return out;
 }
+/** Decks Archidekt du fichier précédent pour les commandants traités cette fois : base du garde-fou « forte baisse » (un top plus court que la dernière fois n'est pas une baisse). */
+export const prevArch = (prev, cmds, n) => cmds.reduce((a, c) => a + Math.min((prev.get(c.slug) || []).length, n), 0);
 /** Decks réels : ARCH par commandant pour les ARCH_TOP premiers. Les decks déjà lus (fichier précédent) sont gardés ; seuls les commandants qui n'ont pas leur quota et 1 sur ARCH_ROT chaque semaine sont recherchés de nouveau. Une erreur, ou le temps imparti, conserve l'ancien. */
 async function archidekt(cmds, decks, prev = new Map()) {
   if (!ARCH) return 0;
@@ -365,7 +367,7 @@ async function probe() {
 }
 async function main() {
   const out = process.argv.slice(2).find(a => !a.startsWith('--')) || join(here, 'pwa', 'edh.bin.gz'), legacy = /\.tsv$/.test(out);
-  const prev = ARCH && !legacy ? loadPrev(process.env.EDH_PREV || out) : new Map(), prevTotal = [...prev.values()].reduce((a, l) => a + Math.min(l.length, ARCH), 0);
+  const prev = ARCH && !legacy ? loadPrev(process.env.EDH_PREV || out) : new Map();
   log(`Génération : top ${TOP}, Archidekt ${ARCH ? ARCH + ' deck(s) pour les ' + ARCH_TOP + ' premiers' : 'désactivé'}`);
   let cmds = await discover();
   if (cmds.length < Math.min(TOP, MIN_CMDS)) { log('  liste EDHREC insuffisante : complétée par le classement Scryfall'); const seen = new Set(cmds.map(c => c.slug)); cmds = cmds.concat((await discoverScryfall()).filter(c => !seen.has(c.slug))); }
@@ -374,6 +376,7 @@ async function main() {
   log(`${cmds.length} commandants au total ; decks moyens pour les ${top.length} premiers`);
   const { decks, kept } = await avgDecks(top);
   await archidekt(kept, decks, prev);
+  const prevTotal = prevArch(prev, kept.slice(0, ARCH_TOP), ARCH);
   const names = new Set(); for (const c of cmds) for (const n of c.names) names.add(n); for (const d of decks) for (const [n] of d.cards) names.add(n);
   log(`Scryfall : prix de ${names.size} cartes`);
   const { price, meta } = await scryInfo([...names]);
