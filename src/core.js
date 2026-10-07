@@ -1195,7 +1195,7 @@ function edhDetail(r) {
   missing.sort((a, b) => ((b.u || 0) * b.q - (a.u || 0) * a.q) || a.n.localeCompare(b.n));
   Object.defineProperties(r, { missing: { value: missing, configurable: true }, owned: { value: owned, configurable: true }, gc: { value: gcs, configurable: true } });
 }
-/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { held (clé → exemplaires réservés par des decks montés : sert à compter `eng`, les exemplaires possédés du deck déjà engagés ailleurs), cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur tier), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
+/** Decks EDHREC comparés à la collection. qty(clé) : exemplaires possédés. o : { held (clé → exemplaires réservés par des decks montés : sert à compter `eng`, les exemplaires possédés du deck déjà engagés ailleurs), cols:Set (identités de couleur permises : celle du commandant doit y tenir), mine (je possède un des commandants), budget (centimes, 0 = sans limite), tiers:Set ('S'…'D' : seulement ces tiers), themes:Set (identifiants de thèmes EDHREC : le commandant doit les avoir tous), sort: 'have' (le plus de cartes possédées) | 'miss' | 'cost' | 'pop' (meilleur rang : celui du mois si le fichier en a un), q (recherche : tous les mots), qm: 'cmd' (dans le nom du commandant) | 'card' (dans les cartes du deck, commandant compris, hors terrains de base) }.
  *  Terrains de base ignorés. Une ligne par deck : { deck, cmd, total, have, miss, cost, unpriced, mine, tier, rank, br (bracket estimé, 0 sans liste Game Changers), hit ([[clé, nom]] des cartes trouvées par une recherche « carte », sinon null), et à la demande : missing:[{ k, n, q, u, gc }], owned:[{ k, n, q, gc }], gc:[noms des Game Changers du deck, commandant compris] }.
  *  Calcul sur tableaux typés (un passage sur toutes les entrées de tous les decks) : quelques millisecondes pour 10 000 decks. */
 function edhRank(edh, qty, o = {}) {
@@ -1233,8 +1233,8 @@ function edhRank(edh, qty, o = {}) {
     if (o.budget > 0 && cost > o.budget) continue;
     rows.push(new EdhRow(d, c, total, have, cost, unpriced, mine, gset ? edhBracket(gcN) : 0, hit, edh, own, eng, hold));
   }
-  const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (b.cmd.decks - a.cmd.decks) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
-  return rows.sort((a, b) => by(a, b) || (b.cmd.decks - a.cmd.decks) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
+  const by = { have: (a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost), miss: (a, b) => (a.miss - b.miss) || (a.cost - b.cost), cost: (a, b) => (a.cost - b.cost) || (a.miss - b.miss), pop: (a, b) => (a.cmd.rank - b.cmd.rank) || (a.miss - b.miss) }[o.sort] || ((a, b) => (b.have - a.have) || (a.miss - b.miss) || (a.cost - b.cost));
+  return rows.sort((a, b) => by(a, b) || (a.cmd.rank - b.cmd.rank) || a.cmd.names[0].localeCompare(b.cmd.names[0]));
 }
 /** Nombre de decks de `rows` (résultat d'edhRank) qui portent chaque thème, indexé comme edh.themes. Les compteurs de la liste des thèmes en dépendent : ils suivent tous les filtres en cours (couleurs, tiers, budget, recherche, thèmes déjà choisis). */
 function edhThemeCounts(edh, rows) {

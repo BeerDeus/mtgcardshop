@@ -878,6 +878,8 @@ test('edhRank : possédées / manquantes / coût, basics ignorés, filtres et tr
   assert.deepEqual(C.edhRank(d, k => 0, { budget: 300 }).map(r => r.cmd.slug), ['tymna-thrasios']);
   assert.deepEqual(C.edhRank(d, k => 0, { budget: 500 }).map(r => r.cmd.slug).sort(), ['edgar-markov', 'tymna-thrasios']);
   assert.deepEqual(C.edhRank(d, qty, { sort: 'pop' }).map(r => r.cmd.slug), ['edgar-markov', 'tymna-thrasios'], 'populaires : plus de decks d\'abord');
+  { const e = d.bySlug.get('edgar-markov'), t = d.bySlug.get('tymna-thrasios'), r0 = [e.rank, t.rank]; e.rank = 2; t.rank = 1;
+    assert.deepEqual(C.edhRank(d, qty, { sort: 'pop' }).map(r => r.cmd.slug), ['tymna-thrasios', 'edgar-markov'], 'meilleur tier : suit le rang (celui du mois), pas le total de decks'); [e.rank, t.rank] = r0; }
   assert.equal(C.edhRank(null, qty).length, 0);
 });
 test('edhRank : recherche par commandant (mots, accents, paires) ou par carte (hors terrains de base)', () => {
