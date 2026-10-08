@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleur d'accent des notifications (petite icône, nom de l'appli) -->
+    <color name="mana_notif">#7FB0FF</color>
+</resources>

@@ -37,6 +37,14 @@
                 android:resource="@xml/widget_value_info" />
         </receiver>
 
+        <!-- Notifications (Firebase Cloud Messaging) : petite icône blanche et couleur d'accent ; sans elles, Android affiche un carré blanc. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_mana" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/mana_notif" />
+
         <!-- AdMob : identifiant d'application. Celui-ci est l'identifiant de TEST de Google ; remplace-le par le tien (console AdMob › Applis) avant la publication. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
