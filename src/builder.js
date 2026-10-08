@@ -17,7 +17,7 @@ async function dmFetch(list, basics) {
   const need = dmMissing(list, basics);
   if (!need.length || scryLeft() > 0) return false;
   need.forEach(c => dmTried.add(c.key));
-  try { const got = await scryCollection(need.map(c => c.name)); let n = 0; for (const [k, m] of got) if (m) { DM[k] = { eu: m.eu, ci: m.ci, cd: m.cd, im: m.im, cm: m.cm, mc: m.mc, tl: m.tl, cl: m.cl }; n++; } if (n) dmSave(); return n > 0; }
+  try { const got = await scryCollection(need.map(c => c.name)); let n = 0; for (const [k, m] of got) if (m) { DM[k] = { eu: m.eu, ci: m.ci, cd: m.cd, im: m.im, cm: m.cm, mc: m.mc, tl: m.tl, cl: m.cl, ar: m.ar }; n++; } if (n) dmSave(); return n > 0; }
   catch (e) { return false; }      // hors ligne ou limite Scryfall : l'estimation reste partielle
 }
 const dmOf = k => COLL.meta[k] || DM[k] || null;
