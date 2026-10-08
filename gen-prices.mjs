@@ -44,6 +44,13 @@ export async function pxStream(stream, map) {
   return n;
 }
 
+/** Adresse du fichier à télécharger : download_uri (nom historique), ou tout champ « download… », ou toute adresse de data.scryfall.io. */
+function dlUrl(m) {
+  if (typeof m.download_uri === 'string') return m.download_uri;
+  for (const [k, v] of Object.entries(m)) if (/download/i.test(k) && typeof v === 'string' && /^https:/.test(v)) return v;
+  for (const v of Object.values(m)) if (typeof v === 'string' && /^https:\/\/data\.scryfall\.io\/.+\.json/.test(v)) return v;
+  return '';
+}
 async function main() {
   const out = process.argv[2] || join(here, 'prices.tsv.gz');
   const H = { 'User-Agent': UA, Accept: 'application/json;q=0.9,*/*;q=0.8' };
@@ -53,13 +60,13 @@ async function main() {
     let r, t = ''; try { r = await fetch(u, { headers: H }); t = await r.text(); } catch (e) { seen.push(u + ' → ' + e.message); continue; }
     let j = null; try { j = JSON.parse(t); } catch (e) { /* pas du JSON */ }
     const list = j && Array.isArray(j.data) ? j.data : j ? [j] : [];
-    meta = list.find(x => x && x.download_uri && /default/.test(String(x.type || x.name || '').toLowerCase())) || null;
-    if (meta) break;
-    seen.push(`${u} → ${r.status} ${t.replace(/\s+/g, ' ').slice(0, 300)}`);
+    meta = list.find(x => x && /default/.test(String(x.type || x.name || '').toLowerCase())) || null;
+    if (meta) { meta.dl = dlUrl(meta); if (meta.dl) break; }
+    seen.push(`${u} → ${r.status} ${meta ? JSON.stringify(meta).slice(0, 900) : t.replace(/\s+/g, ' ').slice(0, 300)}`); meta = null;
   }
   if (!meta) throw new Error('Scryfall : fichier « default_cards » introuvable\n  ' + seen.join('\n  '));
   console.log(`  fichier Scryfall du ${meta.updated_at} (${Math.round((meta.size || 0) / 1048576)} Mo)`);
-  const r = await fetch(meta.download_uri, { headers: H });
+  const r = await fetch(meta.dl, { headers: H });
   if (!r.ok || !r.body) throw new Error('Scryfall : téléchargement refusé (' + r.status + ')');
   const map = new Map(), n = await pxStream(r.body, map), txt = pxText(map, String(meta.updated_at || new Date().toISOString()));
   const rows = txt.split('\n').length - 2;
