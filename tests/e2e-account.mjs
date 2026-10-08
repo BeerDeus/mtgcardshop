@@ -107,7 +107,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
 {
   const ctx = await newCtx(); await wireFirebase(ctx); const p = await ctx.newPage(); watch(p, 'A');
   await p.goto('http://127.0.0.1:18810/'); await p.waitForTimeout(900);
-  assert.match(await T(p, '#decksSub'), /Crée un deck/); await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 0); assert.ok(await p.$('#btnNewDeck')); await H(p); ok('invité sans deck : bouton « Mes decks », écran avec le + et aucune carte de deck');
+  assert.match(await T(p, '#decksSub'), /Crée ou colle un deck/); await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 0); assert.ok(await p.$('#btnNewDeck')); await H(p); ok('invité sans deck : bouton « Mes decks », écran avec le + et aucune carte de deck');
   assert.equal(await p.$eval('#btnAccount', e => e.dataset.in), '0'); ok('avatar : icône invité');
   await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n25 Plains');
   await toInput(p); await p.selectOption('#optLang', 'en'); await p.$eval('#segMode .seg-opt[data-v="direct"]', e => e.click()); await p.waitForTimeout(200);      // critère CardTrader (masqué en Cardmarket) : gardé avec le deck quand même

@@ -166,7 +166,7 @@ function renderDecks() {
   alSoon(); trSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
-  $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} complet', '{n} complets') : ''}` : T('Crée un deck ou colle une liste puis « Enregistrer ».');
+  $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} complet', '{n} complets') : ''}` : T('Crée ou colle un deck');
   dksPaint();
   paintSync(); updateSaveButtons(); homeSoon();
 }

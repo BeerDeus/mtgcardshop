@@ -22,7 +22,7 @@ const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *EN*\
 await p.waitForTimeout(500);
 
 /* ── A) Commander : création complète ─────────────────────────────────────────────────────── */
-assert.match(await txt(p, '#decksSub'), /Crée un deck/, 'bouton « Mes decks » toujours là (le + doit être accessible)'); await decks(p);
+assert.match(await txt(p, '#decksSub'), /Crée ou colle un deck/, 'bouton « Mes decks » toujours là (le + doit être accessible)'); await decks(p);
 assert.match(await txt(p, '#deckList'), /Touche « \+ »/, 'invitation quand aucun deck'); assert.equal(await p.$$eval('.deck', n => n.length), 0);
 await newDeck(p, 'Vampires Boros', 'commander');
 assert.equal(await txt(p, '#bdTitle'), 'Vampires Boros'); assert.match(await txt(p, '#bdSub'), /Commander · 0\/100/);
