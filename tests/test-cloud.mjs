@@ -36,7 +36,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const app = await import('firebase/app'), auth = await import('firebase/auth'), fs = await import('firebase/firestore');
-const { makeCloud, cloudClearLocal } = require('../src/cloud.js');
+const { makeCloud, authMessage, cloudClearLocal } = require('../src/cloud.js');
 const cloud = makeCloud({ app, auth, fs });
 console.log('✓ makeCloud avec le vrai SDK (repli getFirestore sans IndexedDB)');
 
@@ -106,11 +106,14 @@ un(); unsub();
   const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/S3', {}], ['shares/REFUS', {}], ['shares/AUTRE', {}]]);
   const ref = (...p) => ({ path: p.slice(1).join('/') });
   const user = { email: 'a@b.c', providerData: [{ providerId: 'password' }] };
+  let google = { refuse: false };
   const m = {
     app: { getApps: () => [1], getApp: () => ({}) },
-    auth: { getAuth: () => ({ currentUser: user }), EmailAuthProvider: { credential: (e, p) => ({ e, p }) }, GoogleAuthProvider: class { setCustomParameters() {} },
-      reauthenticateWithCredential: async (u, c) => { log.push('reauth:' + c.p); if (c.p !== 'ok') throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
-      reauthenticateWithPopup: async () => { log.push('popup'); }, deleteUser: async u => { log.push('deleteUser:' + u.email); } },
+    auth: { getAuth: () => ({ currentUser: user }), EmailAuthProvider: { credential: (e, p) => ({ e, p }) }, GoogleAuthProvider: class { setCustomParameters() {} static credential(t) { return { t }; } },
+      reauthenticateWithCredential: async (u, c) => { log.push('reauth:' + (c.p || c.t)); if (c.p !== 'ok' && !(c.t && !google.refuse)) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
+      signInWithCredential: async (a, c) => { log.push('cred:' + c.t); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); return { user }; },
+      signInWithPopup: async () => { log.push('popup-in'); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
+      reauthenticateWithPopup: async () => { log.push('popup'); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); }, deleteUser: async u => { log.push('deleteUser:' + u.email); } },
     fs: { initializeFirestore: () => ({}), persistentLocalCache: () => ({}), persistentMultipleTabManager: () => ({}), collection: (...p) => ({ path: p.slice(1).join('/') }), doc: (...p) => p.length === 1 ? { id: 'n' } : ref(...p),
       getDocFromServer: async r => ({ exists: () => store.has(r.path), data: () => store.get(r.path) }),
       getDocsFromServer: async c => ({ docs: [...store.keys()].filter(k => k.startsWith(c.path + '/')).map(k => ({ ref: { path: k } })) }),
@@ -139,6 +142,24 @@ un(); unsub();
   assert.ok(Date.now() - t0 < 9000, 'jamais bloquant'); delete globalThis.indexedDB;
   console.log('✓ cache Firestore effacé : SDK (terminate + clearIndexedDbPersistence), repli IndexedDB, jamais bloquant');
 
+  // connexion Google : jeton refusé ≠ « mot de passe incorrect » ; APK sans plugin : jamais la fenêtre web ; message du plugin affiché
+  google.refuse = true; log.length = 0;
+  await assert.rejects(c.google(), e => e.code === 'auth/google-refused'); await assert.rejects(c.reauth(null), e => e.code === 'auth/google-refused');
+  assert.match(authMessage({ code: 'auth/google-refused' }), /^Google a refusé la connexion : réessaie, ou utilise ton e-mail\.$/); assert.match(authMessage({ code: 'auth/invalid-credential' }), /incorrect/, 'e-mail : inchangé');
+  globalThis.isNativeApp = () => true; let plugin = null; globalThis.natPlugin = () => plugin; log.length = 0;
+  await assert.rejects(c.google(), e => e.code === 'auth/native-missing'); await assert.rejects(c.reauth(null), e => e.code === 'auth/native-missing');
+  assert.deepEqual(log, [], 'APK sans plugin : ni signInWithPopup ni reauthenticateWithPopup');
+  assert.equal(authMessage({ code: 'auth/native-missing' }), 'Connexion Google indisponible dans cette version de l\'appli : mets-la à jour, ou utilise ton e-mail.');
+  const warns = [], warn = console.warn; console.warn = (...a) => warns.push(a.join(' '));
+  plugin = { signInWithGoogle: async () => { throw new Error('10: <b>Developer</b> error & "SHA-1"'); } };
+  const ng = await c.google().catch(e => e); console.warn = warn;
+  assert.equal(ng.code, 'auth/native-google'); assert.match(warns.join(), /10: <b>Developer/, 'message natif dans la console');
+  assert.equal(authMessage(ng), 'Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail. (10: b Developer /b error SHA-1)', 'message du plugin ajouté, sans balisage');
+  plugin = { signInWithGoogle: async () => { throw new Error('The user canceled the sign-in flow.'); } }; assert.equal(authMessage(await c.google().catch(e => e)), null, 'annulation : silence');
+  plugin = { signInWithGoogle: async () => ({ credential: { idToken: 'jeton' } }) }; google.refuse = false; log.length = 0;
+  await c.google(); await c.reauth(null); assert.deepEqual(log, ['cred:jeton', 'reauth:jeton']);
+  delete globalThis.isNativeApp; delete globalThis.natPlugin;
+  console.log('✓ Google : jeton refusé → message Google ; APK sans plugin → « mets-la à jour », sans fenêtre web ; erreur native détaillée');
 }
 console.log('\nCLOUD OK');
 process.exit(0);

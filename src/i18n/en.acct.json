@@ -1,3 +1,6 @@
 {
+  "E-mail": "Email",
+  "Connexion Google indisponible dans cette version de l'appli : mets-la à jour, ou utilise ton e-mail.": "Google sign-in isn't available in this version of the app: update it, or use your email.",
+  "Google a refusé la connexion : réessaie, ou utilise ton e-mail.": "Google refused the sign-in: try again, or use your email.",
   "Ce compte a été supprimé ou désactivé : tu es déconnecté.": "This account was deleted or disabled: you've been signed out."
 }

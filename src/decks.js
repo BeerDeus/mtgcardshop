@@ -362,7 +362,7 @@ function paintAuthForm(api) {
   b.innerHTML = `<div class="auth">${st.del ? '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Connecte-toi au compte à supprimer.') + '</span></div>' : ''}
     <div class="seg" id="acSeg" role="radiogroup" aria-label="${T('Connexion ou création de compte')}"></div>
     <form id="acForm" novalidate>
-      <div class="field-in"><label class="label" for="acEmail">Email</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
+      <div class="field-in"><label class="label" for="acEmail">${T('E-mail')}</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
       <div class="field-in"><label class="label" for="acPw">${T('Mot de passe')}</label><input type="password" id="acPw" autocomplete="${up ? 'new-password' : 'current-password'}" ${up ? 'minlength="6"' : ''}>${up ? '<span class="hint">' + T('6 caractères minimum.') + '</span>' : ''}</div>
       <div class="auth-msg" id="acMsg" role="alert" hidden></div>
       <button class="btn block" type="submit" id="acGo">${up ? T('Créer mon compte') : T('Me connecter')}</button>
@@ -374,7 +374,8 @@ function paintAuthForm(api) {
   mountSeg($('#acSeg', b), [{ v: 'in', label: T('Connexion') }, { v: 'up', label: T('Créer un compte') }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
   const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? T('Créer mon compte') : T('Me connecter')); };
-  const done = () => { api.close(); toast(T('Connecté')); };
+  // lien « supprimer mon compte » (?delete-account) : la feuille reste ouverte et passe à l'écran de suppression (onUser la repeint s'il n'est pas encore passé)
+  const done = () => { if (!st.del) { api.close(); toast(T('Connecté')); return; } toast(T('Connecté')); if (D.user) paintAccount(); };
   const fail = e => { busy(false, true); msg(authMessage(e)); };
   $('#acForm', b).onsubmit = async e => {
     e.preventDefault(); msg('');

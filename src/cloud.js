@@ -35,18 +35,31 @@ function authMessage(e) {
     'auth/user-disabled': 'Ce compte est désactivé.',
     'auth/requires-recent-login': 'Reconnecte-toi pour continuer.',
     'auth/native-google': 'Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail.',
+    'auth/native-missing': 'Connexion Google indisponible dans cette version de l\'appli : mets-la à jour, ou utilise ton e-mail.',
+    'auth/google-refused': 'Google a refusé la connexion : réessaie, ou utilise ton e-mail.',
   };
-  if (c in m) return m[c] == null ? null : tcl(m[c]);
+  if (c in m) return m[c] == null ? null : tcl(m[c]) + (c === 'auth/native-google' && e.detail ? ' (' + e.detail + ')' : '');      // message du plugin : seul indice du problème (« 10: » = empreinte SHA-1 absente de Firebase…)
   return c ? tcl('Connexion impossible ({code}).', { code: c.replace('auth/', '') }) : tcl('Connexion impossible.');
 }
 
 /** Appli Android : connexion Google native (plugin @capacitor-firebase/authentication, skipNativeAuth). Google refuse sa fenêtre de connexion dans
  *  une WebView : le téléphone choisit le compte, le plugin rend un jeton d'identité Google, et c'est le SDK web qui ouvre la session Firebase avec. null hors appli. */
 const natGoogle = () => (typeof natPlugin === 'function' ? natPlugin('FirebaseAuthentication') : null);
+/** APK sans le plugin (ancienne, ou construite sans « npm install ») : la fenêtre Google du web y part dans le navigateur externe et ne revient jamais. */
+const natGoogleMissing = () => typeof isNativeApp === 'function' && isNativeApp() && !natGoogle();
+const natMissingErr = () => Object.assign(new Error('plugin absent'), { code: 'auth/native-missing' });
+/** Message d'erreur du plugin, court et sans balisage, ajouté au texte affiché. */
+const natShort = s => { const t = String(s || '').replace(/[\u0000-\u001f<>&"'`\\]/g, ' ').replace(/\s+/g, ' ').trim(); return t.length > 80 ? t.slice(0, 79) + '…' : t; };
+/** Flux Google : « invalid-credential » y veut dire jeton Google refusé, pas « email ou mot de passe incorrect ». */
+const googleErr = e => { throw e && e.code === 'auth/invalid-credential' ? Object.assign(new Error(e.message), { code: 'auth/google-refused' }) : e; };
 async function natGoogleCred(m) {
   let r;
   try { r = await natGoogle().signInWithGoogle({ skipNativeAuth: true }); }
-  catch (e) { throw Object.assign(new Error(String(e && e.message || e)), { code: /cancel|annul|12501|16:/i.test(String(e && (e.message || e.code) || '')) ? 'auth/popup-closed-by-user' : 'auth/native-google' }); }
+  catch (e) {
+    const msg = String(e && e.message || e), cancel = /cancel|annul|12501|16:/i.test(String(e && (e.message || e.code) || ''));
+    if (!cancel) console.warn('Connexion Google native :', msg);
+    throw Object.assign(new Error(msg), { code: cancel ? 'auth/popup-closed-by-user' : 'auth/native-google', detail: natShort(msg) });
+  }
   const c = r && r.credential; if (!c || !c.idToken) throw Object.assign(new Error('sans jeton'), { code: 'auth/popup-closed-by-user' });
   return m.auth.GoogleAuthProvider.credential(c.idToken, c.accessToken || undefined);
 }
@@ -64,8 +77,9 @@ function makeCloud(m) {
     signIn: (email, pw) => m.auth.signInWithEmailAndPassword(auth, email, pw),
     signUp: (email, pw) => m.auth.createUserWithEmailAndPassword(auth, email, pw),
     google: async () => {
-      if (natGoogle()) return m.auth.signInWithCredential(auth, await natGoogleCred(m));      // appli Android
-      const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.signInWithPopup(auth, p);
+      if (natGoogle()) return m.auth.signInWithCredential(auth, await natGoogleCred(m)).catch(googleErr);      // appli Android
+      if (natGoogleMissing()) throw natMissingErr();
+      const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.signInWithPopup(auth, p).catch(googleErr);
     },
     reset: email => m.auth.sendPasswordResetEmail(auth, email),
     signOut: () => { const g = natGoogle(); if (g) Promise.resolve(g.signOut()).catch(() => {}); return m.auth.signOut(auth); },      // appli : oublie aussi le compte Google choisi (le sélecteur réapparaît)
@@ -102,8 +116,9 @@ function makeCloud(m) {
     provider: () => { const u = auth.currentUser; return u && u.providerData.some(p => p.providerId === 'password') ? 'password' : 'google'; },
     reauth(pw) {
       const u = auth.currentUser; if (!u) return Promise.reject(Object.assign(new Error('déconnecté'), { code: 'auth/no-current-user' }));
-      if (pw == null && natGoogle()) return natGoogleCred(m).then(c => m.auth.reauthenticateWithCredential(u, c));
-      if (pw == null) { const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.reauthenticateWithPopup(u, p); }
+      if (pw == null && natGoogle()) return natGoogleCred(m).then(c => m.auth.reauthenticateWithCredential(u, c)).catch(googleErr);
+      if (pw == null && natGoogleMissing()) return Promise.reject(natMissingErr());
+      if (pw == null) { const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.reauthenticateWithPopup(u, p).catch(googleErr); }
       return m.auth.reauthenticateWithCredential(u, m.auth.EmailAuthProvider.credential(u.email, pw));
     },
     /** Efface tout ce que le compte a en ligne : liens publics (liste d'échange, decks partagés), decks, documents annexes. Exige le réseau.
