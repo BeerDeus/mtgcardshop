@@ -126,7 +126,8 @@ function makeCloud(m) {
     async wipe(uid, local = []) {
       const ref = (...p) => m.fs.doc(db, 'users', uid, ...p);
       // lectures en parallèle (hors ligne, chacune attend ~10 s avant d'échouer) ; decks illisibles : arrêt avant d'avoir rien effacé
-      const [tr, decks] = await Promise.all([m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), m.fs.getDocsFromServer(col(uid))]), td = tr && tr.exists() ? tr.data() : {};
+      const slow = new Promise((ok, ko) => setTimeout(() => ko(Object.assign(new Error('Serveur injoignable'), { code: 'unavailable' })), 12000));      // le SDK peut attendre longtemps avant de se déclarer hors ligne
+      const [tr, decks] = await Promise.race([Promise.all([m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), m.fs.getDocsFromServer(col(uid))]), slow]), td = tr && tr.exists() ? tr.data() : {};
       const shares = [...new Set([td.share, ...Object.values(td.dsh || {}), ...local].filter(x => typeof x === 'string' && x))];
       let failed = 0;
       for (const id of shares) {
