@@ -6,7 +6,7 @@
      seulement par leur propriétaire (règles Firestore). Tenus à jour par les appareils du propriétaire : collection, decks, souhaits, réserve.
      Un deck enregistré partagé suit ses modifications ; un deck EDHREC ou une liste en cours est partagé tel quel (figé).
    · Visiteur : <site>/?p=<id>. Lecture par l'API REST Firestore (shareFetch : ni SDK, ni compte), écran en lecture seule ; rien n'est écrit, ni chez lui ni chez le propriétaire. */
-const TR_KEY = 'deckdeal:trade:v1', TR_KEEPS = [0, 1, 2, 3, 4], TR_PAGE = 120, TR_MAX = 880000;
+const TR_KEY = 'deckdeal:trade:v1', TR_KEEPS = [0, 1, 2, 3, 4], TR_PAGE = 120, TR_MAX = 880000, TR_SHARE_MAX = 900000;      // TR_SHARE_MAX : champ d d'un partage (règles Firestore)
 const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: new Set(), wish: {}, share: '', dsh: {}, u: 0, sig: {}, sub: 'have', shown: TR_PAGE, err: '', busy: false, again: false, syncT: 0,
   doc: { unsub: null, uid: '', pushT: 0 }, pub: null };
 
@@ -79,15 +79,17 @@ function trCard(k, n, q, l) {
   if (m.cm != null) o.c = m.cm; if (m.tl) o.t = m.tl; if (typeof m.cl === 'string') o.o = m.cl; if (m.mc) o.m = m.mc;
   return o;
 }
-/** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué. */
+/** Contenu du partage de la liste d'échange (sans date : sert aussi d'empreinte). Trop gros : sans images ni symboles (le visiteur les lit sur Scryfall), puis tronqué.
+ *  La limite tient compte du pseudo et de la photo que trPut ajoute (jusqu'à 40 000 caractères) : le document reste sous la règle des 900 000. */
 function trPayload() {
+  const max = TR_MAX - JSON.stringify(profShare()).length;
   const st = trState(), have = st.have.flatMap(x => x.lines.map(([l, q]) => trCard(x.k, x.n, q, l))), want = st.want.map(x => { const o = trCard(x.k, x.n, x.q, ''); if (x.p) { o.i = scrySmall(x.p.i); o.w = x.p.w || ''; if (x.p.l && x.p.l !== 'en') o.l = x.p.l; } return o; });      // souhait : l'illustration retenue
   for (const o of [...have, ...want]) if (o.i) { const sh = imgShort(o.i); if (sh) o.i = sh; else delete o.i; }      // adresses d'images raccourcies (≈ 2 fois moins de place)
   let body = { have, want };
   // trop gros : d'abord sans les images des doublons (le visiteur les relit sur Scryfall), puis sans les symboles ; jamais sans l'illustration d'une carte souhaitée
-  if (JSON.stringify(body).length > TR_MAX) body = { have: have.map(({ i, ...x }) => x), want };
-  if (JSON.stringify(body).length > TR_MAX) body = { have: body.have.map(({ m, ...x }) => x), want: want.map(({ m, ...x }) => ('w' in x ? x : (({ i, ...y }) => y)(x))) };      // « w » présent : illustration choisie
-  while (JSON.stringify(body).length > TR_MAX && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
+  if (JSON.stringify(body).length > max) body = { have: have.map(({ i, ...x }) => x), want };
+  if (JSON.stringify(body).length > max) body = { have: body.have.map(({ m, ...x }) => x), want: want.map(({ m, ...x }) => ('w' in x ? x : (({ i, ...y }) => y)(x))) };      // « w » présent : illustration choisie
+  while (JSON.stringify(body).length > max && body.have.length > 100) body = { ...body, have: body.have.slice(0, Math.floor(body.have.length * 0.8)), cut: 1 };
   return body;
 }
 
@@ -103,7 +105,9 @@ async function trPut(id, kind, body) {
   body = { ...body, ...profShare() };      // pseudo et photo du profil : le lien change quand le profil change
   const s = kind + ':' + hash32(JSON.stringify(body));
   if (TR.sig[id] === s) return;
-  await D.cloud.saveShare(id, { o: await ownerTag(D.uid), kind, v: 1, updatedAt: Date.now(), d: JSON.stringify({ ...body, at: Date.now() }) });
+  const d = JSON.stringify({ ...body, at: Date.now() });
+  if (d.length > TR_SHARE_MAX) throw Object.assign(new Error('partage trop gros'), { code: 'too-big' });      // refusé par les règles : on le dit, au lieu de « règles à publier »
+  await D.cloud.saveShare(id, { o: await ownerTag(D.uid), kind, v: 1, updatedAt: Date.now(), d });
   TR.sig[id] = s; trWrite();
 }
 /** Avant d'écrire la liste : noms français (catalogue de l'appareil ou du site) et fiches Scryfall des cartes recherchées (images, types). */
@@ -128,7 +132,7 @@ async function trSync() {
     }
     if (TR.err) { TR.err = ''; trRepaint(); }
   } catch (err) {
-    TR.err = err && err.code === 'permission-denied' ? 'rules' : 'net'; trRepaint();
+    TR.err = err && err.code === 'permission-denied' ? 'rules' : err && err.code === 'too-big' ? 'big' : 'net'; trRepaint();
     if (TR.err === 'net') setTimeout(() => trSoon(0), 60000);
   } finally { TR.busy = false; if (TR.again) trSoon(500); }
 }
@@ -139,7 +143,7 @@ async function trShareOn() {
   if (!trNeedNet() || TR.creating) return;
   const id = D.cloud.shareId(); TR.creating = true;
   try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast(T('Lien créé'), { label: T('Copier'), fn: () => copyText(shareUrl(id)) }); haptic('ok'); }
-  catch (err) { TR.share = ''; toast(err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Lien impossible à créer : réessaie en ligne')); trRepaint(); }
+  catch (err) { TR.share = ''; toast(err && err.code === 'too-big' ? T('Liste trop longue pour un lien : trop de cartes recherchées.') : err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Lien impossible à créer : réessaie en ligne')); trRepaint(); }
   finally { TR.creating = false; }
 }
 async function trShareOff(renew) {
@@ -162,7 +166,7 @@ async function shareDeck({ id, text, name }) {
   try {
     if (!sid) { sid = D.cloud.shareId(); TR.dsh[key] = sid; }
     await trPut(sid, 'deck', body); trChanged();
-  } catch (err) { if (!TR.sig[sid]) delete TR.dsh[key]; toast(err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Partage impossible : réessaie en ligne')); return; }
+  } catch (err) { if (!TR.sig[sid]) delete TR.dsh[key]; toast(err && err.code === 'too-big' ? T('Deck trop long pour un lien.') : err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Partage impossible : réessaie en ligne')); return; }
   openSheet(T('Partager le deck'), d ? T('Lecture seule · le lien suit les modifications du deck') : T('Lecture seule · le deck est partagé tel qu\'il est maintenant'), api => {
     api.body.innerHTML = `<div class="tr-link"><input type="text" readonly value="${esc(shareUrl(sid))}" aria-label="${T('Lien du deck')}"></div>
       <p class="hint">${T('Quiconque a ce lien voit le deck, ses images, sa courbe de mana et peut tirer une main de départ. Il ne peut rien modifier.')}</p>
@@ -194,7 +198,7 @@ function cmCopy(items, what) {
   const text = cmText(items), n = text ? text.split('\n').length : 0;
   if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
   haptic('ok');
-  const done = () => toast(T(n > 1 ? '{n} cartes copiées : colle-les dans une Wants list Cardmarket' : '{n} carte copiée : colle-les dans une Wants list Cardmarket', { n }), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
   try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
 }
 
@@ -206,7 +210,8 @@ function trItem(k, n, q, l) {
   return it;
 }
 function trShareBoxHtml(st) {
-  const rules = TR.err === 'rules' ? '<p class="hint warn">' + T('Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.') + '</p>' : '';
+  const rules = TR.err === 'rules' ? '<p class="hint warn">' + T('Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.') + '</p>'
+    : TR.err === 'big' ? '<p class="hint warn">' + T('Liste trop longue : le lien ne peut plus être mis à jour (trop de cartes recherchées).') + '</p>' : '';
   if (!D.user) return `<div class="tr-box"><b>${T('Partager ta liste')}</b><p class="hint">${T('Connecte-toi pour créer un lien public : tes amis voient tes doublons et ce que tu cherches, sans rien pouvoir modifier.')}</p><button class="btn ghost" type="button" data-act="login">${T('Se connecter')}</button></div>`;
   if (!TR.share) return `<div class="tr-box"><b>${T('Partager ta liste')}</b><p class="hint">${T('Un lien public, en lecture seule, toujours à jour : tes {have} doublons et les {want} cartes que tu cherches, avec recherche par nom.', { have: nf0(st.have.length), want: nf0(st.want.length) })}</p>${rules}<button class="btn" type="button" data-act="tron">${T('Créer le lien')}</button></div>`;
   return `<div class="tr-box on"><b>${T('Lien public actif')}</b><div class="tr-link"><input type="text" readonly value="${esc(shareUrl(TR.share))}" aria-label="${T('Lien de ta liste d\'échange')}"></div>
