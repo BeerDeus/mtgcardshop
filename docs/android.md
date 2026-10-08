@@ -114,14 +114,14 @@ La connexion Google utilise le compte Google du téléphone : un sélecteur nati
 
 ### Widget
 
-Le widget « Ma collection » affiche sur l'écran d'accueil la valeur de ta collection, sa variation sur 7 jours et le nombre de cartes.
+Le widget « Ma collection » affiche la valeur de ta collection, sa variation (sur 7 jours, ou celle du marché seul si tu as ajouté des cartes, avec sa durée), le nombre de cartes et, en 4 × 2, la courbe des 30 derniers jours. Au-delà de 36 h sans nouvelles données, « il y a 3 j » s'affiche en gris.
 
-1. Appui long sur un espace vide de l'écran d'accueil › **Widgets** › **Mana Orbit** › « Valeur de la collection ».
-2. Pose-le (2 × 2). Un appui long dessus permet de le redimensionner : sur une seule rangée, il ne garde que la valeur et la variation.
-3. Ouvre l'appli une fois : le widget se remplit. Il se met à jour chaque fois que la valeur change dans l'appli (il ne lit rien sur Internet tout seul).
-4. Toucher le widget ouvre l'appli sur ta collection.
+1. Appui long sur un espace vide de l'écran d'accueil › **Widgets** › **Mana Orbit** › « Valeur de la collection » (4 × 2 par défaut, redimensionnable jusqu'à 2 × 1).
+2. Ouvre l'appli une fois : le widget se remplit, puis se met à jour à chaque changement dans l'appli.
+3. Appli fermée, il estime la valeur chaque jour d'après les prix Cardmarket du serveur (Wi-Fi de préférence ; en données mobiles, toutes les 44 h au plus) : « ≈ » et « estimée » jusqu'à la prochaine ouverture.
+4. Toucher le widget ouvre ta collection ; son bouton ouvre le scan ou le prix rapide, au choix dans l'appli : **Réglages › Widget**.
 
-Rien à configurer : le widget prend la langue choisie dans l'appli.
+Le widget prend la langue choisie dans l'appli. Pour couper l'estimation appli fermée : `ValueRefreshJob.ENABLED = false` (Java), puis reconstruire l'APK.
 
 ---
 
