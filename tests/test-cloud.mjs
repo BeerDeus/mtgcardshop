@@ -36,7 +36,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const app = await import('firebase/app'), auth = await import('firebase/auth'), fs = await import('firebase/firestore');
-const { makeCloud } = require('../src/cloud.js');
+const { makeCloud, authMessage, cloudClearLocal } = require('../src/cloud.js');
 const cloud = makeCloud({ app, auth, fs });
 console.log('✓ makeCloud avec le vrai SDK (repli getFirestore sans IndexedDB)');
 
@@ -103,30 +103,63 @@ assert.deepEqual(states.at(-1).names, ['Imp 2', 'Imp 1', 'Alpha 2']); console.lo
 un(); unsub();
 
 { // Suppression du compte (faux SDK : le vrai Firestore hors ligne ne lit pas le serveur) : liens publics, decks, documents annexes, puis le compte
-  const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/AUTRE', {}]]);
+  const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/S3', {}], ['shares/REFUS', {}], ['shares/AUTRE', {}]]);
   const ref = (...p) => ({ path: p.slice(1).join('/') });
   const user = { email: 'a@b.c', providerData: [{ providerId: 'password' }] };
+  let google = { refuse: false };
   const m = {
     app: { getApps: () => [1], getApp: () => ({}) },
-    auth: { getAuth: () => ({ currentUser: user }), EmailAuthProvider: { credential: (e, p) => ({ e, p }) }, GoogleAuthProvider: class { setCustomParameters() {} },
-      reauthenticateWithCredential: async (u, c) => { log.push('reauth:' + c.p); if (c.p !== 'ok') throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
-      reauthenticateWithPopup: async () => { log.push('popup'); }, deleteUser: async u => { log.push('deleteUser:' + u.email); } },
+    auth: { getAuth: () => ({ currentUser: user }), EmailAuthProvider: { credential: (e, p) => ({ e, p }) }, GoogleAuthProvider: class { setCustomParameters() {} static credential(t) { return { t }; } },
+      reauthenticateWithCredential: async (u, c) => { log.push('reauth:' + (c.p || c.t)); if (c.p !== 'ok' && !(c.t && !google.refuse)) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
+      signInWithCredential: async (a, c) => { log.push('cred:' + c.t); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); return { user }; },
+      signInWithPopup: async () => { log.push('popup-in'); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
+      reauthenticateWithPopup: async () => { log.push('popup'); if (google.refuse) throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); }, deleteUser: async u => { log.push('deleteUser:' + u.email); } },
     fs: { initializeFirestore: () => ({}), persistentLocalCache: () => ({}), persistentMultipleTabManager: () => ({}), collection: (...p) => ({ path: p.slice(1).join('/') }), doc: (...p) => p.length === 1 ? { id: 'n' } : ref(...p),
       getDocFromServer: async r => ({ exists: () => store.has(r.path), data: () => store.get(r.path) }),
       getDocsFromServer: async c => ({ docs: [...store.keys()].filter(k => k.startsWith(c.path + '/')).map(k => ({ ref: { path: k } })) }),
-      deleteDoc: async r => { log.push('del:' + r.path); store.delete(r.path); },
-      writeBatch: () => { const ops = []; return { delete: r => ops.push(r.path), commit: async () => { log.push('batch:' + ops.length); ops.forEach(k => store.delete(k)); } }; } },
+      deleteDoc: async r => { log.push('del:' + r.path); if (r.path === 'shares/REFUS') throw Object.assign(new Error('refusé'), { code: 'permission-denied' }); store.delete(r.path); },
+      writeBatch: () => { const ops = []; return { delete: r => ops.push(r.path), commit: async () => { log.push('batch:' + ops.length); ops.forEach(k => store.delete(k)); } }; },
+      terminate: async () => { log.push('terminate'); }, clearIndexedDbPersistence: async () => { log.push('clearPersistence'); } },
   };
   const c = makeCloud(m);
   assert.equal(c.provider(), 'password');
   await assert.rejects(c.reauth('mauvais'), e => e.code === 'auth/invalid-credential');
   await c.reauth('ok');
-  const r = await c.wipe('u1'); await c.deleteUser();
-  assert.deepEqual(r, { decks: 2, shares: 2 });
-  assert.deepEqual([...store.keys()], ['shares/AUTRE'], 'tout le compte effacé, rien d\'autre');
-  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'batch:7', 'deleteUser:a@b.c']);
+  // liens connus de l'appareil seulement (S3), déjà retiré (PARTI : pas de suppression tentée), doublon (S1), refusé (REFUS : compté, on continue)
+  const r = await c.wipe('u1', ['S3', 'S1', 'PARTI', 'REFUS', '']); await c.deleteUser();
+  assert.deepEqual(r, { decks: 2, shares: 5, failed: 1 });
+  assert.deepEqual([...store.keys()], ['shares/REFUS', 'shares/AUTRE'], 'tout le compte effacé (sauf le lien refusé), rien d\'autre');
+  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'del:shares/S3', 'del:shares/REFUS', 'batch:7', 'deleteUser:a@b.c']);
   user.providerData = [{ providerId: 'google.com' }]; assert.equal(c.provider(), 'google'); await c.reauth(null); assert.equal(log.at(-1), 'popup');
-  console.log('✓ suppression du compte : reconnexion, liens publics, decks et documents annexes effacés, puis le compte');
+  console.log('✓ suppression du compte : reconnexion, liens publics (compte + appareil, absents ignorés, échecs comptés), decks et documents annexes effacés, puis le compte');
+
+  // cache Firestore de l'appareil : par le SDK (arrêt puis effacement), sinon bases IndexedDB « firestore/… »
+  log.length = 0; assert.equal(await cloudClearLocal(c), true); assert.deepEqual(log, ['terminate', 'clearPersistence']);
+  const gone = []; globalThis.indexedDB = { databases: async () => [{ name: 'firestore/[DEFAULT]/m2s-mtg/main' }, { name: 'firebaseLocalStorageDb' }, { name: 'deckdeal' }], deleteDatabase: n => { gone.push(n); const q = {}; setTimeout(() => q.onsuccess && q.onsuccess()); return q; } };
+  assert.equal(await cloudClearLocal(null), false); assert.deepEqual(gone, ['firestore/[DEFAULT]/m2s-mtg/main'], 'sans SDK : seules les bases Firestore');
+  gone.length = 0; assert.equal(await cloudClearLocal({ clearLocal: async () => { throw Object.assign(new Error('autre onglet'), { code: 'failed-precondition' }); } }), false); assert.deepEqual(gone, ['firestore/[DEFAULT]/m2s-mtg/main'], 'SDK en échec : repli');
+  globalThis.indexedDB = { databases: () => new Promise(() => {}) }; const t0 = Date.now(); await cloudClearLocal({ clearLocal: () => new Promise(() => {}) });
+  assert.ok(Date.now() - t0 < 9000, 'jamais bloquant'); delete globalThis.indexedDB;
+  console.log('✓ cache Firestore effacé : SDK (terminate + clearIndexedDbPersistence), repli IndexedDB, jamais bloquant');
+
+  // connexion Google : jeton refusé ≠ « mot de passe incorrect » ; APK sans plugin : jamais la fenêtre web ; message du plugin affiché
+  google.refuse = true; log.length = 0;
+  await assert.rejects(c.google(), e => e.code === 'auth/google-refused'); await assert.rejects(c.reauth(null), e => e.code === 'auth/google-refused');
+  assert.match(authMessage({ code: 'auth/google-refused' }), /^Google a refusé la connexion : réessaie, ou utilise ton e-mail\.$/); assert.match(authMessage({ code: 'auth/invalid-credential' }), /incorrect/, 'e-mail : inchangé');
+  globalThis.isNativeApp = () => true; let plugin = null; globalThis.natPlugin = () => plugin; log.length = 0;
+  await assert.rejects(c.google(), e => e.code === 'auth/native-missing'); await assert.rejects(c.reauth(null), e => e.code === 'auth/native-missing');
+  assert.deepEqual(log, [], 'APK sans plugin : ni signInWithPopup ni reauthenticateWithPopup');
+  assert.equal(authMessage({ code: 'auth/native-missing' }), 'Connexion Google indisponible dans cette version de l\'appli : mets-la à jour, ou utilise ton e-mail.');
+  const warns = [], warn = console.warn; console.warn = (...a) => warns.push(a.join(' '));
+  plugin = { signInWithGoogle: async () => { throw new Error('10: <b>Developer</b> error & "SHA-1"'); } };
+  const ng = await c.google().catch(e => e); console.warn = warn;
+  assert.equal(ng.code, 'auth/native-google'); assert.match(warns.join(), /10: <b>Developer/, 'message natif dans la console');
+  assert.equal(authMessage(ng), 'Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail. (10: b Developer /b error SHA-1)', 'message du plugin ajouté, sans balisage');
+  plugin = { signInWithGoogle: async () => { throw new Error('The user canceled the sign-in flow.'); } }; assert.equal(authMessage(await c.google().catch(e => e)), null, 'annulation : silence');
+  plugin = { signInWithGoogle: async () => ({ credential: { idToken: 'jeton' } }) }; google.refuse = false; log.length = 0;
+  await c.google(); await c.reauth(null); assert.deepEqual(log, ['cred:jeton', 'reauth:jeton']);
+  delete globalThis.isNativeApp; delete globalThis.natPlugin;
+  console.log('✓ Google : jeton refusé → message Google ; APK sans plugin → « mets-la à jour », sans fenêtre web ; erreur native détaillée');
 }
 console.log('\nCLOUD OK');
 process.exit(0);

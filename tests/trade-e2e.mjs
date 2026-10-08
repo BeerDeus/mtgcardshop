@@ -37,12 +37,12 @@ await p.goto(world.url); await p.waitForFunction(() => D.authReady, null, { time
 await p.evaluate(deck => {
   D.cloud = {
     onUser() {}, watch: (uid, cb) => { cb([{ id: 'deck1', data: { name: 'Edgar', text: deck, createdAt: 1, updatedAt: 2 } }], false); return () => {}; }, newId: () => 'x', save: async () => {}, remove: async () => {},
-    watchColl(uid, cb) { cb(null, false, false); return () => {}; }, txColl: async (uid, fn) => fn(null), pullColl: async () => ({ data: null }), saveColl: async () => {},
+    watchColl(uid, cb) { cb(null, false, false); return () => {}; }, txColl: async (uid, fn) => { const out = fn(window.__collDoc || null); if (out) window.__collDoc = out; return out; }, pullColl: async () => ({ data: window.__collDoc || null }), saveColl: async () => {},      // le document écrit reste dans le compte
     watchMeta(uid, id, cb) { cb(null, false, false); return () => {}; }, saveMeta: async (uid, id, data) => { await window.__meta(id, data); }, pullMeta: async () => ({ data: null }),
     shareId: () => window.__shareIdNext, saveShare: async (id, data) => { await window.__share('set', id, data); }, dropShare: async id => { await window.__share('drop', id); },
   };
   D.state = 'ready'; D.err = '';
-  onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer' });
+  onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer', reload: async () => {} });
 }, DECK);
 const nextId = async () => { const id = 'Share' + String(++ids).padStart(12, '0'); await p.evaluate(i => { window.__shareIdNext = i; }, id); return id; };
 

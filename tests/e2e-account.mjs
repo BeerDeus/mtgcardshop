@@ -61,7 +61,7 @@ async function wireFirebase(ctx, { sdk = true } = {}) {
     const tok = (email) => ({ kind: 'x', idToken: jwt(users.get(email).uid, email), email, refreshToken: 'r:' + email, expiresIn: '3600', localId: users.get(email).uid, registered: true });
     if (op === 'accounts:signUp') { if (users.has(body.email)) return err('EMAIL_EXISTS'); users.set(body.email, { uid: 'uid-' + (users.size + 1), pw: body.password }); return j(tok(body.email)); }
     if (op === 'accounts:signInWithPassword') { const x = users.get(body.email); if (!x || x.pw !== body.password) return err('INVALID_LOGIN_CREDENTIALS'); return j(tok(body.email)); }
-    if (op === 'accounts:lookup') { if (idDelay) await sleep(idDelay); const p = JSON.parse(Buffer.from((body.idToken || '').split('.')[1] || 'e30', 'base64url').toString()); return j({ users: [{ localId: p.sub, email: p.email, emailVerified: false, providerUserInfo: [{ providerId: 'password', email: p.email, federatedId: p.email, rawId: p.email }], lastLoginAt: String(Date.now()), createdAt: String(Date.now()) }] }); }
+    if (op === 'accounts:lookup') { if (idDelay) await sleep(idDelay); const p = JSON.parse(Buffer.from((body.idToken || '').split('.')[1] || 'e30', 'base64url').toString()); return j({ users: [{ localId: p.sub, email: p.email, emailVerified: false, providerUserInfo: [{ providerId: p.email === 'goog@test.dev' ? 'google.com' : 'password', email: p.email, federatedId: p.email, rawId: p.email }], lastLoginAt: String(Date.now()), createdAt: String(Date.now()) }] }); }
     if (op === 'accounts:sendOobCode') return j({ email: body.email });
     if (op === 'accounts:signInWithIdp') {      // connexion Google (jeton d'identité rendu par le plugin natif de l'appli Android)
       const idt = new URLSearchParams(body.postBody || '').get('id_token'); if (idt !== 'jeton-google-natif') return err('INVALID_IDP_RESPONSE');
@@ -298,34 +298,77 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   { const cx = await newCtx(); await wireFirebase(cx); const r = await cx.newPage(); watch(r, 'DEL');
     await r.goto('http://127.0.0.1:18820/?delete-account'); await sheetOpen(r); await r.waitForSelector('#acForm');
     assert.match(await T(r, '.sheet-body'), /Connecte-toi au compte à supprimer/); assert.equal(await r.evaluate(() => location.search), ''); ok('?delete-account : Compte s\'ouvre en mode suppression (connexion demandée), adresse nettoyée');
-    await r.fill('#acEmail', 'beer@test.dev'); await r.fill('#acPw', 'secret12'); await r.click('#acGo'); await sheetGone(r); await r.waitForTimeout(600);
-    await r.click('#btnAccount'); await sheetOpen(r); await r.waitForSelector('#acDel'); await r.click('#acDel');
-    await r.waitForSelector('#acDelGo'); assert.match(await T(r, '.sheet-body'), /Suppression définitive de beer@test\.dev/); assert.equal(await r.$eval('#acWipeLocal', e => e.checked), true); ok('Compte › Supprimer mon compte : avertissement, case « effacer aussi cet appareil » cochée');
+    assert.equal(await T(r, 'label[for="acEmail"]'), 'E-mail'); ok('libellé « E-mail » (orthographe française)');
+    await r.fill('#acEmail', 'beer@test.dev'); await r.fill('#acPw', 'secret12'); await r.click('#acGo');
+    await r.waitForSelector('#acDelGo', { timeout: 5000 }); assert.ok(await r.$('.sheet-wrap.open .sheet'), 'la feuille reste ouverte'); assert.match(await T(r, '#toast'), /Connecté/);
+    assert.match(await T(r, '.sheet-body'), /Suppression définitive de beer@test\.dev/); assert.equal(await r.$eval('#acWipeLocal', e => e.checked), true); ok('connexion depuis le lien : la feuille reste ouverte et passe tout de suite à l\'écran de suppression (avertissement, « effacer aussi cet appareil » cochée)');
     await r.click('#acDelGo'); assert.match(await T(r, '#acMsg'), /mot de passe/i);
     await r.fill('#acDelPw', 'faux'); await r.click('#acDelGo'); await r.waitForFunction(() => /incorrect/.test(document.querySelector('#acMsg').textContent), null, { timeout: 5000 }); ok('mauvais mot de passe : refusé, rien n\'est effacé');
     await r.fill('#acDelPw', 'secret12'); await r.click('#acDelGo');
     await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 20000 });
     assert.equal(await r.evaluate(() => D.uid), 'uid-allowed'); assert.equal(await r.$eval('#acDelGo', e => e.disabled), false); assert.ok(!idLog.includes('accounts:delete'), 'le compte n\'est pas supprimé tant que ses données ne le sont pas'); ok('serveur injoignable : message, compte et synchronisation intacts, le compte n\'est pas supprimé avant ses données');
     await r.click('#acDelNo'); await r.waitForSelector('#acDel'); ok('Annuler : retour à la fiche du compte');
+    await r.click('#acDel'); await r.waitForSelector('#acDelGo'); ok('Compte › Supprimer mon compte : écran de suppression');
+    // cache Firestore de l'appareil (vrai SDK, comme après une suppression ou « Effacer les données ») : arrêt du client puis effacement des bases « firestore/… »
+    const fsdb = await r.evaluate(async () => {
+      await D.cloud.signOut(); const names = async () => (await indexedDB.databases()).map(d => d.name).filter(n => n.startsWith('firestore/'));
+      const before = await names(), done = await cloudClearLocal(D.cloud); return { before, done, after: await names() };
+    });
+    assert.ok(fsdb.before.length > 0, 'cache Firestore présent avant'); assert.equal(fsdb.done, true, 'effacé par le SDK'); assert.deepEqual(fsdb.after, []);
+    ok('cache Firestore de l\'appareil effacé par le SDK (terminate + clearIndexedDbPersistence)');
+    await cx.close(); }
+
+  // APK sans le plugin de connexion Google (ancienne, ou construite sans « npm install ») : jamais la fenêtre web (elle partirait dans le navigateur externe)
+  { const cx = await newCtx(); await wireFirebase(cx);
+    await cx.addInitScript(() => {
+      window.__opens = 0; window.open = () => { window.__opens++; return null; };
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: () => false, Plugins: {} };
+    });
+    const n = await cx.newPage(); watch(n, 'NOPLUG');
+    await n.goto('http://127.0.0.1:18800/'); await n.waitForTimeout(800);
+    await n.click('#btnAccount'); await sheetOpen(n); await n.waitForSelector('#acGoogle'); await n.click('#acGoogle');
+    await n.waitForFunction(() => !document.querySelector('#acMsg').hidden, null, { timeout: 5000 });
+    assert.equal(await T(n, '#acMsg'), 'Connexion Google indisponible dans cette version de l\'appli : mets-la à jour, ou utilise ton e-mail.');
+    assert.equal(await n.evaluate(() => window.__opens), 0, 'aucune fenêtre ouverte (signInWithPopup jamais appelé)'); assert.equal(await n.$eval('#acGoogle', e => e.disabled), false); assert.equal(await n.evaluate(() => !!D.user), false);
+    ok('APK sans plugin Google : « Continuer avec Google » n\'ouvre aucune fenêtre web, message « mets-la à jour, ou utilise ton e-mail »');
     await cx.close(); }
 
   // appli Android : connexion Google native (plugin) → session Firebase ouverte par le SDK web avec le jeton Google ; annulation silencieuse ; déconnexion native aussi
   { const cx = await newCtx(); await wireFirebase(cx);
     await cx.addInitScript(() => {
-      window.__g = { calls: [], outs: 0, cancel: false };
-      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'FirebaseAuthentication', Plugins: { FirebaseAuthentication: {
-        signInWithGoogle: async o => { window.__g.calls.push(o); if (window.__g.cancel) throw new Error('The user canceled the sign-in flow.'); return { user: null, credential: { providerId: 'google.com', idToken: 'jeton-google-natif', accessToken: 'acc' } }; },
+      window.__g = { calls: [], outs: 0, cancel: false, err: '', token: 'jeton-google-natif', missing: false };
+      window.__opens = 0; window.open = () => { window.__opens++; return null; };
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'FirebaseAuthentication' && !window.__g.missing, Plugins: { FirebaseAuthentication: {
+        signInWithGoogle: async o => { window.__g.calls.push(o); if (window.__g.cancel) throw new Error('The user canceled the sign-in flow.'); if (window.__g.err) throw new Error(window.__g.err); return { user: null, credential: { providerId: 'google.com', idToken: window.__g.token, accessToken: 'acc' } }; },
         signOut: async () => { window.__g.outs++; } } } };
     });
     const g = await cx.newPage(); watch(g, 'GOOG');
+    const gMsg = async () => { await g.waitForFunction(() => !document.querySelector('#acMsg').hidden, null, { timeout: 5000 }); const t = await T(g, '#acMsg'); await g.evaluate(() => { const m = document.querySelector('#acMsg'); m.hidden = true; m.textContent = ''; }); return t; };
     await g.goto('http://127.0.0.1:18800/'); await g.waitForTimeout(800);
     await g.click('#btnAccount'); await sheetOpen(g); await g.waitForSelector('#acGoogle');
     await g.evaluate(() => { window.__g.cancel = true; }); await g.click('#acGoogle'); await g.waitForTimeout(500);
     assert.equal(await g.$eval('#acMsg', e => e.hidden), true, 'annulation : aucun message'); assert.equal(await g.evaluate(() => !!D.user), false);
-    await g.evaluate(() => { window.__g.cancel = false; }); await g.click('#acGoogle'); await sheetGone(g); await g.waitForTimeout(600);
+    // erreur du plugin (ex. empreinte SHA-1 absente de Firebase) : son message est ajouté, sans balisage ; jeton refusé par Google : message Google, pas « mot de passe incorrect »
+    await g.evaluate(() => { window.__g.cancel = false; window.__g.err = '10: <i>Developer</i> error'; }); await g.click('#acGoogle');
+    assert.equal(await gMsg(), 'Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail. (10: i Developer /i error)');
+    await g.evaluate(() => { window.__g.err = ''; window.__g.token = 'jeton-faux'; }); await g.click('#acGoogle');
+    assert.equal(await gMsg(), 'Google a refusé la connexion : réessaie, ou utilise ton e-mail.'); assert.equal(await g.evaluate(() => !!D.user), false);
+    ok('Google natif : erreur du plugin détaillée dans le message, jeton refusé → « Google a refusé la connexion »');
+    await g.evaluate(() => { window.__g.token = 'jeton-google-natif'; }); await g.click('#acGoogle'); await sheetGone(g); await g.waitForTimeout(600);
     assert.equal(await g.evaluate(() => D.user && D.user.email), 'goog@test.dev'); assert.ok(idLog.includes('accounts:signInWithIdp'));
-    assert.deepEqual(await g.evaluate(() => window.__g.calls.map(c => c.skipNativeAuth)), [true, true]);
+    assert.ok(await g.evaluate(() => window.__g.calls.length === 4 && window.__g.calls.every(c => c.skipNativeAuth === true)));
     ok('appli Android : « Continuer avec Google » passe par le compte Google du téléphone (plugin natif), session Firebase ouverte avec son jeton ; annulation silencieuse');
+    // suppression du compte : confirmation par Google refusée, puis plugin absent → jamais la fenêtre web
+    await g.click('#btnAccount'); await sheetOpen(g); await g.waitForSelector('#acDel'); await g.click('#acDel'); await g.waitForSelector('#acDelGo');
+    assert.match(await T(g, '.sheet-body'), /Google te demandera de confirmer ton identité/);
+    await g.evaluate(() => { window.__g.token = 'jeton-faux'; }); await g.click('#acDelGo');
+    assert.equal(await gMsg(), 'Google a refusé la connexion : réessaie, ou utilise ton e-mail.');
+    await g.evaluate(() => { window.__g.token = 'jeton-google-natif'; window.__g.missing = true; }); await g.waitForFunction(() => !document.querySelector('#acDelGo').disabled); await g.click('#acDelGo');
+    assert.equal(await gMsg(), 'Connexion Google indisponible dans cette version de l\'appli : mets-la à jour, ou utilise ton e-mail.');
+    assert.equal(await g.evaluate(() => [window.__opens, !!D.user].join()), '0,true', 'aucune fenêtre web, compte intact'); assert.ok(!idLog.includes('accounts:delete'));
+    await g.evaluate(() => { window.__g.missing = false; }); await g.click('#acDelNo'); await g.waitForSelector('#acOut');
+    ok('suppression depuis l\'appli : jeton Google refusé → message Google ; plugin absent → « mets-la à jour », aucune fenêtre web');
+    await g.keyboard.press('Escape'); await sheetGone(g);
     await g.click('#btnAccount'); await sheetOpen(g); await g.waitForSelector('#acOut'); await g.click('#acOut'); await sheetGone(g); await g.waitForTimeout(300);
     assert.equal(await g.evaluate(() => [!!D.user, window.__g.outs].join()), 'false,1'); ok('déconnexion : compte Google du téléphone oublié aussi');
     await cx.close(); }

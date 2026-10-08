@@ -4,7 +4,7 @@
 const LOCAL_KEY = 'deckdeal:decks:v1', ACCT_KEY = 'deckdeal:acct';
 const D = {
   list: [], localList: [], user: null, uid: null, cloud: null, state: 'idle', err: '',
-  unsub: null, pending: false, listErr: '', authReady: false, hint: null, seen: new Set(), account: null, importing: new Set(),
+  unsub: null, pending: false, listErr: '', authReady: false, hint: null, seen: new Set(), account: null, importing: new Set(), hold: null, checking: null,
 };
 
 /* ── Stockage local ───────────────────────────────────────────────────────────────────────── */
@@ -362,7 +362,7 @@ function paintAuthForm(api) {
   b.innerHTML = `<div class="auth">${st.del ? '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Connecte-toi au compte à supprimer.') + '</span></div>' : ''}
     <div class="seg" id="acSeg" role="radiogroup" aria-label="${T('Connexion ou création de compte')}"></div>
     <form id="acForm" novalidate>
-      <div class="field-in"><label class="label" for="acEmail">Email</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
+      <div class="field-in"><label class="label" for="acEmail">${T('E-mail')}</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
       <div class="field-in"><label class="label" for="acPw">${T('Mot de passe')}</label><input type="password" id="acPw" autocomplete="${up ? 'new-password' : 'current-password'}" ${up ? 'minlength="6"' : ''}>${up ? '<span class="hint">' + T('6 caractères minimum.') + '</span>' : ''}</div>
       <div class="auth-msg" id="acMsg" role="alert" hidden></div>
       <button class="btn block" type="submit" id="acGo">${up ? T('Créer mon compte') : T('Me connecter')}</button>
@@ -374,7 +374,8 @@ function paintAuthForm(api) {
   mountSeg($('#acSeg', b), [{ v: 'in', label: T('Connexion') }, { v: 'up', label: T('Créer un compte') }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
   const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? T('Créer mon compte') : T('Me connecter')); };
-  const done = () => { api.close(); toast(T('Connecté')); };
+  // lien « supprimer mon compte » (?delete-account) : la feuille reste ouverte et passe à l'écran de suppression (onUser la repeint s'il n'est pas encore passé)
+  const done = () => { if (!st.del) { api.close(); toast(T('Connecté')); return; } toast(T('Connecté')); if (D.user) paintAccount(); };
   const fail = e => { busy(false, true); msg(authMessage(e)); };
   $('#acForm', b).onsubmit = async e => {
     e.preventDefault(); msg('');
@@ -433,7 +434,8 @@ function paintAccountDelete(api) {
     // Plus aucune synchronisation pendant l'effacement : sinon une copie locale pourrait être renvoyée dans le compte.
     if (D.unsub) { try { D.unsub(); } catch (x) { /* ignore */ } D.unsub = null; }
     collUser(null); xsUser(null); trUser(null); D.uid = null;
-    try { await D.cloud.wipe(uid); await D.cloud.deleteUser(); }
+    // liens créés ici mais peut-être jamais arrivés dans le document « trade » du compte : effacés aussi
+    try { await D.cloud.wipe(uid, TR.who === uid ? [TR.share, ...Object.values(TR.dsh)] : []); await D.cloud.deleteUser(); }
     catch (err) {
       D.uid = uid; onUser(D.user);      // rien de cassé : on reprend la synchronisation
       btn.disabled = false; btn.textContent = T('Supprimer définitivement');
@@ -441,11 +443,21 @@ function paintAccountDelete(api) {
       return;
     }
     api.close();
-    if (local) wipeDevice(); else toast(T('Compte supprimé'));
+    Promise.resolve().then(() => D.cloud.signOut()).catch(() => {});      // appli : oublie aussi le compte Google choisi sur le téléphone
+    if (local) wipeDevice();
+    else { await deviceForget(); toast(T('Compte supprimé')); setTimeout(() => location.reload(), 700); }      // client Firestore arrêté : on repart d'une page neuve
   };
+}
+/** Ce que l'appareil garde du compte hors de ses données : abonnement aux alertes de prix sur le serveur (sinon il notifierait encore, sans moyen
+ *  de couper), notifications, cache Firestore. Après une suppression de compte et dans wipeDevice ; jamais bloquant (réseau absent : on passe). */
+async function deviceForget() {
+  const within = (f, ms) => Promise.race([Promise.resolve().then(f).catch(() => {}), sleep(ms)]);
+  await within(alDisable, 5000); await within(pushDisable, 3000);
+  await cloudClearLocal(D.cloud);
 }
 /** Efface tout ce que l'appli garde sur cet appareil (réglages, collection, decks, caches), puis recharge. */
 async function wipeDevice() {
+  await deviceForget();
   try { Object.keys(localStorage).filter(k => /^deckdeal[:-]/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
   try { await Cache.clear(); } catch (e) { /* ignore */ }
   try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith('deckdeal-')) await caches.delete(k); } catch (e) { /* ignore */ }
@@ -467,12 +479,53 @@ function importLocal() {
   }).catch(err => { items.forEach(x => D.importing.delete(x.localId)); renderDecks(); paintAccount(); toast(deckErr(err)); });
 }
 
+/* ── Compte supprimé depuis un autre appareil ─────────────────────────────────────────────────
+   Après une suppression, le jeton d'un appareil resté connecté vaut encore jusqu'à 1 h et les règles Firestore ne vérifient que l'uid : sa synchro
+   recréerait pour toujours les documents effacés. Chaque synchro note donc les documents du compte vus sur le serveur (acctSaw) ; si l'un d'eux
+   disparaît (acctLost), plus rien ne part vers le compte (acctHeld) et on demande à Firebase s'il existe encore (acctCheck). */
+const SEEN_KEY = 'deckdeal:seen:v1', ACCT_CHECK = { wait: 6000 }, ACCT_GONE = /^auth\/(user-not-found|user-disabled|user-token-expired|invalid-user-token)$/;
+const acctSeen = () => { try { const o = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
+const acctSeenSet = o => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(o)); } catch (e) { /* stockage indisponible */ } };
+/** Le document id (collection, engaged, history, trade) du compte uid existe sur le serveur : lu ou écrit par cet appareil. */
+function acctSaw(id, uid) { const o = acctSeen(); if (o[id] !== uid) { o[id] = uid; acctSeenSet(o); } }
+/** Le serveur dit le document absent. Déjà vu ici pour ce compte : effacé (compte supprimé ailleurs ?) → true, l'appelant n'envoie rien.
+ *  Jamais vu : vraie première synchro → false, l'appelant envoie ce que l'appareil a, comme avant. */
+function acctLost(id, uid) {
+  if (acctSeen()[id] !== uid) return false;
+  D.hold = uid; acctCheck(uid); return true;
+}
+/** Rien ne doit partir vers ce compte : ce n'est plus le compte connecté (suppression en cours ici : D.uid vidé), ou un document a disparu. */
+const acctHeld = uid => !uid || uid !== D.uid || D.hold === uid;
+async function acctCheck(uid) {
+  if (D.checking === uid) return; D.checking = uid;
+  try {
+    // deux « le compte existe » à quelques secondes d'écart : l'autre appareil efface les données AVANT le compte
+    let alive = 0;
+    for (let i = 0; i < 4 && alive < 2; i++) {
+      if (i) await sleep(ACCT_CHECK.wait);
+      if (D.uid !== uid || !D.user) return;
+      try { await D.user.reload(); alive++; }
+      catch (e) { if (ACCT_GONE.test((e && e.code) || '')) { acctOut(uid); return; } }      // réseau : on ne sait pas encore, on réessaie
+    }
+    if (alive < 2 || D.uid !== uid) return;            // pas de réponse sûre : rien ne repart vers le compte pendant cette session
+    // compte bien là (document effacé à la main dans la console, suppression interrompue) : première synchro, l'appareil le reconstitue
+    const o = acctSeen(); for (const k in o) if (o[k] === uid) delete o[k]; acctSeenSet(o);
+    D.hold = null; collUser(D.user); xsUser(D.user); trUser(D.user);
+  } finally { if (D.checking === uid) D.checking = null; }
+}
+/** Compte supprimé ou désactivé : synchro arrêtée tout de suite, puis déconnexion (appli : compte Google du téléphone oublié aussi). */
+function acctOut(uid) {
+  if (D.uid === uid) { if (D.unsub) { try { D.unsub(); } catch (e) { /* ignore */ } D.unsub = null; } collUser(null); xsUser(null); trUser(null); }
+  Promise.resolve().then(() => D.cloud.signOut()).catch(() => {});
+  toast(T('Ce compte a été supprimé ou désactivé : tu es déconnecté.'));
+}
+
 /* ── Connexion au cloud ───────────────────────────────────────────────────────────────────── */
 function onUser(user) {
   const prev = D.uid;
   if (D.unsub) { try { D.unsub(); } catch (e) { /* ignore */ } D.unsub = null; }
   D.user = user; D.uid = user ? user.uid : null; D.list = []; D.pending = false; D.listErr = ''; D.authReady = true;
-  if (prev !== D.uid) { S.deckId = null; S.runDelta = null; D.seen.clear(); }
+  if (prev !== D.uid) { S.deckId = null; S.runDelta = null; D.seen.clear(); D.hold = null; }
   try {
     if (user) localStorage.setItem(ACCT_KEY, JSON.stringify({ l: ((user.displayName || user.email || '?').trim()[0] || '?').toUpperCase() }));
     else localStorage.removeItem(ACCT_KEY);
