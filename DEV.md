@@ -27,7 +27,8 @@ Toujours committer `src/` **et** `deck-deal.html` ensemble.
     cd tests && npm ci && cd ..
     (cd tests && npm run fb)          # bundle Firebase des tests (tests/.tmp/fb-shared.js)
     node build.mjs
-    bash tests/run-tests.sh           # tout, un par un (~20 min) → tests/run-tests.out + tests/logs/
+    bash tests/run-tests.sh           # tout, un par un (~22 min) → tests/run-tests.out + tests/logs/
+    bash tests/run-tests.sh --node    # sans navigateur (~2 min)
     bash tests/run-tests.sh test.mjs art-e2e.mjs    # une sélection
     node tests/coll-e2e.mjs           # un seul test
 
@@ -40,4 +41,4 @@ Toujours committer `src/` **et** `deck-deal.html` ensemble.
 
 ## CI
 
-`.github/workflows/tests.yml` : tests Node + jsdom à chaque push et pull request ; suite complète (navigateur) sur les pull requests et à la demande (onglet Actions › Tests › Run workflow).
+`.github/workflows/tests.yml` : build à jour à chaque push et pull request ; tests Node + jsdom (`run-tests.sh --node`) à chaque push ; **tous** les tests de `run-tests.sh` (~22 min) sur les pull requests et à la demande (onglet Actions › Tests › Run workflow). Un nouveau test s'ajoute dans les listes `NODE` / `BROWSER` de `tests/run-tests.sh` : la CI le lance d'office.
