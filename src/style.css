@@ -758,7 +758,11 @@ i.mc.mc-c,.fcol.mc-c{background:#cbc5c0 url("data:image/svg+xml,<svg xmlns='http
 .coll-status .track{height:6px}
 .coll-list{display:flex;flex-direction:column;gap:8px}
 .crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
-.crow.has-px{grid-template-columns:40px minmax(0,1fr) auto auto}
+.crow.has-px{grid-template-columns:40px minmax(0,1fr) auto;row-gap:4px}
+/* prix au-dessus du +/− dans la dernière colonne : le nom garde toute la largeur (sinon 24 à 75 px, « Sheoldred / , ») */
+.crow.has-px>.thumb,.crow.has-px>.row-main{grid-row:1/span 2}
+.crow.has-px>.row-px{grid-column:3;grid-row:1;align-self:end}
+.crow.has-px>.qstep{grid-column:3;grid-row:2;align-self:start;justify-self:end}
 .crow.ro{grid-template-columns:40px minmax(0,1fr) auto}
 .row-px{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}
 .px{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
@@ -769,7 +773,7 @@ i.mc.mc-c,.fcol.mc-c{background:#cbc5c0 url("data:image/svg+xml,<svg xmlns='http
 .px.none b{font-size:11.5px;font-weight:500;color:var(--ink-3)}
 .px.none i{color:var(--ink-3)}
 .crow .thumb{cursor:default}
-.crow .row-name{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.2}
+.crow .row-name{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;overflow-wrap:break-word;line-height:1.2}
 .qstep{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface-3);overflow:hidden}
 .qstep button{width:30px;height:36px;border:0;background:transparent;font-size:18px;line-height:1;color:var(--ink-2);display:grid;place-items:center;padding:0}
 .qstep button:active{background:var(--accent-soft);color:var(--accent)}
@@ -1240,7 +1244,7 @@ button,.btn,select,summary{touch-action:manipulation}
 .bd-list .sec-title{margin-top:8px}
 .bd-opt{font-weight:500;color:var(--ink-3)}
 .bd-row .row-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
-.bd-row .row-name{-webkit-line-clamp:2}
+.bd-row .row-name{-webkit-line-clamp:2;line-clamp:2}
 
 /* ── Format et valeur des decks ──────────────────────────────────────────────── */
 .deck-top{display:flex;align-items:center;gap:8px;min-width:0}
