@@ -46,12 +46,20 @@ export async function pxStream(stream, map) {
 
 async function main() {
   const out = process.argv[2] || join(here, 'prices.tsv.gz');
-  const lr = await fetch('https://api.scryfall.com/bulk-data', { headers: { 'User-Agent': UA, Accept: 'application/json' } });
-  if (!lr.ok) throw new Error('Scryfall : liste des fichiers complets refusée (' + lr.status + ')');
-  const meta = ((await lr.json()).data || []).find(x => x && x.type === 'default_cards');
-  if (!meta || !meta.download_uri) throw new Error('Scryfall : fichier « default_cards » introuvable');
+  const H = { 'User-Agent': UA, Accept: 'application/json;q=0.9,*/*;q=0.8' };
+  // Fichier « default_cards » : cherché dans la liste, sinon demandé directement (deux orthographes). En cas d'échec, ce qui a été reçu est affiché.
+  let meta = null; const seen = [];
+  for (const u of ['https://api.scryfall.com/bulk-data', 'https://api.scryfall.com/bulk-data/default_cards', 'https://api.scryfall.com/bulk-data/default-cards']) {
+    let r, t = ''; try { r = await fetch(u, { headers: H }); t = await r.text(); } catch (e) { seen.push(u + ' → ' + e.message); continue; }
+    let j = null; try { j = JSON.parse(t); } catch (e) { /* pas du JSON */ }
+    const list = j && Array.isArray(j.data) ? j.data : j ? [j] : [];
+    meta = list.find(x => x && x.download_uri && /default/.test(String(x.type || x.name || '').toLowerCase())) || null;
+    if (meta) break;
+    seen.push(`${u} → ${r.status} ${t.replace(/\s+/g, ' ').slice(0, 300)}`);
+  }
+  if (!meta) throw new Error('Scryfall : fichier « default_cards » introuvable\n  ' + seen.join('\n  '));
   console.log(`  fichier Scryfall du ${meta.updated_at} (${Math.round((meta.size || 0) / 1048576)} Mo)`);
-  const r = await fetch(meta.download_uri, { headers: { 'User-Agent': UA } });
+  const r = await fetch(meta.download_uri, { headers: H });
   if (!r.ok || !r.body) throw new Error('Scryfall : téléchargement refusé (' + r.status + ')');
   const map = new Map(), n = await pxStream(r.body, map), txt = pxText(map, String(meta.updated_at || new Date().toISOString()));
   const rows = txt.split('\n').length - 2;
