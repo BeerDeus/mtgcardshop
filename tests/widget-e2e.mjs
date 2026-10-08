@@ -72,6 +72,14 @@ const errsAll = [];
   c = await calls(p); assert.equal(c[3].d, 1390 - 1500, 'nouveau relevé : variation recalculée');
   await p.evaluate(() => { delete document.hidden; });
   ok('appli mise en arrière-plan : envoi immédiat de la nouvelle variation');
+
+  // orbes de l'accueil : crédit de l'artiste (lu avec la fiche Scryfall) au survol de l'illustration
+  await p.evaluate(() => { COLL.meta.plains = { im: 'https://cards.scryfall.io/small/front/a/b/plains.jpg', ar: 'John Avon' }; COLL.meta.island = { im: 'https://cards.scryfall.io/small/front/a/b/island.jpg' }; homeLands(); });
+  assert.deepEqual(await p.$$eval('.hm-land img', l => l.slice(0, 2).map(i => i.title)), ['Illustration : John Avon', ''], 'artiste inconnu (fiche lue avant) : pas de crédit vide');
+  // réglages : ligne de diagnostic de l'APK complétée par ManaOrbit.info() (version, Firebase)
+  await p.click('#btnSettings'); await p.waitForFunction(() => /Firebase/.test((document.querySelector('.set-ver') || {}).textContent), null, { timeout: 3000 });
+  assert.match(await p.$eval('.set-ver', e => e.textContent), / · APK 1\.0 \(1\) : ✗caméra ✗ML Kit ✗Google ✗pub ✗notif ✓widget ✗retour ✓Firebase$/);
+  ok('accueil : « Illustration : John Avon » sur l\'orbe ; réglages : version de l\'APK et ✓Firebase');
   await p.context().close();
 }
 
@@ -80,12 +88,19 @@ const errsAll = [];
   const { p, errs } = await newPage(browser, world, { init: seed({ lang: 'en' }) + shell() }); errsAll.push(errs);
   await p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 });
   const c = await calls(p); assert.equal(c[0].lang, 'en'); assert.equal(c[0].v, 1100);
+  await p.evaluate(() => { COLL.meta.plains = { im: 'https://cards.scryfall.io/small/front/a/b/plains.jpg', ar: 'John Avon' }; homeLands(); });
+  assert.equal(await p.$eval('.hm-land[data-c="W"] img', i => i.title), 'Illustration: John Avon');
   await p.context().close();
+  // APK dont info() échoue : la ligne de diagnostic reste celle des plugins, sans erreur
+  const r = await newPage(browser, world, { init: seed() + shell().replace("info: async () => ({ firebase: true, version: '1.0', build: 1 })", "info: async () => { throw new Error('refusé'); }") }); errsAll.push(r.errs);
+  await r.p.click('#btnSettings'); await r.p.waitForSelector('.set-ver'); await r.p.waitForTimeout(400);
+  assert.match(await r.p.$eval('.set-ver', e => e.textContent), / · APK : ✗caméra ✗ML Kit ✗Google ✗pub ✗notif ✓widget ✗retour$/);
+  await r.p.context().close();
   const e = await newPage(browser, world, { init: seed({ coll: false }) + shell() }); errsAll.push(e.errs);
   await e.p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 });
   const { at, ...rest } = (await calls(e.p))[0]; assert.deepEqual(rest, { v: 0, d: null, n: 0, lang: 'fr', cur: 'EUR' }, 'collection vide : le widget invite à ouvrir l\'appli');
   await e.p.context().close();
-  ok('anglais : lang « en » ; collection vide : { v: 0, d: null, n: 0 }');
+  ok('anglais : lang « en », crédit « Illustration: » ; info() refusé : diagnostic inchangé ; collection vide : { v: 0, d: null, n: 0 }');
 }
 
 /* ── 3) navigateur : jamais d'envoi ; ?collection ouvre la collection ──────────────────────────────────────────────── */
