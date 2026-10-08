@@ -1,0 +1,11 @@
+/* ── ads.css : place du bandeau de pub (appli Android, ads.js) ──
+   Le bandeau natif est posé au-dessus de la page, juste sous la barre d'état. html.ad-on et --ad-h (sa hauteur, en px CSS) décalent d'autant
+   tout ce qui touche le haut de l'écran : rien n'est jamais caché dessous. Sans bandeau (web, PWA, comptes autorisés, scan…), aucune de ces règles ne joue. */
+html.ad-on{padding-top:calc(env(safe-area-inset-top,0px) + var(--ad-h,0px));scroll-padding-top:calc(72px + var(--ad-h,0px))}
+html.ad-on .bar{top:calc(env(safe-area-inset-top,0px) + var(--ad-h,0px))}
+html.ad-on .dv-head{padding-top:calc(env(safe-area-inset-top,0px) + var(--ad-h,0px) + 10px)}
+html.ad-on .tasks{top:calc(env(safe-area-inset-top,0px) + var(--ad-h,0px) + 62px)}
+html.ad-on .tasks.over{top:calc(env(safe-area-inset-top,0px) + var(--ad-h,0px) + 8px)}
+/* feuilles : le voile couvre tout l'écran, mais la feuille s'arrête sous le bandeau (en bas sur téléphone, centrée sur grand écran) */
+html.ad-on .sheet{max-height:min(90%,calc(100% - env(safe-area-inset-top,0px) - var(--ad-h,0px) - 12px))}
+@media (min-width:720px){html.ad-on .sheet{max-height:min(86%,calc(100% - 2 * (env(safe-area-inset-top,0px) + var(--ad-h,0px) + 12px)))}}

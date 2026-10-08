@@ -31,7 +31,9 @@ const j = async (url, init) => { const r = await fetch(url, init); const t = awa
 // 1) sans clé
 let p = await start({ CARDTRADER_TOKEN: 'tok123' }, 18787);
 let B = 'http://127.0.0.1:18787';
-let r = await j(B + '/__ping'); assert.deepEqual(r.o, { ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '' }); console.log('✓ ping');
+let r = await j(B + '/__ping');      // champ par champ : d'autres fonctions peuvent ajouter les leurs
+for (const [k, v] of Object.entries({ ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '', adUnit: '' })) assert.deepEqual(r.o[k], v, '__ping.' + k);
+console.log('✓ ping (adUnit vide : bandeau de test)');
 r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Mana Orbit<\/title>/); console.log('✓ page servie');
 r = await j(B + '/api/cart/purchase', { method: 'POST', body: '{}' }); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (POST)');
 r = await j(B + '/api/cart/purchase'); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (GET)');
@@ -174,9 +176,9 @@ p.kill();
   r = await j('http://127.0.0.1:18796/api/info', hdr(mkTok())); assert.equal(r.s, 503); assert.equal(r.o.error, 'auth_unavailable'); console.log('✓ JWKS injoignable → 503, jamais d\'accès par défaut');
   jwksDown = false; await new Promise(r => setTimeout(r, 100)); pb.kill();
   // APP_KEY + compte : l'un OU l'autre
-  const pc = await start({ CARDTRADER_TOKEN: 'tok123', ALLOWED_UIDS: 'uid-beer', APP_KEY: 'une-cle-longue-1234', FIREBASE_JWKS_URL: `http://127.0.0.1:${jw.address().port}/jwks`, BAD_KEY_DELAY_MS: '5' }, 18797);
+  const pc = await start({ CARDTRADER_TOKEN: 'tok123', ALLOWED_UIDS: 'uid-beer', APP_KEY: 'une-cle-longue-1234', FIREBASE_JWKS_URL: `http://127.0.0.1:${jw.address().port}/jwks`, BAD_KEY_DELAY_MS: '5', ADMOB_BANNER_ID: 'ca-app-pub-1234567890123456~1234567890' }, 18797);
   const BC = 'http://127.0.0.1:18797';
-  r = await j(BC + '/__ping'); assert.equal(r.o.needsKey, true); assert.equal(r.o.needsLogin, true);
+  r = await j(BC + '/__ping'); assert.equal(r.o.needsKey, true); assert.equal(r.o.needsLogin, true); assert.equal(r.o.adUnit, '', 'identifiant d\'appli (~) refusé comme bloc d\'annonces');
   r = await j(BC + '/api/info', { headers: { 'x-app-key': 'une-cle-longue-1234' } }); assert.equal(r.s, 200);
   r = await j(BC + '/api/info', hdr(mkTok())); assert.equal(r.s, 200);
   r = await j(BC + '/api/info', { headers: { 'x-app-key': 'faux' } }); assert.equal(r.s, 401); assert.equal(r.o.error, 'bad_app_key');
@@ -188,8 +190,8 @@ p.kill();
 }
 
 // 2) avec clé
-p = await start({ CARDTRADER_TOKEN: 'tok123', APP_KEY: 'sesame' }, 18788); B = 'http://127.0.0.1:18788';
-r = await j(B + '/__ping'); assert.equal(r.o.needsKey, true); console.log('✓ ping needsKey');
+p = await start({ CARDTRADER_TOKEN: 'tok123', APP_KEY: 'sesame', ADMOB_BANNER_ID: ' ca-app-pub-1234567890123456/9876543210 ' }, 18788); B = 'http://127.0.0.1:18788';
+r = await j(B + '/__ping'); assert.equal(r.o.needsKey, true); assert.equal(r.o.adUnit, 'ca-app-pub-1234567890123456/9876543210'); console.log('✓ ping needsKey, adUnit (ADMOB_BANNER_ID)');
 r = await j(B + '/api/info'); assert.equal(r.s, 401); console.log('✓ sans clé → 401');
 r = await j(B + '/api/info', { headers: { 'x-app-key': 'nope' } }); assert.equal(r.s, 401); console.log('✓ mauvaise clé → 401');
 r = await j(B + '/api/info', { headers: { 'x-app-key': 'sesame' } }); assert.equal(r.s, 200); console.log('✓ bonne clé → 200');
