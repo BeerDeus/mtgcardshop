@@ -262,6 +262,8 @@ Bon à savoir :
 
 ## 6. Problèmes fréquents
 
+- **Android Studio propose de passer à Gradle 9 ou AGP 9** (« Upgrade », Mettre à jour) : refuse pour l'instant (**Don't ask again for this project**, ne plus demander pour ce projet). Plusieurs plugins ne sont pas encore compatibles, et la compilation casserait.
+
 - **« Incompatible Gradle JVM version… Gradle 8.14.3 supports Java versions between 1.8 and 24 »** (version de Java incompatible) : Android Studio lance Gradle avec Java 25, trop récent. Pour choisir Java 21 :
   1. **File › Settings…** (Fichier › Paramètres).
   2. **Build, Execution, Deployment › Build Tools › Gradle** (Compilation › Outils de compilation › Gradle).

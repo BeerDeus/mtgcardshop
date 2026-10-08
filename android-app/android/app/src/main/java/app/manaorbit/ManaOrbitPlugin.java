@@ -69,6 +69,9 @@ public class ManaOrbitPlugin extends Plugin {
         super.handleOnNewIntent(intent);
         String view = intent == null ? null : intent.getStringExtra(ValueWidget.EXTRA_OPEN);
         if (view == null) return;
+        // Rouverte depuis les applis récentes (ou recréée) : Android rejoue l'ancienne intention ; ce n'est pas un nouveau toucher du widget.
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return;
+        intent.removeExtra(ValueWidget.EXTRA_OPEN);
         JSObject ev = new JSObject();
         ev.put("view", view);
         notifyListeners("open", ev, true);

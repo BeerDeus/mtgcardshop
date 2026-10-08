@@ -5,7 +5,8 @@
   "server": {
     "url": "https://card.m2s-photo.fr",
     "cleartext": false,
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "errorPath": "index.html"
   },
   "android": {
     "backgroundColor": "#0b0f1c"

@@ -515,16 +515,29 @@ function capPlugin(n) {
 }
 const natCam = () => capPlugin('CameraPreview'), natOcr = () => capPlugin('CapacitorPluginMlKitTextRecognition');
 async function natStart() {
-  const cam = natCam(), stage = SC.el && $('.sc-stage', SC.el); if (!cam || !stage) return false;
+  const cam = natCam(), el = SC.el, stage = el && $('.sc-stage', el); if (!cam || !stage) return false;
+  if (NAT.p) { try { await NAT.p; } catch (e) { /* ignore */ } }      // un démarrage précédent encore en cours : on l'attend (« caméra déjà démarrée » sinon)
+  // L'aperçu natif ne se déplace plus une fois posé : on mesure la zone écran ouvert (transition de 0,3 s finie) et bandeau de pub retiré.
+  for (let i = 0; i < 20 && SC.el === el && (!el.classList.contains('on') || document.documentElement.classList.contains('ad-on')); i++) await new Promise(r => setTimeout(r, 50));
+  await new Promise(r => setTimeout(r, reduceMotion() ? 0 : 320));
+  if (SC.el !== el) return true;
   const r = stage.getBoundingClientRect();
   document.documentElement.classList.add('nat-cam');      // page transparente au-dessus de l'aperçu natif
   try {
-    await cam.start({ position: 'rear', toBack: true, x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height), disableAudio: true, enableZoom: true });
-    if (!SC.el) { natStop(); return true; }
+    NAT.p = cam.start({ position: 'rear', toBack: true, x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height), disableAudio: true, enableZoom: true, lockAndroidOrientation: true });
+    await NAT.p;
+    if (SC.el !== el) { await natHalt(); return true; }      // scan fermé pendant le démarrage : la caméra ne doit pas rester allumée
     NAT.on = true; stage.dataset.cam = 'on'; stage.dataset.native = '1'; return true;
   } catch (e) { document.documentElement.classList.remove('nat-cam'); return false; }
+  finally { NAT.p = null; }
 }
-function natStop() { document.documentElement.classList.remove('nat-cam'); if (!NAT.on) return; NAT.on = false; try { natCam().stop().catch(() => {}); } catch (e) { /* ignore */ } }
+/** Arrêt de la caméra native, que l'aperçu soit déjà affiché ou encore en train de démarrer. */
+async function natHalt() { NAT.on = false; document.documentElement.classList.remove('nat-cam'); try { await natCam().stop(); } catch (e) { /* déjà arrêtée */ } }
+function natStop() {
+  document.documentElement.classList.remove('nat-cam');
+  if (NAT.p) { const p = NAT.p; p.then(() => natHalt(), () => {}); return; }      // en cours de démarrage : arrêt dès qu'elle a démarré
+  if (!NAT.on) return; natHalt();
+}
 /** Image de l'aperçu natif → bande du guide (même recadrage que l'aperçu : remplissage centré), en canvas. */
 async function natCapture() {
   const res = await natCam().captureSample({ quality: 90 });

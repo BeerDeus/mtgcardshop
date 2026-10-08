@@ -62,5 +62,17 @@ await p.context().close();
   assert.equal(await q.$eval('#btnRun', b => b.disabled), true); assert.match(await txt(q, '#btnRunLabel'), /Tout est dans ta collection/); ok('modifier la liste : charge le deck, rien à chercher');
   assert.deepEqual(e2, [], 'aucune erreur console'); await q.context().close();
 }
+{ // appli Android : le Retour arrive par @capacitor/app (événement backButton), pas par l'historique ; 2e appui sur l'accueil : appli en arrière-plan
+  const nat = `window.__bk = { cb: null, min: 0 }; window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener: async (ev, cb) => { if (ev === 'backButton') window.__bk.cb = cb; return { remove() {} }; }, minimizeApp: async () => { window.__bk.min++; }, exitApp: async () => {} } } };`;
+  const { p: r, errs: e3 } = await newPage(browser, world, { init: nat + seed });
+  await r.waitForTimeout(600);
+  assert.equal(await r.evaluate(() => typeof window.__bk.cb), 'function', 'écouteur backButton posé'); assert.equal(await r.evaluate(() => (history.state && history.state.dd) || null), null, 'pas de piège dans l\'historique');
+  const press = async () => { await r.evaluate(() => window.__bk.cb({ canGoBack: false })); await r.waitForTimeout(350); };
+  await toHome(r); await r.click('#btnColl'); await r.waitForSelector('.coll.on'); await press(); assert.equal(await r.$('.coll.on'), null, 'Retour : la collection se ferme');
+  await press(); assert.match(await txt(r, '#toast'), /Appuie encore sur Retour pour quitter/); assert.equal(await r.evaluate(() => window.__bk.min), 0);
+  await press(); assert.equal(await r.evaluate(() => window.__bk.min), 1, '2e appui : appli en arrière-plan');
+  ok('appli Android : Retour natif (@capacitor/app) ferme l\'écran ouvert, double appui sur l\'accueil : arrière-plan');
+  assert.deepEqual(e3, []); await r.context().close();
+}
 await browser.close(); world.stop();
 console.log('BACK E2E OK');

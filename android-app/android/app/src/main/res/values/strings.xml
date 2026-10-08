@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Mana Orbit</string>
-    <string name="title_activity_main">Mana Orbit</string>
-    <string name="package_name">app.manaorbit</string>
-    <string name="custom_url_scheme">app.manaorbit</string>
+    <string name="app_name" translatable="false">Mana Orbit</string>
+    <string name="title_activity_main" translatable="false">Mana Orbit</string>
+    <string name="package_name" translatable="false">app.manaorbit</string>
+    <string name="custom_url_scheme" translatable="false">app.manaorbit</string>
     <!-- AdMob : identifiant de TEST de Google, à remplacer par le tien (console AdMob › Applis › Paramètres). -->
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
 </resources>

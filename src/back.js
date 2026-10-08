@@ -14,7 +14,18 @@ function backClose() {
   if (S.view === 'input') { showView('home'); return true; }
   return false;
 }
+/** Appli Android : le bouton Retour (et le geste) arrive par @capacitor/app, pas par l'historique de la page. Même logique ; au 2e appui, l'appli passe en arrière-plan. */
+function backNative() {
+  const A = typeof natPlugin === 'function' ? natPlugin('App') : null; if (!A) return false;
+  Promise.resolve(A.addListener('backButton', () => {
+    if (backClose()) { BK.armed = 0; return; }
+    if (Date.now() - BK.armed < 2500) { BK.armed = 0; Promise.resolve(A.minimizeApp ? A.minimizeApp() : A.exitApp()).catch(() => {}); return; }
+    BK.armed = Date.now(); toast(T('Appuie encore sur Retour pour quitter'));
+  })).catch(() => {});
+  return true;
+}
 function backInit() {
+  if (backNative()) return;
   if (typeof history === 'undefined' || !history.pushState || !/^https?:$/.test(location.protocol)) return;
   const mark = d => { try { history.pushState({ dd: d }, ''); } catch (e) { /* ignore */ } };
   const st = history.state && history.state.dd;

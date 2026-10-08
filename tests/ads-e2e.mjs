@@ -64,20 +64,20 @@ async function natPage(o = {}) {
   assert.equal(await n(p, 'hideBanner'), 0, 'collection : le bandeau reste');
   await p.evaluate(() => openScan()); await p.waitForSelector('.scan.on');
   await p.waitForFunction(() => document.documentElement.classList.contains('nat-cam'), null, { timeout: 5000 });
-  await gone(p); assert.equal(await n(p, 'hideBanner'), 1, 'scan natif : bandeau masqué');
+  await gone(p); assert.equal(await n(p, 'removeBanner'), 2, 'scan natif : bandeau détruit (la caméra native laisse la page au-dessus : un bandeau masqué reviendrait dessous)'); assert.equal(await n(p, 'hideBanner'), 0);
   assert.equal(await p.$eval('.scan .dv-head', e => getComputedStyle(e).paddingTop), '10px', 'scan : plus de marge');
-  await p.waitForTimeout(500); assert.equal(await n(p, 'resumeBanner'), 0, 'pas de retour tant que le scan est ouvert');
+  await p.waitForTimeout(500); assert.equal(await n(p, 'showBanner'), 1, 'pas de retour tant que le scan est ouvert');
   await p.evaluate(() => closeScan()); await shown(p);
-  assert.equal(await n(p, 'resumeBanner'), 1, 'scan fermé : bandeau rétabli'); assert.equal(await n(p, 'showBanner'), 1, 'le même bandeau, pas un nouveau');
+  assert.equal(await n(p, 'showBanner'), 2, 'scan fermé : nouveau bandeau, au-dessus de la page'); assert.equal(await n(p, 'resumeBanner'), 0);
   await p.evaluate(() => closeCollection()); await p.waitForTimeout(300);
-  ok('collection : en-tête sous le bandeau ; scan natif (html.nat-cam) : bandeau masqué et marge retirée, rétabli à la fermeture');
+  ok('collection : en-tête sous le bandeau ; scan natif (html.nat-cam) : bandeau détruit et marge retirée, recréé à la fermeture');
 
   await p.evaluate(() => openCardViewer([{ key: 'sol ring', name: 'Sol Ring', small: 'https://cards.scryfall.io/small/front/a/b/sol-ring.jpg' }], 0)); await p.waitForSelector('.imgv');
-  await gone(p); assert.equal(await n(p, 'hideBanner'), 2);
-  await p.evaluate(() => closeCardImage()); await shown(p); assert.equal(await n(p, 'resumeBanner'), 2);
+  await gone(p); assert.equal(await n(p, 'hideBanner'), 1);
+  await p.evaluate(() => closeCardImage()); await shown(p); assert.equal(await n(p, 'resumeBanner'), 1);
   await p.evaluate(() => obOpen()); await p.waitForSelector('.ob');
-  await gone(p); assert.equal(await n(p, 'hideBanner'), 3);
-  await p.evaluate(() => obClose()); await shown(p); assert.equal(await n(p, 'resumeBanner'), 3);
+  await gone(p); assert.equal(await n(p, 'hideBanner'), 2);
+  await p.evaluate(() => obClose()); await shown(p); assert.equal(await n(p, 'resumeBanner'), 2);
   ok('carte en grand et accueil du premier lancement : bandeau masqué puis rétabli');
 
   await p.setViewportSize({ width: 390, height: 520 });
@@ -87,16 +87,16 @@ async function natPage(o = {}) {
   assert.ok(await p.$eval('.sheet', (e, h) => e.getBoundingClientRect().top >= h, H), 'feuille haute : elle s\'arrête sous le bandeau');
   await p.click('#btnAdChoices'); await p.waitForFunction(() => window.__ad.calls.includes('showPrivacyOptionsForm'));
   await p.keyboard.press('Escape'); await p.waitForTimeout(450); await p.setViewportSize({ width: 390, height: 844 });
-  assert.equal(await n(p, 'hideBanner'), 3, 'feuille : le bandeau reste');
+  assert.equal(await n(p, 'hideBanner'), 2, 'feuille : le bandeau reste');
   ok('réglages : mention de la pub, « Choix publicitaires » (formulaire Google), feuille sous le bandeau');
 
   await p.evaluate(() => { CTX.serverOk = true; adsRefresh(); }); await gone(p);
-  assert.equal(await n(p, 'removeBanner'), 2, 'compte autorisé : bandeau détruit');
-  await p.waitForTimeout(1200); assert.equal(await n(p, 'showBanner'), 1, 'et jamais remontré');
-  await p.evaluate(() => { CTX.serverOk = false; adsRefresh(); }); await shown(p); assert.equal(await n(p, 'showBanner'), 2, 'autre compte : bandeau recréé');
+  assert.equal(await n(p, 'removeBanner'), 3, 'compte autorisé : bandeau détruit');
+  await p.waitForTimeout(1200); assert.equal(await n(p, 'showBanner'), 2, 'et jamais remontré');
+  await p.evaluate(() => { CTX.serverOk = false; adsRefresh(); }); await shown(p); assert.equal(await n(p, 'showBanner'), 3, 'autre compte : bandeau recréé');
   await p.route('**/__me', r => r.fulfill({ json: { server: true } }));
   await p.evaluate(async () => { CTX.proxy = CTX.hasToken = CTX.needsLogin = true; CTX.idToken = async () => 'jeton'; await checkServer(); });
-  await gone(p); assert.equal(await n(p, 'removeBanner'), 3, 'checkServer() confirme un compte autorisé : bandeau retiré');
+  await gone(p); assert.equal(await n(p, 'removeBanner'), 4, 'checkServer() confirme un compte autorisé : bandeau retiré');
   assert.equal(await p.evaluate(() => CTX.serverOk), true);
   assert.equal(await n(p, 'initialize'), 1, 'SDK initialisé une seule fois'); assert.equal(await n(p, 'requestConsentInfo'), 2, 'consentement : au lancement, puis après « Choix publicitaires »');
   assert.deepEqual(errs, []); await p.context().close();

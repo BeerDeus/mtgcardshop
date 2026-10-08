@@ -65,7 +65,14 @@ async function adsStep() {
     if (AD.st !== 'off') { AD.st = 'off'; adsPad(0); await adsCall(P, 'removeBanner'); }
     return;
   }
-  if (busy) { if (AD.st === 'on') { AD.st = 'hid'; await adsCall(P, 'hideBanner'); adsPad(0); } return; }
+  if (busy) {
+    if (AD.st === 'off') return;
+    adsPad(0);                                                                             // la marge part avant tout (l'aperçu de la caméra se place d'après la page)
+    // Scan : la caméra native remet la page au premier plan et y reste ; un bandeau seulement masqué reviendrait DESSOUS (invisible mais rafraîchi). On le détruit : le prochain showBanner le recrée au-dessus.
+    if (typeof SC !== 'undefined' && SC.el) { AD.st = 'off'; await adsCall(P, 'removeBanner'); }
+    else if (AD.st === 'on') { AD.st = 'hid'; await adsCall(P, 'hideBanner'); }
+    return;
+  }
   if (AD.st === 'on' || document.hidden) return;
   const wait = Math.max(AD.touch + AD.idle, AD.st === 'hid' ? AD.calm + AD.back : Math.max(AD.calm + AD.delay, AD.next)) - now;
   if (wait > 0) return adsLater(wait);

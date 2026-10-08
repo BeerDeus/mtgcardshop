@@ -12,6 +12,7 @@ dependencies {
     implementation project(':capacitor-community-admob')
     implementation project(':capacitor-community-camera-preview')
     implementation project(':capacitor-firebase-authentication')
+    implementation project(':capacitor-app')
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-push-notifications')
     implementation project(':pantrist-capacitor-plugin-ml-kit-text-recognition')

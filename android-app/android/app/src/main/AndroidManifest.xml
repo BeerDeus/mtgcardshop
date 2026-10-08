@@ -37,6 +37,11 @@
                 android:resource="@xml/widget_value_info" />
         </receiver>
 
+        <!-- Scan : modèle de lecture du texte (ML Kit) téléchargé dès l'installation, pas au premier scan -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
+
         <!-- Notifications (Firebase Cloud Messaging) : petite icône blanche et couleur d'accent ; sans elles, Android affiche un carré blanc. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
