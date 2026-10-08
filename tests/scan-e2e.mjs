@@ -369,10 +369,14 @@ await camN.close();
     for (const k of ['orientation', 'width', 'height']) delete screen[k]; CanvasRenderingContext2D.prototype.rotate = r0; return out;
   });
   assert.deepEqual(rot, [0, 1, 1], 'rotation décidée par l\'écran (écran partagé : fenêtre plus large que haute), repli sur screen.width/height');
+  // miniature de la carte reconnue → carte en grand, visible au-dessus du scan malgré le masquage de la page (html.nat-cam)
+  await np.click('.sc-item[data-k] .sc-th'); await np.waitForSelector('.imgv');
+  assert.deepEqual(await np.evaluate(() => [document.documentElement.classList.contains('nat-cam'), getComputedStyle(document.querySelector('.imgv')).visibility]), [true, 'visible'], 'carte en grand visible pendant le scan natif');
+  await np.click('.imgv-x'); await np.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 });
   await np.click('.scan [data-act="close"]'); await np.waitForTimeout(400);
   assert.equal(await np.evaluate(() => [window.__nat.stops, document.documentElement.classList.contains('nat-cam')].join()), '1,false');
   assert.deepEqual(nat.errs, []); await nat.ctx.close();
-  ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), rotation selon l\'écran, caméra rendue à la fermeture');
+  ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), rotation selon l\'écran, carte en grand visible, caméra rendue à la fermeture');
 
   // démarrage natif raté : caméra native arrêtée (sinon « caméra déjà démarrée » au suivant), page de nouveau opaque, repli sur la caméra du navigateur ; puis la réouverture la redémarre
   const nf = await newPage(bN, world, { goto: false }), fp = nf.p;
