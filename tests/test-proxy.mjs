@@ -32,8 +32,8 @@ const j = async (url, init) => { const r = await fetch(url, init); const t = awa
 let p = await start({ CARDTRADER_TOKEN: 'tok123' }, 18787);
 let B = 'http://127.0.0.1:18787';
 let r = await j(B + '/__ping');      // champ par champ : d'autres fonctions peuvent ajouter les leurs
-for (const [k, v] of Object.entries({ ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '', adUnit: '' })) assert.deepEqual(r.o[k], v, '__ping.' + k);
-console.log('✓ ping (adUnit vide : bandeau de test)');
+for (const [k, v] of Object.entries({ ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '', adUnit: '', fcm: false })) assert.deepEqual(r.o[k], v, '__ping.' + k);
+console.log('✓ ping (adUnit vide : bandeau de test ; fcm : pas de compte de service)');
 r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Mana Orbit<\/title>/); console.log('✓ page servie');
 r = await j(B + '/api/cart/purchase', { method: 'POST', body: '{}' }); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (POST)');
 r = await j(B + '/api/cart/purchase'); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (GET)');

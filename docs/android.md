@@ -202,6 +202,39 @@ L'appli affiche ce message de Google avant la première annonce, aux utilisateur
 - **Sécurité des données** : ajoute ce que collecte le SDK Google Mobile Ads, partagé avec Google pour la publicité : identifiants de l'appareil (identifiant publicitaire), interactions avec l'appli, diagnostics (plantages, performances), position approximative (adresse IP). Liste à jour : https://developers.google.com/admob/android/privacy/play-data-disclosure
 - Une fois l'appli publiée : AdMob › **Applis › Mana Orbit › Paramètres › Infos sur le store**, relie l'appli à sa fiche Play Store. AdMob demandera ensuite un fichier `app-ads.txt` sur le site indiqué dans la fiche : demande-moi, je l'ajoute au serveur.
 
+## Notifications (Firebase Cloud Messaging)
+
+Dans l'appli, les notifications « recherche terminée » et les alertes de prix passent par **Firebase Cloud Messaging** (FCM). La WebView d'Android ne reçoit pas les notifications Web Push du site. Le site, le navigateur et l'appli installée depuis le navigateur (PWA) gardent Web Push (clés VAPID), sans changement.
+
+Le serveur envoie les notifications de l'appli avec un **compte de service** Firebase. À faire une seule fois :
+
+1. Ouvre la **console Firebase** (console.firebase.google.com) et choisis le projet de l'appli, celui du fichier `google-services.json`.
+2. Clique la roue dentée en haut à gauche, puis **Paramètres du projet**, onglet **Comptes de service**.
+3. Clique **Générer une nouvelle clé privée**, puis **Générer la clé**. Un fichier `.json` est téléchargé.
+4. Garde ce fichier en lieu sûr : c'est un secret. Il permet d'envoyer des notifications au nom de ton projet. Ne le mets jamais dans GitHub.
+5. Sur **Hostinger**, ouvre ton site Node.js, puis **Variables d'environnement**. Ajoute `FCM_SERVICE_ACCOUNT`. Comme valeur, mets le contenu du fichier, de l'une de ces deux façons :
+   - **le JSON sur une seule ligne** : ouvre le fichier dans le Bloc-notes et supprime les retours à la ligne entre les champs. Les `\n` écrits dans `private_key` restent tels quels.
+   - **le JSON en base64**, plus sûr si l'interface coupe ou abîme le texte. Dans PowerShell :
+     ```powershell
+     [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\<toi>\Downloads\<fichier>.json")) | Set-Clipboard
+     ```
+     Le résultat est copié : colle-le comme valeur. Sur Mac : `base64 -i fichier.json | pbcopy`.
+6. Enregistre, puis redéploie ou redémarre le site.
+7. Vérifie : `https://card.m2s-photo.fr/__ping` doit afficher `"fcm":true`. Sinon, le journal du serveur dit pourquoi : « Notifications de l'appli (FCM) désactivées : … ».
+8. Dans l'appli : **Réglages › Notifications › Prévenir quand la recherche est finie**, et/ou **Réglages › Alertes de prix**. Android 13 et plus demande alors l'autorisation d'envoyer des notifications.
+
+Sur un serveur à toi, tu peux plutôt donner le chemin du fichier : `FCM_SERVICE_ACCOUNT_FILE=/chemin/vers/fichier.json`.
+
+Bon à savoir :
+
+- Le compte de service doit venir du **même projet** que `google-services.json`. Sinon FCM refuse les jetons (SENDER_ID_MISMATCH) et l'appareil est retiré.
+- L'**API Firebase Cloud Messaging (V1)** doit être active : **Paramètres du projet › Cloud Messaging**. Elle l'est d'office sur les projets récents. Si elle est marquée « Désactivée », clique **⋮ › Gérer l'API dans Google Cloud Console**, puis **Activer**.
+- Toucher une notification ouvre la bonne page : la recherche reprend (« recherche terminée »), ou la feuille des alertes s'ouvre. Si l'appli est déjà ouverte, un message s'affiche en bas de l'écran avec **Voir**.
+- L'appli redemande son jeton FCM à chaque lancement. S'il a changé, les alertes repartent avec le nouveau et l'ancien est effacé du serveur.
+- Un jeton refusé par FCM (appli désinstallée, données effacées) est retiré du serveur, comme un abonnement Web Push expiré.
+- Si les notifications ont été refusées sur le téléphone : **Paramètres › Applications › Mana Orbit › Notifications**.
+- Aucune dépendance côté serveur : `proxy.mjs` signe lui-même la demande de jeton Google (RS256) et garde ce jeton jusqu'à 5 minutes avant son expiration (1 h).
+
 ---
 
 ## 5. Prochaines étapes natives (prévues)

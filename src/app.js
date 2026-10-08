@@ -1127,7 +1127,7 @@ async function detectProxy() {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.fcm = j.fcm === true; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
