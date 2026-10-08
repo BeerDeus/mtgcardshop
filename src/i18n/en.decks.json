@@ -207,7 +207,7 @@
   "Coût {m} : {n}": "Cost {m}: {n}",
   "Réf. Cardmarket {price}": "Cardmarket ref. {price}",
   "Dans ta collection": "In your collection",
-  "Possédé en {n} ex.": "{n} copies owned",
+  "Possédé en {n} ex.": "Owned: {n}",
   "Commandant : {name}": "Commander: {name}",
   "Planeswalker commandant": "Planeswalker commander",
   "Commandant": "Commander",

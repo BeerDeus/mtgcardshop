@@ -3,7 +3,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-const LANGS = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien', pt: 'portugais', jp: 'japonais', 'zh-CN': 'chinois' };
+// Noms des langues de cartes, déjà traduits (« français » / « French ») : on les insère dans des phrases traduites (T('Offres en {lang}', …)).
+const LANGS = { fr: T('français'), en: T('anglais'), de: T('allemand'), es: T('espagnol'), it: T('italien'), pt: T('portugais'), jp: T('japonais'), 'zh-CN': T('chinois') };
 const FLAGS = {
   fr: '<rect width="8" height="16" fill="#0055A4"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#EF4135"/>',
   en: '<rect width="24" height="16" fill="#012169"/><path d="M0 0L24 16M24 0L0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0L24 16M24 0L0 16" stroke="#C8102E" stroke-width="1.1"/><path d="M12 0V16M0 8H24" stroke="#fff" stroke-width="5.4"/><path d="M12 0V16M0 8H24" stroke="#C8102E" stroke-width="3.2"/>',
@@ -164,12 +165,12 @@ function toast(msg, act) {
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), act ? 6500 : 2700);
 }
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); toast('Copié'); return; } catch (e) { /* repli */ }
+  try { await navigator.clipboard.writeText(text); toast(T('Copié')); return; } catch (e) { /* repli */ }
   try {
     const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;top:0';
     document.body.appendChild(ta); ta.select(); const ok = document.execCommand && document.execCommand('copy'); ta.remove();
-    toast(ok ? 'Copié' : 'Copie impossible, sélectionne le texte à la main');
-  } catch (e) { toast('Copie impossible'); }
+    toast(ok ? T('Copié') : T('Copie impossible, sélectionne le texte à la main'));
+  } catch (e) { toast(T('Copie impossible')); }
 }
 async function lockScreen() { try { S.wake = await navigator.wakeLock.request('screen'); } catch (e) { /* refusé */ } }
 function unlockScreen() { try { if (S.wake) S.wake.release(); } catch (e) { /* ignore */ } S.wake = null; }
@@ -229,7 +230,7 @@ function openSheet(title, sub, build) {
     <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="grab"></div>
       <div class="sheet-head"><div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>
-        <button class="icon-btn" type="button" data-close aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button></div>
+        <button class="icon-btn" type="button" data-close aria-label="${T('Fermer')}"><svg class="i"><use href="#i-close"/></svg></button></div>
       <div class="sheet-body"></div><div class="sheet-foot" hidden></div></div>`;
   const prev = document.activeElement;
   $('#toast').classList.remove('on');
@@ -261,15 +262,15 @@ function refreshDeck() {
   const buy = d.cards.filter(c => c.need > 0).length, owned = d.cards.length - buy;
   const chips = [];
   const dk = findDeck(S.deckId);
-  if (dk) chips.push(`<span class="stat deckchip"><b>${esc(dk.name)}</b><button class="stat-x" type="button" data-act="detach" aria-label="Détacher ce deck"><svg class="i"><use href="#i-close"/></svg></button></span>`);
-  if (S.isSample) chips.push('<span class="stat accent"><b>Exemple</b> liste de démonstration</span>');
-  if (d.cards.length) chips.push(`<span class="stat"><b>${buy}</b> carte${buy > 1 ? 's' : ''} à chercher</span>`);
-  if (owned) chips.push(`<span class="stat good"><b>${owned}</b> déjà possédée${owned > 1 ? 's' : ''}</span>`);
-  if (d.basicCopies) chips.push(`<span class="stat"><b>${d.basicCopies}</b> terrains de base à part</span>`);
-  if (d.ignored) chips.push(`<span class="stat warn"><b>${d.ignored}</b> ligne${d.ignored > 1 ? 's' : ''} ignorée${d.ignored > 1 ? 's' : ''}</span>`);
+  if (dk) chips.push(`<span class="stat deckchip"><b>${esc(dk.name)}</b><button class="stat-x" type="button" data-act="detach" aria-label="${T('Détacher ce deck')}"><svg class="i"><use href="#i-close"/></svg></button></span>`);
+  if (S.isSample) chips.push(`<span class="stat accent"><b>${T('Exemple')}</b> ${T('liste de démonstration')}</span>`);
+  if (d.cards.length) chips.push(`<span class="stat">${TN(buy, '<b>{n}</b> carte à chercher', '<b>{n}</b> cartes à chercher')}</span>`);
+  if (owned) chips.push(`<span class="stat good">${TN(owned, '<b>{n}</b> déjà possédée', '<b>{n}</b> déjà possédées')}</span>`);
+  if (d.basicCopies) chips.push(`<span class="stat">${T('<b>{n}</b> terrains de base à part', { n: d.basicCopies })}</span>`);
+  if (d.ignored) chips.push(`<span class="stat warn">${TN(d.ignored, '<b>{n}</b> ligne ignorée', '<b>{n}</b> lignes ignorées')}</span>`);
   $('#deckStats').innerHTML = chips.join('');
   const n = d.cards.length;
-  $('#btnRunLabel').textContent = !n ? 'Colle une liste pour commencer' : buy ? `Chercher les offres · ${buy} carte${buy > 1 ? 's' : ''}` : 'Tout est dans ta collection';
+  $('#btnRunLabel').textContent = !n ? T('Colle une liste pour commencer') : buy ? TN(buy, 'Chercher les offres · {n} carte', 'Chercher les offres · {n} cartes') : T('Tout est dans ta collection');
   $('#btnRun').disabled = !buy;
   paintCollSwitch();
   updateSaveButtons();
@@ -287,8 +288,8 @@ function readOpts() {
 function syncShip() { $('#shipField').hidden = S.opts.mode !== 'direct'; }
 function modeHint() {
   $('#modeHint').textContent = S.opts.mode === 'zero'
-    ? 'CardTrader Zero regroupe tous les vendeurs dans un seul colis (9 à 14 jours). Les frais et la livraison sont calculés par CardTrader.'
-    : 'Chaque vendeur expédie lui-même. Mana Orbit minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
+    ? T('CardTrader Zero regroupe tous les vendeurs dans un seul colis (9 à 14 jours). Les frais et la livraison sont calculés par CardTrader.')
+    : T('Chaque vendeur expédie lui-même. Mana Orbit minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.');
 }
 
 /* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
@@ -305,12 +306,12 @@ function showView(v) {
 }
 
 /* ── Recherche ────────────────────────────────────────────────────────────────────────────── */
-const STEP_DEFS = [['prints', 'Lecture des impressions'], ['catalog', 'Catalogue CardTrader'], ['offers', 'Offres'], ['fallback', 'Repli en anglais']];
-const STEP_CM = [['prints', 'Relevé Cardmarket du jour'], ['catalog', 'Cartes hors relevé (Scryfall)'], ['offers', 'Prix par carte']];
+const STEP_DEFS = [['prints', T('Lecture des impressions')], ['catalog', T('Catalogue CardTrader')], ['offers', T('Offres')], ['fallback', T('Repli en anglais')]];
+const STEP_CM = [['prints', T('Relevé Cardmarket du jour')], ['catalog', T('Cartes hors relevé (Scryfall)')], ['offers', T('Prix par carte')]];
 function buildSteps() {
   const cm = S.run && S.run.src === 'cm';
   $('#steps').innerHTML = (cm ? STEP_CM : STEP_DEFS).map(([id, t]) =>
-    `<li class="step" data-id="${id}" data-state="idle"><span class="st-ico"></span><span>${id === 'offers' && !cm ? `Offres en ${esc(LANGS[S.opts.lang] || S.opts.lang)}` : esc(t)}</span><span class="det"></span></li>`).join('');
+    `<li class="step" data-id="${id}" data-state="idle"><span class="st-ico"></span><span>${id === 'offers' && !cm ? esc(T('Offres en {lang}', { lang: LANGS[S.opts.lang] || S.opts.lang })) : esc(t)}</span><span class="det"></span></li>`).join('');
 }
 function setStep(id, state, detail) {
   const li = $(`.step[data-id="${id}"]`); if (!li) return;
@@ -319,21 +320,21 @@ function setStep(id, state, detail) {
 }
 function setProgress(f) {
   f = Math.max(0, Math.min(1, f));
-  $('#progFill').style.width = (f * 100).toFixed(1) + '%'; $('#progPct').textContent = Math.round(f * 100) + ' %';
+  $('#progFill').style.width = (f * 100).toFixed(1) + '%'; $('#progPct').textContent = T('{n} %', { n: Math.round(f * 100) });
   if (S.run) { S.run.frac = f; paintSearchTask(); }
 }
 function paintSearchTask() {
   const r = S.run, t = r && r.task; if (!t || t.done) return;
-  t.set(Math.round(r.frac * 100), 100, Math.round(r.frac * 100) + ' %' + (r.step ? ' · ' + r.step : ''));
+  t.set(Math.round(r.frac * 100), 100, T('{n} %', { n: Math.round(r.frac * 100) }) + (r.step ? ' · ' + r.step : ''));
 }
-function setRate(rps, total, extra) { $('#progRate').textContent = `${total} requêtes · ${rps.toFixed(1).replace('.', ',')} / s` + (extra ? ' · ' + extra : ''); }
+function setRate(rps, total, extra) { const rs = rps.toFixed(1); $('#progRate').textContent = T('{total} requêtes · {rps} / s', { total, rps: LOC() === 'fr-FR' ? rs.replace('.', ',') : rs }) + (extra ? ' · ' + extra : ''); }
 
 /** Une ligne de la liste : le bouton de la carte + une petite croix (visible une fois la carte scannée). */
 function makeRow(c, i) {
   const rw = document.createElement('div'); rw.className = 'rw'; rw.dataset.key = c.key;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.dataset.key = c.key; b.style.setProperty('--i', i);
-  const x = document.createElement('button'); x.type = 'button'; x.className = 'rx'; x.dataset.key = c.key; x.title = 'Retirer de la liste';
-  x.setAttribute('aria-label', 'Retirer ' + c.name + ' de la liste'); x.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-close"/></svg>';
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'rx'; x.dataset.key = c.key; x.title = T('Retirer de la liste');
+  x.setAttribute('aria-label', T('Retirer {name} de la liste', { name: c.name })); x.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-close"/></svg>';
   rw.append(b, x); return rw;
 }
 function buildList() {
@@ -343,12 +344,12 @@ function buildList() {
   const bs = S.deck.basics;
   const note = $('#basicsNote');
   note.hidden = !bs.length;
-  if (bs.length) note.textContent = 'Terrains de base non cherchés : ' + bs.map(b => `${b.qty} × ${b.name}`).join(', ') + '. Prends-les en lot chez un seul vendeur ou en boutique.';
+  if (bs.length) note.textContent = T('Terrains de base non cherchés : {list}. Prends-les en lot chez un seul vendeur ou en boutique.', { list: bs.map(b => `${b.qty} × ${b.name}`).join(', ') });
   applyView(true);
 }
 
 /* ── Liste : tri, filtres, retrait d'une carte ────────────────────────────────────────────────── */
-const FILTERS = [['all', 'Toutes'], ['none', 'Sans offre'], ['lang', 'Autre langue'], ['manual', 'Choix manuel'], ['own', 'Possédées']];
+const FILTERS = [['all', T('Toutes')], ['none', T('Sans offre')], ['lang', T('Autre langue')], ['manual', T('Choix manuel')], ['own', T('Possédées')]];
 function filterMatch(f, c, v) {
   if (f === 'none') return v.s === 'none' || v.s === 'nohub' || v.s === 'notfound';
   if (f === 'lang') return v.s === 'ok' && v.pick.parts.some(p => p.offer.lang && p.offer.lang !== S.opts.lang);
@@ -405,8 +406,8 @@ function applyView(force) {
 }
 function paintUndo() {
   const n = S.removed.length, bar = $('#undoBar'); bar.hidden = !n; if (!n) return;
-  $('#undoTxt').textContent = n === 1 ? `${S.removed[0].name} retirée de la liste` : `${n} cartes retirées de la liste`;
-  $('#undoAll').textContent = n === 1 ? 'Remettre' : 'Tout remettre';
+  $('#undoTxt').textContent = n === 1 ? T('{name} retirée de la liste', { name: S.removed[0].name }) : T('{n} cartes retirées de la liste', { n });
+  $('#undoAll').textContent = n === 1 ? T('Remettre') : T('Tout remettre');
 }
 /** Retire une carte de la liste (et donc du panier) : ses lignes sortent de la decklist, annulable. */
 function removeCard(key) {
@@ -417,7 +418,7 @@ function removeCard(key) {
   ta.value = r.text; S.isSample = false; refreshDeck(); paintUndo();
   const rw = $$('.rw', $('#list')).find(el => el.dataset.key === key), go = () => scheduleRecompute(true);
   if (rw && !reduceMotion()) { rw.style.pointerEvents = 'none'; try { rw.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(28px) scale(.97)' }], { duration: 190, easing: 'ease-in', fill: 'forwards' }).onfinish = go; } catch (e) { go(); } } else go();
-  toast(`${c.name}${c.qty > 1 ? ' × ' + c.qty : ''} retirée`, { label: 'Annuler', fn: () => undoRemove(false) });
+  toast(T('{name} retirée', { name: c.name + (c.qty > 1 ? ' × ' + c.qty : '') }), { label: T('Annuler'), fn: () => undoRemove(false) });
 }
 /** Annule le dernier retrait, ou tous (dans l'ordre inverse, pour retrouver la liste d'origine). */
 function undoRemove(all) {
@@ -425,26 +426,26 @@ function undoRemove(all) {
   const ta = $('#deckText'); let n = 0, last = null;
   do { last = S.removed.pop(); ta.value = restoreLines(ta.value, last.removed); n++; } while (all && S.removed.length);
   S.isSample = false; refreshDeck(); paintUndo(); haptic('tap'); scheduleRecompute(true);
-  toast(n > 1 ? `${n} cartes remises` : `${last.name} remise`);
+  toast(n > 1 ? T('{n} cartes remises', { n }) : T('{name} remise', { name: last.name }));
 }
 
 /** Message + action pour un refus d'accès du proxy, selon la raison renvoyée (auth_required, forbidden, bad_token, bad_app_key…). */
 function authHint(e, svc = 'CardTrader') {
   const r = e && e.reason;
-  if (r === 'auth_required' && CTX.needsLogin) return { msg: 'Connecte-toi pour utiliser ce serveur : il est réservé à ton compte.', action: 'account', label: 'Se connecter' };
-  if (r === 'forbidden') return { msg: 'Ce compte n\'est pas autorisé sur ce serveur. Dans Compte, copie ton identifiant et ajoute-le à ALLOWED_UIDS (Hostinger).', action: 'account', label: 'Compte' };
-  if (r === 'bad_token') return { msg: 'Connexion au compte invalide : déconnecte-toi puis reconnecte-toi.', action: 'account', label: 'Compte' };
-  if (r === 'token_expired') return { msg: 'Session expirée : relance la recherche.', action: null, label: null };
-  return { msg: svc + ' refuse l\'accès. Vérifie le token ou la clé du proxy.', action: 'settings', label: 'Réglages' };
+  if (r === 'auth_required' && CTX.needsLogin) return { msg: T('Connecte-toi pour utiliser ce serveur : il est réservé à ton compte.'), action: 'account', label: T('Se connecter') };
+  if (r === 'forbidden') return { msg: T('Ce compte n\'est pas autorisé sur ce serveur. Dans Compte, copie ton identifiant et ajoute-le à ALLOWED_UIDS (Hostinger).'), action: 'account', label: T('Compte') };
+  if (r === 'bad_token') return { msg: T('Connexion au compte invalide : déconnecte-toi puis reconnecte-toi.'), action: 'account', label: T('Compte') };
+  if (r === 'token_expired') return { msg: T('Session expirée : relance la recherche.'), action: null, label: null };
+  return { msg: T('{svc} refuse l\'accès. Vérifie le token ou la clé du proxy.', { svc }), action: 'settings', label: T('Réglages') };
 }
 async function startRun(fresh) {
   fresh = fresh === true;                                    // true : « Actualiser les prix » (ignore le cache du serveur)
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
-  if (!cards.some(c => c.need > 0)) { toast('Tout est déjà dans ta collection'); return; }
+  if (!cards.some(c => c.need > 0)) { toast(T('Tout est déjà dans ta collection')); return; }
   if (!S.demo && !S.token && CTX.proxy && CTX.hasToken && CTX.needsLogin && CTX.serverOk == null && typeof D !== 'undefined' && D.user) await checkServer();      // compte tout juste connecté : a-t-il droit au token du serveur ?
   const src = priceSrc();
-  if (COLL.pxRun) { COLL.pxRun.ctrl.abort(); toast('Lecture des prix réels interrompue : la recherche passe avant'); }
+  if (COLL.pxRun) { COLL.pxRun.ctrl.abort(); toast(T('Lecture des prix réels interrompue : la recherche passe avant')); }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
   if (S.run && S.run.task) S.run.task.remove();
   if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
@@ -454,14 +455,14 @@ async function startRun(fresh) {
   S.run = run; S.overrides = {}; S.gone = new Set(); S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null; S.removed = []; S.filter = 'all'; paintUndo();
   run.frac = 0; run.step = ''; run.cacheAge = 0;
   watchSeen($('#progressCard'));
-  const title = src === 'demo' ? 'Recherche simulée' : src === 'cm' ? 'Prix Cardmarket' : 'Recherche des offres';
-  run.task = floatTask(title, { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
+  const title = src === 'demo' ? T('Recherche simulée') : src === 'cm' ? T('Prix Cardmarket') : T('Recherche des offres');
+  run.task = floatTask(title, { total: 100, sub: T('Démarrage…') }, () => sheets.length > 0 || !isSeen($('#progressCard')));
   S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
   $('#segTab').setValue('cards'); $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true;
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
   $('#progTitle').textContent = title;
   $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
-  buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…'; $('#progHint').hidden = true; $('#btnViewer').disabled = true;
+  buildSteps(); setProgress(0); $('#progRate').textContent = T('Démarrage…'); $('#progHint').hidden = true; $('#btnViewer').disabled = true;
   syncSegDeliv(); buildList(); updateHero(); updateDock();
   showView('results'); lockScreen();
 
@@ -496,9 +497,9 @@ async function startRun(fresh) {
       const svc = /scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader';
       const own = typeof location !== 'undefined' && e.host && e.host === location.host;
       const ah = e.code === 'auth' ? authHint(e, svc) : null;
-      const m = { notoken: ['Token CardTrader manquant.', 'settings', 'Réglages'], auth: ah ? [ah.msg, ah.action, ah.label] : [],
-        network: [CTX.proxy ? (/scryfall/.test(e.host || '') && !e.offline ? 'Scryfall ne répond plus (limite probable pour ton IP). Attends 2 minutes ou change de réseau, puis relance : les cartes déjà traitées sont en cache.' : e.offline ? 'Tu es hors ligne. Reconnecte-toi puis relance : les cartes déjà traitées sont en cache.' : own ? 'Le proxy ne répond plus (' + e.host + '). Relance : les cartes déjà traitées sont en cache.' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.') : 'Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.', 'settings', 'Réglages'],
-        rate: [svc + ' limite les requêtes. Réessaie dans une minute.', null, null] }[e.code] || ['La recherche a échoué : ' + (e.message || 'erreur inconnue') + '.', null, null];
+      const m = { notoken: [T('Token CardTrader manquant.'), 'settings', T('Réglages')], auth: ah ? [ah.msg, ah.action, ah.label] : [],
+        network: [CTX.proxy ? (/scryfall/.test(e.host || '') && !e.offline ? T('Scryfall ne répond plus (limite probable pour ton IP). Attends 2 minutes ou change de réseau, puis relance : les cartes déjà traitées sont en cache.') : e.offline ? T('Tu es hors ligne. Reconnecte-toi puis relance : les cartes déjà traitées sont en cache.') : own ? T('Le proxy ne répond plus ({host}). Relance : les cartes déjà traitées sont en cache.', { host: e.host }) : T('Impossible de joindre {host}. Vérifie ta connexion puis relance : les cartes déjà traitées sont en cache.', { host: e.host || T('CardTrader ou Scryfall') })) : T('Impossible de joindre CardTrader depuis le navigateur. Lance le proxy local (node proxy.mjs) et ouvre l\'app depuis http://localhost:8787.'), 'settings', T('Réglages')],
+        rate: [T('{svc} limite les requêtes. Réessaie dans une minute.', { svc }), null, null] }[e.code] || [T('La recherche a échoué : {msg}.', { msg: e.message || T('erreur inconnue') }), null, null];
       run.error = { msg: m[0], action: m[1], label: m[2] };
     }
   } finally {
@@ -509,16 +510,16 @@ async function startRun(fresh) {
       $('#heroPartial').hidden = true; $('#btnCancel').hidden = true; $('#progHint').hidden = true;
       $('#btnViewer').disabled = run.status !== 'done' || !run.live;
       if (run.status === 'done') {
-        setProgress(1); $('#progTitle').textContent = src === 'cm' ? 'Prix Cardmarket' : 'Recherche terminée';
+        setProgress(1); $('#progTitle').textContent = src === 'cm' ? T('Prix Cardmarket') : T('Recherche terminée');
         { const h = $('#hero'); h.classList.remove('shine'); void h.offsetWidth; h.classList.add('shine'); }      // un reflet passe sur le total, une fois
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
-      } else { $('#progTitle').textContent = run.status === 'cancelled' ? 'Recherche arrêtée' : 'Recherche interrompue'; }
+      } else { $('#progTitle').textContent = run.status === 'cancelled' ? T('Recherche arrêtée') : T('Recherche interrompue'); }
       updateAlerts(); updateDock();
       haptic(run.status === 'done' ? (S.deck.cards.some(c => /^(none|nohub|notfound)$/.test(cardView(c).s)) ? 'warn' : 'ok') : run.status === 'error' ? 'bad' : 'tap');
       const t = run.task;
-      if (run.status === 'done') { const n = S.deck.cards.filter(c => c.need > 0).length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish(src === 'cm' ? 'Prix Cardmarket lus' : 'Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} ${src === 'cm' ? 'avec un prix' : 'avec offre'}`); }
+      if (run.status === 'done') { const n = S.deck.cards.filter(c => c.need > 0).length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish(src === 'cm' ? T('Prix Cardmarket lus') : T('Recherche terminée'), ok === n ? 'ok' : 'warn', src === 'cm' ? TN(n, '{ok} / {n} carte avec un prix', '{ok} / {n} cartes avec un prix', { ok }) : TN(n, '{ok} / {n} carte avec offre', '{ok} / {n} cartes avec offre', { ok })); }
       else if (run.status === 'cancelled') t.remove();
-      else t.finish('Recherche interrompue', 'bad', run.error ? run.error.msg : '');
+      else t.finish(T('Recherche interrompue'), 'bad', run.error ? run.error.msg : '');
     }
   }
 }
@@ -573,7 +574,7 @@ function foundCount(r) { return S.deck.cards.filter(c => { const p = r.picks[c.k
 function syncSegDeliv() {
   const seg = $('#segDeliv'), cm = isCm();
   seg.hidden = cm; $('#segTab').closest('.toolbar').hidden = cm;           // prix Cardmarket : ni livraison ni vendeurs
-  if (!seg._init) { mountSeg(seg, [{ v: 'zero', label: 'Zero · 1 colis', sub: '—' }, { v: 'direct', label: 'Direct · —', sub: '—' }], S.opts.mode, v => { S.opts.mode = v; $('#segMode').setValue(v); syncShip(); modeHint(); saveStore(); recompute(); }); seg._init = true; }
+  if (!seg._init) { mountSeg(seg, [{ v: 'zero', label: T('Zero · 1 colis'), sub: '—' }, { v: 'direct', label: 'Direct · —', sub: '—' }], S.opts.mode, v => { S.opts.mode = v; $('#segMode').setValue(v); syncShip(); modeHint(); saveStore(); recompute(); }); seg._init = true; }
   seg.setValue(S.opts.mode);
 }
 function updateHero() {
@@ -581,22 +582,22 @@ function updateHero() {
   const running = S.run && S.run.status === 'running';
   tween($('#heroAmt'), totalOf(r));
   const cm = isCm();
-  $('#heroLabel').textContent = cm ? 'Prix Cardmarket, à partir de' : S.opts.mode === 'zero' ? 'Total articles' : 'Total estimé, port inclus';
-  $('#heroCount').textContent = `${foundCount(r)} / ${S.deck.cards.filter(c => c.need > 0).length} cartes`;
-  $('#heroSellers').textContent = cm ? 'Prix tendance, hors port' : S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
+  $('#heroLabel').textContent = cm ? T('Prix Cardmarket, à partir de') : S.opts.mode === 'zero' ? T('Total articles') : T('Total estimé, port inclus');
+  $('#heroCount').textContent = T('{found} / {total} cartes', { found: foundCount(r), total: S.deck.cards.filter(c => c.need > 0).length });
+  $('#heroSellers').textContent = cm ? T('Prix tendance, hors port') : S.opts.mode === 'zero' ? T('Un colis via Zero') : TN(r.sellerCount, '{n} vendeur', '{n} vendeurs');
   const sv = $('#heroSave'), diff = S.opts.mode === 'direct' && !cm ? r.baseline.total - r.total : 0;
-  sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = `Économie de ${fmt(diff)} avec le regroupement`;
+  sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = T('Économie de {amount} avec le regroupement', { amount: fmt(diff) });
   updateHeroDelta(); updateRecap();
   const seg = $('#segDeliv');
-  seg.setSub('zero', fmt(z.items) + ' + frais'); seg.setLabel('direct', `Direct · ${d.sellerCount} vendeur${d.sellerCount > 1 ? 's' : ''}`); seg.setSub('direct', fmt(d.total));
+  seg.setSub('zero', T('{amount} + frais', { amount: fmt(z.items) })); seg.setLabel('direct', TN(d.sellerCount, 'Direct · {n} vendeur', 'Direct · {n} vendeurs')); seg.setSub('direct', fmt(d.total));
 }
 function updateDock() {
   const r = curRes(); const running = S.run && S.run.status === 'running';
   const cm = isCm();
-  $('#dockSmall').textContent = (cm ? 'Prix Cardmarket' : S.opts.mode === 'zero' ? 'Articles · Zero' : 'Port inclus · Direct') + (running ? ' · en cours' : '');
+  $('#dockSmall').textContent = (cm ? T('Prix Cardmarket') : S.opts.mode === 'zero' ? T('Articles · Zero') : T('Port inclus · Direct')) + (running ? ' · ' + T('en cours') : '');
   tween($('#dockTotal'), totalOf(r));
   $('#btnCart').disabled = running || !foundCount(r);
-  $('#btnCartTxt').textContent = cm ? 'Copier pour Cardmarket' : 'Remplir le panier';
+  $('#btnCartTxt').textContent = cm ? T('Copier pour Cardmarket') : T('Remplir le panier');
 }
 
 /* ── Rendu : lignes ───────────────────────────────────────────────────────────────────────── */
@@ -629,36 +630,36 @@ function updateRow(el, c, v, st) {
   const img = (top && top.img) || (st && st.img);
   const thumb = `<span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
   const qty = c.need > 1 ? `<span class="tag accent">× ${c.need}</span>` : '';
-  const ownTag = c.own > 0 && c.need > 0 ? `<span class="tag good">${c.own} possédée${c.own > 1 ? 's' : ''}</span>` : '';
+  const ownTag = c.own > 0 && c.need > 0 ? `<span class="tag good">${TN(c.own, '{n} possédée', '{n} possédées')}</span>` : '';
   const langName = LANGS[S.opts.lang] || S.opts.lang;
   el.classList.toggle('is-missing', v.s === 'none' || v.s === 'notfound' || v.s === 'nohub');
   el.classList.toggle('is-own', v.s === 'own');
   if (v.s === 'loading') {
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
   } else if (v.s === 'own') {
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">Dans ta collection</span></span></span><span class="row-price"><span class="tag good">Possédée</span></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">${T('Dans ta collection')}</span></span></span><span class="row-price"><span class="tag good">${T('Possédée')}</span></span>`;
   } else if (v.s === 'ok' && top.cm) {
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}<span class="tag">Cardmarket</span></span><span class="row-seller">Tendance${n > 1 ? ' · ' + n + ' × ' + fmt(top.price) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost)}</b></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}<span class="tag">Cardmarket</span></span><span class="row-seller">${T('Tendance')}${n > 1 ? ' · ' + n + ' × ' + fmt(top.price) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost)}</b></span>`;
   } else if (v.s === 'ok') {
     const tags = [];
     tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
     tags.push(`<span class="tag">${esc(COND_SHORT[top.cond] || top.cond || '?')}</span>`);
     if (top.lang) tags.unshift(langTag(top.lang));
     if (top.foil) tags.push('<span class="tag accent">Foil</span>');
-    if (pick.parts.length > 1) tags.push(`<span class="tag">+${pick.parts.length - 1} offre${pick.parts.length > 2 ? 's' : ''}</span>`);
-    if (pick.short > 0) tags.push(`<span class="tag warn">Il en manque ${pick.short}</span>`);
-    if (ri) tags.push(`<span class="tag ref ${ri.level}" title="Prix de référence Cardmarket par exemplaire (donné par Scryfall) : ${esc(fmt(ri.ref))}. Ton prix : ${esc(fmt(ri.unit))}.">CM ${esc(fmt(ri.ref))}${ri.level === 'warn' ? ' · +' + ri.pct + ' %' : ''}</span>`);
+    if (pick.parts.length > 1) tags.push(`<span class="tag">${TN(pick.parts.length - 1, '+{n} offre', '+{n} offres')}</span>`);
+    if (pick.short > 0) tags.push(`<span class="tag warn">${T('Il en manque {n}', { n: pick.short })}</span>`);
+    if (ri) tags.push(`<span class="tag ref ${ri.level}" title="${esc(T('Prix de référence Cardmarket par exemplaire (donné par Scryfall) : {ref}. Ton prix : {unit}.', { ref: fmt(ri.ref), unit: fmt(ri.unit) }))}">CM ${esc(fmt(ri.ref))}${ri.level === 'warn' ? ' · +' + T('{n} %', { n: ri.pct }) : ''}</span>`);
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
     const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
-    const msg = v.s === 'notfound' ? 'Nom introuvable, vérifie l\'orthographe'
-      : v.s === 'none' && isCm() ? 'Pas de prix Cardmarket connu'
-      : v.s === 'stale' ? 'Collection modifiée : relance la recherche'
-      : v.s === 'nohub' ? 'Aucune offre compatible Zero'
-        : (st && st.fellBack ? 'Aucune offre, même en anglais' : `Aucune offre en ${langName}`);
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span>${ownTag ? `<span class="row-meta">${ownTag}</span>` : ''}<span class="row-miss">${esc(msg)}</span></span><span class="row-price">${v.s === 'stale' ? '' : `<span class="tag">${v.s === 'notfound' ? 'Erreur' : 'Voir'}</span>`}</span>`;
+    const msg = v.s === 'notfound' ? T('Nom introuvable, vérifie l\'orthographe')
+      : v.s === 'none' && isCm() ? T('Pas de prix Cardmarket connu')
+      : v.s === 'stale' ? T('Collection modifiée : relance la recherche')
+      : v.s === 'nohub' ? T('Aucune offre compatible Zero')
+        : (st && st.fellBack ? T('Aucune offre, même en anglais') : T('Aucune offre en {lang}', { lang: langName }));
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span>${ownTag ? `<span class="row-meta">${ownTag}</span>` : ''}<span class="row-miss">${esc(msg)}</span></span><span class="row-price">${v.s === 'stale' ? '' : `<span class="tag">${v.s === 'notfound' ? T('Erreur') : T('Voir')}</span>`}</span>`;
   }
 }
 
@@ -668,9 +669,9 @@ function renderSellers(animate) {
   host.innerHTML = r.sellers.map((g, i) => {
     const items = g.items.slice().sort((a, b) => nameOf(a.key).localeCompare(nameOf(b.key))).map(it =>
       `<div class="gi"><span>${it.n > 1 ? it.n + ' × ' : ''}${esc(nameOf(it.key))}${it.offer.lang ? flag(it.offer.lang) : ''}</span><span>${fmt(it.offer.price * it.n, it.offer.cur)}</span></div>`).join('');
-    return `<div class="group" style="--i:${animate ? i : 0}${animate ? '' : ';animation:none'}"><div class="group-head"><div class="who"><b>${esc(g.seller)}</b><span class="tag">${esc(g.country || '?')}</span>${g.hub ? '<span class="tag good">Zero</span>' : ''}</div><div class="sum">${fmt(g.subtotal, g.items[0].offer.cur)}<small>${g.count} carte${g.count > 1 ? 's' : ''}</small></div></div>${items}</div>`;
-  }).join('') || '<p class="hint">Aucune offre retenue pour le moment.</p>';
-  const seg = $('#segTab'); seg.setLabel('cards', `Cartes · ${foundCount(r)}`); seg.setLabel('sellers', `Vendeurs · ${r.sellerCount}`);
+    return `<div class="group" style="--i:${animate ? i : 0}${animate ? '' : ';animation:none'}"><div class="group-head"><div class="who"><b>${esc(g.seller)}</b><span class="tag">${esc(g.country || '?')}</span>${g.hub ? '<span class="tag good">Zero</span>' : ''}</div><div class="sum">${fmt(g.subtotal, g.items[0].offer.cur)}<small>${TN(g.count, '{n} carte', '{n} cartes')}</small></div></div>${items}</div>`;
+  }).join('') || `<p class="hint">${T('Aucune offre retenue pour le moment.')}</p>`;
+  const seg = $('#segTab'); seg.setLabel('cards', T('Cartes · {n}', { n: foundCount(r) })); seg.setLabel('sellers', T('Vendeurs · {n}', { n: r.sellerCount }));
 }
 
 /* ── Alertes ──────────────────────────────────────────────────────────────────────────────── */
@@ -678,8 +679,8 @@ function updateAlerts() {
   if (!S.run) return;
   const items = [];
   if (S.run.error) items.push({ k: 'bad', html: esc(S.run.error.msg) + (S.run.error.action ? ` <button type="button" data-act="${S.run.error.action}">${esc(S.run.error.label)}</button>` : '') });
-  if (S.run.status === 'cancelled') items.push({ k: '', html: 'Recherche arrêtée : les résultats sont partiels.' });
-  if (S.run.status === 'done' && S.run.cacheAge >= 90) { const m = Math.round(S.run.cacheAge / 60), ago = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''); items.push({ k: '', html: `Prix lus il y a ${ago} (cache du serveur). <button type="button" data-act="refresh">Actualiser les prix</button>` }); }
+  if (S.run.status === 'cancelled') items.push({ k: '', html: T('Recherche arrêtée : les résultats sont partiels.') });
+  if (S.run.status === 'done' && S.run.cacheAge >= 90) { const m = Math.round(S.run.cacheAge / 60), ago = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''); items.push({ k: '', html: `${T('Prix lus il y a {ago} (cache du serveur).', { ago })} <button type="button" data-act="refresh">${T('Actualiser les prix')}</button>` }); }
   if (S.run.status !== 'running') {
     let none = 0, nohub = 0, nf = [], short = 0, enNone = 0, enHub = 0, stale = 0;
     for (const c of S.deck.cards) {
@@ -687,15 +688,16 @@ function updateAlerts() {
       if (v.s === 'none') { none++; if (cand) enNone++; } else if (v.s === 'nohub') { nohub++; if (cand) enHub++; }
       else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'stale') stale++; else if (v.s === 'ok' && v.pick.short > 0) short++;
     }
-    const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en' ? ' ni en anglais' : '';
-    const enBtn = n => n ? ' <button type="button" data-act="en-all">Trouver en anglais</button>' : '';
-    if (stale) items.push({ k: '', html: `${stale} carte${stale > 1 ? 's' : ''} ${stale > 1 ? 'ne sont plus' : 'n\'est plus'} dans ta collection : prix à chercher. <button type="button" data-act="rerun">Relancer la recherche</button>` });
-    if (S.enBusy) items.push({ k: '', html: `Recherche en anglais · ${S.enBusy.done} / ${S.enBusy.total}…` });
-    if (none && isCm()) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans prix Cardmarket connu. <button type="button" data-act="goto">Voir</button>` });
-    else if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>${enBtn(enNone)}` });
-    if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>${enBtn(enHub)}` });
-    if (nf.length) items.push({ k: 'bad', html: `Nom introuvable : ${esc(nf.slice(0, 3).join(', '))}${nf.length > 3 ? '…' : ''}` });
-    if (short) items.push({ k: '', html: `${short} carte${short > 1 ? 's' : ''} en quantité insuffisante.` });
+    const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en';
+    const enBtn = n => n ? ` <button type="button" data-act="en-all">${T('Trouver en anglais')}</button>` : '';
+    const seeBtn = ` <button type="button" data-act="goto">${T('Voir')}</button>`;
+    if (stale) items.push({ k: '', html: `${TN(stale, '{n} carte n\'est plus dans ta collection : prix à chercher.', '{n} cartes ne sont plus dans ta collection : prix à chercher.')} <button type="button" data-act="rerun">${T('Relancer la recherche')}</button>` });
+    if (S.enBusy) items.push({ k: '', html: T('Recherche en anglais · {done} / {total}…', { done: S.enBusy.done, total: S.enBusy.total }) });
+    if (none && isCm()) items.push({ k: '', html: TN(none, '{n} carte sans prix Cardmarket connu.', '{n} cartes sans prix Cardmarket connu.') + seeBtn });
+    else if (none) items.push({ k: '', html: (en ? TN(none, '{n} carte sans offre en {lang} ni en anglais.', '{n} cartes sans offre en {lang} ni en anglais.', { lang: esc(ln) }) : TN(none, '{n} carte sans offre en {lang}.', '{n} cartes sans offre en {lang}.', { lang: esc(ln) })) + seeBtn + enBtn(enNone) });
+    if (nohub) items.push({ k: '', html: `${TN(nohub, '{n} carte sans offre compatible Zero.', '{n} cartes sans offre compatible Zero.')} <button type="button" data-act="direct">${T('Passer en Direct')}</button>${enBtn(enHub)}` });
+    if (nf.length) items.push({ k: 'bad', html: T('Nom introuvable : {names}', { names: esc(nf.slice(0, 3).join(', ')) + (nf.length > 3 ? '…' : '') }) });
+    if (short) items.push({ k: '', html: TN(short, '{n} carte en quantité insuffisante.', '{n} cartes en quantité insuffisante.') });
   }
   const host = $('#alerts'), sig = JSON.stringify(items);
   if (host._sig === sig) return; host._sig = sig;
@@ -711,7 +713,7 @@ async function findEnglishAll() {
   const ctrl = S.enCtrl = new AbortController(), run = S.run;
   S.enBusy = { done: 0, total: cands.length }; updateAlerts();
   watchSeen($('#alerts'));
-  const task = floatTask('Recherche en anglais', { total: cands.length, sub: `0 / ${cands.length}` }, () => sheets.length > 0 || !isSeen($('#alerts')));
+  const task = floatTask(T('Recherche en anglais'), { total: cands.length, sub: `0 / ${cands.length}` }, () => sheets.length > 0 || !isSeen($('#alerts')));
   let failed = 0, aborted = false, i = 0;
   const worker = async () => {
     while (i < cands.length && !ctrl.signal.aborted) {
@@ -728,8 +730,10 @@ async function findEnglishAll() {
   if (aborted || S.run !== run) { task.remove(); updateAlerts(); return; }
   scheduleRecompute(true);
   const ok = cands.filter(c => cardView(c).s === 'ok').length;
-  const msg = `${ok} / ${cands.length} carte${cands.length > 1 ? 's' : ''} trouvée${ok > 1 ? 's' : ''} en anglais${failed ? ` · ${failed} erreur${failed > 1 ? 's' : ''}` : ''}`;
-  const shown = task.isShown(); task.finish('Recherche en anglais terminée', ok === cands.length ? 'ok' : 'warn', msg);
+  // Le français accorde « cartes » avec le total et « trouvée(s) » avec le nombre trouvé : trois phrases distinctes.
+  const msg = T(cands.length > 1 ? (ok > 1 ? '{ok} / {total} cartes trouvées en anglais' : '{ok} / {total} cartes trouvée en anglais') : '{ok} / {total} carte trouvée en anglais', { ok, total: cands.length })
+    + (failed ? ' · ' + TN(failed, '{n} erreur', '{n} erreurs') : '');
+  const shown = task.isShown(); task.finish(T('Recherche en anglais terminée'), ok === cands.length ? 'ok' : 'warn', msg);
   if (!shown) toast(msg);
 }
 
@@ -746,16 +750,16 @@ function updateRecap() {
   const langs = Object.keys(r.byLang).sort((a, b) => (b === S.opts.lang) - (a === S.opts.lang) || r.byLang[b].cards - r.byLang[a].cards);
   const chip = (cls, html) => `<span class="rchip ${cls}">${html}</span>`;
   const chips = langs.filter(l => r.byLang[l].cards > 0 || r.byLang[l].copies > 0).map(l => chip(l === S.opts.lang ? '' : 'warn', `${flag(l)}<b>${r.byLang[l].cards}</b> ${esc(LANGS[l] || l)}`));
-  if (own) chips.push(chip('good', `<b>${own}</b> possédée${own > 1 ? 's' : ''}`));
-  if (r.none) chips.push(chip('warn', `<b>${r.none}</b> sans offre`));
-  if (r.nohub) chips.push(chip('warn', `<b>${r.nohub}</b> hors Zero`));
-  if (r.partial) chips.push(chip('warn', `<b>${r.partial}</b> incomplète${r.partial > 1 ? 's' : ''}`));
-  if (r.notfound) chips.push(chip('bad', `<b>${r.notfound}</b> introuvable${r.notfound > 1 ? 's' : ''}`));
-  if (r.loading) chips.push(chip('', `<b>${r.loading}</b> en cours`));
-  const foil = S.opts.foil === 'no' ? 'non-foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non';
-  const crit = isCm() ? ['prix tendance Cardmarket', 'impression la moins chère', 'hors port'] : [LANGS[S.opts.lang] || S.opts.lang, 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), foil, S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
-  if (!isCm() && S.opts.fallbackEn && S.opts.lang !== 'en') crit.push('repli anglais');
-  const html = `<div class="recap-top"><b>${r.found}</b><span> / ${r.total} cartes trouvées</span><i></i><span>${r.copies} exemplaire${r.copies > 1 ? 's' : ''}</span></div>`
+  if (own) chips.push(chip('good', TN(own, '<b>{n}</b> possédée', '<b>{n}</b> possédées')));
+  if (r.none) chips.push(chip('warn', T('<b>{n}</b> sans offre', { n: r.none })));
+  if (r.nohub) chips.push(chip('warn', T('<b>{n}</b> hors Zero', { n: r.nohub })));
+  if (r.partial) chips.push(chip('warn', TN(r.partial, '<b>{n}</b> incomplète', '<b>{n}</b> incomplètes')));
+  if (r.notfound) chips.push(chip('bad', TN(r.notfound, '<b>{n}</b> introuvable', '<b>{n}</b> introuvables')));
+  if (r.loading) chips.push(chip('', T('<b>{n}</b> en cours', { n: r.loading })));
+  const foil = S.opts.foil === 'no' ? T('non-foil') : S.opts.foil === 'yes' ? 'foil' : T('foil ou non');
+  const crit = isCm() ? [T('prix tendance Cardmarket'), T('impression la moins chère'), T('hors port')] : [LANGS[S.opts.lang] || S.opts.lang, T('état ≥ {cond}', { cond: COND_SHORT[S.opts.cond] || S.opts.cond }), foil, S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
+  if (!isCm() && S.opts.fallbackEn && S.opts.lang !== 'en') crit.push(T('repli anglais'));
+  const html = `<div class="recap-top"><b>${r.found}</b><span> / ${T('{n} cartes trouvées', { n: r.total })}</span><i></i><span>${TN(r.copies, '{n} exemplaire', '{n} exemplaires')}</span></div>`
     + (chips.length ? `<div class="recap-chips">${chips.join('')}</div>` : '')
     + `<div class="recap-crit">${esc(crit.join(' · ').replace(/^./, m => m.toUpperCase()))}</div>`;
   if (host._sig !== html) { host._sig = html; host.innerHTML = html; }
@@ -773,64 +777,65 @@ function openCardSheet(key) {
   const ownBtn = api => {
     if (!need0) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'link-btn link-inline ownbtn';
-    b.textContent = need0 > 1 ? `Je possède déjà ces ${need0} exemplaires` : 'Je possède déjà cette carte';
-    b.onclick = () => { collBump(ownKey(c.name), c.name, need0); api.close(); haptic('ok'); scheduleRecompute(true); toast(`${c.name} ajoutée à ta collection`, { label: 'Annuler', fn: () => { collBump(ownKey(c.name), c.name, -need0); scheduleRecompute(true); } }); };
+    b.textContent = need0 > 1 ? T('Je possède déjà ces {n} exemplaires', { n: need0 }) : T('Je possède déjà cette carte');
+    b.onclick = () => { collBump(ownKey(c.name), c.name, need0); api.close(); haptic('ok'); scheduleRecompute(true); toast(T('{name} ajoutée à ta collection', { name: c.name }), { label: T('Annuler'), fn: () => { collBump(ownKey(c.name), c.name, -need0); scheduleRecompute(true); } }); };
     api.body.appendChild(b);
   };
   if (isCm()) {
-    openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
+    openSheet(c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
       const o = (S.fo[key] || [])[0];
-      api.body.innerHTML = `${o ? `<div class="cm-price"><b>${fmt(o.price)}</b><span>Prix tendance Cardmarket de l'impression la moins chère, par exemplaire.</span></div>` : `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : 'Aucun prix Cardmarket connu pour cette carte.'}</p>`}
-        <a class="btn ghost small" href="${esc(cmUrl(c.name, S.opts.lang))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">Voir sur Cardmarket ↗</a>
-        <p class="hint">Les offres réelles des vendeurs, leur port et le remplissage du panier demandent ton token CardTrader (Réglages › Prix).</p>`;
+      api.body.innerHTML = `${o ? `<div class="cm-price"><b>${fmt(o.price)}</b><span>${T('Prix tendance Cardmarket de l\'impression la moins chère, par exemplaire.')}</span></div>` : `<p class="hint">${st.notFound ? T('Scryfall ne connaît pas ce nom. Corrige-le dans la liste.') : T('Aucun prix Cardmarket connu pour cette carte.')}</p>`}
+        <a class="btn ghost small" href="${esc(cmUrl(c.name, S.opts.lang))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">${T('Voir sur Cardmarket ↗')}</a>
+        <p class="hint">${T('Les offres réelles des vendeurs, leur port et le remplissage du panier demandent ton token CardTrader (Réglages › Prix).')}</p>`;
       ownBtn(api); alWatchBtn(api, c.name);
     });
     return;
   }
-  openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
+  openSheet(c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
     if (!list.length) {
       const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
       const hubOnly = !st.notFound && (S.fo[key] || []).length > 0; // des offres existent, mais aucune compatible Zero
       const ln = LANGS[S.opts.lang] || S.opts.lang;
-      api.body.innerHTML = `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : hubOnly ? `Des offres en ${esc(ln)} existent, mais aucune n'est compatible Zero. Passe en Direct pour les voir${canEn ? ', ou cherche en anglais' : ''}.` : 'Aucune offre ne correspond à tes critères.'}</p>`;
+      api.body.innerHTML = `<p class="hint">${st.notFound ? T('Scryfall ne connaît pas ce nom. Corrige-le dans la liste.') : hubOnly ? T(canEn ? 'Des offres en {lang} existent, mais aucune n\'est compatible Zero. Passe en Direct pour les voir, ou cherche en anglais.' : 'Des offres en {lang} existent, mais aucune n\'est compatible Zero. Passe en Direct pour les voir.', { lang: esc(ln) }) : T('Aucune offre ne correspond à tes critères.')}</p>`;
+      const enBtn = `<button class="btn" type="button" id="btnEn">${T('Chercher en anglais')}</button>`;
       if (hubOnly && mode === 'zero') {
-        api.setFoot(`<button class="btn ghost" type="button" id="btnDirect">Passer en Direct</button>${canEn ? '<button class="btn" type="button" id="btnEn">Chercher en anglais</button>' : ''}`);
+        api.setFoot(`<button class="btn ghost" type="button" id="btnDirect">${T('Passer en Direct')}</button>${canEn ? enBtn : ''}`);
         $('#btnDirect', api.foot).onclick = () => { S.opts.mode = 'direct'; $('#segMode').setValue('direct'); syncSegDeliv(); syncShip(); modeHint(); saveStore(); recompute(); api.close(); };
-      } else if (canEn) api.setFoot('<button class="btn" type="button" id="btnEn">Chercher en anglais</button>');
+      } else if (canEn) api.setFoot(enBtn);
       ownBtn(api); alWatchBtn(api, c.name);
       if (canEn) {
         $('#btnEn', api.foot).onclick = async e => {
-          e.target.disabled = true; e.target.textContent = 'Recherche…';
+          e.target.disabled = true; e.target.textContent = T('Recherche…');
           try {
             const offers = S.demo ? makeDemoOffers(c, 'en') : await searchOneEnglish(c, st, S.opts, S.run.ctrl.signal);
             if (S.demo) await sleep(350);
-            st.offers = st.offers.concat(offers); st.fellBack = true; st.fetched = true; scheduleRecompute(true); api.close(); toast(offers.length ? 'Offres anglaises ajoutées' : 'Aucune offre en anglais non plus');
-          } catch (err) { e.target.disabled = false; e.target.textContent = 'Chercher en anglais'; toast('Recherche impossible : ' + (err.message || 'erreur')); }
+            st.offers = st.offers.concat(offers); st.fellBack = true; st.fetched = true; scheduleRecompute(true); api.close(); toast(offers.length ? T('Offres anglaises ajoutées') : T('Aucune offre en anglais non plus'));
+          } catch (err) { e.target.disabled = false; e.target.textContent = T('Chercher en anglais'); toast(T('Recherche impossible : {msg}', { msg: err.message || T('erreur') })); }
         };
       }
       return;
     }
-    const link = o => S.run.live && o.bpId != null ? `<a class="o-ext" href="${esc(ctCardUrl(o.bpId))}" target="_blank" rel="noopener noreferrer" aria-label="Voir la carte sur CardTrader" title="Voir sur CardTrader"><svg class="i" aria-hidden="true"><use href="#i-ext"/></svg></a>` : '';
+    const link = o => S.run.live && o.bpId != null ? `<a class="o-ext" href="${esc(ctCardUrl(o.bpId))}" target="_blank" rel="noopener noreferrer" aria-label="${T('Voir la carte sur CardTrader')}" title="${T('Voir sur CardTrader')}"><svg class="i" aria-hidden="true"><use href="#i-ext"/></svg></a>` : '';
     api.body.innerHTML = `<div class="offers">${list.map(o => `<div class="offer-row"><button type="button" class="offer" data-id="${esc(o.id)}" aria-pressed="${chosen.has(o.id)}">
       <span class="o-who">${esc(o.seller)}${o.country ? `<i>${esc(o.country)}</i>` : ''}</span><span class="o-price">${fmt(o.price, o.cur)}</span>
-      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${o.qty} dispo</span></span></button>${link(o)}</div>`).join('')}</div>
-      ${ri ? `<p class="hint refline" data-l="${ri.level}"><b>Réf. Cardmarket ${esc(fmt(ri.ref))}</b> par exemplaire (prix Scryfall) · ton prix ${esc(fmt(ri.unit))}${ri.diff === 0 ? '' : ` (${ri.pct > 0 ? '+' : '−'}${Math.abs(ri.pct)} %)`}</p>` : ''}
-      ${mode === 'zero' ? '<p class="hint">Seules les offres compatibles Zero sont listées.</p>' : ''}${S.run.live ? '<p class="hint">Touche ↗ pour voir la carte et ses vendeurs sur CardTrader.</p>' : ''}`;
+      <span class="o-meta"><span class="tag">${esc((o.set || '').toUpperCase())}${o.num ? ' ' + esc(o.num) : ''}</span><span class="tag">${esc(COND_SHORT[o.cond] || o.cond)}</span>${langTag(o.lang)}${o.foil ? '<span class="tag accent">Foil</span>' : ''}${o.hub ? '<span class="tag good">Zero</span>' : ''}<span class="tag">${T('{n} dispo', { n: o.qty })}</span></span></button>${link(o)}</div>`).join('')}</div>
+      ${ri ? `<p class="hint refline" data-l="${ri.level}">${T('<b>Réf. Cardmarket {ref}</b> par exemplaire (prix Scryfall) · ton prix {unit}', { ref: esc(fmt(ri.ref)), unit: esc(fmt(ri.unit)) })}${ri.diff === 0 ? '' : ` (${ri.pct > 0 ? '+' : '−'}${T('{n} %', { n: Math.abs(ri.pct) })})`}</p>` : ''}
+      ${mode === 'zero' ? `<p class="hint">${T('Seules les offres compatibles Zero sont listées.')}</p>` : ''}${S.run.live ? `<p class="hint">${T('Touche ↗ pour voir la carte et ses vendeurs sur CardTrader.')}</p>` : ''}`;
     ownBtn(api); alWatchBtn(api, c.name);
     api.body.onclick = e => {
       const b = e.target.closest('.offer'); if (!b) return;
       const id = list.find(o => String(o.id) === b.dataset.id); if (!id) return;
-      S.overrides[key] = id.id; haptic('tap'); scheduleRecompute(true); api.close(); toast('Offre choisie');
+      S.overrides[key] = id.id; haptic('tap'); scheduleRecompute(true); api.close(); toast(T('Offre choisie'));
     };
     if (S.overrides[key]) {
-      api.setFoot('<button class="btn ghost" type="button" id="btnAuto">Revenir au choix automatique</button>');
+      api.setFoot(`<button class="btn ghost" type="button" id="btnAuto">${T('Revenir au choix automatique')}</button>`);
       $('#btnAuto', api.foot).onclick = () => { delete S.overrides[key]; scheduleRecompute(true); api.close(); };
     }
   });
 }
 
 /** Prix Cardmarket : copie les cartes à acheter pour une Wants list Cardmarket (Shopping Wizard). */
-function cmCopyRun() { cmCopy(S.deck.cards.filter(c => c.need > 0).map(c => ({ n: c.name, q: c.need })), 'tout est déjà dans ta collection'); }
+function cmCopyRun() { cmCopy(S.deck.cards.filter(c => c.need > 0).map(c => ({ n: c.name, q: c.need })), T('tout est déjà dans ta collection')); }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
 function cartParts() {
@@ -848,8 +853,8 @@ function openCartSheet() {
   const r = curRes(), parts = cartParts(); if (!parts.length) return;
   const nItems = parts.reduce((a, p) => a + p.n, 0);
   const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
-  const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
-  openSheet('Remplir le panier', 'CardTrader', api => {
+  const plural = cartPlural;
+  openSheet(T('Remplir le panier'), 'CardTrader', api => {
     const status = (msg, ok = 0) => `<div class="status" data-ok="${ok}"><span class="dot"></span><span>${msg}</span></div>`;
     const begin = msg => { api.setFoot(''); api.body.innerHTML = status(`<span id="cartMsg">${esc(msg)}</span>`) + '<div class="track cartbar"><div class="fill" id="cartFill"></div></div>'; };
     let task = null;
@@ -859,10 +864,10 @@ function openCartSheet() {
       if (task) task.set(i, n, `${short} ${i} / ${n}`);
     };
     const intro = () => {
-      api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
-        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Mana Orbit), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
-        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}</p>`;
-      api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
+      api.body.innerHTML = `<dl class="kv"><dt>${T('Articles')}</dt><dd>${nItems}</dd><dt>${T('Livraison')}</dt><dd>${S.opts.mode === 'zero' ? T('Zero, 1 colis') : TN(r.sellerCount, '{n} vendeur', '{n} vendeurs')}</dd><dt class="total">${T('Total articles')}</dt><dd>${fmt(r.items)}</dd></dl>
+        ${S.demo ? '' : `<div class="switch-row"><span class="t"><b>${T('Vider le panier d\'abord')}</b><span class="hint">${T('Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Mana Orbit), avec confirmation.')}</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>`}
+        <p class="hint">${S.demo ? T('Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.') : T('Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.')}</p>`;
+      api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="btnGo">${T('Remplir le panier')}</button>`);
       $('#btnGo', api.foot).onclick = () => go(!S.demo && !!($('#cfClear', api.body) || {}).checked);
     };
 
@@ -870,14 +875,14 @@ function openCartSheet() {
     async function go(clearFirst) {
       const ctrl = new AbortController();
       if (clearFirst) {
-        begin('Lecture du panier…');
+        begin(T('Lecture du panier…'));
         let cur;
         try { cur = await cartRead(ctrl.signal); }
-        catch (e) { api.body.innerHTML = `<div class="fail"><b>Le panier CardTrader n'a pas pu être lu.</b><span>${esc(cartErrText(e))}</span></div>`; api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="cfRetry">Réessayer</button>'); $('#cfRetry', api.foot).onclick = () => go(true); return; }
+        catch (e) { api.body.innerHTML = `<div class="fail"><b>${T('Le panier CardTrader n\'a pas pu être lu.')}</b><span>${esc(cartErrText(e))}</span></div>`; api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button><button class="btn" type="button" id="cfRetry">${T('Réessayer')}</button>`); $('#cfRetry', api.foot).onclick = () => go(true); return; }
         if (cur.items.length) {
           const qty = cur.items.reduce((a, i) => a + i.quantity, 0), tot = money(cur.subtotal);
-          api.body.innerHTML = status(`Ton panier CardTrader contient ${plural(qty, 'exemplaire')} (${plural(cur.items.length, 'ligne')}${tot ? ' · ' + tot : ''}). Ils seront retirés, puis tes ${plural(parts.length, 'offre')} seront ajoutées.`);
-          api.setFoot('<button class="btn ghost" type="button" id="cfBack">Annuler</button><button class="btn danger" type="button" id="cfSure">Vider puis remplir</button>');
+          api.body.innerHTML = status(T('Ton panier CardTrader contient {copies} ({lines}). Ils seront retirés, puis tes {offers} seront ajoutées.', { copies: plural(qty, 'exemplaire'), lines: plural(cur.items.length, 'ligne') + (tot ? ' · ' + tot : ''), offers: plural(parts.length, 'offre') }));
+          api.setFoot(`<button class="btn ghost" type="button" id="cfBack">${T('Annuler')}</button><button class="btn danger" type="button" id="cfSure">${T('Vider puis remplir')}</button>`);
           $('#cfBack', api.foot).onclick = intro;
           $('#cfSure', api.foot).onclick = () => run(cur.items, ctrl);
           return;
@@ -888,57 +893,60 @@ function openCartSheet() {
 
     // Étape 2 : vidage éventuel, puis ajout. La fenêtre peut être fermée : tout continue, la pastille flottante prend le relais.
     async function run(clearItems, ctrl) {
-      task = floatTask('Remplissage du panier', { total: parts.length, sub: 'Démarrage…' }, () => !sheets.includes(api));
+      task = floatTask(T('Remplissage du panier'), { total: parts.length, sub: T('Démarrage…') }, () => !sheets.includes(api));
       const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); haptic(kind); if (!shown && !sheets.includes(api)) toast(msg); };
       try {
         if (clearItems) {
-          begin('Vidage du panier…'); task.label('Vidage du panier');
-          const cl = await cartClear(clearItems, ctrl.signal, (d, t) => prog('Vidage du panier', d, t, 'Vidage'));
+          begin(T('Vidage du panier…')); task.label(T('Vidage du panier'));
+          const cl = await cartClear(clearItems, ctrl.signal, (d, t) => prog(T('Vidage du panier'), d, t, T('Vidage')));
           const left = (await cartRead(ctrl.signal)).items.length;
           if (left || cl.failed.length) {
             const n = left || cl.failed.length;
-            api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être entièrement vidé (${plural(n, 'ligne')} restante${n > 1 ? 's' : ''}).</b><span>Rien n'a été ajouté.</span>${cl.failed.slice(0, 5).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
-            api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="cfForce">Remplir quand même</button>');
+            api.body.innerHTML = `<div class="fail"><b>${TN(n, 'Le panier n\'a pas pu être entièrement vidé ({n} ligne restante).', 'Le panier n\'a pas pu être entièrement vidé ({n} lignes restantes).')}</b><span>${T('Rien n\'a été ajouté.')}</span>${cl.failed.slice(0, 5).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
+            api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button><button class="btn" type="button" id="cfForce">${T('Remplir quand même')}</button>`);
             $('#cfForce', api.foot).onclick = () => run(null, new AbortController());
-            return bye('Panier non vidé', 'warn', plural(n, 'ligne') + ' restante' + (n > 1 ? 's' : ''));
+            return bye(T('Panier non vidé'), 'warn', TN(n, '{n} ligne restante', '{n} lignes restantes'));
           }
         }
-        begin('Ajout des articles…'); task.label('Remplissage du panier');
-        const res = await cartFill(parts, S.opts.mode, null, ctrl.signal, (i, n) => prog('Ajout des articles', i, n, 'Ajout'), S.demo);
+        begin(T('Ajout des articles…')); task.label(T('Remplissage du panier'));
+        const res = await cartFill(parts, S.opts.mode, null, ctrl.signal, (i, n) => prog(T('Ajout des articles'), i, n, T('Ajout')), S.demo);
         if (res.gone.length) { res.gone.forEach(id => S.gone.add(id)); scheduleRecompute(true); } // offres indisponibles : retirées de la recherche
         if (!S.demo) buyRemember(res.added, !!clearItems);      // « J'ai acheté » : les cartes réellement au panier attendent ta validation
         const rep = res.replaced.length;
-        let html = status(`${plural(res.ok, 'offre')} ajoutée${res.ok > 1 ? 's' : ''}${rep ? ` dont ${rep} remplacée${rep > 1 ? 's' : ''}` : ''}${S.demo ? ' (simulation)' : ''}.`, 1);
-        if (rep) html += `<div class="swap"><b>${plural(rep, 'offre')} remplacée${rep > 1 ? 's' : ''} (plus disponible${rep > 1 ? 's' : ''})</b>${res.replaced.slice(0, 8).map(x => { const t = x.to.map(u => `${u.n > 1 ? u.n + ' × ' : ''}${esc(u.offer.seller)} · ${fmt(u.offer.price * u.n, u.offer.cur)}`).join(' + '); return `<span>${esc(x.name)} : ${esc(x.from.seller)} · ${fmt(x.from.price * x.n, x.from.cur)} → ${t}</span>`; }).join('')}</div>`;
-        if (res.failed.length) html += `<div class="fail"><b>${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}</b>${res.failed.slice(0, 8).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
+        const sim = S.demo ? ' ' + T('(simulation)') : '';
+        let html = status(TN(res.ok, '{n} offre ajoutée', '{n} offres ajoutées') + (rep ? ' ' + TN(rep, 'dont {n} remplacée', 'dont {n} remplacées') : '') + sim + '.', 1);
+        if (rep) html += `<div class="swap"><b>${TN(rep, '{n} offre remplacée (plus disponible)', '{n} offres remplacées (plus disponibles)')}</b>${res.replaced.slice(0, 8).map(x => { const t = x.to.map(u => `${u.n > 1 ? u.n + ' × ' : ''}${esc(u.offer.seller)} · ${fmt(u.offer.price * u.n, u.offer.cur)}`).join(' + '); return `<span>${esc(x.name)} : ${esc(x.from.seller)} · ${fmt(x.from.price * x.n, x.from.cur)} → ${t}</span>`; }).join('')}</div>`;
+        if (res.failed.length) html += `<div class="fail"><b>${TN(res.failed.length, '{n} non ajoutée', '{n} non ajoutées')}</b>${res.failed.slice(0, 8).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>`;
         if (!S.demo) {
           try {
             const cart = await ct('cart', { signal: ctrl.signal });
-            const rows = [['Articles', money(cart.subtotal)], ['Frais CardTrader Zero', money(cart.ct_zero_fee_amount)], ['Port', money(cart.shipping_cost)]].filter(x => x[1]);
-            if (rows.length) html += `<dl class="kv">${rows.map(x => `<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="hint">CardTrader confirme le total final à la caisse.</p>`;
-          } catch (e) { html += '<p class="hint">Le panier est rempli, mais ses totaux n\'ont pas pu être lus.</p>'; }
+            const rows = [[T('Articles'), money(cart.subtotal)], [T('Frais CardTrader Zero'), money(cart.ct_zero_fee_amount)], [T('Port'), money(cart.shipping_cost)]].filter(x => x[1]);
+            if (rows.length) html += `<dl class="kv">${rows.map(x => `<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="hint">${T('CardTrader confirme le total final à la caisse.')}</p>`;
+          } catch (e) { html += `<p class="hint">${T('Le panier est rempli, mais ses totaux n\'ont pas pu être lus.')}</p>`; }
         }
         api.body.innerHTML = html;
-        api.setFoot(`<button class="btn ghost" type="button" data-close>Fermer</button>${S.demo ? '' : '<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">Ouvrir sur CardTrader</a>'}`);
-        const det = `${plural(res.ok, 'offre')} ajoutée${res.ok > 1 ? 's' : ''}${rep ? `, ${rep} remplacée${rep > 1 ? 's' : ''}` : ''}${S.demo ? ' (simulation)' : ''}`;
-        if (res.failed.length) bye('Panier partiellement rempli', 'warn', `${det}, ${res.failed.length} non ajoutée${res.failed.length > 1 ? 's' : ''}`);
-        else bye('Panier rempli', 'ok', det);
+        api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>${S.demo ? '' : `<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">${T('Ouvrir sur CardTrader')}</a>`}`);
+        const det = TN(res.ok, '{n} offre ajoutée', '{n} offres ajoutées') + (rep ? ', ' + TN(rep, '{n} remplacée', '{n} remplacées') : '') + sim;
+        if (res.failed.length) bye(T('Panier partiellement rempli'), 'warn', det + ', ' + TN(res.failed.length, '{n} non ajoutée', '{n} non ajoutées'));
+        else bye(T('Panier rempli'), 'ok', det);
       } catch (e) {
-        bye('Panier non rempli', 'bad', cartErrText(e));
-        api.body.innerHTML = `<div class="fail"><b>Le panier n'a pas pu être rempli.</b><span>${esc(cartErrText(e))}</span></div>`;
-        api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button>');
+        bye(T('Panier non rempli'), 'bad', cartErrText(e));
+        api.body.innerHTML = `<div class="fail"><b>${T('Le panier n\'a pas pu être rempli.')}</b><span>${esc(cartErrText(e))}</span></div>`;
+        api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>`);
       }
     }
     intro();
   });
 }
-const cartErrText = e => e.code === 'auth' ? authHint(e).msg : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
+const cartErrText = e => e.code === 'auth' ? authHint(e).msg : e.code === 'network' ? T('CardTrader est injoignable.') : (e.message || T('Erreur'));
+/** « 3 exemplaires », « 1 ligne », « 2 offres » (panier CardTrader). */
+const cartPlural = (n, w) => w === 'ligne' ? TN(n, '{n} ligne', '{n} lignes') : w === 'offre' ? TN(n, '{n} offre', '{n} offres') : TN(n, '{n} exemplaire', '{n} exemplaires');
 
 /* ── Réglages ─────────────────────────────────────────────────────────────────────────────── */
 function modeLabel() {
   const src = priceSrc(), chip = $('#modeChip');
   chip.dataset.live = src === 'demo' ? '0' : '1';
-  $('#modeLabel').textContent = src === 'demo' ? 'Démo' : src === 'ct' ? 'CardTrader' : 'Cardmarket';
+  $('#modeLabel').textContent = src === 'demo' ? T('Démo') : src === 'ct' ? 'CardTrader' : 'Cardmarket';
 }
 function applyTheme() {
   const r = document.documentElement;
@@ -946,36 +954,36 @@ function applyTheme() {
 }
 function syncCTX() { CTX.token = S.token; CTX.appKey = S.appKey; }
 function openSettings() {
-  openSheet('Réglages', 'Prix, compte et affichage', api => {
+  openSheet(T('Réglages'), T('Prix, compte et affichage'), api => {
     api.body.innerHTML = `
-      <div class="sec-title">Prix</div>
-      <div class="seg" id="segSrc" role="radiogroup" aria-label="Source des prix"></div>
+      <div class="sec-title">${T('Prix')}</div>
+      <div class="seg" id="segSrc" role="radiogroup" aria-label="${esc(T('Source des prix'))}"></div>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
-      <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader (facultatif)</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Colle ton token API" value="${esc(S.token)}">
-        <span class="hint">Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Il reste sur cet appareil et ne sert qu'à interroger CardTrader avec ton compte.</span></div>
-      <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? '<span class="hint">Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.</span>' : ''}</div>
-      <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester CardTrader</button>
-      <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Prix simulés, aucune requête envoyée.</span></span>
+      <div class="field-in" id="boxToken"><label class="label" for="setToken">${T('Token CardTrader (facultatif)')}</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="${esc(T('Colle ton token API'))}" value="${esc(S.token)}">
+        <span class="hint">${T('Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Il reste sur cet appareil et ne sert qu\'à interroger CardTrader avec ton compte.')}</span></div>
+      <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">${T('Clé du proxy')}</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? `<span class="hint">${T('Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.')}</span>` : ''}</div>
+      <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">${T('Tester CardTrader')}</button>
+      <div class="switch-row"><span class="t"><b>${T('Mode démo')}</b><span class="hint">${T('Prix simulés, aucune requête envoyée.')}</span></span>
         <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
-      <div class="sec-title">Affichage</div>
-      <div class="field-in"><label class="label" for="setLang">Langue</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
-      <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
-      <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
+      <div class="sec-title">${T('Affichage')}</div>
+      <div class="field-in"><label class="label" for="setLang">${T('Langue')}</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
+      <div class="seg" id="segTheme" role="radiogroup" aria-label="${esc(T('Thème'))}"></div>
+      <div class="switch-row"><span class="t"><b>${T('Vibrations')}</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? T('Un petit retour au toucher et à la fin des tâches.') : T('Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).')}</span></span>
         <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
-      <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">Vider le cache du catalogue</button>
-      <div class="sec-title">Notifications</div>
+      <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">${T('Vider le cache du catalogue')}</button>
+      <div class="sec-title">${T('Notifications')}</div>
       <div id="pushBox" class="installbox"></div>
-      <div class="sec-title">Alertes de prix</div>
+      <div class="sec-title">${T('Alertes de prix')}</div>
       <div id="alertBox" class="installbox"></div>
-      <div class="sec-title">Application</div>
+      <div class="sec-title">${T('Application')}</div>
       <div id="appBox" class="installbox"></div>
-      <div class="sec-title">Confidentialité</div>
-      <div id="privBox" class="installbox"><p class="hint">Sans compte, tout reste sur cet appareil. Aucune publicité ni mesure d'audience.</p>
-        <div class="cart-actions"><a class="btn ghost small" href="privacy" target="_blank" rel="noopener">Politique de confidentialité</a><button class="btn ghost small" type="button" id="btnAbout">Mentions et sources</button></div>
+      <div class="sec-title">${T('Confidentialité')}</div>
+      <div id="privBox" class="installbox"><p class="hint">${T('Sans compte, tout reste sur cet appareil. Aucune publicité ni mesure d\'audience.')}</p>
+        <div class="cart-actions"><a class="btn ghost small" href="privacy" target="_blank" rel="noopener">${T('Politique de confidentialité')}</a><button class="btn ghost small" type="button" id="btnAbout">${T('Mentions et sources')}</button></div>
         <div id="wipeBox"></div></div>
-      <div class="sec-title">Panier CardTrader</div>
+      <div class="sec-title">${T('Panier CardTrader')}</div>
       <div id="cartBox" class="cartbox"></div>
-      <p class="hint set-ver">Version ${esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev')}</p>
+      <p class="hint set-ver">${T('Version {v}', { v: esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev') })}</p>
       <p class="hint fan">${FAN_CONTENT}</p>`;
     const b = api.body;
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
@@ -984,20 +992,21 @@ function openSettings() {
       if (!appBox.isConnected) { off(); return; }
       const st = PWA.state();
       const okRow = t => `<div class="status" data-ok="1"><span class="dot"></span><span>${t}</span></div>`;
-      appBox.innerHTML = st === 'standalone' ? okRow('Mana Orbit est ouverte en application installée.')
-        : st === 'installed' ? okRow('Mana Orbit est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
-        : st === 'ready' ? '<p class="hint">Installe Mana Orbit comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Mana Orbit</button>'
-        : st === 'ios' ? '<p class="hint">Sur iPhone et iPad, Apple ne permet pas l\'installation directe. Dans Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».</p>'
-        : st === 'insecure' ? '<p class="hint">L\'installation demande une adresse en https.</p>'
-        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Mana Orbit ». Android : menu ⋮ puis « Installer l\'application ».</p>';
+      const hint = t => `<p class="hint">${t}</p>`;
+      appBox.innerHTML = st === 'standalone' ? okRow(T('Mana Orbit est ouverte en application installée.'))
+        : st === 'installed' ? okRow(T('Mana Orbit est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.'))
+        : st === 'ready' ? hint(T('Installe Mana Orbit comme une vraie application : icône sur ton appareil, plein écran, lancement direct.')) + `<button class="btn small" type="button" id="btnInstall">${T('Installer Mana Orbit')}</button>`
+        : st === 'ios' ? hint(T('Sur iPhone et iPad, Apple ne permet pas l\'installation directe. Dans Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».'))
+        : st === 'insecure' ? hint(T('L\'installation demande une adresse en https.'))
+        : hint(T('Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Mana Orbit ». Android : menu ⋮ puis « Installer l\'application ».'));
       const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
     };
     const off = PWA.on(paintApp); paintApp();
     $('#btnAbout', b).onclick = openAbout;
     const wipe = $('#wipeBox', b), paintWipe = ask => {
-      wipe.innerHTML = ask ? `<div class="status" data-ok="0"><span class="dot"></span><span>Collection, decks, réglages et caches de cet appareil seront effacés.${typeof D !== 'undefined' && D.user ? ' Ton compte et ses données en ligne restent intacts.' : ''}</span></div>
-        <div class="cart-actions"><button class="btn ghost small" type="button" id="btnWipeNo">Annuler</button><button class="btn ghost-danger small" type="button" id="btnWipeGo">Tout effacer</button></div>`
-        : '<button class="btn ghost-danger small" type="button" id="btnWipe" style="align-self:flex-start">Effacer les données de cet appareil</button>';
+      wipe.innerHTML = ask ? `<div class="status" data-ok="0"><span class="dot"></span><span>${T('Collection, decks, réglages et caches de cet appareil seront effacés.')}${typeof D !== 'undefined' && D.user ? ' ' + T('Ton compte et ses données en ligne restent intacts.') : ''}</span></div>
+        <div class="cart-actions"><button class="btn ghost small" type="button" id="btnWipeNo">${T('Annuler')}</button><button class="btn ghost-danger small" type="button" id="btnWipeGo">${T('Tout effacer')}</button></div>`
+        : `<button class="btn ghost-danger small" type="button" id="btnWipe" style="align-self:flex-start">${T('Effacer les données de cet appareil')}</button>`;
       if (ask) { $('#btnWipeNo', wipe).onclick = () => paintWipe(false); $('#btnWipeGo', wipe).onclick = async () => { if (typeof D !== 'undefined' && D.cloud && D.user) { try { await D.cloud.signOut(); } catch (e) { /* ignore */ } } wipeDevice(); }; }
       else $('#btnWipe', wipe).onclick = () => paintWipe(true);
     };
@@ -1007,97 +1016,97 @@ function openSettings() {
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b), src = priceSrc(), mine = !!S.token;
       const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };
-      if (src === 'demo') say(false, 'Démo active : prix simulés. Désactive-la pour de vrais prix.');
-      else if (src === 'ct') say(true, mine ? 'CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.' : 'CardTrader via le serveur (compte autorisé) : offres réelles et panier.');
-      else if (ctReady()) say(true, 'Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles.');
-      else say(true, 'Prix tendance Cardmarket, relevés chaque jour (impression la moins chère, hors port). Ajoute ton token CardTrader pour les offres réelles et le panier.');
+      if (src === 'demo') say(false, T('Démo active : prix simulés. Désactive-la pour de vrais prix.'));
+      else if (src === 'ct') say(true, mine ? T('CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.') : T('CardTrader via le serveur (compte autorisé) : offres réelles et panier.'));
+      else if (ctReady()) say(true, T('Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles.'));
+      else say(true, T('Prix tendance Cardmarket, relevés chaque jour (impression la moins chère, hors port). Ajoute ton token CardTrader pour les offres réelles et le panier.'));
       if (seg.setValue) seg.setValue(src === 'ct' ? 'ct' : 'cm');
       seg.classList.toggle('dim', src === 'demo');
       $('#btnTest', b).hidden = !mine && !(CTX.proxy && CTX.hasToken);
       modeLabel();
     };
     mountSeg(seg, [{ v: 'cm', label: 'Cardmarket' }, { v: 'ct', label: 'CardTrader' }], priceSrc() === 'ct' ? 'ct' : 'cm', v => {
-      if (v === 'ct' && !ctReady()) { toast('Ajoute d\'abord ton token CardTrader'); $('#setToken', b).focus(); setTimeout(status, 0); return; }
+      if (v === 'ct' && !ctReady()) { toast(T('Ajoute d\'abord ton token CardTrader')); $('#setToken', b).focus(); setTimeout(status, 0); return; }
       S.src = v === 'cm' ? 'cm' : 'auto'; saveStore(); status();
     });
     status();
     $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; status(); saveStore(); };
     $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); if (S.token) S.src = 'auto'; syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
-    mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
+    mountSeg($('#segTheme', b), [{ v: 'auto', label: T('Auto') }, { v: 'light', label: T('Clair') }, { v: 'dark', label: T('Sombre') }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
     $('#setLang', b).onchange = e => { try { localStorage.setItem('deckdeal:lang', e.target.value); } catch (x) { /* ignore */ } location.reload(); };
     $('#setHaptic', b).onchange = e => { S.haptic = e.target.checked; saveStore(); haptic('ok'); };
-    $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
+    $('#btnCache', b).onclick = async () => { await Cache.clear(); toast(T('Cache vidé')); };
     // Vider le panier CardTrader : lecture, confirmation en deux temps (jamais de confirm() natif), suppression ligne par ligne, vérification.
     const box = $('#cartBox', b); // la suppression continue même si la feuille est fermée : on ne laisse pas un panier à moitié vidé
     const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
-    const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
+    const plural = cartPlural;
     const paintCart = (st, d = {}) => {
       if (!box.isConnected) return;
-      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Mana Orbit. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
-      else if (st === 'reading') box.innerHTML = '<button class="btn ghost small" type="button" disabled style="align-self:flex-start">Lecture du panier…</button>';
-      else if (st === 'empty') box.innerHTML = '<div class="status" data-ok="1"><span class="dot"></span><span>Le panier CardTrader est déjà vide.</span></div>';
+      if (st === 'idle') box.innerHTML = `<p class="hint">${T('Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Mana Orbit. L\'app ne peut jamais acheter.')}${S.demo ? ' ' + T('Indisponible en mode démo.') : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>${T('Vider le panier CardTrader')}</button>`;
+      else if (st === 'reading') box.innerHTML = `<button class="btn ghost small" type="button" disabled style="align-self:flex-start">${T('Lecture du panier…')}</button>`;
+      else if (st === 'empty') box.innerHTML = `<div class="status" data-ok="1"><span class="dot"></span><span>${T('Le panier CardTrader est déjà vide.')}</span></div>`;
       else if (st === 'confirm') {
         const qty = d.items.reduce((a, i) => a + i.quantity, 0), tot = money(d.subtotal);
-        box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${plural(qty, 'exemplaire')} (${plural(d.items.length, 'ligne')}${tot ? ' · ' + tot : ''}) seront retirés du panier CardTrader.</span></div>
-          <div class="cart-actions"><button class="btn ghost small" type="button" id="btnCartCancel">Annuler</button><button class="btn ghost-danger small" type="button" id="btnCartConfirm">Vider ${plural(qty, 'exemplaire')}</button></div>`;
+        box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${T('{copies} ({lines}) seront retirés du panier CardTrader.', { copies: plural(qty, 'exemplaire'), lines: plural(d.items.length, 'ligne') + (tot ? ' · ' + tot : '') })}</span></div>
+          <div class="cart-actions"><button class="btn ghost small" type="button" id="btnCartCancel">${T('Annuler')}</button><button class="btn ghost-danger small" type="button" id="btnCartConfirm">${T('Vider {copies}', { copies: plural(qty, 'exemplaire') })}</button></div>`;
         $('#btnCartCancel', box).onclick = () => paintCart('idle');
         $('#btnCartConfirm', box).onclick = () => doClear(d.items);
       }
-      else if (st === 'clearing') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>Suppression… ${d.done} / ${d.total}</span></div>`;
-      else if (st === 'done') box.innerHTML = `<div class="status" data-ok="${d.failed.length || d.left ? 0 : 1}"><span class="dot"></span><span>${d.left || d.failed.length ? `${plural(d.ok, 'ligne')} retirée${d.ok > 1 ? 's' : ''}, ${plural(d.left || d.failed.length, 'ligne')} restante${(d.left || d.failed.length) > 1 ? 's' : ''}.` : `Panier vidé (${plural(d.ok, 'ligne')} retirée${d.ok > 1 ? 's' : ''}).`}</span></div>`
+      else if (st === 'clearing') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${T('Suppression… {done} / {total}', { done: d.done, total: d.total })}</span></div>`;
+      else if (st === 'done') box.innerHTML = `<div class="status" data-ok="${d.failed.length || d.left ? 0 : 1}"><span class="dot"></span><span>${d.left || d.failed.length ? TN(d.ok, '{n} ligne retirée', '{n} lignes retirées') + ', ' + TN(d.left || d.failed.length, '{n} ligne restante', '{n} lignes restantes') + '.' : T('Panier vidé ({lines}).', { lines: TN(d.ok, '{n} ligne retirée', '{n} lignes retirées') })}</span></div>`
         + (d.failed.length ? `<div class="fail">${d.failed.slice(0, 6).map(f => `<span>${esc(f.name)} : ${esc(f.reason)}</span>`).join('')}</div>` : '')
-        + '<button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">Revérifier</button>';
-      else if (st === 'error') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(d.msg)}</span></div><button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">Réessayer</button>`;
+        + `<button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">${T('Revérifier')}</button>`;
+      else if (st === 'error') box.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(d.msg)}</span></div><button class="btn ghost small" type="button" id="btnCartAgain" style="align-self:flex-start">${T('Réessayer')}</button>`;
       const go = $('#btnCartClear', box) || $('#btnCartAgain', box); if (go) go.onclick = readCart;
     };
-    const cartErr = e => e.code === 'auth' ? authHint(e).msg : e.code === 'network' ? 'CardTrader est injoignable.' : (e.message || 'Erreur');
+    const cartErr = cartErrText;
     async function readCart() {
       paintCart('reading');
       try { const c = await cartRead(); c.items.length ? paintCart('confirm', c) : paintCart('empty'); }
-      catch (e) { paintCart('error', { msg: 'Lecture impossible : ' + cartErr(e) }); }
+      catch (e) { paintCart('error', { msg: T('Lecture impossible : {msg}', { msg: cartErr(e) }) }); }
     }
     async function doClear(items) {
       paintCart('clearing', { done: 0, total: items.length });
-      const task = floatTask('Vidage du panier CardTrader', { total: items.length, sub: `0 / ${items.length} lignes` }, () => !sheets.includes(api));
+      const task = floatTask(T('Vidage du panier CardTrader'), { total: items.length, sub: T('{done} / {total} lignes', { done: 0, total: items.length }) }, () => !sheets.includes(api));
       const bye = (msg, kind, d) => { const shown = task.isShown(); task.finish(msg, kind, d); haptic(kind); if (!shown && (kind === 'ok' || !sheets.includes(api))) toast(msg); };
       try {
-        const res = await cartClear(items, undefined, (d, t) => { paintCart('clearing', { done: d, total: t }); task.set(d, t, `${d} / ${t} lignes`); });
+        const res = await cartClear(items, undefined, (d, t) => { paintCart('clearing', { done: d, total: t }); task.set(d, t, T('{done} / {total} lignes', { done: d, total: t })); });
         const left = (await cartRead()).items.length; // vérification : on relit le panier
         paintCart('done', { ok: res.ok, failed: res.failed, left });
-        if (!left && !res.failed.length) bye('Panier CardTrader vidé', 'ok', plural(res.ok, 'ligne') + ' retirée' + (res.ok > 1 ? 's' : ''));
-        else bye('Panier partiellement vidé', 'warn', plural(left || res.failed.length, 'ligne') + ' restante' + ((left || res.failed.length) > 1 ? 's' : ''));
-      } catch (e) { paintCart('error', { msg: 'Suppression interrompue : ' + cartErr(e) }); bye('Suppression interrompue', 'bad', cartErr(e)); }
+        if (!left && !res.failed.length) bye(T('Panier CardTrader vidé'), 'ok', TN(res.ok, '{n} ligne retirée', '{n} lignes retirées'));
+        else bye(T('Panier partiellement vidé'), 'warn', TN(left || res.failed.length, '{n} ligne restante', '{n} lignes restantes'));
+      } catch (e) { paintCart('error', { msg: T('Suppression interrompue : {msg}', { msg: cartErr(e) }) }); bye(T('Suppression interrompue'), 'bad', cartErr(e)); }
     }
     paintCart('idle');
     $('#btnTest', b).onclick = async e => {
-      const btn = e.target; btn.disabled = true; btn.textContent = 'Test…';
+      const btn = e.target; btn.disabled = true; btn.textContent = T('Test…');
       const st = $('#connStatus', b), m = $('#connMsg', b);
-      try { const j = await ct('info'); st.dataset.ok = '1'; m.textContent = 'Connexion réussie' + (j && j.name ? ' (app « ' + j.name + ' »)' : '') + '.'; }
-      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? (S.token ? 'CardTrader refuse ce token : vérifie-le (Paramètres › API sur CardTrader).' : authHint(err).msg) : 'CardTrader est injoignable depuis ce navigateur.'; }
-      btn.disabled = false; btn.textContent = 'Tester CardTrader';
+      try { const j = await ct('info'); st.dataset.ok = '1'; m.textContent = j && j.name ? T('Connexion réussie (app « {name} »).', { name: j.name }) : T('Connexion réussie.'); }
+      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? T('Token manquant.') : err.code === 'auth' ? (S.token ? T('CardTrader refuse ce token : vérifie-le (Paramètres › API sur CardTrader).') : authHint(err).msg) : T('CardTrader est injoignable depuis ce navigateur.'); }
+      btn.disabled = false; btn.textContent = T('Tester CardTrader');
     };
   });
 }
 /* ── Installation (bannière de la page d'accueil) ─────────────────────────────────────────────── */
-const FAN_CONTENT = 'Mana Orbit est un contenu de fan non officiel autorisé par la Fan Content Policy. Il n\'est ni approuvé ni soutenu par Wizards of the Coast. Certains éléments utilisés sont la propriété de Wizards of the Coast. ©Wizards of the Coast LLC.';
+const FAN_CONTENT = T('Mana Orbit est un contenu de fan non officiel autorisé par la Fan Content Policy. Il n\'est ni approuvé ni soutenu par Wizards of the Coast. Certains éléments utilisés sont la propriété de Wizards of the Coast. ©Wizards of the Coast LLC.');
 /** Mentions et sources : contenu de fan (Wizards of the Coast), d'où viennent les données, bibliothèques. */
 function openAbout() {
   const src = [
-    ['Scryfall', 'https://scryfall.com', 'images et données des cartes, prix tendance Cardmarket'],
-    ['CardTrader', 'https://www.cardtrader.com', 'offres des vendeurs et panier (avec ton token)'],
-    ['EDHREC', 'https://edhrec.com', 'classement des commandants et decks moyens'],
-    ['Archidekt', 'https://archidekt.com', 'decks Budget, Premium et cEDH'],
-    ['EDHTop16', 'https://edhtop16.com', 'commandants joués en tournoi cEDH'],
-    ['Mana', 'https://mana.andrewgioia.com', 'symboles de mana (Andrew Gioia, licences OFL et MIT)'],
-    ['Tesseract.js', 'https://tesseract.projectnaptha.com', 'reconnaissance du texte au scan (Apache 2.0)'],
-    ['Firebase', 'https://firebase.google.com', 'compte et synchronisation'],
+    ['Scryfall', 'https://scryfall.com', T('images et données des cartes, prix tendance Cardmarket')],
+    ['CardTrader', 'https://www.cardtrader.com', T('offres des vendeurs et panier (avec ton token)')],
+    ['EDHREC', 'https://edhrec.com', T('classement des commandants et decks moyens')],
+    ['Archidekt', 'https://archidekt.com', T('decks Budget, Premium et cEDH')],
+    ['EDHTop16', 'https://edhtop16.com', T('commandants joués en tournoi cEDH')],
+    ['Mana', 'https://mana.andrewgioia.com', T('symboles de mana (Andrew Gioia, licences OFL et MIT)')],
+    ['Tesseract.js', 'https://tesseract.projectnaptha.com', T('reconnaissance du texte au scan (Apache 2.0)')],
+    ['Firebase', 'https://firebase.google.com', T('compte et synchronisation')],
   ];
-  openSheet('Mentions et sources', null, api => {
+  openSheet(T('Mentions et sources'), null, api => {
     api.body.innerHTML = `<p class="hint">${FAN_CONTENT}</p>
-      <p class="hint">Mana Orbit n'est affiliée à aucun des services ci-dessous. Merci à eux de rendre leurs données accessibles à la communauté.</p>
+      <p class="hint">${T('Mana Orbit n\'est affiliée à aucun des services ci-dessous. Merci à eux de rendre leurs données accessibles à la communauté.')}</p>
       <dl class="kv about">${src.map(([n, u, w]) => `<dt><a href="${u}" target="_blank" rel="noopener">${n}</a></dt><dd>${w}</dd>`).join('')}</dl>
-      <a class="btn ghost small" href="privacy" target="_blank" rel="noopener" style="align-self:flex-start">Politique de confidentialité</a>`;
+      <a class="btn ghost small" href="privacy" target="_blank" rel="noopener" style="align-self:flex-start">${T('Politique de confidentialité')}</a>`;
   });
 }
 async function doInstall() { const r = await PWA.install(); if (r === 'dismissed') PWA.snooze(); }
@@ -1105,7 +1114,7 @@ function paintInstallBar() {
   const w = $('#installWrap'); if (!w) return;
   const show = PWA.wantsBanner(), st = PWA.state();
   w.classList.toggle('closed', !show); w.setAttribute('aria-hidden', show ? 'false' : 'true'); w.inert = !show;
-  $('#installSub').textContent = st === 'ios' ? 'Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».' : 'Lancement direct, plein écran, comme une vraie app.';
+  $('#installSub').textContent = st === 'ios' ? T('Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».') : T('Lancement direct, plein écran, comme une vraie app.');
   $('#btnInstallBar').hidden = st === 'ios';
 }
 function initInstall() {
@@ -1133,8 +1142,8 @@ function recapText() {
     if (!p || !p.parts.length) { miss.push(c.name); continue; }
     for (const x of p.parts) { const o = x.offer; lines.push(`${x.n} ${c.name} · ${fmt(o.price * x.n, o.cur)} · ${o.seller} (${o.country}) · ${(o.set || '').toUpperCase()}${o.num ? ' ' + o.num : ''} · ${COND_SHORT[o.cond] || o.cond} · ${(o.lang || '').toUpperCase()}`); }
   }
-  if (miss.length) lines.push('', 'Sans offre : ' + miss.join(', '));
-  if (own.length) lines.push('', 'Déjà possédées : ' + own.join(', '));
+  if (miss.length) lines.push('', T('Sans offre : {list}', { list: miss.join(', ') }));
+  if (own.length) lines.push('', T('Déjà possédées : {list}', { list: own.join(', ') }));
   return lines.join('\n');
 }
 
@@ -1152,9 +1161,9 @@ function init() {
 
   $('#optLang').value = S.opts.lang; $('#optCond').value = S.opts.cond; $('#optFallback').checked = !!S.opts.fallbackEn;
   $('#optShip').value = (S.opts.ship / 100).toFixed(2).replace('.', ',');
-  mountSeg($('#segFoil'), [{ v: 'no', label: 'Sans foil' }, { v: 'any', label: 'Peu importe' }, { v: 'yes', label: 'Foil' }], S.opts.foil, () => { readOpts(); saveStore(); });
-  mountSeg($('#segMode'), [{ v: 'zero', label: 'CardTrader Zero' }, { v: 'direct', label: 'Direct vendeurs' }], S.opts.mode, () => { readOpts(); syncShip(); modeHint(); saveStore(); });
-  mountSeg($('#segTab'), [{ v: 'cards', label: 'Cartes' }, { v: 'sellers', label: 'Vendeurs' }], 'cards', v => {
+  mountSeg($('#segFoil'), [{ v: 'no', label: T('Sans foil') }, { v: 'any', label: T('Peu importe') }, { v: 'yes', label: 'Foil' }], S.opts.foil, () => { readOpts(); saveStore(); });
+  mountSeg($('#segMode'), [{ v: 'zero', label: 'CardTrader Zero' }, { v: 'direct', label: T('Direct vendeurs') }], S.opts.mode, () => { readOpts(); syncShip(); modeHint(); saveStore(); });
+  mountSeg($('#segTab'), [{ v: 'cards', label: T('Cartes') }, { v: 'sellers', label: T('Vendeurs') }], 'cards', v => {
     S.tab = v; $('#list').hidden = v !== 'cards'; $('#cardsPane').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true); else applyView(true);
   });
   ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { readOpts(); saveStore(); }));
@@ -1166,8 +1175,8 @@ function init() {
   $('#btnSample').onclick = () => { ta.value = SAMPLE; S.isSample = true; S.deckId = null; refreshDeck(); };
   $('#btnClear').onclick = () => { ta.value = ''; S.isSample = false; S.deckId = null; refreshDeck(); ta.focus(); };
   $('#btnPaste').onclick = async () => {
-    try { const t = await navigator.clipboard.readText(); if (!t) throw new Error('vide'); ta.value = t; S.isSample = false; refreshDeck(); toast('Liste collée'); }
-    catch (e) { ta.focus(); toast('Colle la liste dans le champ avec un appui long'); }
+    try { const t = await navigator.clipboard.readText(); if (!t) throw new Error('vide'); ta.value = t; S.isSample = false; refreshDeck(); toast(T('Liste collée')); }
+    catch (e) { ta.focus(); toast(T('Colle la liste dans le champ avec un appui long')); }
   };
   collInit();
   valInit();
@@ -1228,10 +1237,10 @@ function pendingRead() { try { const p = JSON.parse(localStorage.getItem(PENDING
 /** Notification touchée : si la recherche est encore là on y revient, sinon on la relance (le serveur la rend en quelques secondes grâce à son cache). */
 function resumeRun() {
   if (S.run && S.run.status !== 'cancelled') { if (S.view !== 'results') showView('results'); return; }
-  const p = pendingRead(); if (!p) { toast('Recherche terminée : relance-la pour voir les prix'); return; }
+  const p = pendingRead(); if (!p) { toast(T('Recherche terminée : relance-la pour voir les prix')); return; }
   $('#deckText').value = p.text; S.isSample = false; S.deckId = p.deckId && findDeck(p.deckId) ? p.deckId : null;
   if (p.opts) applyOpts({ ...S.opts, ...p.opts });
-  refreshDeck(); toast('Prix prêts, chargement…'); startRun();
+  refreshDeck(); toast(T('Prix prêts, chargement…')); startRun();
 }
 function handleLaunch() {
   let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
@@ -1247,16 +1256,16 @@ function handleLaunch() {
 /** Met une decklist dans la page de saisie (partage, import d'un lien, deck EDHREC de la collection). */
 function putDeckText(text, name) {
   const ta = $('#deckText'); ta.value = text; S.isSample = false; S.deckId = null; S.removed = []; if (S.view !== 'input') showView('input'); refreshDeck();
-  toast(`${name ? name + ' · ' : ''}${S.deck.cards.length} cartes reçues`); window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' });
+  toast((name ? name + ' · ' : '') + T('{n} cartes reçues', { n: S.deck.cards.length })); window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' });
 }
 async function onShared(sh) {
   const put = putDeckText;
   if (sh.text) return put(sh.text);
-  if (!sh.urls.length) { toast('Rien à importer dans ce partage'); return; }
-  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Mana Orbit'); return; }
-  toast('Lecture de la liste…');
+  if (!sh.urls.length) { toast(T('Rien à importer dans ce partage')); return; }
+  if (!CTX.proxy) { toast(T('Le lien ne peut être lu que par le serveur Mana Orbit')); return; }
+  toast(T('Lecture de la liste…'));
   try { const r = await ct('import', { params: { url: sh.urls[0] } }); if (r && r.text) put(r.text, r.name); else throw new Error('vide'); }
-  catch (e) { toast(e && e.code === 'auth' ? authHint(e).msg : 'Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici'); }
+  catch (e) { toast(e && e.code === 'auth' ? authHint(e).msg : T('Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici')); }
 }
 /** Interrupteur « Déduire ma collection » de la page de saisie. */
 function paintCollSwitch() {
@@ -1264,7 +1273,8 @@ function paintCollSwitch() {
   const n = collCount(); row.hidden = !n; if (!n) return;
   $('#optColl').checked = S.useColl;
   const own = S.deck.cards.filter(c => c.own > 0).length, held = S.useColl ? engHeldBack(S.deck.cards) : { n: 0, names: [] };
-  const note = held.n ? ` ${held.n} exemplaire${held.n > 1 ? 's' : ''} réservé${held.n > 1 ? 's' : ''} par ${held.names.length > 2 ? held.names.length + ' decks' : held.names.join(' et ')} ne ${held.n > 1 ? 'sont' : 'est'} pas compté${held.n > 1 ? 's' : ''}.` : '';
-  $('#collHint').textContent = !S.useColl ? 'Désactivé : toutes les cartes sont cherchées.'
-    : (own ? `${own} carte${own > 1 ? 's' : ''} de cette liste ${own > 1 ? 'sont' : 'est'} dans ta collection : non cherchée${own > 1 ? 's' : ''}.` : 'Aucune carte de cette liste n\'est dans ta collection.') + note;
+  const decks = held.names.length > 2 ? T('{n} decks', { n: held.names.length }) : held.names.join(' ' + T('et') + ' ');
+  const note = held.n ? ' ' + TN(held.n, '{n} exemplaire réservé par {decks} ne est pas compté.', '{n} exemplaires réservés par {decks} ne sont pas comptés.', { decks }) : '';
+  $('#collHint').textContent = !S.useColl ? T('Désactivé : toutes les cartes sont cherchées.')
+    : (own ? TN(own, '{n} carte de cette liste est dans ta collection : non cherchée.', '{n} cartes de cette liste sont dans ta collection : non cherchées.') : T('Aucune carte de cette liste n\'est dans ta collection.')) + note;
 }

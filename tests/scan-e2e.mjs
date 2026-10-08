@@ -340,4 +340,28 @@ assert.deepEqual(cn.errs.filter(e => !/WebAssembly|worker/i.test(e)), []);
 await camN.close();
 }
 
+{ // Appli Android (Capacitor simulé) : aperçu natif derrière la page, image de l'aperçu recadrée sur la bande, lecture ML Kit — aucun moteur Tesseract chargé
+  const nat = await newPage(browser, world, { goto: false }); const np = nat.p;
+  const jpg = readFileSync(fx('sceau.jpg')).toString('base64');
+  await nat.ctx.addInitScript(b64 => {
+    window.__nat = { starts: [], stops: 0, ocr: [] };
+    window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: () => true, Plugins: {
+      CameraPreview: { start: async o => { window.__nat.starts.push(o); return {}; }, stop: async () => { window.__nat.stops++; return {}; }, captureSample: async () => ({ value: b64 }) },
+      CapacitorPluginMlKitTextRecognition: { detectText: async o => { window.__nat.ocr.push(o.base64Image.length); return { text: 'Sol Ring', blocks: [{ text: 'Sol Ring {1}', lines: [{ text: 'Sol Ring' }, { text: '{1}' }] }] }; } } } };
+  }, jpg);
+  const hits0 = cdnHits.length;
+  await routeCdn(nat.ctx); await np.goto(world.url); await np.waitForTimeout(700);
+  await toHome(np); await np.click('#btnColl'); await np.waitForSelector('.coll.on'); await np.click('.coll-tools [data-act="scan"]'); await np.waitForSelector('.scan.on');
+  await np.waitForFunction(() => document.querySelector('.sc-stage').dataset.native === '1', null, { timeout: 5000 });
+  const st = await np.evaluate(() => window.__nat.starts[0]); assert.equal(st.toBack, true); assert.equal(st.position, 'rear'); assert.ok(st.width > 100 && st.height > 50, 'aperçu placé sur la zone de la page');
+  assert.equal(await np.evaluate(() => document.documentElement.classList.contains('nat-cam')), true);
+  await np.click('.sc-shot'); await idle(np, 20000);
+  assert.deepEqual((await items(np)).map(x => x.name), ['Sol Ring']); assert.ok((await np.evaluate(() => window.__nat.ocr.length)) >= 1, 'texte lu par ML Kit');
+  assert.equal(cdnHits.slice(hits0).filter(h => /tesseract/.test(h)).length, 0, 'aucun téléchargement de Tesseract dans l\'appli');
+  await np.click('.scan [data-act="close"]'); await np.waitForTimeout(400);
+  assert.equal(await np.evaluate(() => [window.__nat.stops, document.documentElement.classList.contains('nat-cam')].join()), '1,false');
+  assert.deepEqual(nat.errs, []); await nat.ctx.close();
+  ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), caméra rendue à la fermeture');
+}
+
 world.stop(); console.log('\nSCAN E2E OK'); process.exit(0);

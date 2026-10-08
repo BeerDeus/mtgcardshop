@@ -1510,3 +1510,9 @@ button,.btn,select,summary{touch-action:manipulation}
 .ob-lang{display:flex;justify-content:center;gap:8px;margin-top:-30px}
 .ob-chip{padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#cfd5e6;font:600 13.5px/1 var(--font-body,inherit);cursor:pointer}
 .ob-chip.on{background:#fff;color:#0b0f1c;border-color:#fff}
+/* Appli Android : aperçu natif de l'appareil photo placé DERRIÈRE la page (CameraPreview toBack) → tout ce qui est au-dessus de la zone d'aperçu devient transparent */
+html.nat-cam,html.nat-cam body,html.nat-cam .dv.scan,html.nat-cam .sc-stage{background:transparent!important}
+html.nat-cam #app,html.nat-cam .hm-aura{visibility:hidden}
+html.nat-cam .dv.scan>:not(.sc-stage){background:var(--bg)}
+html.nat-cam .sc-video{display:none}
+html.nat-cam .dv.scan::before,html.nat-cam .dv.scan::after{display:none}

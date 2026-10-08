@@ -35,6 +35,7 @@ function ocrWorker(lang) {
 }
 /** Lit une image (canvas) : lignes de texte [{ text }]. psm : '6' bloc (bande du nom) · '11' texte épars (carte entière). Seul le texte est demandé (pas de hocr/tsv/blocs). */
 async function ocrLines(canvas, lang, psm) {
+  if (natOcr()) { if (!canvas.__ml) canvas.__ml = natLines(canvas); try { return await canvas.__ml; } catch (e) { delete canvas.__ml; } }      // appli Android : ML Kit (repli Tesseract en cas d'erreur)
   const w = await ocrWorker(lang), mode = psm || '6';
   if (w.__psm !== mode) { await w.setParameters({ tessedit_pageseg_mode: mode, tessedit_char_whitelist: LETTERS[lang] || '' }); w.__psm = mode; }
   const r = await w.recognize(canvas, {}, { text: true }), d = (r && r.data) || {};
@@ -420,6 +421,12 @@ function scanGuideBox() {
 }
 function scanCapture() {
   if (!SC.el) return;
+  if (NAT.on) {
+    if (SC.queue.length >= 12) { toast(T('Patiente un instant : 12 cartes sont déjà en attente de lecture')); return; }
+    haptic('tap'); scanFlash(); scanHint('', '');
+    natCapture().then(c => { if (SC.el) scanEnqueue({ label: T('Carte {n}', { n: ++SC.cap }), src: c, strip: true, thumb: thumbOf(c) }); }, () => scanHint(T('L\'appareil photo n\'est pas prêt : utilise « Photos » ou « Appareil »'), 'bad'));
+    return;
+  }
   const box = scanGuideBox(); if (!box) { toast(T('L\'appareil photo n\'est pas prêt : utilise « Photos » ou « Appareil »')); return; }
   if (SC.rbusy) { toast(T('La caméra redémarre, une seconde…')); return; }
   if (SC.queue.length >= 12) { toast(T('Patiente un instant : 12 cartes sont déjà en attente de lecture')); return; }
@@ -495,13 +502,53 @@ async function scanWarm() {
   const s = SC.session; if (!SC.el || SC.warm) return; SC.warm = true;
   try {
     await Promise.all([collCatalog(), frcWarm()]);
-    if (!SC.el || SC.session !== s) return; await ocrWorker('fra');      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
+    if (!SC.el || SC.session !== s || natOcr()) return; await ocrWorker('fra');      // appli Android : ML Kit, pas de moteur à télécharger      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
   } catch (e) { /* hors ligne ou CDN bloqué : le premier appui retentera et dira pourquoi */ }
   finally { SC.warm = false; SC.workEnd = performance.now(); }
 }
 const CAM_HINT = T('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner');
+/* — Appli Android (Capacitor) : appareil photo natif, comme les applis photo (aperçu CameraX placé derrière la page, sous la bande du guide),
+   et lecture du texte par ML Kit sur le téléphone. Dans un navigateur ou la PWA : getUserMedia + Tesseract, inchangés. — */
+const NAT = { on: false };
+function capPlugin(n) {
+  try { const C = typeof window !== 'undefined' && window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.isPluginAvailable && C.isPluginAvailable(n) && C.Plugins && C.Plugins[n] || null; } catch (e) { return null; }
+}
+const natCam = () => capPlugin('CameraPreview'), natOcr = () => capPlugin('CapacitorPluginMlKitTextRecognition');
+async function natStart() {
+  const cam = natCam(), stage = SC.el && $('.sc-stage', SC.el); if (!cam || !stage) return false;
+  const r = stage.getBoundingClientRect();
+  document.documentElement.classList.add('nat-cam');      // page transparente au-dessus de l'aperçu natif
+  try {
+    await cam.start({ position: 'rear', toBack: true, x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height), disableAudio: true, enableZoom: true });
+    if (!SC.el) { natStop(); return true; }
+    NAT.on = true; stage.dataset.cam = 'on'; stage.dataset.native = '1'; return true;
+  } catch (e) { document.documentElement.classList.remove('nat-cam'); return false; }
+}
+function natStop() { document.documentElement.classList.remove('nat-cam'); if (!NAT.on) return; NAT.on = false; try { natCam().stop().catch(() => {}); } catch (e) { /* ignore */ } }
+/** Image de l'aperçu natif → bande du guide (même recadrage que l'aperçu : remplissage centré), en canvas. */
+async function natCapture() {
+  const res = await natCam().captureSample({ quality: 90 });
+  const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('Image illisible')); i.src = 'data:image/jpeg;base64,' + res.value; });
+  const stage = $('.sc-stage', SC.el), s = stage.getBoundingClientRect(), g = $('.sc-guide', SC.el).getBoundingClientRect();
+  let src = img, W = img.naturalWidth, H = img.naturalHeight;
+  if ((W > H) !== (s.width > s.height)) {      // image du capteur restée couchée : on la redresse
+    const c = document.createElement('canvas'); c.width = H; c.height = W; const x = c.getContext('2d'); x.translate(H, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0); src = c; W = c.width; H = c.height;
+  }
+  const box = coverMap(s.width, s.height, W, H, { x: g.left - s.left, y: g.top - s.top, w: g.width, h: g.height });
+  const c = document.createElement('canvas'); c.width = box.w; c.height = box.h;
+  c.getContext('2d').drawImage(src, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+  scanFree(src); return c;
+}
+/** ML Kit : toutes les lignes lues, en une passe (l'alphabet latin couvre le français et l'anglais). */
+async function natLines(canvas) {
+  const b64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+  const r = await natOcr().detectText({ base64Image: b64, rotation: 0 });
+  return ((r && r.blocks) || []).flatMap(b => (b.lines || []).map(l => ({ text: String(l.text || '').trim() }))).filter(l => l.text);
+}
+
 async function scanCamera() {
   const stage = $('.sc-stage', SC.el);
+  if (natCam() && await natStart()) { if (SC.el) scanHint(CAM_HINT, ''); return; }      // appli Android : caméra native
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint(T('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».'), 'bad'); return; }
   try {
     SC.stream = await camOpen(camSlow());      // appareil déjà repéré comme lent : on repart en 720p
@@ -550,7 +597,7 @@ function openScan() {
       <button class="sc-shot" type="button" data-act="shot" aria-label="${T('Prendre la photo de la carte')}"><i></i></button>
       <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>${T('Appareil')}<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>`;
   SC.recap = null; SC.el = wrap; SC.pm = false; SC.pq = []; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.warm = false; try { localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } const prevFocus = document.activeElement;
-  const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
+  const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } natStop(); };
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (SC.el !== wrap) return; SC.el = null; stop(); document.removeEventListener('keydown', onKey, true);

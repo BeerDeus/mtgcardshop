@@ -192,7 +192,7 @@ function cmCopy(items, what) {
   const text = cmText(items), n = text ? text.split('\n').length : 0;
   if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
   haptic('ok');
-  const done = () => toast(TN(n, '{n} carte copiée : colle-les dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  const done = () => toast(T(n > 1 ? '{n} cartes copiées : colle-les dans une Wants list Cardmarket' : '{n} carte copiée : colle-les dans une Wants list Cardmarket', { n }), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
   try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
 }
 
