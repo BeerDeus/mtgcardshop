@@ -544,7 +544,8 @@ async function natCapture() {
   const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('Image illisible')); i.src = 'data:image/jpeg;base64,' + res.value; });
   const stage = $('.sc-stage', SC.el), s = stage.getBoundingClientRect(), g = $('.sc-guide', SC.el).getBoundingClientRect();
   let src = img, W = img.naturalWidth, H = img.naturalHeight;
-  if ((W > H) !== (s.width > s.height)) {      // image du capteur restée couchée : on la redresse
+  // Le plugin rend l'image déjà tournée comme l'écran (portrait en portrait). Seulement si elle arrivait encore couchée par rapport à l'ÉCRAN (pas à la bande, toujours plus large que haute), on la redresse.
+  if ((W > H) !== (window.innerWidth > window.innerHeight)) {
     const c = document.createElement('canvas'); c.width = H; c.height = W; const x = c.getContext('2d'); x.translate(H, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0); src = c; W = c.width; H = c.height;
   }
   const box = coverMap(s.width, s.height, W, H, { x: g.left - s.left, y: g.top - s.top, w: g.width, h: g.height });

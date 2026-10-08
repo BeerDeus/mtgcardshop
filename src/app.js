@@ -983,7 +983,7 @@ function openSettings() {
         <div id="wipeBox"></div></div>
       <div class="sec-title">${T('Panier CardTrader')}</div>
       <div id="cartBox" class="cartbox"></div>
-      <p class="hint set-ver">${T('Version {v}', { v: esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev') })}</p>
+      <p class="hint set-ver">${T('Version {v}', { v: esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev') })}${typeof isNativeApp === 'function' && isNativeApp() ? ' · APK : ' + NAT_PLUGINS.map(([n, l]) => (natPlugin(n) ? '✓' : '✗') + l).join(' ') : ''}</p>
       <p class="hint fan">${FAN_CONTENT}</p>`;
     const b = api.body;
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
