@@ -17,9 +17,11 @@ import org.json.JSONObject;
 /**
  * Plugin local « ManaOrbit » : ce que le site demande à la coque Android et qu'aucun plugin npm ne fait.
  * Côté site : natPlugin('ManaOrbit') (src/native.js), null dans un navigateur ou dans une APK plus ancienne sans ce plugin.
- * - info() → { firebase, version, build } : Firebase initialisé (google-services.json présent), versionName et versionCode de l'APK.
- * - setWidget({ data }) : chiffres du widget d'écran d'accueil (JSON, voir src/widget.js), gardés pour quand l'appli est fermée.
- * - événement « open » ({ view: 'collection' }) : le widget a été touché ; gardé jusqu'à ce que la page l'écoute (lancement à froid).
+ * - info() → { firebase, version, build, widgets, widgetRefresh } : Firebase initialisé (google-services.json présent), versionName et versionCode
+ *   de l'APK, nombre de widgets posés, estimation appli fermée possible (ValueRefreshJob.ENABLED).
+ * - setWidget({ data, coll? }) : chiffres du widget d'écran d'accueil (JSON, voir src/widget.js), gardés pour quand l'appli est fermée ;
+ *   coll : cartes et prix de référence pour l'estimation appli fermée (absent : plus d'estimation jusqu'au prochain envoi).
+ * - événement « open » ({ view: 'collection' | 'scan' | 'quick' }) : le widget ou son bouton a été touché ; gardé jusqu'à ce que la page l'écoute (lancement à froid).
  */
 @CapacitorPlugin(name = "ManaOrbit")
 public class ManaOrbitPlugin extends Plugin {
@@ -40,6 +42,8 @@ public class ManaOrbitPlugin extends Plugin {
         }
         ret.put("version", version);
         ret.put("build", build);
+        ret.put("widgets", ValueWidget.count(ctx));
+        ret.put("widgetRefresh", ValueRefreshJob.ENABLED);
         call.resolve(ret);
     }
 
@@ -49,7 +53,7 @@ public class ManaOrbitPlugin extends Plugin {
         Context ctx = getContext();
         if (data == null || data.isEmpty()) {
             // rien à afficher : le widget revient à « Ouvre Mana Orbit… »
-            ctx.getSharedPreferences(ValueWidget.PREFS, Context.MODE_PRIVATE).edit().remove(ValueWidget.KEY).apply();
+            ctx.getSharedPreferences(ValueWidget.PREFS, Context.MODE_PRIVATE).edit().remove(ValueWidget.KEY).remove(ValueWidget.KEY_EST).apply();
         } else {
             try {
                 new JSONObject(data);
@@ -57,9 +61,12 @@ public class ManaOrbitPlugin extends Plugin {
                 call.reject("data : JSON illisible");
                 return;
             }
-            ctx.getSharedPreferences(ValueWidget.PREFS, Context.MODE_PRIVATE).edit().putString(ValueWidget.KEY, data).apply();
+            // chiffres frais de l'appli : l'estimation appli fermée n'a plus lieu d'être
+            ctx.getSharedPreferences(ValueWidget.PREFS, Context.MODE_PRIVATE).edit().putString(ValueWidget.KEY, data).remove(ValueWidget.KEY_EST).apply();
         }
+        ValueRefreshJob.store(ctx, data == null || data.isEmpty() ? null : call.getString("coll"));
         ValueWidget.refreshAll(ctx);
+        ValueRefreshJob.sync(ctx);
         call.resolve();
     }
 

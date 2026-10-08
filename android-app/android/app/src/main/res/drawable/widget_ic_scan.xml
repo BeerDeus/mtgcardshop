@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône « Scanner » : l'appareil photo de l'appli (symbole i-camera de body.html), en trait blanc. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M4,8.5A1.5,1.5 0 0,1 5.5,7H8l1.2,-2h5.6L16,7h2.5A1.5,1.5 0 0,1 20,8.5v9a1.5,1.5 0 0,1 -1.5,1.5h-13A1.5,1.5 0 0,1 4,17.5z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.8" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M8.6,12.5a3.4,3.4 0 1,0 6.8,0a3.4,3.4 0 1,0 -6.8,0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8" />
+</vector>

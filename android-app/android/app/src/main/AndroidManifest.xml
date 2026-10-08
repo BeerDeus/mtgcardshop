@@ -38,6 +38,12 @@
                 android:resource="@xml/widget_value_info" />
         </receiver>
 
+        <!-- Valeur du widget estimée appli fermée (ValueRefreshJob.java) : tâche JobScheduler toutes les ~12 h, réseau requis. Seul le système peut la lancer. -->
+        <service
+            android:name=".ValueRefreshJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <!-- Scan : modèle de lecture du texte (ML Kit) téléchargé dès l'installation, pas au premier scan -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
@@ -70,6 +76,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Widget : la tâche de fond exige du réseau (obligatoire pour une tâche JobScheduler avec réseau dès Android 14) et préfère le Wi-Fi -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Notifications (Android 13 et plus : demandée à l'utilisateur quand il active les notifications dans l'appli) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Scan des cartes : appareil photo natif (aperçu Camera1 du plugin camera-preview + reconnaissance du texte ML Kit, sur l'appareil) -->
