@@ -103,6 +103,10 @@ ok('push : notification affichée avec titre, texte et lien de reprise');
 await push({ title: 'x'.repeat(300), body: 'b'.repeat(500), url: 'https://evil.example/phish' });
 n = await waitNotif(a => a.length === 1 && a[0].title.length === 80);
 assert.equal(n.length, 1, 'même tag : remplace la précédente'); assert.equal(n[0].title.length, 80); assert.equal(n[0].body.length, 200); assert.equal(n[0].url, './?resume=1', 'lien externe refusé');
+for (const [i, url] of ['//evil.example/phish', '/\\evil.example', '/\t/evil.example', 'javascript:alert(1)'].entries()) {      // relatifs au protocole et variantes : un autre site
+  await push({ title: 'lien ' + i, url }); n = await waitNotif(a => a.length === 1 && a[0].title === 'lien ' + i); assert.equal(n[0].url, './?resume=1', 'lien refusé : ' + JSON.stringify(url));
+}
+await push({ title: 'même site', url: new URL('?resume=1', URL0).href }); n = await waitNotif(a => a.length === 1 && a[0].title === 'même site'); assert.equal(n[0].url, new URL('?resume=1', URL0).href, 'adresse de l\'app elle-même : gardée');
 await push(null); await p.waitForTimeout(0);
 ok('push : textes bornés, un seul avis à la fois, lien externe refusé');
 
