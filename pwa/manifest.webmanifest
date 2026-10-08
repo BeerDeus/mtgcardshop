@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Deck Deal",
-  "short_name": "Deck Deal",
-  "description": "Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.",
+  "name": "Mana Orbit",
+  "short_name": "Mana Orbit",
+  "description": "Ta collection Magic, tes decks et les meilleurs prix : valeur de tes cartes, decks EDHREC à monter, panier CardTrader le moins cher.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "./",

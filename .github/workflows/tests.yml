@@ -1,4 +1,4 @@
-# Tests de Deck Deal (voir DEV.md).
+# Tests de Mana Orbit (voir DEV.md).
 # · Chaque push / pull request : build à jour (deck-deal.html = build de src/), tests Node et jsdom (~2 min).
 # · Pull request et lancement manuel : suite complète avec navigateur (~20 min).
 name: Tests

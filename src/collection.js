@@ -279,7 +279,7 @@ function openCollPrices() {
     for (const [k, x] of Object.entries(COLL.map)) { if (BASIC_NAMES.has(k)) continue; all++; if (x.l) counts[x.l] = (counts[x.l] || 0) + 1; else none++; }
     const opt = (v, t) => `<option value="${v}">${esc(t)}</option>`, LN = l => LANGS[l][0].toUpperCase() + LANGS[l].slice(1);
     const crit = [LANGS[S.opts.lang], 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), S.opts.foil === 'no' ? 'non foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non', S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
-    api.body.innerHTML = `<p class="hint">Pour chaque carte, Deck Deal lit l'offre la moins chère aujourd'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.</p>
+    api.body.innerHTML = `<p class="hint">Pour chaque carte, Mana Orbit lit l'offre la moins chère aujourd'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.</p>
       <div class="ctl"><label class="label" for="pxLang">Langue des cartes</label><div class="sel"><select id="pxLang">${opt('', `Toutes (${all})`)}${CARD_LANG_LIST.filter(l => counts[l]).map(l => opt(l, `${LN(l)} (${counts[l]})`)).join('')}${none ? opt('none', `Sans langue (${none}) · cherchées en ${LANGS[S.opts.lang]}`) : ''}</select></div></div>
       <div class="seg" id="pxScope" role="radiogroup" aria-label="Portée"></div>
       <div class="ci-sum" id="pxSum"></div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.">
+<meta name="description" content="Ta collection Magic, tes decks et les meilleurs prix : valeur de tes cartes, decks EDHREC à monter, panier CardTrader le moins cher.">
 <meta name="theme-color" content="#f1f3f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,9 +13,9 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Deck Deal">
+<meta name="apple-mobile-web-app-title" content="Mana Orbit">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Deck Deal</title>
+<title>Mana Orbit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap">
@@ -23,7 +23,7 @@
 html{padding-top:env(safe-area-inset-top,0px)}
 [hidden]{display:none!important}
 img{max-width:100%}
-/* Deck Deal — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
+/* Mana Orbit — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
 :root{
   --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
   --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
@@ -79,7 +79,7 @@ svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--line)}
 .bar-in{max-width:640px;margin-inline:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.mark{width:17px;height:23px;border-radius:5px;background:var(--foil);background-size:200% 200%;transform:rotate(-9deg);box-shadow:0 2px 8px -2px rgba(127,176,255,.7);animation:foilmove 7s linear infinite}
+.logo{width:34px;height:34px;flex:none;color:var(--ink);overflow:visible;filter:drop-shadow(0 3px 8px rgba(127,176,255,.45))}
 .word{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.02em}
 .bar-right{display:flex;align-items:center;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2)}
@@ -417,7 +417,7 @@ button.sync:active{background:var(--surface-2)}
 /* ── Installation (PWA) ── */
 .installbar{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
 .ib-ico{flex:none;width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center}
-.ib-ico .mark{display:block;width:15px;height:21px;animation:none}
+.ib-ico{background:#0b0f1c}.ib-ico .logo{width:30px;height:30px;color:#fff;filter:none}
 .ib-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .ib-txt b{font-size:14.5px;letter-spacing:-.01em}
 .ib-txt span{font-size:12.5px;color:var(--ink-3);text-wrap:pretty}
@@ -1504,6 +1504,12 @@ button,.btn,select,summary{touch-action:manipulation}
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
     <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-logo" viewBox="6 8 88 88">
+      <linearGradient id="lgFoil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc3"/><stop offset=".26" stop-color="#ffd479"/><stop offset=".5" stop-color="#7be8c8"/><stop offset=".74" stop-color="#7fb0ff"/><stop offset="1" stop-color="#c79bff"/></linearGradient>
+      <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 1 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.6" stroke-linecap="round"/><circle cx="27.7" cy="41.5" r="3.6" fill="#ff7a5c" stroke="currentColor" stroke-opacity=".25" stroke-width=".8"/><circle cx="72.3" cy="41.5" r="3.6" fill="#6fd08c" stroke="currentColor" stroke-opacity=".25" stroke-width=".8"/></g>
+      <g transform="rotate(-11 51 50)"><rect x="37" y="27" width="28" height="41" rx="5" fill="url(#lgFoil)"/><rect x="39.6" y="29.6" width="22.8" height="35.8" rx="3.2" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></g>
+      <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 0 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.6" stroke-linecap="round"/><circle cx="86.1" cy="56" r="4.6" fill="#7fb0ff" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/><circle cx="50" cy="65" r="4.6" fill="#f8f6d8" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/><circle cx="13.9" cy="56" r="4.6" fill="#b5a3c8" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/></g>
+    </symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
     <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6 8h12.5l-3.5-3.5M18 16H5.5L9 19.5"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
@@ -1514,7 +1520,7 @@ button,.btn,select,summary{touch-action:manipulation}
   <div class="hm-aura" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
   <header class="bar">
     <div class="bar-in">
-      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
+      <div class="brand"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="word">Mana Orbit</span></div>
       <div class="bar-right">
         <button class="chip" id="modeChip" type="button" data-live="0" aria-label="Mode de connexion"><span class="dot"></span><span id="modeLabel">Démo</span></button>
         <button class="icon-btn avatar" id="btnAccount" type="button" aria-label="Compte" data-in="0"><svg class="i"><use href="#i-user"/></svg><span id="avatarLetter" aria-hidden="true"></span></button>
@@ -1528,8 +1534,8 @@ button,.btn,select,summary{touch-action:manipulation}
     <section class="view home" id="viewHome" aria-label="Accueil">
       <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
         <aside class="installbar" id="installBar" aria-label="Installer l'application">
-          <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
-          <span class="ib-txt"><b>Installer Deck Deal</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
+          <span class="ib-ico" aria-hidden="true"><svg class="logo"><use href="#i-logo"/></svg></span>
+          <span class="ib-txt"><b>Installer Mana Orbit</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
           <button class="btn small" type="button" id="btnInstallBar">Installer</button>
           <button class="ib-x" type="button" id="btnInstallX" aria-label="Plus tard"><svg class="i"><use href="#i-close"/></svg></button>
         </aside>
@@ -1598,7 +1604,7 @@ button,.btn,select,summary{touch-action:manipulation}
       </div>
       <div class="intro">
         <h1>Ta decklist au meilleur prix, en français.</h1>
-        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit cherche les offres sur CardTrader et compose le panier le moins cher.</p>
       </div>
 
       <div class="field">
@@ -1729,7 +1735,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = 'e63eaa1b';
+const DD_BUILD = '329a6249';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -4727,7 +4733,7 @@ function syncShip() { $('#shipField').hidden = S.opts.mode !== 'direct'; }
 function modeHint() {
   $('#modeHint').textContent = S.opts.mode === 'zero'
     ? 'CardTrader Zero regroupe tous les vendeurs dans un seul colis (9 à 14 jours). Les frais et la livraison sont calculés par CardTrader.'
-    : 'Chaque vendeur expédie lui-même. Deck Deal minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
+    : 'Chaque vendeur expédie lui-même. Mana Orbit minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
 }
 
 /* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
@@ -5260,8 +5266,8 @@ function openCartSheet() {
     };
     const intro = () => {
       api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
-        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Deck Deal), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
-        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Deck Deal essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
+        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Mana Orbit), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
+        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
       api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
       $('#btnGo', api.foot).onclick = () => go(!S.demo && !!($('#cfClear', api.body) || {}).checked);
     };
@@ -5383,12 +5389,12 @@ function openSettings() {
       if (!appBox.isConnected) { off(); return; }
       const st = PWA.state();
       const okRow = t => `<div class="status" data-ok="1"><span class="dot"></span><span>${t}</span></div>`;
-      appBox.innerHTML = st === 'standalone' ? okRow('Deck Deal est ouverte en application installée.')
-        : st === 'installed' ? okRow('Deck Deal est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
-        : st === 'ready' ? '<p class="hint">Installe Deck Deal comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Deck Deal</button>'
+      appBox.innerHTML = st === 'standalone' ? okRow('Mana Orbit est ouverte en application installée.')
+        : st === 'installed' ? okRow('Mana Orbit est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
+        : st === 'ready' ? '<p class="hint">Installe Mana Orbit comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Mana Orbit</button>'
         : st === 'ios' ? '<p class="hint">Sur iPhone et iPad, Apple ne permet pas l\'installation directe. Dans Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».</p>'
         : st === 'insecure' ? '<p class="hint">L\'installation demande une adresse en https.</p>'
-        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Deck Deal ». Android : menu ⋮ puis « Installer l\'application ».</p>';
+        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Mana Orbit ». Android : menu ⋮ puis « Installer l\'application ».</p>';
       const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
     };
     const off = PWA.on(paintApp); paintApp();
@@ -5417,7 +5423,7 @@ function openSettings() {
     const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
     const paintCart = (st, d = {}) => {
       if (!box.isConnected) return;
-      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Deck Deal. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
+      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Mana Orbit. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
       else if (st === 'reading') box.innerHTML = '<button class="btn ghost small" type="button" disabled style="align-self:flex-start">Lecture du panier…</button>';
       else if (st === 'empty') box.innerHTML = '<div class="status" data-ok="1"><span class="dot"></span><span>Le panier CardTrader est déjà vide.</span></div>';
       else if (st === 'confirm') {
@@ -5488,7 +5494,7 @@ async function detectProxy() {
 
 /* ── Récap à copier ───────────────────────────────────────────────────────────────────────── */
 function recapText() {
-  const r = curRes(), lines = [`Deck Deal · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
+  const r = curRes(), lines = [`Mana Orbit · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
   const miss = [], own = [];
   for (const c of S.deck.cards) {
     if (c.need === 0) { own.push(c.name); continue; }
@@ -5613,7 +5619,7 @@ async function onShared(sh) {
   const put = putDeckText;
   if (sh.text) return put(sh.text);
   if (!sh.urls.length) { toast('Rien à importer dans ce partage'); return; }
-  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Deck Deal'); return; }
+  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Mana Orbit'); return; }
   toast('Lecture de la liste…');
   try { const r = await ct('import', { params: { url: sh.urls[0] } }); if (r && r.text) put(r.text, r.name); else throw new Error('vide'); }
   catch (e) { toast(e && e.code === 'auth' ? authHint(e).msg : 'Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici'); }
@@ -7206,7 +7212,7 @@ function openCollPrices() {
     for (const [k, x] of Object.entries(COLL.map)) { if (BASIC_NAMES.has(k)) continue; all++; if (x.l) counts[x.l] = (counts[x.l] || 0) + 1; else none++; }
     const opt = (v, t) => `<option value="${v}">${esc(t)}</option>`, LN = l => LANGS[l][0].toUpperCase() + LANGS[l].slice(1);
     const crit = [LANGS[S.opts.lang], 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), S.opts.foil === 'no' ? 'non foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non', S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
-    api.body.innerHTML = `<p class="hint">Pour chaque carte, Deck Deal lit l'offre la moins chère aujourd'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.</p>
+    api.body.innerHTML = `<p class="hint">Pour chaque carte, Mana Orbit lit l'offre la moins chère aujourd'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.</p>
       <div class="ctl"><label class="label" for="pxLang">Langue des cartes</label><div class="sel"><select id="pxLang">${opt('', `Toutes (${all})`)}${CARD_LANG_LIST.filter(l => counts[l]).map(l => opt(l, `${LN(l)} (${counts[l]})`)).join('')}${none ? opt('none', `Sans langue (${none}) · cherchées en ${LANGS[S.opts.lang]}`) : ''}</select></div></div>
       <div class="seg" id="pxScope" role="radiogroup" aria-label="Portée"></div>
       <div class="ci-sum" id="pxSum"></div>
@@ -8463,7 +8469,7 @@ function alWhy(r) {
   return r.why === 'denied' ? 'Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.'
     : r.why === 'dismissed' ? 'Autorisation non accordée.'
     : r.why === 'demo' ? 'Indisponible en mode démo.'
-    : r.why === 'ios' ? 'Sur iPhone et iPad, installe d\'abord Deck Deal sur l\'écran d\'accueil (Réglages › Application).'
+    : r.why === 'ios' ? 'Sur iPhone et iPad, installe d\'abord Mana Orbit sur l\'écran d\'accueil (Réglages › Application).'
     : 'Activation impossible' + (r.msg ? ' : ' + r.msg : '') + '.';
 }
 
@@ -8492,7 +8498,7 @@ function alWatchBtn(api, name) {
 async function alPaintBox(box) {
   box = box && box.isConnected ? box : $('#alertBox'); if (!box || !box.isConnected) return;
   const note = t => `<p class="hint">${t}</p>`;
-  if (!CTX.proxy) { box.innerHTML = note('Les alertes demandent le serveur Deck Deal (il surveille les prix quand l\'app est fermée).'); return; }
+  if (!CTX.proxy) { box.innerHTML = note('Les alertes demandent le serveur Mana Orbit (il surveille les prix quand l\'app est fermée).'); return; }
   if (!CTX.vapid) { box.innerHTML = note('Le serveur n\'a pas de clés de notification : ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT (voir README).'); return; }
   if (!CTX.alerts) { box.innerHTML = note('Les alertes de prix sont désactivées sur le serveur.'); return; }
   if (S.demo) { box.innerHTML = note('Indisponible en mode démo.'); return; }
@@ -8520,7 +8526,7 @@ async function alPaintBox(box) {
 /* ── Feuille « Alertes de prix » ─────────────────────────────────────────────────────────────── */
 const alPct = (c, b) => (b > 0 && c > 0 ? Math.round((c - b) / b * 100) : 0);
 async function openAlertSheet() {
-  if (!alAvail()) { toast(S.demo ? 'Alertes indisponibles en mode démo' : 'Alertes indisponibles : serveur Deck Deal requis'); return; }
+  if (!alAvail()) { toast(S.demo ? 'Alertes indisponibles en mode démo' : 'Alertes indisponibles : serveur Mana Orbit requis'); return; }
   openSheet('Alertes de prix', 'Prix Cardmarket, relevés toutes les 6 h', api => {
     let data = null, busy = false;
     const sig = () => api.wrap.isConnected;
@@ -8598,7 +8604,7 @@ async function openAlertSheet() {
 }
 
 /** Touché sur une notification d'alerte ou lien ./?alerts=1. */
-function alertsOpen() { if (alAvail()) openAlertSheet(); else toast('Alerte de prix reçue : ouvre Deck Deal connectée au serveur pour la voir'); }
+function alertsOpen() { if (alAvail()) openAlertSheet(); else toast('Alerte de prix reçue : ouvre Mana Orbit connectée au serveur pour la voir'); }
 
 function alInit() {
   alRead();
@@ -10155,7 +10161,7 @@ const PWA = (() => {
 
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; emit(); });
-    window.addEventListener('appinstalled', () => { installed = true; deferred = null; emit(); try { toast('Deck Deal est installée'); } catch (e) { /* ignore */ } });
+    window.addEventListener('appinstalled', () => { installed = true; deferred = null; emit(); try { toast('Mana Orbit est installée'); } catch (e) { /* ignore */ } });
     try { matchMedia('(display-mode: standalone)').addEventListener('change', emit); } catch (e) { /* ignore */ }
     // Service worker : seulement en http(s) (pas depuis un fichier local ni un aperçu) ; une erreur ici ne doit jamais gêner l'app.
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
@@ -10241,10 +10247,10 @@ async function paintPushBox(box) {
     return;
   }
   box.innerHTML = {
-    noproxy: '<p class="hint">Les notifications demandent le serveur Deck Deal (la recherche y continue quand tu quittes l\'app).</p>',
+    noproxy: '<p class="hint">Les notifications demandent le serveur Mana Orbit (la recherche y continue quand tu quittes l\'app).</p>',
     novapid: note(0, 'Le serveur n\'a pas de clés de notification. Ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT dans les variables d\'environnement (voir README).'),
     denied: note(0, 'Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur, puis reviens ici.'),
-    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Deck Deal est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
+    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Mana Orbit est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
     unsupported: '<p class="hint">Ce navigateur ne gère pas les notifications push.</p>',
     nosw: '<p class="hint">Le service worker n\'est pas actif (ouvre l\'app en https, puis recharge).</p>',
   }[st] || '';

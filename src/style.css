@@ -1,4 +1,4 @@
-/* Deck Deal — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
+/* Mana Orbit — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
 :root{
   --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
   --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
@@ -54,7 +54,7 @@ svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--line)}
 .bar-in{max-width:640px;margin-inline:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.mark{width:17px;height:23px;border-radius:5px;background:var(--foil);background-size:200% 200%;transform:rotate(-9deg);box-shadow:0 2px 8px -2px rgba(127,176,255,.7);animation:foilmove 7s linear infinite}
+.logo{width:34px;height:34px;flex:none;color:var(--ink);overflow:visible;filter:drop-shadow(0 3px 8px rgba(127,176,255,.45))}
 .word{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.02em}
 .bar-right{display:flex;align-items:center;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2)}
@@ -392,7 +392,7 @@ button.sync:active{background:var(--surface-2)}
 /* ── Installation (PWA) ── */
 .installbar{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
 .ib-ico{flex:none;width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center}
-.ib-ico .mark{display:block;width:15px;height:21px;animation:none}
+.ib-ico{background:#0b0f1c}.ib-ico .logo{width:30px;height:30px;color:#fff;filter:none}
 .ib-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .ib-txt b{font-size:14.5px;letter-spacing:-.01em}
 .ib-txt span{font-size:12.5px;color:var(--ink-3);text-wrap:pretty}

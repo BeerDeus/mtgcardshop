@@ -84,7 +84,7 @@ service cloud.firestore {
         );
     }
 
-    // Classeur Full Art (autre appli du même projet Firebase, pas Deck Deal) : un seul document par compte
+    // Classeur Full Art (autre appli du même projet Firebase, pas Mana Orbit) : un seul document par compte
     //   users/{uid}/binder/lands = { owned: { <scryfallId>: true }, pages: { <codeSet>: "12" }, updatedAt }
     // Gardé ici : publier ce fichier remplace TOUTES les règles du projet.
     match /users/{uid}/binder/{docId} {

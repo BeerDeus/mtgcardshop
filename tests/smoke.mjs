@@ -86,7 +86,7 @@ console.log('panier :', $('#sheetRoot').textContent.replace(/\s+/g, ' ').slice(0
 
 // copie
 click($('#btnCopy')); await sleep(200);
-ok(/Deck Deal/.test(w.__copied || ''), 'récap copié (' + (w.__copied || '').split('\n').length + ' lignes)');
+ok(/Mana Orbit/.test(w.__copied || ''), 'récap copié (' + (w.__copied || '').split('\n').length + ' lignes)');
 
 // réglages
 click($('#btnSettings')); await sleep(500);

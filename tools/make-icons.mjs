@@ -1,30 +1,20 @@
-// Génère pwa/icons/* depuis un seul dessin (foil card). Rendu par Chromium (Playwright). node make-icons.mjs
+// Génère pwa/icons/* depuis un seul dessin (carte foil et orbite des cinq couleurs). Rendu par Chromium (Playwright). node make-icons.mjs
 import { writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
 
-/** Dessin 512×512. bleed:false → carré arrondi à coins transparents (icône « any ») ; true → plein cadre (maskable / Apple). */
+/** Dessin 512×512 (logo « carte et orbite » : une carte foil, une orbite et les cinq billes de mana W U B R G (blanc au centre, devant la carte), trois devant la carte, deux derrière).
+ *  bleed:false → carré arrondi à coins transparents (icône « any ») ; true → plein cadre (maskable / Apple : dessin réduit dans la zone sûre). */
 const art = ({ bleed }) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#171f3d"/><stop offset="1" stop-color="#0a0e1c"/></linearGradient>
-    <linearGradient id="foil" x1=".08" y1="0" x2=".92" y2="1"><stop offset="0" stop-color="#ff8fc3"/><stop offset=".24" stop-color="#ffd479"/><stop offset=".48" stop-color="#7be8c8"/><stop offset=".72" stop-color="#7fb0ff"/><stop offset="1" stop-color="#c79bff"/></linearGradient>
-    <radialGradient id="glow" cx=".5" cy=".46" r=".55"><stop offset="0" stop-color="#7fb0ff" stop-opacity=".30"/><stop offset="1" stop-color="#7fb0ff" stop-opacity="0"/></radialGradient>
-    <clipPath id="face"><rect x="-88" y="-123" width="176" height="246" rx="22"/></clipPath>
+    <radialGradient id="bg" cx=".3" cy=".25" r="1"><stop offset="0" stop-color="#232b5c"/><stop offset=".7" stop-color="#0b0f1c"/></radialGradient>
+    <linearGradient id="foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc3"/><stop offset=".26" stop-color="#ffd479"/><stop offset=".5" stop-color="#7be8c8"/><stop offset=".74" stop-color="#7fb0ff"/><stop offset="1" stop-color="#c79bff"/></linearGradient>
   </defs>
-  <rect width="512" height="512" ${bleed ? '' : 'rx="112"'} fill="url(#bg)"/>
-  <rect width="512" height="512" ${bleed ? '' : 'rx="112"'} fill="url(#glow)"/>
-  <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
-  <g transform="translate(284 250) rotate(11)"><rect x="-88" y="-123" width="176" height="246" rx="22" fill="#1d2748" stroke="#3a4672" stroke-width="3"/><rect x="-70" y="-105" width="140" height="22" rx="7" fill="#2b3865"/></g>
-  <g transform="translate(236 262) rotate(-8)">
-    <rect x="-88" y="-123" width="176" height="246" rx="22" fill="url(#foil)"/>
-    <g clip-path="url(#face)"><path d="M-140 70 L60 -150 L110 -150 L-90 70 Z" fill="#fff" opacity=".26"/><path d="M-40 150 L150 -60 L170 -60 L-20 150 Z" fill="#fff" opacity=".14"/></g>
-    <rect x="-88" y="-123" width="176" height="246" rx="22" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3"/>
-    <rect x="-70" y="-105" width="112" height="24" rx="8" fill="#0b0f1c" fill-opacity=".72"/>
-    <circle cx="58" cy="-93" r="12" fill="#0b0f1c" fill-opacity=".72"/>
-    <rect x="-70" y="-64" width="140" height="92" rx="10" fill="#0b0f1c" fill-opacity=".38"/>
-    <rect x="-70" y="44" width="140" height="10" rx="5" fill="#0b0f1c" fill-opacity=".55"/><rect x="-70" y="64" width="96" height="10" rx="5" fill="#0b0f1c" fill-opacity=".55"/>
-    <rect x="22" y="82" width="48" height="24" rx="9" fill="#fff" fill-opacity=".92"/><path d="M52.4 89.6A7 7 0 1 0 52.4 98.4M39.6 92.3h9.6M39.6 95.7h9.6" fill="none" stroke="#10152b" stroke-width="2.6" stroke-linecap="round"/>
-  </g>
+  <rect width="512" height="512" ${bleed ? '' : 'rx="118"'} fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(${bleed ? 4.3 : 5.12}) translate(-50 -50)">
+    <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 1 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.4" stroke-linecap="round"/><circle cx="27.7" cy="41.5" r="3.4" fill="#ff7a5c" fill-opacity=".85"/><circle cx="72.3" cy="41.5" r="3.4" fill="#6fd08c" fill-opacity=".85"/></g>
+    <g transform="rotate(-11 51 50)"><rect x="37" y="27" width="28" height="41" rx="5" fill="url(#foil)"/><rect x="39.6" y="29.6" width="22.8" height="35.8" rx="3.2" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.1"/></g>
+    <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 0 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.4" stroke-linecap="round"/><circle cx="86.1" cy="56" r="4.3" fill="#7fb0ff"/><circle cx="50" cy="65" r="4.3" fill="#f8f6d8"/><circle cx="13.9" cy="56" r="4.3" fill="#b5a3c8"/></g>
   </g>
 </svg>`;
 

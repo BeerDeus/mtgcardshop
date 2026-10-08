@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Deck Deal — proxy local (aucune dépendance, Node ≥ 18).
+// Mana Orbit — proxy local (aucune dépendance, Node ≥ 18).
 //   CARDTRADER_TOKEN=xxxxx node proxy.mjs          → http://localhost:8787
 //   HOST=0.0.0.0 ALLOWED_UIDS=<uid Firebase> node proxy.mjs  → accessible depuis le téléphone, réservé à ton compte Firebase
 //   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → variante : clé partagée à saisir dans Réglages
@@ -831,7 +831,7 @@ process.on('uncaughtException', e => console.error('uncaughtException:', e));
 if (ALERTS_ON) await alLoad();                                  // abonnements et relevés avant d'accepter la première requête
 server.listen(PORT, HOST, () => {
   warmFiles();
-  console.log(`Deck Deal → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+  console.log(`Mana Orbit → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(TOKEN ? 'Token CardTrader : OK' : '⚠ CARDTRADER_TOKEN manquant : mode démo uniquement');
   if (AUTH_FB) console.log(`Accès : compte Firebase « ${FB_PROJECT} » (${ALLOWED_UIDS.size} UID, ${ALLOWED_EMAILS.size} email${ALLOWED_EMAILS.size > 1 ? 's' : ''} vérifié${ALLOWED_EMAILS.size > 1 ? 's' : ''}).`);
   if (APP_KEY) console.log(AUTH_FB ? 'APP_KEY encore acceptée en secours : supprime-la une fois la connexion par compte validée.' : 'Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');

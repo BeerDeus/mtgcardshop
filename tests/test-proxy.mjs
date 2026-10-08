@@ -21,7 +21,7 @@ const upPort = up.address().port;
 const start = (env, port) => new Promise((resolve, reject) => {
   const p = spawn('node', ['proxy.mjs'], { env: { ...process.env, PORT: String(port), CT_UPSTREAM: `http://127.0.0.1:${upPort}/api/v2`, EDH_SOURCE_URL: '', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
   let out = '';
-  p.stdout.on('data', d => { out += d; if (/Deck Deal →/.test(out)) resolve(p); });
+  p.stdout.on('data', d => { out += d; if (/Mana Orbit →/.test(out)) resolve(p); });
   p.stderr.on('data', d => { out += d; });
   p.on('exit', code => { if (code) reject(new Error('exit ' + code + ': ' + out)); });
 });
@@ -32,7 +32,7 @@ const j = async (url, init) => { const r = await fetch(url, init); const t = awa
 let p = await start({ CARDTRADER_TOKEN: 'tok123' }, 18787);
 let B = 'http://127.0.0.1:18787';
 let r = await j(B + '/__ping'); assert.deepEqual(r.o, { ok: true, app: 'deckdeal', needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '' }); console.log('✓ ping');
-r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Deck Deal<\/title>/); console.log('✓ page servie');
+r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Mana Orbit<\/title>/); console.log('✓ page servie');
 r = await j(B + '/api/cart/purchase', { method: 'POST', body: '{}' }); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (POST)');
 r = await j(B + '/api/cart/purchase'); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (GET)');
 r = await j(B + '/api/cart/purchase/', { method: 'POST' }); assert.equal(r.s, 403); console.log('✓ cart/purchase/ bloqué (slash final)');
@@ -52,7 +52,7 @@ r = await j(B + '/api/expansions'); assert.equal(r.h.get('x-frame-options'), 'DE
 
 // PWA : fichiers statiques servis en correspondance exacte (liste blanche), types corrects, jamais de traversée
 const raw = (port, line) => new Promise(res => { const c = net.connect(port, '127.0.0.1', () => c.write(line + ' HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n')); let d = ''; c.on('data', x => d += x); c.on('close', () => res(d)); });
-r = await j(B + '/manifest.webmanifest'); assert.equal(r.s, 200); assert.match(r.h.get('content-type'), /^application\/manifest\+json/); assert.equal(r.o.name, 'Deck Deal'); assert.equal(r.h.get('cache-control'), 'no-cache'); console.log('✓ manifest servi (application/manifest+json)');
+r = await j(B + '/manifest.webmanifest'); assert.equal(r.s, 200); assert.match(r.h.get('content-type'), /^application\/manifest\+json/); assert.equal(r.o.name, 'Mana Orbit'); assert.equal(r.h.get('cache-control'), 'no-cache'); console.log('✓ manifest servi (application/manifest+json)');
 { const m = r.o; assert.equal(m.display, 'standalone'); assert.equal(m.start_url, './'); assert.equal(m.scope, './'); assert.ok(m.icons.some(i => i.purpose === 'maskable'));
   for (const i of m.icons) { const x = await fetch(B + '/' + i.src); assert.equal(x.status, 200, i.src); assert.equal(x.headers.get('content-type').split(';')[0], i.type, i.src); if (i.type === 'image/png') { const b = Buffer.from(await x.arrayBuffer()); assert.equal(b.subarray(1, 4).toString(), 'PNG'); const [w, h] = i.sizes.split('x').map(Number); assert.equal(b.readUInt32BE(16), w, i.src + ' largeur'); assert.equal(b.readUInt32BE(20), h, i.src + ' hauteur'); } }
   console.log('✓ icônes du manifeste : présentes, bon type, bonnes dimensions'); }

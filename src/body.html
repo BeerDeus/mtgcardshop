@@ -21,6 +21,12 @@
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
     <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-logo" viewBox="6 8 88 88">
+      <linearGradient id="lgFoil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc3"/><stop offset=".26" stop-color="#ffd479"/><stop offset=".5" stop-color="#7be8c8"/><stop offset=".74" stop-color="#7fb0ff"/><stop offset="1" stop-color="#c79bff"/></linearGradient>
+      <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 1 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.6" stroke-linecap="round"/><circle cx="27.7" cy="41.5" r="3.6" fill="#ff7a5c" stroke="currentColor" stroke-opacity=".25" stroke-width=".8"/><circle cx="72.3" cy="41.5" r="3.6" fill="#6fd08c" stroke="currentColor" stroke-opacity=".25" stroke-width=".8"/></g>
+      <g transform="rotate(-11 51 50)"><rect x="37" y="27" width="28" height="41" rx="5" fill="url(#lgFoil)"/><rect x="39.6" y="29.6" width="22.8" height="35.8" rx="3.2" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></g>
+      <g transform="rotate(-20 50 52)"><path d="M12 52A38 13 0 0 0 88 52" fill="none" stroke="#9aa3b8" stroke-width="2.6" stroke-linecap="round"/><circle cx="86.1" cy="56" r="4.6" fill="#7fb0ff" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/><circle cx="50" cy="65" r="4.6" fill="#f8f6d8" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/><circle cx="13.9" cy="56" r="4.6" fill="#b5a3c8" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/></g>
+    </symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
     <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6 8h12.5l-3.5-3.5M18 16H5.5L9 19.5"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
@@ -31,7 +37,7 @@
   <div class="hm-aura" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
   <header class="bar">
     <div class="bar-in">
-      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
+      <div class="brand"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="word">Mana Orbit</span></div>
       <div class="bar-right">
         <button class="chip" id="modeChip" type="button" data-live="0" aria-label="Mode de connexion"><span class="dot"></span><span id="modeLabel">Démo</span></button>
         <button class="icon-btn avatar" id="btnAccount" type="button" aria-label="Compte" data-in="0"><svg class="i"><use href="#i-user"/></svg><span id="avatarLetter" aria-hidden="true"></span></button>
@@ -45,8 +51,8 @@
     <section class="view home" id="viewHome" aria-label="Accueil">
       <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
         <aside class="installbar" id="installBar" aria-label="Installer l'application">
-          <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
-          <span class="ib-txt"><b>Installer Deck Deal</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
+          <span class="ib-ico" aria-hidden="true"><svg class="logo"><use href="#i-logo"/></svg></span>
+          <span class="ib-txt"><b>Installer Mana Orbit</b><span id="installSub">Lancement direct, plein écran, comme une vraie app.</span></span>
           <button class="btn small" type="button" id="btnInstallBar">Installer</button>
           <button class="ib-x" type="button" id="btnInstallX" aria-label="Plus tard"><svg class="i"><use href="#i-close"/></svg></button>
         </aside>
@@ -115,7 +121,7 @@
       </div>
       <div class="intro">
         <h1>Ta decklist au meilleur prix, en français.</h1>
-        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit cherche les offres sur CardTrader et compose le panier le moins cher.</p>
       </div>
 
       <div class="field">

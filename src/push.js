@@ -65,10 +65,10 @@ async function paintPushBox(box) {
     return;
   }
   box.innerHTML = {
-    noproxy: '<p class="hint">Les notifications demandent le serveur Deck Deal (la recherche y continue quand tu quittes l\'app).</p>',
+    noproxy: '<p class="hint">Les notifications demandent le serveur Mana Orbit (la recherche y continue quand tu quittes l\'app).</p>',
     novapid: note(0, 'Le serveur n\'a pas de clés de notification. Ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT dans les variables d\'environnement (voir README).'),
     denied: note(0, 'Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur, puis reviens ici.'),
-    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Deck Deal est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
+    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Mana Orbit est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
     unsupported: '<p class="hint">Ce navigateur ne gère pas les notifications push.</p>',
     nosw: '<p class="hint">Le service worker n\'est pas actif (ouvre l\'app en https, puis recharge).</p>',
   }[st] || '';

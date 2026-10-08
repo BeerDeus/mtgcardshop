@@ -1,4 +1,4 @@
-/* Deck Deal — service worker.
+/* Mana Orbit — service worker.
    • Page (navigation) : réseau d'abord, copie locale si le réseau échoue ou traîne → l'app s'ouvre hors ligne.
    • Icônes et manifeste : cache d'abord, rafraîchis en arrière-plan.
    • Images de cartes Scryfall (cards.scryfall.io) : cache d'abord → une carte déjà vue ne se retélécharge plus.
@@ -48,7 +48,7 @@ async function page(e) {
   const share = /[?&]p=/.test(new URL(e.request.url).search);      // lien de partage : il faut la version à jour (une ancienne copie ne sait pas l'ouvrir)
   const wait = new Promise((_, no) => setTimeout(no, cached && !share ? 4000 : 25000));
   try { const r = await Promise.race([net, wait]); if (r.ok || !cached) return r; } catch (_) { /* réseau absent ou trop lent */ }
-  return cached || new Response('Deck Deal est hors ligne et n\'a pas encore été ouvert avec du réseau.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  return cached || new Response('Mana Orbit est hors ligne et n\'a pas encore été ouvert avec du réseau.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
 
 async function asset(e, key) {

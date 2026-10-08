@@ -63,7 +63,7 @@ const fakePrompt = outcome => {
   // hors ligne : la page s'ouvre quand même, l'API échoue (pas servie depuis un cache)
   await c.setOffline(true);
   await pg.reload({ waitUntil: 'domcontentloaded' });
-  assert.equal(await pg.title(), 'Deck Deal'); assert.ok(await pg.$('#deckText'), 'interface complète hors ligne');
+  assert.equal(await pg.title(), 'Mana Orbit'); assert.ok(await pg.$('#deckText'), 'interface complète hors ligne');
   const apiOff = await pg.evaluate(() => fetch('api/info').then(() => 'servi', () => 'échec'));
   assert.equal(apiOff, 'échec', 'l\'API n\'est jamais servie hors ligne depuis un cache');
   console.log('✓ hors ligne : l\'app s\'ouvre, l\'API échoue franchement');

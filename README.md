@@ -1,4 +1,4 @@
-# Deck Deal
+# Mana Orbit
 
 Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node ≥ 18) lancé via `start.cjs`.
 
@@ -173,7 +173,7 @@ Ma collection › onglet **Échange** (`src/share.js`).
 - **Garder** : retire une carte précise de la liste (elle passe dans « Gardées à la main », **Remettre** pour l'y remettre).
 - **Je recherche** : cartes qui manquent à tes decks (somme des decks − collection) + **liste de souhaits** : « Ajouter une carte recherchée » (catalogue Scryfall, quantité ajustable), ou bouton **☆ Liste de souhaits** de la **carte en grand** (decks, collection, résultats, decks EDHREC, partages) qui **retient l'illustration affichée** (image, extension et numéro, langue) ; « Souhaiter cette illustration » la remplace, « ★ Dans ta liste » la retire. L'illustration choisie apparaît dans « Je recherche » et sur le lien public. Barre de recherche et filtres de la collection valables dans les deux listes.
 - **Lien public** (compte requis) : **Créer le lien** → `<site>/?p=<id>` (identifiant aléatoire, non devinable). **Toujours à jour** : chaque changement de collection, de decks, de réserve ou de souhaits réécrit le partage (différé de quelques secondes, rien si le contenu n'a pas changé), depuis n'importe lequel de tes appareils. **Copier**, **Partager**, **Aperçu** (ce que voit le visiteur), **Nouveau lien** (l'ancien cesse de marcher), **Arrêter le partage**.
-- **Visiteur** (sans compte) : onglets **À échanger** / **Recherchées**, recherche par **nom français ou anglais**, filtres couleur / famille / coût, images (dans la langue de l'exemplaire), drapeau, quantités, carte en grand. **Lecture seule** : aucune écriture, ni chez lui ni chez toi. S'il utilise Deck Deal, les cartes qu'il possède déjà sont signalées. Lecture par l'API REST Firestore (ni SDK Firebase, ni compte).
+- **Visiteur** (sans compte) : onglets **À échanger** / **Recherchées**, recherche par **nom français ou anglais**, filtres couleur / famille / coût, images (dans la langue de l'exemplaire), drapeau, quantités, carte en grand. **Lecture seule** : aucune écriture, ni chez lui ni chez toi. S'il utilise Mana Orbit, les cartes qu'il possède déjà sont signalées. Lecture par l'API REST Firestore (ni SDK Firebase, ni compte).
 - **Partager un deck** : icône de partage du viewer (deck enregistré : le lien **suit ses modifications** ; liste en cours : partagée telle quelle) et bouton **Partager** d'un deck de l'onglet Decks (EDHREC / Archidekt). Le visiteur voit le viewer du deck en lecture seule (images, courbe, valeur estimée, groupes, filtres) et peut tirer une main de départ. Supprimer un deck arrête son lien.
 - **Données** : `shares/{id}` `{ o, kind ('trade' | 'deck'), v, updatedAt, d }` — `d` = contenu en JSON (cartes : nom, quantité, langue, nom français, image, coût, type, couleurs), `o` = empreinte SHA-256 de ton UID (le document est public : l'UID n'y est jamais écrit). Réglages (réserve, cartes gardées, souhaits, liens) : `users/{uid}/meta/trade`, synchronisés entre appareils. Le contenu lu par le visiteur est revérifié (images Scryfall seulement, langues, tailles).
 
@@ -215,13 +215,13 @@ Collection › icône appareil photo. Seul le **nom** de la carte est lu (bande 
 
 ## Notifications « recherche terminée »
 
-Notification push (Web Push chiffré, VAPID, sans dépendance) quand la lecture des offres se termine alors que l'app n'est plus ouverte ; un toucher rouvre Deck Deal et reprend la recherche. Le serveur garde l'abonnement le temps de la recherche seulement, rien n'est stocké.
+Notification push (Web Push chiffré, VAPID, sans dépendance) quand la lecture des offres se termine alors que l'app n'est plus ouverte ; un toucher rouvre Mana Orbit et reprend la recherche. Le serveur garde l'abonnement le temps de la recherche seulement, rien n'est stocké.
 
 1. `node gen-vapid.mjs https://card.m2s-photo.fr` (affiche 3 lignes).
 2. Hostinger › variables d'environnement : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` › redéployer. La clé privée ne va jamais dans GitHub.
 3. Dans l'app : Réglages › Notifications › « Prévenir quand la recherche est finie ».
 
-Android (Chrome, Edge, Firefox) : direct. iPhone / iPad : seulement si Deck Deal est installée sur l'écran d'accueil (iOS 16.4 ou plus). Si tu changes les clés, les abonnements existants s'arrêtent : on réactive l'option. `PUSH_GRACE_MS` (défaut 4000) : délai avant d'envoyer, pour ne pas notifier si l'app est encore là.
+Android (Chrome, Edge, Firefox) : direct. iPhone / iPad : seulement si Mana Orbit est installée sur l'écran d'accueil (iOS 16.4 ou plus). Si tu changes les clés, les abonnements existants s'arrêtent : on réactive l'option. `PUSH_GRACE_MS` (défaut 4000) : délai avant d'envoyer, pour ne pas notifier si l'app est encore là.
 
 ## Alertes de prix
 
@@ -260,7 +260,7 @@ Le dossier doit être déployé avec `proxy.mjs`.
 
 Service worker : page en réseau d'abord (copie locale hors ligne), images Scryfall en cache d'abord, et **bibliothèques aux adresses versionnées** (SDK Firebase, Tesseract) et **polices** en cache d'abord (feuille de style Google Fonts servie localement puis rafraîchie en arrière-plan) : démarrage plus rapide, polices et scan hors ligne. Jamais en cache : `/api/*`, API Scryfall, Firestore, authentification.
 
-- Chrome / Edge / Android : bannière « Installer Deck Deal » sur l'accueil, ou Réglages › Application, ou icône d'installation de la barre d'adresse. Fenêtre dédiée, icône, lancement direct.
+- Chrome / Edge / Android : bannière « Installer Mana Orbit » sur l'accueil, ou Réglages › Application, ou icône d'installation de la barre d'adresse. Fenêtre dédiée, icône, lancement direct.
 - iPhone / iPad : Apple n'autorise que Safari › Partager › « Sur l'écran d'accueil ».
 - Hors ligne : l'interface s'ouvre (mode démo utilisable) ; la recherche live a besoin du réseau. `/api/*` n'est jamais mis en cache.
 - Le service worker (`pwa/sw.js`) charge la page en réseau d'abord : un nouveau déploiement est pris au rechargement suivant.

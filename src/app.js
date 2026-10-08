@@ -288,7 +288,7 @@ function syncShip() { $('#shipField').hidden = S.opts.mode !== 'direct'; }
 function modeHint() {
   $('#modeHint').textContent = S.opts.mode === 'zero'
     ? 'CardTrader Zero regroupe tous les vendeurs dans un seul colis (9 à 14 jours). Les frais et la livraison sont calculés par CardTrader.'
-    : 'Chaque vendeur expédie lui-même. Deck Deal minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
+    : 'Chaque vendeur expédie lui-même. Mana Orbit minimise articles + port estimé, en regroupant les cartes chez moins de vendeurs.';
 }
 
 /* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
@@ -821,8 +821,8 @@ function openCartSheet() {
     };
     const intro = () => {
       api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
-        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Deck Deal), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
-        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Deck Deal essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
+        ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Mana Orbit), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
+        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
       api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
       $('#btnGo', api.foot).onclick = () => go(!S.demo && !!($('#cfClear', api.body) || {}).checked);
     };
@@ -944,12 +944,12 @@ function openSettings() {
       if (!appBox.isConnected) { off(); return; }
       const st = PWA.state();
       const okRow = t => `<div class="status" data-ok="1"><span class="dot"></span><span>${t}</span></div>`;
-      appBox.innerHTML = st === 'standalone' ? okRow('Deck Deal est ouverte en application installée.')
-        : st === 'installed' ? okRow('Deck Deal est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
-        : st === 'ready' ? '<p class="hint">Installe Deck Deal comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Deck Deal</button>'
+      appBox.innerHTML = st === 'standalone' ? okRow('Mana Orbit est ouverte en application installée.')
+        : st === 'installed' ? okRow('Mana Orbit est installée. Ouvre-la depuis ton écran d\'accueil ou ton menu Démarrer.')
+        : st === 'ready' ? '<p class="hint">Installe Mana Orbit comme une vraie application : icône sur ton appareil, plein écran, lancement direct.</p><button class="btn small" type="button" id="btnInstall">Installer Mana Orbit</button>'
         : st === 'ios' ? '<p class="hint">Sur iPhone et iPad, Apple ne permet pas l\'installation directe. Dans Safari : bouton Partager, puis « Sur l\'écran d\'accueil ».</p>'
         : st === 'insecure' ? '<p class="hint">L\'installation demande une adresse en https.</p>'
-        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Deck Deal ». Android : menu ⋮ puis « Installer l\'application ».</p>';
+        : '<p class="hint">Ton navigateur ne propose pas encore l\'installation. Chrome ou Edge : icône d\'installation dans la barre d\'adresse, ou menu ⋮ puis « Installer Mana Orbit ». Android : menu ⋮ puis « Installer l\'application ».</p>';
       const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
     };
     const off = PWA.on(paintApp); paintApp();
@@ -978,7 +978,7 @@ function openSettings() {
     const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
     const paintCart = (st, d = {}) => {
       if (!box.isConnected) return;
-      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Deck Deal. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
+      if (st === 'idle') box.innerHTML = `<p class="hint">Retire tous les articles du panier CardTrader, y compris ceux ajoutés hors de Mana Orbit. L'app ne peut jamais acheter.${S.demo ? ' Indisponible en mode démo.' : ''}</p><button class="btn ghost small" type="button" id="btnCartClear" style="align-self:flex-start" ${S.demo ? 'disabled' : ''}>Vider le panier CardTrader</button>`;
       else if (st === 'reading') box.innerHTML = '<button class="btn ghost small" type="button" disabled style="align-self:flex-start">Lecture du panier…</button>';
       else if (st === 'empty') box.innerHTML = '<div class="status" data-ok="1"><span class="dot"></span><span>Le panier CardTrader est déjà vide.</span></div>';
       else if (st === 'confirm') {
@@ -1049,7 +1049,7 @@ async function detectProxy() {
 
 /* ── Récap à copier ───────────────────────────────────────────────────────────────────────── */
 function recapText() {
-  const r = curRes(), lines = [`Deck Deal · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
+  const r = curRes(), lines = [`Mana Orbit · ${S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'} · ${fmt(totalOf(r))}`];
   const miss = [], own = [];
   for (const c of S.deck.cards) {
     if (c.need === 0) { own.push(c.name); continue; }
@@ -1174,7 +1174,7 @@ async function onShared(sh) {
   const put = putDeckText;
   if (sh.text) return put(sh.text);
   if (!sh.urls.length) { toast('Rien à importer dans ce partage'); return; }
-  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Deck Deal'); return; }
+  if (!CTX.proxy) { toast('Le lien ne peut être lu que par le serveur Mana Orbit'); return; }
   toast('Lecture de la liste…');
   try { const r = await ct('import', { params: { url: sh.urls[0] } }); if (r && r.text) put(r.text, r.name); else throw new Error('vide'); }
   catch (e) { toast(e && e.code === 'auth' ? authHint(e).msg : 'Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici'); }

@@ -89,7 +89,7 @@ function alWhy(r) {
   return r.why === 'denied' ? 'Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.'
     : r.why === 'dismissed' ? 'Autorisation non accordée.'
     : r.why === 'demo' ? 'Indisponible en mode démo.'
-    : r.why === 'ios' ? 'Sur iPhone et iPad, installe d\'abord Deck Deal sur l\'écran d\'accueil (Réglages › Application).'
+    : r.why === 'ios' ? 'Sur iPhone et iPad, installe d\'abord Mana Orbit sur l\'écran d\'accueil (Réglages › Application).'
     : 'Activation impossible' + (r.msg ? ' : ' + r.msg : '') + '.';
 }
 
@@ -118,7 +118,7 @@ function alWatchBtn(api, name) {
 async function alPaintBox(box) {
   box = box && box.isConnected ? box : $('#alertBox'); if (!box || !box.isConnected) return;
   const note = t => `<p class="hint">${t}</p>`;
-  if (!CTX.proxy) { box.innerHTML = note('Les alertes demandent le serveur Deck Deal (il surveille les prix quand l\'app est fermée).'); return; }
+  if (!CTX.proxy) { box.innerHTML = note('Les alertes demandent le serveur Mana Orbit (il surveille les prix quand l\'app est fermée).'); return; }
   if (!CTX.vapid) { box.innerHTML = note('Le serveur n\'a pas de clés de notification : ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT (voir README).'); return; }
   if (!CTX.alerts) { box.innerHTML = note('Les alertes de prix sont désactivées sur le serveur.'); return; }
   if (S.demo) { box.innerHTML = note('Indisponible en mode démo.'); return; }
@@ -146,7 +146,7 @@ async function alPaintBox(box) {
 /* ── Feuille « Alertes de prix » ─────────────────────────────────────────────────────────────── */
 const alPct = (c, b) => (b > 0 && c > 0 ? Math.round((c - b) / b * 100) : 0);
 async function openAlertSheet() {
-  if (!alAvail()) { toast(S.demo ? 'Alertes indisponibles en mode démo' : 'Alertes indisponibles : serveur Deck Deal requis'); return; }
+  if (!alAvail()) { toast(S.demo ? 'Alertes indisponibles en mode démo' : 'Alertes indisponibles : serveur Mana Orbit requis'); return; }
   openSheet('Alertes de prix', 'Prix Cardmarket, relevés toutes les 6 h', api => {
     let data = null, busy = false;
     const sig = () => api.wrap.isConnected;
@@ -224,7 +224,7 @@ async function openAlertSheet() {
 }
 
 /** Touché sur une notification d'alerte ou lien ./?alerts=1. */
-function alertsOpen() { if (alAvail()) openAlertSheet(); else toast('Alerte de prix reçue : ouvre Deck Deal connectée au serveur pour la voir'); }
+function alertsOpen() { if (alAvail()) openAlertSheet(); else toast('Alerte de prix reçue : ouvre Mana Orbit connectée au serveur pour la voir'); }
 
 function alInit() {
   alRead();

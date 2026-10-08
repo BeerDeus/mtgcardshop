@@ -1,4 +1,4 @@
-# Deck Deal — développement
+# Mana Orbit — développement
 
 La doc produit est dans `README.md`. Ce fichier décrit le code, le build et les tests.
 

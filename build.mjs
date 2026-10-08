@@ -14,9 +14,9 @@ const body = rd('body.html').trim();
 const js = ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
 const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
-const TITLE = 'Deck Deal';
+const TITLE = 'Mana Orbit';
 const FONTS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap';
-const DESC = 'Colle une decklist Magic : Deck Deal trouve les offres CardTrader en français, le meilleur prix et remplit le panier.';
+const DESC = 'Ta collection Magic, tes decks et les meilleurs prix : valeur de tes cartes, decks EDHREC à monter, panier CardTrader le moins cher.';
 
 const fragment = `<title>${TITLE}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
