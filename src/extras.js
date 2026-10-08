@@ -12,7 +12,7 @@ function xsRead() {
   try { const r = JSON.parse(localStorage.getItem(ENG_KEY) || 'null'); XS.eng = engClean(r && r.d); } catch (e) { XS.eng = {}; }
 }
 function buyWrite() { try { if (XS.buy) localStorage.setItem(BUY_KEY, JSON.stringify(XS.buy)); else localStorage.removeItem(BUY_KEY); } catch (e) { /* stockage indisponible : le panier à valider ne survivra pas au rechargement */ } }
-function engWrite() { try { localStorage.setItem(ENG_KEY, JSON.stringify({ d: XS.eng })); } catch (e) { toast('Stockage plein : les cartes réservées n\'ont pas pu être enregistrées'); } }
+function engWrite() { try { localStorage.setItem(ENG_KEY, JSON.stringify({ d: XS.eng })); } catch (e) { toast(T('Stockage plein : les cartes réservées n\'ont pas pu être enregistrées')); } }
 
 /* ── « J'ai acheté » ──────────────────────────────────────────────────────────────────────────── */
 /** Après un remplissage de panier : garde les cartes réellement ajoutées (replace : panier vidé avant). */
@@ -27,28 +27,28 @@ function buyPaint() {
   const cards = b.items.length, copies = b.items.reduce((a, i) => a + i.q, 0);
   el.hidden = false;
   el.innerHTML = `<span class="ib-ico" aria-hidden="true"><svg class="i"><use href="#i-cart"/></svg></span>
-    <span class="ib-txt"><b>Panier rempli · ${nf0(cards)} carte${cards > 1 ? 's' : ''}</b><span>${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} · ${esc(relTime(b.at))}. Achetées sur CardTrader ?</span></span>
-    <button class="btn small" type="button" data-act="buy">J'ai acheté</button>
-    <button class="ib-x" type="button" data-act="buyx" aria-label="Ignorer ce panier"><svg class="i"><use href="#i-close"/></svg></button>`;
+    <span class="ib-txt"><b>${TN(cards, 'Panier rempli · {n} carte', 'Panier rempli · {n} cartes')}</b><span>${TN(copies, '{n} exemplaire · {when}. Achetées sur CardTrader ?', '{n} exemplaires · {when}. Achetées sur CardTrader ?', { when: esc(relTime(b.at)) })}</span></span>
+    <button class="btn small" type="button" data-act="buy">${T('J\'ai acheté')}</button>
+    <button class="ib-x" type="button" data-act="buyx" aria-label="${T('Ignorer ce panier')}"><svg class="i"><use href="#i-close"/></svg></button>`;
 }
 function buyDrop(msg) { XS.buy = null; buyWrite(); buyPaint(); if (msg) toast(msg); }
 function openBuySheet() {
   const b = XS.buy; if (!b) return;
   const rows = b.items.map(i => ({ ...i, a: i.q, have: collQty(i.k) }));
-  openSheet('J\'ai acheté', `Panier du ${new Date(b.at).toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}`, api => {
+  openSheet(T('J\'ai acheté'), T('Panier du {date}', { date: new Date(b.at).toLocaleDateString(LOC(), { day: 'numeric', month: 'long' }) }), api => {
     const total = () => rows.reduce((a, r) => a + r.a, 0);
     const paint = () => {
-      api.body.innerHTML = `<p class="hint">Ajuste les quantités si tu n'as pas tout pris. Les cartes ajoutées seront déduites des prochaines recherches.</p>
-        <div class="buy-list">${rows.map((r, i) => `<div class="buy-row${r.a ? '' : ' off'}" data-i="${i}"><span class="b-n"><b>${esc(r.n)}</b><small>${r.l ? flag(r.l) : ''}${r.have ? `${nf0(r.have)} déjà dans ta collection` : 'nouvelle dans ta collection'}</small></span>
-          <span class="qstep"><button type="button" data-d="-1" aria-label="Moins de ${esc(r.n)}">−</button><b>${r.a}</b><button type="button" data-d="1" aria-label="Plus de ${esc(r.n)}"${r.a >= r.q ? ' disabled' : ''}>+</button></span></div>`).join('')}</div>`;
+      api.body.innerHTML = `<p class="hint">${T('Ajuste les quantités si tu n\'as pas tout pris. Les cartes ajoutées seront déduites des prochaines recherches.')}</p>
+        <div class="buy-list">${rows.map((r, i) => `<div class="buy-row${r.a ? '' : ' off'}" data-i="${i}"><span class="b-n"><b>${esc(r.n)}</b><small>${r.l ? flag(r.l) : ''}${r.have ? T('{n} déjà dans ta collection', { n: nf0(r.have) }) : T('nouvelle dans ta collection')}</small></span>
+          <span class="qstep"><button type="button" data-d="-1" aria-label="${T('Moins de {name}', { name: esc(r.n) })}">−</button><b>${r.a}</b><button type="button" data-d="1" aria-label="${T('Plus de {name}', { name: esc(r.n) })}"${r.a >= r.q ? ' disabled' : ''}>+</button></span></div>`).join('')}</div>`;
       const n = total();
-      api.setFoot(`<button class="btn ghost" type="button" id="buyNone">Rien acheté</button><button class="btn" type="button" id="buyGo"${n ? '' : ' disabled'}>Ajouter ${nf0(n)} exemplaire${n > 1 ? 's' : ''}</button>`);
-      $('#buyNone', api.foot).onclick = () => { api.close(); buyDrop('Panier ignoré'); };
+      api.setFoot(`<button class="btn ghost" type="button" id="buyNone">${T('Rien acheté')}</button><button class="btn" type="button" id="buyGo"${n ? '' : ' disabled'}>${TN(n, 'Ajouter {n} exemplaire', 'Ajouter {n} exemplaires')}</button>`);
+      $('#buyNone', api.foot).onclick = () => { api.close(); buyDrop(T('Panier ignoré')); };
       $('#buyGo', api.foot).onclick = () => {
         const add = rows.filter(r => r.a > 0).map(r => ({ k: r.k, n: r.n, q: r.a, ...(r.l ? { l: r.l } : {}) })); if (!add.length) return;
         const before = COLL.map, prevBuy = XS.buy, n = add.reduce((a, x) => a + x.q, 0);
         collAdd(add, 'add'); collEnrich(); XS.buy = null; buyWrite(); buyPaint(); api.close(); haptic('ok');
-        toast(`${nf0(n)} exemplaire${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); XS.buy = prevBuy; buyWrite(); buyPaint(); } });
+        toast(TN(n, '{n} exemplaire ajouté à ta collection', '{n} exemplaires ajoutés à ta collection'), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); XS.buy = prevBuy; buyWrite(); buyPaint(); } });
       };
     };
     paint();
@@ -73,7 +73,7 @@ function engHeldBack(cards) {
   for (const c of cards) {
     const k = ownKey(c.key), own = collQty(k); if (!own) continue;
     const lost = Math.min(c.qty, own) - Math.min(c.qty, engOwned(k));
-    if (lost > 0) { n += lost; for (const d of engDecksOf(XS.eng, k)) if (d.id !== S.deckId) names.add(d.n || 'un deck'); }
+    if (lost > 0) { n += lost; for (const d of engDecksOf(XS.eng, k)) if (d.id !== S.deckId) names.add(d.n || T('un deck')); }
   }
   return { n, names: [...names] };
 }
@@ -107,30 +107,30 @@ function engBindSwitch(id, cb, hint) {
   const paint = () => {
     const n = engCount(id); cb.checked = engIsOn(id);
     hint.textContent = cb.checked
-      ? `${nf0(n)} exemplaire${n > 1 ? 's' : ''} de ta collection réservé${n > 1 ? 's' : ''} pour ce deck : ils ne sont plus déduits du panier des autres decks.`
-      : 'Réserve les cartes de ta collection qui sont dans ce deck : elles ne seront plus déduites du panier de tes autres decks.';
+      ? TN(n, '{n} exemplaire de ta collection réservé pour ce deck : ils ne sont plus déduits du panier des autres decks.', '{n} exemplaires de ta collection réservés pour ce deck : ils ne sont plus déduits du panier des autres decks.')
+      : T('Réserve les cartes de ta collection qui sont dans ce deck : elles ne seront plus déduites du panier de tes autres decks.');
   };
   paint();
   cb.onchange = () => {
     if (cb.checked) {
       const d = findDeck(id);
-      if (!d || !Object.keys(engSnapshot(d.text, collQty)).length) { cb.checked = false; toast('Aucune carte de ce deck n\'est dans ta collection'); return; }
-      engSet(id, d.name, d.text); haptic('ok'); toast('Deck complet : cartes réservées');
-    } else { engClear(id); haptic('tap'); toast('Deck non complet : cartes à nouveau disponibles'); }
+      if (!d || !Object.keys(engSnapshot(d.text, collQty)).length) { cb.checked = false; toast(T('Aucune carte de ce deck n\'est dans ta collection')); return; }
+      engSet(id, d.name, d.text); haptic('ok'); toast(T('Deck complet : cartes réservées'));
+    } else { engClear(id); haptic('tap'); toast(T('Deck non complet : cartes à nouveau disponibles')); }
     paint();
   };
 }
 /** Pastille d'une carte de la collection réservée par un ou plusieurs decks. */
 function engTag(k) {
   const ds = engDecksOf(XS.eng, k); if (!ds.length) return '';
-  const q = ds.reduce((a, d) => a + d.q, 0), names = ds.map(d => d.n || 'deck');
-  return `<span class="tag mount" title="Réservée pour : ${esc(names.join(', '))}">${q > 1 ? '× ' + nf0(q) + ' · ' : ''}${esc(names[0].length > 18 ? names[0].slice(0, 17) + '…' : names[0])}${names.length > 1 ? ' +' + (names.length - 1) : ''}</span>`;
+  const q = ds.reduce((a, d) => a + d.q, 0), names = ds.map(d => d.n || T('deck'));
+  return `<span class="tag mount" title="${T('Réservée pour : {list}', { list: esc(names.join(', ')) })}">${q > 1 ? '× ' + nf0(q) + ' · ' : ''}${esc(names[0].length > 18 ? names[0].slice(0, 17) + '…' : names[0])}${names.length > 1 ? ' +' + (names.length - 1) : ''}</span>`;
 }
 
 /* ── Synchro avec le compte (engagés, historique de valeur) ───────────────────────────────────── */
 function xsFail(id, err) {
   const d = XS.docs[id]; d.state = 'error';
-  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast('Règles Firestore à publier pour synchroniser decks complets et historique (voir README)'); }
+  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast(T('Règles Firestore à publier pour synchroniser decks complets et historique (voir README)')); }
 }
 function xsUser(user) {
   for (const id in XS.docs) { const d = XS.docs[id]; if (d.unsub) { try { d.unsub(); } catch (e) { /* ignore */ } d.unsub = null; } clearTimeout(d.pushT); d.state = 'off'; d.uid = ''; }

@@ -273,7 +273,7 @@ async function pxRun(targets, o = {}) {
 /** Feuille « Prix réels » : choix de la langue des cartes et de la portée, puis lancement. */
 function openCollPrices() {
   if (COLL.pxRun) { toast(T('Lecture des prix déjà en cours')); return; }
-  if (!collCount()) { toast('Ta collection est vide'); return; }
+  if (!collCount()) { toast(T('Ta collection est vide')); return; }
   readOpts();
   openSheet(T('Prix réels'), T('L\'offre CardTrader la moins chère, comme pour acheter'), api => {
     const counts = {}; let none = 0, all = 0;
@@ -517,22 +517,22 @@ function collToggleSrc() {
 }
 function collStatsHtml(items) {
   const st = collStats(items, COLL.src), miss = st.unknown, cm = st.src === 'cm';
-  const colorRows = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert']].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
-    .concat([['<i class="mc mc-m">M</i>Multicolore', st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>Incolore', st.colors.C, 'k-n']]);
-  const typeRows = TYPE_ORDER.map(t => [esc(t), st.types[t], 'k-t']);
-  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>carte${st.unique > 1 ? 's' : ''} différente${st.unique > 1 ? 's' : ''}</span></div><div><b>${nf0(st.copies)}</b><span>exemplaire${st.copies > 1 ? 's' : ''}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="Valeur de la collection, source ${cm ? 'Cardmarket' : 'CardTrader'} : touche pour passer à ${cm ? 'CardTrader' : 'Cardmarket'}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? `valeur · tendance Cardmarket${st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}` : st.real ? `valeur · ${nf0(st.real)} au prix réel CardTrader${st.valued > st.real ? `, ${nf0(st.valued - st.real)} estimées Cardmarket` : ''}` : `valeur ≈ tendance Cardmarket${st.valued && st.valued < st.known ? ` (${nf0(st.valued)} cartes)` : ''}`}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? `${cm ? 'CT' : 'CM'} : ${esc(fmt(st.alt.value, 'EUR'))} · ` : ''}touche pour changer</small></div></div></div>`;
-  const note = miss ? `<p class="hint">Stats sur ${nf0(st.known)} cartes lues ; ${nf0(miss)} sans infos pour l'instant.</p>` : '';
+  const colorRows = [['W', T('Blanc')], ['U', T('Bleu')], ['B', T('Noir')], ['R', T('Rouge')], ['G', T('Vert')]].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
+    .concat([['<i class="mc mc-m">M</i>' + T('Multicolore'), st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>' + T('Incolore'), st.colors.C, 'k-n']]);
+  const typeRows = TYPE_ORDER.map(t => [esc(T(t)), st.types[t], 'k-t']);
+  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>${TN(st.unique, 'carte différente', 'cartes différentes')}</span></div><div><b>${nf0(st.copies)}</b><span>${TN(st.copies, 'exemplaire', 'exemplaires')}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="${T('Valeur de la collection, source {a} : touche pour passer à {b}', { a: cm ? 'Cardmarket' : 'CardTrader', b: cm ? 'CardTrader' : 'Cardmarket' })}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? T('valeur · tendance Cardmarket') + (st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '') : st.real ? (st.valued > st.real ? T('valeur · {n} au prix réel CardTrader, {m} estimées Cardmarket', { n: nf0(st.real), m: nf0(st.valued - st.real) }) : T('valeur · {n} au prix réel CardTrader', { n: nf0(st.real) })) : T('valeur ≈ tendance Cardmarket') + (st.valued && st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '')}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${st.alt.valued ? T('{src} : {v} · touche pour changer', { src: cm ? 'CT' : 'CM', v: esc(fmt(st.alt.value, 'EUR')) }) : T('touche pour changer')}</small></div></div></div>`;
+  const note = miss ? `<p class="hint">${T('Stats sur {a} cartes lues ; {b} sans infos pour l\'instant.', { a: nf0(st.known), b: nf0(miss) })}</p>` : '';
   const byLot = COLL.topBy !== 'one', list = byLot ? st.top : st.topUnit, shown = list.slice(0, COLL.topN), cur = i => (i.rl ? i.rc || 'EUR' : 'EUR');
-  const top = list.length ? `<h3 class="cs-h">Les plus chères <span class="cs-sw" role="group" aria-label="Classer par"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">Par lot</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">Par carte</button></span></h3><p class="hint cs-topnote">${byLot ? 'Classées par valeur du lot : prix × exemplaires.' : 'Classées par prix d\'un exemplaire.'}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.dn || i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">prix réel</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">Afficher ${nf0(Math.min(10, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}` : '';
+  const top = list.length ? `<h3 class="cs-h">${T('Les plus chères')} <span class="cs-sw" role="group" aria-label="${T('Classer par')}"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">${T('Par lot')}</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">${T('Par carte')}</button></span></h3><p class="hint cs-topnote">${byLot ? T('Classées par valeur du lot : prix × exemplaires.') : T('Classées par prix d\'un exemplaire.')}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.dn || i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">' + T('prix réel') + '</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(10, list.length - shown.length)), b: nf0(list.length - shown.length) })}</button>` : ''}` : '';
   return `${nums}${note}${valStatsHtml()}
-    <h3 class="cs-h">Courbe de mana <small>${nf0(st.spells)} sorts</small></h3>${curveBars(st.curve, false)}
-    <h3 class="cs-h">Couleurs <small>sorts</small></h3>${barsHtml(colorRows)}
-    <h3 class="cs-h">Familles <small>exemplaires</small></h3>${barsHtml(typeRows)}${top}`;
+    <h3 class="cs-h">${T('Courbe de mana')} <small>${T('{n} sorts', { n: nf0(st.spells) })}</small></h3>${curveBars(st.curve, false)}
+    <h3 class="cs-h">${T('Couleurs')} <small>${T('sorts')}</small></h3>${barsHtml(colorRows)}
+    <h3 class="cs-h">${T('Familles')} <small>${T('exemplaires')}</small></h3>${barsHtml(typeRows)}${top}`;
 }
 function collEmptyHtml() {
-  return `<div class="dv-empty"><div class="empty-art" aria-hidden="true"><i></i><i></i><i></i></div><b>Ta collection est vide</b><p>Ajoute les cartes que tu possèdes : elles ne seront plus cherchées ni comptées dans tes paniers.</p>
-    <div class="coll-cta"><button class="btn" type="button" data-act="import">Importer un fichier</button><button class="btn ghost" type="button" data-act="scan">Scanner des cartes</button><button class="btn ghost" type="button" data-act="add">Ajouter à la main</button></div>
-    <p class="hint">Pour 1 000 cartes ou plus : exporte-les en CSV depuis ManaBox, Moxfield, Archidekt, Deckbox ou Dragon Shield, puis importe le fichier.</p></div>`;
+  return `<div class="dv-empty"><div class="empty-art" aria-hidden="true"><i></i><i></i><i></i></div><b>${T('Ta collection est vide')}</b><p>${T('Ajoute les cartes que tu possèdes : elles ne seront plus cherchées ni comptées dans tes paniers.')}</p>
+    <div class="coll-cta"><button class="btn" type="button" data-act="import">${T('Importer un fichier')}</button><button class="btn ghost" type="button" data-act="scan">${T('Scanner des cartes')}</button><button class="btn ghost" type="button" data-act="add">${T('Ajouter à la main')}</button></div>
+    <p class="hint">${T('Pour 1 000 cartes ou plus : exporte-les en CSV depuis ManaBox, Moxfield, Archidekt, Deckbox ou Dragon Shield, puis importe le fichier.')}</p></div>`;
 }
 /** Remplit la liste ou les stats selon l'onglet. keep : garder la position de défilement. */
 function collPaintBody(keep) {
@@ -550,9 +550,9 @@ function collPaintBody(keep) {
     const filtered = filterItems(all, COLL.f), sorted = collSorted(filtered), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
     const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '' || COLL.f.cmdr) && known < all.length;
     const undated = isDateSort() ? all.filter(i => !i.d).length : 0;
-    host.innerHTML = `${undated ? `<p class="hint coll-count">${nf0(undated)} carte${undated > 1 ? 's' : ''} sans date d'ajout (déjà là avant le suivi des dates) : ${COLL.sort === 'new' ? 'en bas' : 'en haut'}, par nom.</p>` : ''}${act ? `<p class="hint coll-count">${nf0(filtered.length)} carte${filtered.length > 1 ? 's' : ''} sur ${nf0(all.length)}${hid ? ' · les cartes sans infos sont masquées par ces filtres' : ''}</p>` : ''}
-      ${shown.length ? `<div class="coll-list">${shown.flatMap(collRowItems).map(crowHtml).join('')}</div>` : '<p class="hint listempty">Aucune carte ne correspond.</p>'}
-      ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(COLL_PAGE, sorted.length - shown.length))} de plus · ${nf0(sorted.length - shown.length)} restantes</button>` : ''}`;
+    host.innerHTML = `${undated ? `<p class="hint coll-count">${TN(undated, '{n} carte sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', '{n} cartes sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', { pos: COLL.sort === 'new' ? T('en bas') : T('en haut') })}</p>` : ''}${act ? `<p class="hint coll-count">${TN(filtered.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}${hid ? ' · ' + T('les cartes sans infos sont masquées par ces filtres') : ''}</p>` : ''}
+      ${shown.length ? `<div class="coll-list">${shown.flatMap(collRowItems).map(crowHtml).join('')}</div>` : '<p class="hint listempty">' + T('Aucune carte ne correspond.') + '</p>'}
+      ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(COLL_PAGE, sorted.length - shown.length)), b: nf0(sorted.length - shown.length) })}</button>` : ''}`;
   }
   if (sc) sc.scrollTop = pos;
   if (!keep) stagger($$('.coll-list, .cs-tiles, .dk-res', host));
@@ -564,18 +564,18 @@ function openCollection(tab) {
   closeCollection();
   if (tab) COLL.tab = tab;
   COLL.shown = COLL_PAGE; collFrLoad();
-  const wrap = document.createElement('div'); wrap.className = 'dv coll'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Ma collection');
-  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer la collection"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>Ma collection</b><span></span></div>
-      <div class="coll-tools"><button class="icon-btn" type="button" data-act="add" aria-label="Ajouter une carte" title="Ajouter une carte"><svg class="i"><use href="#i-plus"/></svg></button>
-        <button class="icon-btn" type="button" data-act="scan" aria-label="Scanner des cartes" title="Scanner des cartes"><svg class="i"><use href="#i-camera"/></svg></button>
-        <button class="icon-btn" type="button" data-act="import" aria-label="Importer un fichier ou du texte" title="Importer"><svg class="i"><use href="#i-upload"/></svg></button></div></header>
+  const wrap = document.createElement('div'); wrap.className = 'dv coll'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Ma collection'));
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer la collection')}"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${T('Ma collection')}</b><span></span></div>
+      <div class="coll-tools"><button class="icon-btn" type="button" data-act="add" aria-label="${T('Ajouter une carte')}" title="${T('Ajouter une carte')}"><svg class="i"><use href="#i-plus"/></svg></button>
+        <button class="icon-btn" type="button" data-act="scan" aria-label="${T('Scanner des cartes')}" title="${T('Scanner des cartes')}"><svg class="i"><use href="#i-camera"/></svg></button>
+        <button class="icon-btn" type="button" data-act="import" aria-label="${T('Importer un fichier ou du texte')}" title="${T('Importer')}"><svg class="i"><use href="#i-upload"/></svg></button></div></header>
     <div class="dv-scroll"><div class="dv-body coll-body">
       <div class="coll-sync" hidden></div>
       <div class="coll-status" hidden></div>
       <div class="coll-alert" hidden></div>
-      <div class="coll-controls"><div class="coll-top"><div class="seg" id="collSeg" role="radiogroup" aria-label="Affichage"></div><button class="icon-btn coll-px" type="button" data-act="prices" aria-label="Lire les prix réels des cartes (CardTrader)" title="Prix réels"><b>€</b></button></div>
-        <div class="coll-fwrap"><div id="collF"></div><label class="sortsel coll-sort"><span>Trier</span><select id="collSort" aria-label="Trier la collection">${SORT_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label></div></div>
+      <div class="coll-controls"><div class="coll-top"><div class="seg" id="collSeg" role="radiogroup" aria-label="${T('Affichage')}"></div><button class="icon-btn coll-px" type="button" data-act="prices" aria-label="${T('Lire les prix réels des cartes (CardTrader)')}" title="${T('Prix réels')}"><b>€</b></button></div>
+        <div class="coll-fwrap"><div id="collF"></div><label class="sortsel coll-sort"><span>${T('Trier')}</span><select id="collSort" aria-label="${T('Trier la collection')}">${SORT_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label></div></div>
       <div class="coll-main"></div></div></div>`;
   COLL.el = wrap; const prevFocus = document.activeElement;
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
@@ -587,11 +587,11 @@ function openCollection(tab) {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
-  mountSeg($('#collSeg', wrap), [{ v: 'list', label: 'Cartes' }, { v: 'stats', label: 'Stats' }, { v: 'decks', label: 'Decks' }, { v: 'trade', label: 'Échange' }], COLL.tab, v => { const ord = ['list', 'stats', 'decks', 'trade'], dir = ord.indexOf(v) > ord.indexOf(COLL.tab) ? 'l' : 'r'; { const h = $('.coll-main', wrap); if (h) h.dataset.dir = dir; } COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
+  mountSeg($('#collSeg', wrap), [{ v: 'list', label: T('Cartes') }, { v: 'stats', label: T('Stats') }, { v: 'decks', label: T('Decks') }, { v: 'trade', label: T('Échange') }], COLL.tab, v => { const ord = ['list', 'stats', 'decks', 'trade'], dir = ord.indexOf(v) > ord.indexOf(COLL.tab) ? 'l' : 'r'; { const h = $('.coll-main', wrap); if (h) h.dataset.dir = dir; } COLL.tab = v; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(false); const sc = $('.dv-scroll', wrap); if (sc) sc.scrollTop = 0; const h = $('.coll-main', wrap); if (h) { h.classList.remove('tabin'); void h.offsetWidth; h.classList.add('tabin'); } });
   COLL.fb = mountFilters($('#collF', wrap), COLL.f, () => {
     if (COLL.f.cmdr === 'played' && COLL.cmdrSeen !== 'played' && COLL.sort === 'name') { COLL.sort = 'decks'; $('#collSort', wrap).value = 'decks'; }      // les plus joués d'abord
     COLL.cmdrSeen = COLL.f.cmdr; COLL.shown = COLL_PAGE; TR.shown = TR_PAGE; collPaintBody(true);
-  }, { placeholder: 'Rechercher dans ma collection', commander: true });
+  }, { placeholder: T('Rechercher dans ma collection'), commander: true });
   COLL.cmdrSeen = COLL.f.cmdr;
   $('#collSort', wrap).value = COLL.sort;
   $('#collSort', wrap).onchange = e => { COLL.sort = e.target.value; COLL.shown = COLL_PAGE; haptic('tap'); collPaintBody(false); };
@@ -638,14 +638,14 @@ function openCollection(tab) {
     if (st) {
       const rowEl = st.closest('.crow'), k = rowEl.dataset.k, ln = rowEl.dataset.ln || '', cur = COLL.map[k]; if (!cur) return;
       const lines = collLines(cur), line = lines.find(x => x[0] === ln); if (!line) return;
-      const d = Number(st.dataset.d), tag = lines.length > 1 ? (ln ? langCode(ln) : 'sans langue') : '', same = r => r.dataset.k === k && (r.dataset.ln || '') === ln; haptic('tap');
+      const d = Number(st.dataset.d), tag = lines.length > 1 ? (ln ? langCode(ln) : T('sans langue')) : '', same = r => r.dataset.k === k && (r.dataset.ln || '') === ln; haptic('tap');
       const step = () => {                                  // le « − » passe par une confirmation ; la ligne est retrouvée à ce moment-là (la liste a pu être repeinte)
         const c = COLL.map[k]; if (!c) return;
         const was = (collLines(c).find(x => x[0] === ln) || [ln, 0])[1], multi = collLines(c).length > 1, name = c.n, date = c.d, q = collBump(k, name, d, { paint: false, lang: ln }), row = $$('.crow', wrap).find(same);
         if (q) { if (row) $('.qstep b', row).textContent = q; }
         else {
           if (multi) collPaintBody(true); else if (row) row.remove();      // une langue de moins : les autres lignes de la carte se réorganisent
-          toast(`${name}${multi ? ' (' + (ln ? langCode(ln) : 'sans langue') + ')' : ''} retirée de la collection`, { label: 'Annuler', fn: () => { collBump(k, name, was, { date, lang: ln }); } });
+          toast(T('{name} retirée de la collection', { name: name + (multi ? ' (' + (ln ? langCode(ln) : T('sans langue')) + ')' : '') }), { label: T('Annuler'), fn: () => { collBump(k, name, was, { date, lang: ln }); } });
         }
       };
       if (d < 0) confirmMinus(cur.n, line[1], 'coll', step, tag); else step();
@@ -666,18 +666,18 @@ function openCollection(tab) {
 function collViewItem(k, ln) {
   const x = COLL.map[k], m = COLL.meta[k]; if (!x || !m || !m.im) return null;
   const ls = collLines(x), line = ls.find(e => e[0] === (ln || '')) || ls[0] || [x.l || '', x.q], l = line[0], n = line[1];
-  const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · image anglaise (pas d\'image ' + (LANGS[l] || l) + ' sur Scryfall)' : '';
-  const own = ls.length > 1 ? `${n} exemplaire${n > 1 ? 's' : ''} ${l ? langCode(l) : 'sans langue'} · ${x.q} au total` : `${x.q} exemplaire${x.q > 1 ? 's' : ''} dans ta collection`;
-  return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, wl: l && l !== 'en' ? l : '', small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · réf. Cardmarket ' + fmt(m.eu, 'EUR') : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · offre CardTrader ' + fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') : ''}${fr}` };
+  const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · ' + T('image anglaise (pas d\'image {lang} sur Scryfall)', { lang: LANGS[l] ? T(LANGS[l]) : l }) : '';
+  const own = ls.length > 1 ? T(n > 1 ? '{n} exemplaires {lang} · {total} au total' : '{n} exemplaire {lang} · {total} au total', { n, lang: l ? langCode(l) : T('sans langue'), total: x.q }) : T(x.q > 1 ? '{n} exemplaires dans ta collection' : '{n} exemplaire dans ta collection', { n: x.q });
+  return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, wl: l && l !== 'en' ? l : '', small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · ' + T('réf. Cardmarket {v}', { v: fmt(m.eu, 'EUR') }) : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · ' + T('offre CardTrader {v}', { v: fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') }) : ''}${fr}` };
 }
 
 /* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
 function openCollAdd() {
-  openSheet('Ajouter une carte', 'Nom anglais ou français déjà connu de Scryfall', api => {
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">Nom de la carte</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Sol Ring" enterkeyhint="search"></div>
-      <div class="field-in"><label class="label" for="caLang">Langue des exemplaires ajoutés</label><div class="sel"><select id="caLang"><option value="">Celle de la carte (sinon non précisée)</option>${CARD_LANG_LIST.map(x => `<option value="${x}">${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></div></div>
+  openSheet(T('Ajouter une carte'), T('Nom anglais ou français déjà connu de Scryfall'), api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">${T('Nom de la carte')}</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Sol Ring" enterkeyhint="search"></div>
+      <div class="field-in"><label class="label" for="caLang">${T('Langue des exemplaires ajoutés')}</label><div class="sel"><select id="caLang"><option value="">${T('Celle de la carte (sinon non précisée)')}</option>${CARD_LANG_LIST.map(x => { const n = T(LANGS[x]); return `<option value="${x}">${esc(n[0].toUpperCase() + n.slice(1))}</option>`; }).join('')}</select></div></div>
       <div class="status" id="caStatus" data-ok="0" hidden><span class="dot"></span><span></span></div>
-      <div class="ca-list" id="caList" role="listbox" aria-label="Suggestions"></div>`;
+      <div class="ca-list" id="caList" role="listbox" aria-label="${T('Suggestions')}"></div>`;
     const inp = $('#caName', api.body), list = $('#caList', api.body), stt = $('#caStatus', api.body), lang = $('#caLang', api.body);
     let cat = null, added = new Map();
     const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
@@ -686,54 +686,54 @@ function openCollAdd() {
       if (!cat) { list.innerHTML = ''; return; }
       const sug = collSuggest(cat, q);
       list.innerHTML = sug.map(n => { const k = ownKey(n), have = collQty(k); return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${have ? `× ${have}` : '+'}</i></button>`; }).join('')
-        || (q.length >= 2 ? '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>' : '');
+        || (q.length >= 2 ? '<p class="hint">' + T('Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).') + '</p>' : '');
     };
     list.onclick = e => {
       const b = e.target.closest('.ca-opt'); if (!b) return;
       const n = b.dataset.n, k = ownKey(n); collBump(k, n, 1, lang.value ? { lang: lang.value } : undefined); const q = collQty(k); haptic('ok'); added.set(k, q);
       const i = $('i', b); i.textContent = '× ' + q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
-      say(`${n} · ${q} dans ta collection`, true); collEnrich();
+      say(T('{name} · {q} dans ta collection', { name: n, q }), true); collEnrich();
     };
     inp.oninput = paint;
-    say('Chargement du catalogue (une seule fois)…', false);
-    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? 'Scryfall demande une pause, réessaie dans une minute.' : 'Catalogue Scryfall injoignable : réessaie plus tard.', false));
+    say(T('Chargement du catalogue (une seule fois)…'), false);
+    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? T('Scryfall demande une pause, réessaie dans une minute.') : T('Catalogue Scryfall injoignable : réessaie plus tard.'), false));
     setTimeout(() => inp.focus(), 380);
   });
 }
 
 /* ── Importer (fichier CSV, texte collé, texte partagé) ───────────────────────────────────────── */
 function openCollImport(initial) {
-  openSheet('Importer ma collection', 'ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… ou une liste « 3 Sol Ring »', api => {
-    api.body.innerHTML = `<p class="hint">Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l'appli que tu utilises, puis choisis le fichier. Les quantités d'une même carte (éditions différentes) s'additionnent ; une ligne par langue si le fichier la donne.</p>
-      <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>Choisir un fichier<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
-      <div class="field-in"><label class="label" for="ciText">ou colle le texte</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Swords to Plowshares"></textarea></div>
+  openSheet(T('Importer ma collection'), T('ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… ou une liste « 3 Sol Ring »'), api => {
+    api.body.innerHTML = `<p class="hint">${T('Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l\'appli que tu utilises, puis choisis le fichier. Les quantités d\'une même carte (éditions différentes) s\'additionnent ; une ligne par langue si le fichier la donne.')}</p>
+      <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>${T('Choisir un fichier')}<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
+      <div class="field-in"><label class="label" for="ciText">${T('ou colle le texte')}</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Swords to Plowshares"></textarea></div>
       <div class="ci-sum" id="ciSum" hidden></div>
-      <div class="seg" id="ciMode" role="radiogroup" aria-label="Mode d'import"></div>`;
-    mountSeg($('#ciMode', api.body), [{ v: 'add', label: 'Ajouter' }, { v: 'replace', label: 'Remplacer ma collection' }], collCount() ? 'add' : 'replace', () => paint());
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="ciGo" disabled>Importer</button>');
+      <div class="seg" id="ciMode" role="radiogroup" aria-label="${T('Mode d\'import')}"></div>`;
+    mountSeg($('#ciMode', api.body), [{ v: 'add', label: T('Ajouter') }, { v: 'replace', label: T('Remplacer ma collection') }], collCount() ? 'add' : 'replace', () => paint());
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="ciGo" disabled>${T('Importer')}</button>`);
     const ta = $('#ciText', api.body), sum = $('#ciSum', api.body), go = $('#ciGo', api.foot), mode = () => $('#ciMode', api.body)._v || 'add';
     let parsed = null;
     const paint = () => {
       const t = ta.value; parsed = t.trim() ? parseCollection(t) : null;
       sum.hidden = !parsed;
       go.disabled = !parsed || !parsed.items.length;
-      if (!parsed) { go.textContent = 'Importer'; return; }
-      if (!parsed.items.length) { sum.className = 'ci-sum bad'; sum.textContent = parsed.format === 'csv' ? 'Aucune carte lue dans ce CSV : il faut une colonne « Name » (ou « Nom »).' : 'Aucune ligne reconnue. Une carte par ligne : « 3 Sol Ring ».'; return; }
+      if (!parsed) { go.textContent = T('Importer'); return; }
+      if (!parsed.items.length) { sum.className = 'ci-sum bad'; sum.textContent = parsed.format === 'csv' ? T('Aucune carte lue dans ce CSV : il faut une colonne « Name » (ou « Nom »).') : T('Aucune ligne reconnue. Une carte par ligne : « 3 Sol Ring ».'); return; }
       const rep = mode() === 'replace' && collCount();
-      sum.className = 'ci-sum'; sum.innerHTML = `<b>${nf0(parsed.items.length)}</b> carte${parsed.items.length > 1 ? 's' : ''} différente${parsed.items.length > 1 ? 's' : ''} · <b>${nf0(parsed.copies)}</b> exemplaire${parsed.copies > 1 ? 's' : ''}<span>${parsed.format === 'csv' ? 'Fichier CSV' : 'Liste texte'}${parsed.skipped ? ` · ${nf0(parsed.skipped)} ligne${parsed.skipped > 1 ? 's' : ''} ignorée${parsed.skipped > 1 ? 's' : ''}` : ''}${rep ? ` · remplace les ${nf0(collCount())} cartes actuelles` : ''}</span>`;
-      go.textContent = `Importer ${nf0(parsed.items.length)} carte${parsed.items.length > 1 ? 's' : ''}`;
+      sum.className = 'ci-sum'; sum.innerHTML = `${TN(parsed.items.length, '<b>{n}</b> carte différente', '<b>{n}</b> cartes différentes')} · ${TN(parsed.copies, '<b>{n}</b> exemplaire', '<b>{n}</b> exemplaires')}<span>${parsed.format === 'csv' ? T('Fichier CSV') : T('Liste texte')}${parsed.skipped ? ' · ' + TN(parsed.skipped, '{n} ligne ignorée', '{n} lignes ignorées') : ''}${rep ? ' · ' + T('remplace les {n} cartes actuelles', { n: nf0(collCount()) }) : ''}</span>`;
+      go.textContent = TN(parsed.items.length, 'Importer {n} carte', 'Importer {n} cartes');
     };
     ta.oninput = paint;
     $('#ciFile', api.body).onchange = async e => {
       const f = e.target.files && e.target.files[0]; if (!f) return;
-      if (f.size > 8 * 1024 * 1024) { toast('Fichier trop gros (8 Mo maximum)'); return; }
-      try { ta.value = await f.text(); paint(); haptic('tap'); } catch (err) { toast('Fichier illisible'); }
+      if (f.size > 8 * 1024 * 1024) { toast(T('Fichier trop gros (8 Mo maximum)')); return; }
+      try { ta.value = await f.text(); paint(); haptic('tap'); } catch (err) { toast(T('Fichier illisible')); }
     };
     go.onclick = () => {
       if (!parsed || !parsed.items.length) return;
       const before = COLL.map, m = mode(), n = parsed.items.length;
       collAdd(parsed.items, m); api.close(); haptic('ok');
-      toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ${m === 'replace' ? 'dans ta collection' : 'ajoutée' + (n > 1 ? 's' : '')}`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+      toast(m === 'replace' ? TN(n, '{n} carte dans ta collection', '{n} cartes dans ta collection') : TN(n, '{n} carte ajoutée', '{n} cartes ajoutées'), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); } });
       collEnrich();
     };
     if (initial) { ta.value = initial; paint(); }
