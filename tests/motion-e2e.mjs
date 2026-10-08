@@ -2,7 +2,7 @@
 // sens des onglets, chiffre qui défile, en-tête au défilement, et tout coupé par « réduire les animations ».
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18980 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -15,7 +15,7 @@ const anims = (p, sel) => p.$eval(sel, e => e.getAnimations({ subtree: true }).m
 {
   const { p, errs } = await newPage(browser, world, { init: seed, ctx: { isMobile: false, hasTouch: false } }); errsOf.push(errs);
   await p.evaluate(() => { const o = stagger; window.__stg = []; stagger = (...a) => { window.__stg.push(a.flat().filter(Boolean).map(e => e.className).join(' ')); return o(...a); }; });      // les repeints (lecture des cartes) remplacent la liste : on suit les appels
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on .coll-list');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on .coll-list');
   assert.ok((await p.evaluate(() => window.__stg)).some(c => /coll-list/.test(c)), 'liste : arrivée en cascade');
   await p.click('#collSeg [data-v="trade"]'); assert.equal(await p.$eval('.coll-main', e => e.dataset.dir), 'l', 'onglet à droite : arrive de la droite');
   await p.click('#collSeg [data-v="stats"]'); assert.equal(await p.$eval('.coll-main', e => e.dataset.dir), 'r');
@@ -46,7 +46,7 @@ const anims = (p, sel) => p.$eval(sel, e => e.getAnimations({ subtree: true }).m
   ok('carte en grand : agrandie depuis la vignette, inclinaison foil qui suit le pointeur, revient à plat ; glissé lent = inclinaison, geste vif = carte suivante');
 
   await p.click('.coll .dv-back'); await p.waitForTimeout(400);
-  await p.click('#btnDecks'); await p.waitForSelector('.deck-main .tilt');
+  await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.deck-main .tilt');
   await p.evaluate(() => { const o = tween; window.__tw = []; tween = (el, to) => { window.__tw.push([el.className, el._v == null ? 0 : el._v, to]); return o(el, to); }; });
   await p.click('.deck-main'); await p.waitForSelector('.dv.on .dv-amt');
   await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]') && /[1-9]/.test(document.querySelector('.dv-amt').textContent), null, { timeout: 8000 });
@@ -65,7 +65,7 @@ const anims = (p, sel) => p.$eval(sel, e => e.getAnimations({ subtree: true }).m
 {
   const { p, errs } = await newPage(browser, world, { init: seed, ctx: { reducedMotion: 'reduce', isMobile: false, hasTouch: false } }); errsOf.push(errs);
   await p.evaluate(() => { const o = stagger; window.__stg = 0; stagger = (...a) => { o(...a); window.__stg += document.querySelectorAll('.stg').length; }; });
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on .coll-list'); await p.waitForSelector('.coll-list .crow .thumb img.ok', { timeout: 8000 });
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on .coll-list'); await p.waitForSelector('.coll-list .crow .thumb img.ok', { timeout: 8000 });
   assert.equal(await p.evaluate(() => window.__stg), 0, 'réduire les animations : pas de cascade');
   await p.click('.coll-list .crow .thumb'); await p.waitForSelector('.imgv.on');
   assert.ok(!(await anims(p, '.imgv-card')).includes('waapi'), 'réduire les animations : pas de FLIP');

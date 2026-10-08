@@ -2,7 +2,7 @@
 // (lecture + écriture conditionnelle à la version, comme runTransaction ; écoute temps réel ; latence ; hors ligne).
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, ok, txt } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, ok, txt, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18940 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -90,7 +90,7 @@ assert.deepEqual(textOf().map(l => l.replace(/ \(D[0-9a-z]{6}\)/, '')), ['3 Sol 
 ok('quantité, retrait (jusqu\'à 0) et langue se propagent dans les deux sens');
 
 /* 3) écran « Ma collection » ouvert sur B : la liste se met à jour sans rien toucher ; les boutons ± de B arrivent sur A */
-await B.p.click('#btnColl'); await B.p.waitForSelector('.coll.on'); await B.p.waitForFunction(() => document.querySelectorAll('.crow').length === 1);
+await toHome(B.p); await B.p.click('#btnColl'); await B.p.waitForSelector('.coll.on'); await B.p.waitForFunction(() => document.querySelectorAll('.crow').length === 1);
 await add(A, 'Lightning Bolt', 1);
 await B.p.waitForFunction(() => document.querySelectorAll('.crow').length === 2, null, { timeout: 8000 });
 assert.match(await txt(B.p, '.coll-sync'), /Sauvegardée dans ton compte/);
@@ -160,7 +160,7 @@ await quiet();
 const all17 = await mapOf(A);
 
 /* 10) hors ligne : B garde ses changements, A continue ; au retour tout est fusionné */
-await B.p.click('#btnColl'); await B.p.waitForSelector('.coll.on');
+await toHome(B.p); await B.p.click('#btnColl'); await B.p.waitForSelector('.coll.on');
 await B.ctx.setOffline(true); server.off.add('B'); await B.p.waitForTimeout(200);
 await add(B, 'Wrath of God', 1); await bump(B, 'Sol Ring', 2); await bump(B, 'Carte 1', -1);
 await add(A, 'Command Tower', 1); await bump(A, 'Sol Ring', 1); await bump(A, 'Carte 2', -1);

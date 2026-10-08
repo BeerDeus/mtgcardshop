@@ -8,7 +8,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createECDH, randomBytes, hkdfSync, createDecipheriv, generateKeyPairSync } from 'node:crypto';
-import { chromium, startWorld, newPage, txt, ok, done } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome } from './e2e-world.mjs';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const price = new Map([['sol ring', '3.00'], ['swords to plowshares', '1.20'], ['wrath of god', '2.50'], ['arcane signet', '1.00'], ['craterhoof behemoth', '9.00']]);
@@ -128,7 +128,7 @@ ok('abonnement push partagé : couper « recherche terminée » ne coupe pas les
 await p.keyboard.press('Escape'); await sheetGone();
 
 /* ── Fiche d'une carte : « Prévenir si le prix baisse » ──────────────────────────────────── */
-await p.fill('#deckText', '1 Sol Ring'); await p.waitForTimeout(300); await p.click('#btnRun'); await done(p);
+await toInput(p); await p.fill('#deckText', '1 Sol Ring'); await p.waitForTimeout(300); await toInput(p); await p.click('#btnRun'); await done(p);
 await p.evaluate(() => openCardSheet('sol ring')); await p.waitForSelector('.watchbtn');
 assert.match(await txt(p, '.watchbtn'), /Prévenir si le prix baisse/); await p.click('.watchbtn');
 await p.waitForFunction(() => AC.watch['sol ring'], null, { timeout: 5000 }); assert.match(await txt(p, '.watchbtn'), /Ne plus surveiller/); assert.match(await txt(p, '#toast'), /tu seras prévenu/);

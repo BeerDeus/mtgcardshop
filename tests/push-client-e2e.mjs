@@ -4,7 +4,7 @@ import './setup-env.mjs';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import { createECDH, randomBytes, hkdfSync, createDecipheriv, generateKeyPairSync } from 'node:crypto';
-import { chromium, startWorld, newPage, done, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, done, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const pushed = [];
@@ -59,8 +59,8 @@ assert.equal(await p.$eval('#setPush', c => c.checked), true, 'réglage retrouv�
 
 /* ── Recherche avec l'app fermée en route ─────────────────────────────────────────────────────── */
 const DECK = '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God\n1 Craterhoof Behemoth\n1 Command Tower\n1 Llanowar Elves';
-await p.fill('#deckText', DECK); await p.waitForTimeout(300);
-const n0 = jobBodies.length; await p.click('#btnRun');
+await toInput(p); await p.fill('#deckText', DECK); await p.waitForTimeout(300);
+const n0 = jobBodies.length; await toInput(p); await p.click('#btnRun');
 await p.waitForFunction(() => /offres|Recherche|recherche|Lecture/i.test((document.querySelector('#progTitle') || {}).textContent || ''), null, { timeout: 5000 });
 await sleep(500);
 const pb = jobBodies[n0]; assert.ok(pb, 'recherche envoyée au serveur');
@@ -83,14 +83,14 @@ await B.p.goto(world.url); await B.p.waitForTimeout(900);
 await B.p.evaluate(sub => { localStorage.setItem('__t_perm', '"granted"'); localStorage.setItem('__t_sub', JSON.stringify(sub)); }, br.sub);   // déjà abonné
 const st = await B.p.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1') || '{}')); st.push = true; await B.p.evaluate(s => localStorage.setItem('deckdeal:v1', JSON.stringify(s)), st);
 await B.p.reload(); await B.p.waitForTimeout(900);
-world.delay = 0; await B.p.fill('#deckText', DECK); const n1 = jobBodies.length; await B.p.click('#btnRun'); await done(B.p); await sleep(1500);
+world.delay = 0; await toInput(B.p); await B.p.fill('#deckText', DECK); const n1 = jobBodies.length; await toInput(B.p); await B.p.click('#btnRun'); await done(B.p); await sleep(1500);
 assert.ok(jobBodies[n1] && jobBodies[n1].push, 'la charge utile est jointe'); assert.equal(pushed.length, 1, 'app ouverte à la fin : aucune notification');
 ok('app ouverte jusqu\'à la fin : pas de notification');
 // réglage coupé
 await B.p.click('#btnSettings'); await B.p.waitForSelector('#setPush'); await B.p.click('label[for="setPush"] .switch'); await B.p.waitForFunction(() => !document.querySelector('#setPush').checked);
 assert.equal(await B.p.evaluate(() => JSON.parse(localStorage.getItem('__t_unsub'))), 1, 'abonnement résilié'); await B.p.keyboard.press('Escape'); await B.p.waitForTimeout(350);
 await B.p.click('#btnBack'); await B.p.waitForSelector('#deckText', { state: 'visible', timeout: 5000 });
-await B.p.fill('#deckText', DECK + '\n1 Ranger\'s Hawk'); const n2 = jobBodies.length; await B.p.click('#btnRun'); await done(B.p); await sleep(800);
+await toInput(B.p); await B.p.fill('#deckText', DECK + '\n1 Ranger\'s Hawk'); const n2 = jobBodies.length; await toInput(B.p); await B.p.click('#btnRun'); await done(B.p); await sleep(800);
 assert.ok(jobBodies[n2] && !('push' in jobBodies[n2]), 'réglage coupé : aucune charge utile'); assert.equal(pushed.length, 1);
 ok('réglage coupé : abonnement résilié, plus rien envoyé');
 

@@ -1,7 +1,7 @@
 // E2E : bouton Retour du téléphone : ferme l'écran ouvert ; sur l'accueil, double Retour pour quitter ; couleurs d'un deck.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18970 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -14,7 +14,7 @@ const open = sel => p.$eval(sel, e => !!e);
 world.basics = true;      // les terrains de base ont une image sur le faux Scryfall
 // bouton « Mes decks » de l'accueil → écran des decks (comme « Ma collection »)
 assert.match(await txt(p, '#decksSub'), /^1 deck$/); assert.equal(await p.$('#decksSec'), null, 'plus de liste de decks sur l\'accueil'); assert.equal(await p.$('.deck'), null);
-await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); assert.equal(await txt(p, '.dks .dv-title span'), '1 deck');
+await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); assert.equal(await txt(p, '.dks .dv-title span'), '1 deck');
 // couleurs du deck : Marais (B) + Montagne (R) → pastilles dans l'ordre WUBRG
 assert.deepEqual(await p.$$eval('.deck .deck-pips .pip', n => n.map(x => x.className.replace('pip ', ''))), ['B', 'R'], 'couleurs d\'après les terrains de base');
 assert.match(await p.$eval('.deck-pips', e => e.getAttribute('aria-label')), /noir, rouge/); assert.match(await txt(p, '.deck-fmt'), /Standard/);
@@ -31,10 +31,10 @@ await back(); await p.waitForFunction(() => !document.querySelector('.dv:not(.dk
 await p.click('#btnNewDeck'); await p.waitForSelector('#ndName'); await back(); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 }); assert.ok(await p.$('.dks.on'));
 await back(); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 }); assert.equal(p.url(), url, 'même page'); ok('écran « Mes decks » : Retour ferme la feuille puis l\'écran, l\'app reste');
 // 1) collection → Retour la ferme, l'app reste
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await back(); await p.waitForFunction(() => !document.querySelector('.coll'), null, { timeout: 3000 }); assert.equal(p.url(), url, 'même page');
 // 2) feuille au-dessus de la collection : Retour ferme la feuille d'abord, puis la collection
-await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll [data-act="add"]'); await p.waitForSelector('.sheet-wrap.open');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll [data-act="add"]'); await p.waitForSelector('.sheet-wrap.open');
 await back(); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 }); assert.ok(await p.$('.coll.on'), 'la collection reste ouverte');
 await back(); await p.waitForFunction(() => !document.querySelector('.coll'), null, { timeout: 3000 });
 ok('Retour : ferme la feuille / l\'écran ouvert, sans quitter l\'app');
@@ -51,7 +51,7 @@ await p.context().close();
 {
   const own = `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: '1 Sol Ring *EN*\\n1 Edgar Markov *EN*', u: 1, s: '', b: null })); localStorage.setItem('deckdeal:decks:v1', JSON.stringify([{ id: 'd2', name: 'Tout possédé', text: '// Deck Deal : commander\\nCommander\\n1 Edgar Markov\\n\\nDeck\\n1 Sol Ring\\n2 Plains', opts: {}, cards: 2, history: [], createdAt: 1, updatedAt: 2 }])); } catch (e) {}`;
   const { p: q, errs: e2 } = await newPage(browser, world, { init: own }); await q.waitForTimeout(600);
-  await q.click('#btnDecks'); await q.waitForSelector('.dks.on .deck'); await q.click('.deck [data-act="open"]'); await q.waitForSelector('.dv.on[aria-label^="Deck viewer"]');
+  await toHome(q); await q.click('#btnDecks'); await q.waitForSelector('.dks.on .deck'); await q.click('.deck [data-act="open"]'); await q.waitForSelector('.dv.on[aria-label^="Deck viewer"]');
   await q.waitForFunction(() => /6,50/.test((document.querySelector('.dv-eur') || {}).textContent || ''), null, { timeout: 8000 });
   assert.equal((await q.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(q, '.dv-eur')), '≈ 6,50 €'); assert.equal(await txt(q, '.dv[aria-label^="Deck viewer"] .dv-title span'), '4 cartes · toutes possédées');
   assert.match(await txt(q, '.dv-cmd'), /Commandant Edgar Markov.*Dans ta collection/i); assert.equal(await q.$eval('.dv-foot [data-act="refresh"]', e => e.hidden), true, 'tout est possédé : pas de recherche d\'offres');

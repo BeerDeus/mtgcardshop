@@ -1,5 +1,6 @@
 // E2E « deck viewer » : prix gardés par deck, viewer façon MTGA (mana / prix / type), navigation entre cartes, actualisation.
 import './setup-env.mjs';
+const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); }), toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });      // accueil ↔ « Nouveau panier »
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -75,12 +76,12 @@ const ok = m => console.log('✓', m);
 const DECK = "1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God\n1 Craterhoof Behemoth\n1 Command Tower\n2 Llanowar Elves\n1 Ranger's Hawk\n1 Phantom Card\n5 Forest";
 const { ctx, p, errs, scry } = await newPage();
 // « Mes decks » : écran ouvert depuis l'accueil ; toucher un deck ouvre son viewer par-dessus
-const openDeck = async () => { if (!(await p.$('.dks.on'))) { await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck-main'); } await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on .dv-g'); };
+const openDeck = async () => { if (!(await p.$('.dks.on'))) { await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck-main'); } await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on .dv-g'); };
 
 // 1) deck enregistré avant toute recherche → « Voir » : état vide, puis « Chercher les prix » → relevé gardé
-await p.fill('#deckText', DECK); await p.waitForTimeout(250);
-await p.click('#btnSave'); await p.waitForSelector('#svName'); await p.fill('#svName', 'Mon deck'); await p.click('#svGo'); await p.waitForTimeout(500);
-await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main'); assert.equal(await p.$$eval('#deckList .deck-main', b => b.length), 1); ok('toucher le deck enregistré (ouvre le viewer)');
+await toInput(p); await p.fill('#deckText', DECK); await p.waitForTimeout(250);
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName'); await p.fill('#svName', 'Mon deck'); await p.click('#svGo'); await p.waitForTimeout(500);
+await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main'); assert.equal(await p.$$eval('#deckList .deck-main', b => b.length), 1); ok('toucher le deck enregistré (ouvre le viewer)');
 await p.screenshot({ path: 'shots/viewer-0-liste.png' });
 await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on');
 // aucun relevé gardé : le même viewer, en valeur estimée (prix tendance Cardmarket) au lieu d'une simple liste
@@ -160,7 +161,7 @@ ok('carte en grand : précédent / suivant (boutons, clavier, glissement), prix 
 
 // 5) fermer, rouvrir après rechargement : prix gardés, aucune requête
 await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.dv'), null, { timeout: 2000 }); assert.equal(await p.$eval('#app', a => a.inert), false);
-await p.reload(); await p.waitForTimeout(900); const n0 = prodReqs(); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main'); await p.waitForTimeout(1500); const s0 = scry.filter(u => !/^\/cards\/collection/.test(u)).length;      // l'écran des decks et le viewer peuvent lire des fiches (POST /cards/collection) : jamais autre chose
+await p.reload(); await p.waitForTimeout(900); const n0 = prodReqs(); await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main'); await p.waitForTimeout(1500); const s0 = scry.filter(u => !/^\/cards\/collection/.test(u)).length;      // l'écran des decks et le viewer peuvent lire des fiches (POST /cards/collection) : jamais autre chose
 await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on .dv-g');
 assert.equal(norm((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await p.textContent('.dv-eur'))).replace(/\s/g, ' '), '16,70 €'); assert.equal(await p.evaluate(() => DV.sort), 'mana', 'tri mémorisé relu après rechargement');
 assert.equal(prodReqs(), n0, 'aucune requête CardTrader pour ouvrir le viewer'); assert.equal(scry.filter(u => !/^\/cards\/collection/.test(u)).length, s0, 'aucune requête Scryfall de recherche non plus (images : cache navigateur)');
@@ -184,7 +185,7 @@ await p.click('.dv-foot [data-act="edit"]'); await p.waitForFunction(() => !docu
 assert.equal(await p.$eval('#viewInput', v => v.hidden), false); assert.match(await p.inputValue('#deckText'), /Craterhoof Behemoth/); ok('Modifier la liste : saisie rechargée');
 
 // 8) viewer de la recherche en cours (depuis les résultats) : pas d'« Actualiser », pas de « Modifier »
-await p.click('#btnRun'); await done(p); await p.waitForTimeout(500);
+await toInput(p); await p.click('#btnRun'); await done(p); await p.waitForTimeout(500);
 assert.equal(await p.$eval('#btnViewer', b => b.disabled), false); await p.click('#btnViewer'); await p.waitForSelector('.dv.on .dv-g');
 assert.equal(await txt(p, '.dv-age'), 'Prix de la recherche en cours'); assert.equal(await p.$('.dv-age [data-act="refresh"]'), null);
 assert.equal(await p.$eval('.dv-foot [data-act="edit"]', b => b.hidden), true); assert.equal(await p.$eval('.dv-foot [data-act="close"]', b => b.hidden), false);

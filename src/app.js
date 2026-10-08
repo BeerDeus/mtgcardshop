@@ -108,7 +108,7 @@ const S = {
   demo: true, demoPref: null, proxy: false, token: '', appKey: '', address: {}, theme: 'auto', draft: null,
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
-  view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
+  view: 'home', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
   enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [], useColl: true, push: false,
 };
 let runSeq = 0;
@@ -274,6 +274,7 @@ function refreshDeck() {
   paintCollSwitch();
   updateSaveButtons();
   clearTimeout(draftT); draftT = setTimeout(saveStore, 400);
+  homeSoon();
 }
 
 function readOpts() {
@@ -291,13 +292,16 @@ function modeHint() {
 }
 
 /* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
+/** Vues : home (accueil) → input (« Nouveau panier » : saisie et critères) → results. */
+const VIEWS = ['home', 'input', 'results'];
 function showView(v) {
   const prev = S.view; S.view = v;
-  const dir = prev === v ? '' : v === 'results' ? 'fwd' : 'back', el = $(v === 'input' ? '#viewInput' : '#viewResults');
+  const dir = prev === v ? '' : VIEWS.indexOf(v) > VIEWS.indexOf(prev) ? 'fwd' : 'back', el = $(v === 'home' ? '#viewHome' : v === 'input' ? '#viewInput' : '#viewResults');
   el.classList.remove('fwd', 'back'); if (dir) el.classList.add(dir);      // de la droite en avançant, de la gauche en revenant
-  $('#viewInput').hidden = v !== 'input'; $('#viewResults').hidden = v !== 'results';
+  $('#app').dataset.view = v; $('#viewHome').hidden = v !== 'home'; $('#viewInput').hidden = v !== 'input'; $('#viewResults').hidden = v !== 'results';
   $('#dockInput').hidden = v !== 'input'; $('#dockResults').hidden = v !== 'results';
   window.scrollTo({ top: 0, behavior: 'auto' });
+  if (v === 'home') homeSoon(0);
 }
 
 /* ── Recherche ────────────────────────────────────────────────────────────────────────────── */
@@ -1093,6 +1097,7 @@ function init() {
   xsInit(); alInit(); trInit();
   initDecks();
   refreshDeck();
+  homeInit();
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
   $('#btnColl').onclick = () => openCollection();
   $('#btnQuick').onclick = () => { haptic('tap'); openScan(); scanPriceMode(true); };      // accueil : scan directement en « prix rapide »

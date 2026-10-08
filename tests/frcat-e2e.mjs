@@ -1,7 +1,7 @@
 // E2E catalogue des noms français : fichier du site (fr-names.tsv) ou pages Scryfall, réseau mobile (on demande), reprise, mise à jour, échecs.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18940 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -13,7 +13,7 @@ async function fresh({ cell = false, staticRows = 0 } = {}) {
   if (cell) await ctx.addInitScript(CELL);
   if (staticRows) await ctx.route(world.url + 'fr-names.tsv', r => { b.sHits++; r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: ['# fr-names', 'Anneau solaire\tSol Ring\tfront/fr/sol-ring.jpg', ...Array.from({ length: staticRows }, (_, i) => `Vrombl ${String(i).padStart(4, '0')} Quarnax\tVrombl Card ${i}\tfront/fr/v${i}.jpg`)].join('\n') + '\n' }); });
   await p.goto(world.url); await p.waitForTimeout(600);
-  b.open = async () => { await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on'); };
+  b.open = async () => { await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on'); };
   return b;
 }
 const hits = () => world.frHits.splice(0);

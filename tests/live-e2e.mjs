@@ -1,5 +1,6 @@
 // E2E "live" : proxy réel → faux CardTrader ; Scryfall intercepté par Playwright.
 import './setup-env.mjs';
+const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); }), toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });      // accueil ↔ « Nouveau panier »
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -81,11 +82,11 @@ await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
 await p.goto('http://127.0.0.1:18800/'); await p.waitForTimeout(800);
 await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
 const chip = await p.textContent('#modeLabel'); console.log('mode :', chip.trim()); assert.notEqual(chip.trim(), 'Démo', 'proxy détecté → mode live');
-await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom Card\n5 Plains');
+await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom Card\n5 Plains');
 await p.waitForTimeout(300);
 console.log('stats :', (await p.textContent('#deckStats')).replace(/\s+/g, ' ').trim());
 await p.screenshot({ path: 'shots/live-1-saisie.png' });
-await p.click('#btnRun');
+await toInput(p); await p.click('#btnRun');
 await p.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 30000 }).catch(async e => { console.log('DIAG', await p.evaluate(() => document.querySelector('#progTitle').textContent + ' | ' + [...document.querySelectorAll('.step')].map(x => x.innerText.replace(/\s+/g, ' ')).join(' / ') + ' | ' + document.querySelector('#alerts').innerText + ' | ' + document.querySelector('#progRate').innerText), errs, log.slice(-6).map(l => l.m + ' ' + l.path)); throw e; });
 await p.waitForTimeout(1200);
 const hero = (await p.textContent('#heroAmt')).replace(/\s+/g, ' ').trim();
@@ -140,8 +141,8 @@ assert.deepEqual(errs, [], 'aucune erreur page');
   await p2.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await p2.goto('http://127.0.0.1:18800/'); await p2.waitForTimeout(800);
   await p2.evaluate(() => { BACKOFF.scry = [60, 60, 60]; });
-  await p2.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares');
-  await p2.waitForTimeout(300); await p2.click('#btnRun');
+  await toInput(p2); await p2.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares');
+  await p2.waitForTimeout(300); await toInput(p2); await p2.click('#btnRun');
   await p2.waitForFunction(() => /Scryfall ne répond plus/.test(document.querySelector('#alerts').textContent), null, { timeout: 30000 });
   const msg = (await p2.textContent('#alerts')).replace(/\s+/g, ' ').trim();
   console.log('erreur persistante :', msg);
@@ -159,8 +160,8 @@ assert.deepEqual(errs, [], 'aucune erreur page');
   await p3.route('https://api.scryfall.com/**', route => { t3.push(Date.now()); const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
   await p3.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await p3.goto('http://127.0.0.1:18800/'); await p3.waitForTimeout(800);
-  await p3.fill('#deckText', '1 Sol Ring'); await p3.waitForTimeout(300);
-  const tRun = Date.now(); await p3.click('#btnRun');
+  await toInput(p3); await p3.fill('#deckText', '1 Sol Ring'); await p3.waitForTimeout(300);
+  const tRun = Date.now(); await toInput(p3); await p3.click('#btnRun');
   await p3.waitForFunction(() => /Scryfall en pause/.test(document.body.innerText), null, { timeout: 5000 });
   console.log('pause visible ✓');
   await p3.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 30000 });
@@ -179,7 +180,7 @@ const mkPage = async (port = 18800) => {
   return { c, pg, errs2 };
 };
 const runDeck = async (pg, text) => {
-  await pg.fill('#deckText', text); await pg.waitForTimeout(300); await pg.click('#btnRun');
+  await toInput(pg); await pg.fill('#deckText', text); await pg.waitForTimeout(300); await toInput(pg); await pg.click('#btnRun');
   await pg.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 30000 });
   await pg.waitForTimeout(600);
 };
@@ -274,8 +275,8 @@ const rowsOf = pg => pg.$$eval('#list .row', rs => rs.map(r => r.innerText.repla
   await pg.route('https://api.scryfall.com/**', async route => { await new Promise(r => setTimeout(r, 650)); const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
   await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await pg.goto('http://127.0.0.1:18800/'); await pg.waitForTimeout(800);
-  await pg.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God'); await pg.waitForTimeout(300);
-  await pg.click('#btnRun'); await pg.waitForSelector('#tasks .task', { state: 'attached' });
+  await toInput(pg); await pg.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God'); await pg.waitForTimeout(300);
+  await toInput(pg); await pg.click('#btnRun'); await pg.waitForSelector('#tasks .task', { state: 'attached' });
   const hidden = () => pg.$eval('#tasks .task', el => el.classList.contains('hide'));
   await pg.waitForTimeout(500);
   assert.equal(await hidden(), true, 'barre de progression visible → pas de pastille');
@@ -425,14 +426,14 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await waitTotal('^4,00');
 
   // tri
-  await pg.selectOption('#optSort', 'price-desc'); await settle();
+  await toInput(pg); await pg.selectOption('#optSort', 'price-desc'); await settle();
   assert.deepEqual(await names(), ['Swords to Plowshares', 'Sol Ring', 'Arcane Signet', "Ranger's Hawk", 'Phantom Card'], 'plus chères d\'abord, sans prix à la fin');
-  await pg.selectOption('#optSort', 'price-asc'); await settle();
+  await toInput(pg); await pg.selectOption('#optSort', 'price-asc'); await settle();
   assert.deepEqual(await names(), ["Ranger's Hawk", 'Arcane Signet', 'Sol Ring', 'Swords to Plowshares', 'Phantom Card'], 'moins chères d\'abord, sans prix à la fin');
-  await pg.selectOption('#optSort', 'name'); await settle();
+  await toInput(pg); await pg.selectOption('#optSort', 'name'); await settle();
   assert.deepEqual(await names(), ['Arcane Signet', 'Phantom Card', "Ranger's Hawk", 'Sol Ring', 'Swords to Plowshares'], 'A → Z');
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1')).sort), 'name', 'tri mémorisé');
-  await pg.selectOption('#optSort', 'deck'); await settle();
+  await toInput(pg); await pg.selectOption('#optSort', 'deck'); await settle();
   assert.deepEqual(await names(), ['Sol Ring', 'Swords to Plowshares', "Ranger's Hawk", 'Phantom Card', 'Arcane Signet']);
 
   // filtres (puces avec compteurs ; « Choix manuel » absent tant que rien n'est choisi)
@@ -493,7 +494,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await pg.click('#fchips [data-f="none"]'); await settle(); assert.deepEqual(await names(), ['Phantom Card']);
   await pg.click('#list .rw[data-key="phantom card"] .rx'); await pg.waitForTimeout(500);
   assert.equal((await names()).length, 4, 'plus aucune carte sans offre : le filtre se désactive seul'); assert.deepEqual(await chips(), ['Toutes4*', 'Autre langue2']);
-  await pg.selectOption('#optSort', 'price-desc'); await settle();
+  await toInput(pg); await pg.selectOption('#optSort', 'price-desc'); await settle();
   await pg.click('#list .rw[data-key="swords to plowshares"] .rx'); await pg.waitForTimeout(500);
   assert.deepEqual(await names(), ['Sol Ring', 'Arcane Signet', "Ranger's Hawk"]);
   await pg.click('#undoAll'); await pg.waitForTimeout(500);
@@ -505,7 +506,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await pg.click('#setHaptic ~ i, .switch:has(#setHaptic)'); assert.equal(await pg.isChecked('#setHaptic'), false);
   await pg.click('.sheet-wrap.open [data-close].icon-btn'); await pg.waitForTimeout(500);
   const v1 = await pg.evaluate(() => window.__vib.length);
-  await pg.selectOption('#optSort', 'name'); await pg.click('#list .rw[data-key="sol ring"] .rx'); await pg.waitForTimeout(400);
+  await toInput(pg); await pg.selectOption('#optSort', 'name'); await pg.click('#list .rw[data-key="sol ring"] .rx'); await pg.waitForTimeout(400);
   assert.equal(await pg.evaluate(() => window.__vib.length), v1, 'vibrations coupées');
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1')).haptic), false);
   assert.deepEqual(errs2, []); await c.close();
@@ -569,7 +570,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   const watch = pg => { const w = { posts: [], dels: 0, direct: 0 }; pg.on('request', r => { const u = r.url(); if (/\/api\/jobs$/.test(u) && r.method() === 'POST') w.posts.push(JSON.parse(r.postData())); else if (/\/api\/jobs\//.test(u) && r.method() === 'DELETE') w.dels++; else if (/\/api\/marketplace\/products/.test(u)) w.direct++; }); return w; };
   const hintSpy = pg => pg.evaluate(() => { window.__hint = false; const h = document.getElementById('progHint'); new MutationObserver(() => { if (!h.hidden) window.__hint = true; }).observe(h, { attributes: true, attributeFilter: ['hidden'] }); });
   const done = pg => pg.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 30000 });
-  const rerun = async pg => { await pg.click('#btnBack'); await pg.click('#btnRun'); };
+  const rerun = async pg => { await pg.click('#btnBack'); await toInput(pg); await pg.click('#btnRun'); };
   const total = async pg => { let a = '', b; for (let i = 0; i < 20; i++) { b = (await pg.textContent('#heroAmt')).replace(/\s+/g, ' ').trim(); if (b === a) return b; a = b; await pg.waitForTimeout(350); } return b; };   // le total s'anime : on attend qu'il se stabilise
 
   // J1) le client passe par la tâche serveur ; la relance se rattache (0 requête) ; vieux cache → alerte + « Actualiser les prix » (fresh)
@@ -634,13 +635,13 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   {
     prodDelay = 2500; const { c, pg, errs2 } = await mkPage(); const w = watch(pg); const n0 = upProducts();
     await pg.evaluate(() => { document.querySelector('#deckText').value = ''; });
-    await pg.fill('#deckText', DECK); await pg.waitForTimeout(300); await pg.evaluate(() => { startRun(true); });
+    await toInput(pg); await pg.fill('#deckText', DECK); await pg.waitForTimeout(300); await pg.evaluate(() => { startRun(true); });
     await pg.waitForFunction(() => !document.getElementById('progHint').hidden, null, { timeout: 8000 }).catch(async e => { console.log('DIAG4', await pg.evaluate(() => document.querySelector('#progTitle').textContent + ' | ' + [...document.querySelectorAll('.step')].map(x => x.innerText.replace(/\s+/g, ' ')).join(' / ') + ' | ' + document.querySelector('#alerts').innerText + ' | ' + document.querySelector('#progRate').innerText + ' | jobs=' + CTX.jobs), log.slice(-5).map(l => l.m + ' ' + l.path)); throw e; }); await pg.waitForTimeout(400); await pg.screenshot({ path: 'shots/live-13-serveur.png' }); await pg.click('#btnCancel'); await pg.waitForTimeout(700);   // bandeau visible pendant la lecture, puis « Arrêter »
     assert.equal(w.dels, 1, 'DELETE envoyé au serveur'); assert.match(await pg.textContent('#progTitle'), /arrêtée/); await c.close();
     console.log('✓ Arrêter : tâche annulée côté serveur');
     await new Promise(r => setTimeout(r, 2800));
     const n1 = upProducts();
-    const A = await mkPage(); const wa = watch(A.pg); await A.pg.fill('#deckText', DECK); await A.pg.waitForTimeout(300); await A.pg.evaluate(() => { startRun(true); });
+    const A = await mkPage(); const wa = watch(A.pg); await toInput(A.pg); await A.pg.fill('#deckText', DECK); await A.pg.waitForTimeout(300); await A.pg.evaluate(() => { startRun(true); });
     await A.pg.waitForFunction(() => !document.getElementById('progHint').hidden, null, { timeout: 8000 }); await A.pg.waitForTimeout(400);
     const started = upProducts() - n1; assert.ok(started >= 3, 'lecture amorcée : ' + started);
     await A.c.close();                                                   // l'utilisateur quitte l'app en pleine lecture

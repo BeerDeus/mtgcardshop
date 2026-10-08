@@ -39,7 +39,7 @@ const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine ===
 function trNeedNet() { if (!trOffline()) return true; toast('Hors ligne : réessaie une fois connecté'); return false; }
 /** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
 function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
-function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); }
+function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); }
 
 /* ── Réglages dans le compte ───────────────────────────────────────────────────────────────────────── */
 function trUser(user) {

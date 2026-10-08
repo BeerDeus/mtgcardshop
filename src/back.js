@@ -1,5 +1,5 @@
 /* ── back.js : bouton Retour du téléphone ─────────────────────────────────────────────────────────
-   Un écran ouvert (feuille, collection, scan, éditeur de deck, visionneuse, résultats) se ferme au lieu de quitter l'app.
+   Un écran ouvert (feuille, collection, scan, éditeur de deck, visionneuse, résultats, saisie) se ferme au lieu de quitter l'app.
    Sur l'accueil : un 1er Retour affiche « Appuie encore sur Retour pour quitter », le 2e (dans les 2,5 s) quitte.
    Principe : l'historique garde toujours deux entrées [root, trap] ; Retour ramène sur « root », on traite puis on repose « trap ». */
 const BK = { armed: 0 };
@@ -10,6 +10,7 @@ function backClose() {
   const dvs = $$('body > .dv.on'), top = dvs[dvs.length - 1];
   if (top && top.__close) { if (top.classList.contains('bd')) bdClose(); else top.__close(); return true; }
   if (S.view === 'results') { $('#btnBack').click(); return true; }
+  if (S.view === 'input') { showView('home'); return true; }
   return false;
 }
 function backInit() {

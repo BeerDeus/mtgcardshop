@@ -2,7 +2,7 @@
 // étiquette « complet » + date sur sa propre ligne dans la liste des decks.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18990 });
 world.basics = true; world.noFr.add('Llanowar Elves');
@@ -17,7 +17,7 @@ await p.waitForTimeout(600);
 const src = sel => p.$eval(sel, e => e.getAttribute('src')).catch(() => '');
 
 /* ── 1) liste : « complet » + date sur sa propre ligne ───────────────────────────────────── */
-await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
+await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
 const lines = await p.$$eval('.deck[data-id="d1"] .deck-meta > span', s => s.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
 assert.equal(lines.length, 2, 'prix / complet, puis la date');
 assert.match(lines[0], /^\d+ cartes?( · .*)? · complet$|^\d+ cartes? · complet$/); assert.match(lines[1], /^il y a 3 heures$/);

@@ -2,7 +2,7 @@
 // (seuil 10 / 25 / 50 %), bannière d'alerte (ignorer, mémorisé), pastilles ▲▼ dans la liste, sous-titre de l'accueil, actualisation manuelle, hors ligne.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18940 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -14,7 +14,7 @@ const tags = () => p.$$eval('.crow:not(.dk)', r => Object.fromEntries(r.map(x =>
 const alertTxt = () => p.$eval('.coll-alert', e => e.hidden ? '' : e.innerText.replace(/\s+/g, ' ').trim());
 
 /* ── collection : Sol Ring ×2, Swords, Wrath, Craterhoof, Arcane Signet (prix CM 1,50 · 1,90 · 1,50 · 9,00 · 0,40) ─────────────── */
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 await p.fill('#ciText', '2 Sol Ring\n1 Swords to Plowshares\n1 Wrath of God\n1 Craterhoof Behemoth\n1 Arcane Signet'); await p.waitForTimeout(150); await p.click('#ciGo');
 await p.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 });
@@ -86,7 +86,7 @@ await p.click('.coll-alert [data-act="valhide"]'); assert.equal(await alertTxt()
 await p.waitForTimeout(1200); await p.reload(); await p.waitForTimeout(900);
 assert.equal(await p.evaluate(() => VAL.hist.length), 3, 'historique relu après rechargement');
 await p.waitForFunction(() => VAL.base && VAL.base.prev, null, { timeout: 5000 });
-await p.click('#btnColl'); await p.waitForSelector('.coll.on .crow'); await p.waitForTimeout(300);
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on .crow'); await p.waitForTimeout(300);
 assert.equal(await alertTxt(), '', 'écartée pour aujourd\'hui, même après rechargement'); assert.doesNotMatch(await txt(p, '#collSub'), /bougé/);
 t = await tags(); assert.deepEqual(t['Sol Ring'], ['tag vm vu|▲ +50 %'], 'les pastilles restent');
 ok('« Ignorer » : bannière écartée pour la journée, mémorisé après rechargement ; historique et références relus');

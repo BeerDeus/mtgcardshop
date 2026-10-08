@@ -589,8 +589,106 @@ button.sync:active{background:var(--surface-2)}
 
 
 /* ── Cartes possédées, référence Cardmarket ───────────────────────────────────────────────────── */
-.collsec{display:flex;flex-direction:column;gap:8px}
-.coll-quick .coll-ico b{font-family:var(--font-display);font-size:19px;font-weight:700;line-height:1}
+/* ── Accueil : orbe de la collection (terrains en orbite), decks, raccourcis, « Nouveau panier » ── */
+.home{gap:14px;padding-top:2px}
+#app[data-view="home"] .wrap{position:relative;z-index:1}
+#app[data-view="home"] .dock{display:none}
+.hm-aura{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:var(--aura-o,.55)}
+#app[data-view="home"] .hm-aura{display:block}
+.hm-aura i{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(26px);animation:hmDrift1 15s ease-in-out infinite}
+.hm-aura i:nth-child(1){left:-140px;top:-80px;background:radial-gradient(circle,rgba(63,143,224,.55),transparent 65%)}
+.hm-aura i:nth-child(2){right:-140px;top:110px;background:radial-gradient(circle,rgba(224,83,61,.42),transparent 65%);animation-name:hmDrift2;animation-duration:18s}
+.hm-aura i:nth-child(3){left:-90px;top:380px;background:radial-gradient(circle,rgba(58,154,94,.36),transparent 65%);animation-name:hmDrift3;animation-duration:13s}
+.hm-aura i:nth-child(4){right:-80px;top:560px;background:radial-gradient(circle,rgba(199,155,255,.36),transparent 65%);animation-delay:-6s}
+.hm-aura b{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;animation:hmTwinkle 3s ease-in-out infinite;opacity:.2}
+.hm-aura b:nth-child(5){left:14%;top:150px}.hm-aura b:nth-child(6){left:84%;top:96px;animation-delay:-1s}.hm-aura b:nth-child(7){left:78%;top:320px;animation-delay:-2s}
+@keyframes hmDrift1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,36px)}}
+@keyframes hmDrift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-44px,50px)}}
+@keyframes hmDrift3{0%,100%{transform:translate(0,0)}50%{transform:translate(36px,-40px)}}
+@keyframes hmTwinkle{0%,100%{opacity:.12}50%{opacity:.85}}
+@keyframes hmSpin{to{transform:rotate(360deg)}}
+@keyframes hmSpinR{to{transform:rotate(-360deg)}}
+@keyframes hmHalo{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.12);opacity:.22}}
+@keyframes hmOrbIn{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+@keyframes hmDeal{0%{opacity:0;transform:translateY(34px) rotate(-2.5deg) scale(.96)}100%{opacity:1;transform:none}}
+@keyframes hmScan{0%,100%{top:12%}50%{top:80%}}
+@keyframes hmPulse{0%{box-shadow:0 0 0 0 rgba(79,209,161,.6)}100%{box-shadow:0 0 0 9px rgba(79,209,161,0)}}
+@keyframes hmGlint{0%{transform:translateX(-120%) skewX(-18deg)}60%,100%{transform:translateX(260%) skewX(-18deg)}}
+.hm-hero{display:flex;flex-direction:column;align-items:center;gap:4px}
+.hm-stage{position:relative;width:300px;height:272px;display:grid;place-items:center}
+.hm-orbit{position:absolute;width:222px;height:222px;left:39px;top:25px;animation:hmSpin 32s linear infinite}
+.hm-land{position:absolute;width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid var(--lc);box-shadow:0 0 18px var(--lg);background:var(--lb);animation:hmSpinR 32s linear infinite}
+.hm-land img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s}
+.hm-land img.ok{opacity:1}
+.hm-land:nth-child(1){left:89px;top:-22px;--lc:#f8f6d8;--lg:rgba(248,246,216,.6);--lb:linear-gradient(180deg,#fff3c4,#f6d58a 48%,#a89a6c)}
+.hm-land:nth-child(2){left:196px;top:53px;--lc:#c1d7e9;--lg:rgba(63,143,224,.7);--lb:linear-gradient(180deg,#bfe2ff,#2f6fb5 52%,#173a6b)}
+.hm-land:nth-child(3){left:154px;top:180px;--lc:#bab1ab;--lg:rgba(186,177,171,.5);--lb:linear-gradient(180deg,#6b5a78,#2a2a22 52%,#141410)}
+.hm-land:nth-child(4){left:24px;top:180px;--lc:#e49977;--lg:rgba(224,83,61,.7);--lb:linear-gradient(160deg,#ffb37a,#e0533d 40%,#3b140e)}
+.hm-land:nth-child(5){left:-17px;top:53px;--lc:#a3c095;--lg:rgba(58,154,94,.7);--lb:linear-gradient(180deg,#c8e6b0,#2f6b3e 60%,#163521)}
+.hm-halo{position:absolute;width:196px;height:196px;border-radius:50%;background:radial-gradient(circle,rgba(146,156,255,.5),transparent 70%);animation:hmHalo 3.4s ease-in-out infinite}
+.hm-orb{position:relative;width:170px;height:170px;border-radius:50%;padding:0;color:#fff;animation:hmOrbIn 1s cubic-bezier(.34,1.5,.5,1) both;transition:transform .4s var(--spring)}
+.hm-orb:active{transform:scale(.94)}
+.hm-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);animation:hmSpin 6s linear infinite}
+.hm-core{position:absolute;inset:3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#232b5c,#0b0f22 72%);box-shadow:inset 0 0 28px rgba(146,156,255,.3)}
+.hm-orb-t{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 14px;text-align:center}
+.hm-orb-t small{font-size:11.5px;font-weight:600;color:#a9b3cf;letter-spacing:.03em}
+.hm-orb-t b{font-family:var(--font-display);font-weight:800;font-size:29px;letter-spacing:-.04em;line-height:1.08;font-variant-numeric:tabular-nums;background:linear-gradient(110deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:foilmove 6s linear infinite}
+.hm-orb[data-empty="1"] .hm-orb-t b{font-size:22px}
+.hm-orb-t span{font-size:12px;color:#c3c9ff}
+.hm-orb-t em{font-style:normal;font-size:11.5px;font-weight:700;color:#4fd1a1}
+.hm-orb-t em.down{color:#ff8091}
+.hm-sub{margin:0;font-size:12.5px;color:var(--ink-3);text-align:center;font-variant-numeric:tabular-nums}
+.hm-tiles{display:flex;flex-direction:column;gap:10px}
+.hm-decks,.hm-tile{position:relative;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--ink);text-align:left;overflow:hidden;box-shadow:var(--shadow);animation:hmDeal .8s cubic-bezier(.16,1,.3,1) both;transition:transform .35s var(--spring),border-color .25s}
+.hm-decks:active,.hm-tile:active{transform:scale(.96)}
+@media (hover:hover){.hm-decks:hover,.hm-tile:hover{transform:translateY(-3px);border-color:var(--accent)}}
+.hm-decks{display:flex;align-items:center;gap:16px;min-height:112px;padding:14px 16px;border-radius:22px;animation-delay:.12s}
+.hm-fan{position:relative;width:118px;height:84px;flex:none}
+.hm-fan i{position:absolute;width:56px;height:78px;border-radius:7px;overflow:hidden;border:2px solid #15151a;box-shadow:0 8px 16px -6px rgba(0,0,0,.6);transition:transform .45s var(--spring);background:var(--fb)}
+.hm-fan i:nth-child(1){left:2px;top:6px;transform:rotate(-12deg);--fb:linear-gradient(170deg,#3a2c40,#7d3550 45%,#e0533d)}
+.hm-fan i:nth-child(2){left:31px;top:0;z-index:1;--fb:linear-gradient(170deg,#e9f2ff,#7fb0ff 40%,#2a5c3a)}
+.hm-fan i:nth-child(3){left:60px;top:6px;z-index:2;transform:rotate(12deg);--fb:linear-gradient(170deg,#ffe9b3,#c79bff 50%,#3d3149)}
+.hm-fan img{width:100%;height:100%;object-fit:cover;display:block}
+@media (hover:hover){.hm-decks:hover .hm-fan i:nth-child(1){transform:translateX(-9px) rotate(-20deg)}.hm-decks:hover .hm-fan i:nth-child(3){transform:translateX(9px) rotate(20deg)}}
+.hm-decks:active .hm-fan i:nth-child(1){transform:translateX(-9px) rotate(-20deg)}.hm-decks:active .hm-fan i:nth-child(3){transform:translateX(9px) rotate(20deg)}
+.hm-dt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.hm-dt b{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.02em}
+.hm-dt b em{font-style:normal;color:var(--accent)}
+.hm-dt span{font-size:12.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hmDeckNames:empty{display:none}
+.hm-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hm-tile{min-height:116px;padding:12px;border-radius:20px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;animation-delay:.2s}
+.hm-tile:nth-child(2){animation-delay:.26s}.hm-tile:nth-child(3){animation-delay:.32s}
+.hm-ic{width:22px!important;height:22px!important}
+.hm-quick .hm-ic{color:#0b8a5e}.hm-build .hm-ic{color:#c98a12}.hm-trade .hm-ic{color:#d2477f}
+.hm-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.hm-top em{font-style:normal;font-family:var(--font-display);font-weight:800;font-size:15px;color:#c98a12}
+.hm-tt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hm-tt b{font-size:14px;line-height:1.15}
+.hm-tt span{font-size:11px;line-height:1.25;color:var(--ink-3)}
+.hm-scanbox{position:absolute;right:10px;top:10px;width:30px;height:42px;border-radius:5px;border:2px dashed color-mix(in srgb,var(--ink-3) 55%,transparent)}
+.hm-scanbox i{position:absolute;left:8%;right:8%;height:2px;background:#4fd1a1;box-shadow:0 0 12px 2px rgba(79,209,161,.7);animation:hmScan 2.4s ease-in-out infinite}
+.hm-live{width:8px;height:8px;border-radius:50%;background:#4fd1a1;animation:hmPulse 1.6s ease-out infinite}
+.hm-new{position:relative;border-radius:24px;padding:2px;margin-top:4px;box-shadow:0 18px 44px -20px rgba(146,156,255,.6);animation:hmDeal .8s cubic-bezier(.16,1,.3,1) .38s both}
+.hm-new-ring{position:absolute;inset:0;border-radius:24px;overflow:hidden}
+.hm-new-ring::before{content:"";position:absolute;inset:-60%;background:conic-gradient(from 0deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);animation:hmSpin 6s linear infinite}
+.hm-new-in{position:relative;border-radius:22px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.hm-glint{position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(90deg,transparent,var(--sheen,rgba(255,255,255,.4)),transparent);animation:hmGlint 4.5s ease-in-out 1.4s infinite;pointer-events:none}
+.hm-new-h{display:flex;align-items:center;gap:10px}
+.hm-new-h b{font-family:var(--font-display);font-weight:700;font-size:21px;letter-spacing:-.02em}
+.hm-new-ico{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.hm-new-ico .i{width:21px;height:21px}
+.hm-new p{margin:0;font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+.hm-new-acts{display:flex;gap:8px}
+.hm-new-acts .btn:first-child{flex:1}
+:root[data-theme="dark"] .hm-aura{--aura-o:1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-aura{--aura-o:1}}
+:root[data-theme="dark"] .hm-new-in{background:linear-gradient(160deg,#171e36,#0e1326)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-new-in{background:linear-gradient(160deg,#171e36,#0e1326)}}
+:root[data-theme="dark"] .hm-quick .hm-ic{color:#4fd1a1}:root[data-theme="dark"] .hm-build .hm-ic,:root[data-theme="dark"] .hm-top em{color:#ffd479}:root[data-theme="dark"] .hm-trade .hm-ic{color:#ff8fc3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-quick .hm-ic{color:#4fd1a1}:root:not([data-theme="light"]) .hm-build .hm-ic,:root:not([data-theme="light"]) .hm-top em{color:#ffd479}:root:not([data-theme="light"]) .hm-trade .hm-ic{color:#ff8fc3}}
+@media (max-width:359px){.hm-stage{transform:scale(.9);margin:-10px 0}}
+@media (prefers-reduced-motion:reduce){.hm-aura i,.hm-aura b,.hm-orbit,.hm-land,.hm-halo,.hm-ring,.hm-orb,.hm-orb-t b,.hm-decks,.hm-tile,.hm-scanbox i,.hm-live,.hm-new,.hm-new-ring::before,.hm-glint{animation:none}.hm-glint{display:none}}
 .coll-open{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:transform .15s,border-color .2s}
 .coll-open:active{transform:scale(.99)}
 .coll-ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
@@ -1341,6 +1439,45 @@ button,.btn,select,summary{touch-action:manipulation}
 .set-ver{margin:14px 0 0;text-align:center;font-family:var(--font-code);font-size:11.5px}
 .dv-acts{margin-top:2px}.dv-acts .btn,.tr-wacts .btn{flex:1 1 auto;height:44px;font-size:14px}
 .tr-wacts{margin-bottom:10px}
+
+/* ── Identité « Arcane » (celle de l'accueil) sur toute l'appli : aurore de mana en fond, surfaces en verre, foil ─────────────
+   Couche finale : n'ajoute que fonds, bordures et ombres ; aucune mise en page ne change. */
+:root{--aura-a:.5;--glass:color-mix(in srgb,var(--surface) 80%,transparent);--glass-2:color-mix(in srgb,var(--surface-2) 72%,transparent);
+  --foil-ring:conic-gradient(from 0deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);
+  --foil-ink:linear-gradient(110deg,#d9418a,#c98a12,#13906a,#2f6fd0,#7d4fe0,#d9418a)}
+:root[data-theme="dark"]{--aura-a:1;--foil-ink:linear-gradient(110deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--aura-a:1;--foil-ink:linear-gradient(110deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3)}}
+/* aurore : pleine sur l'accueil, atténuée sur la saisie et les résultats, en dégradés fixes sur les écrans plein format */
+.hm-aura{display:block}
+#app:not([data-view="home"]) .hm-aura{opacity:calc(var(--aura-o,.55) * .5)}
+#app .wrap{position:relative;z-index:1}
+.dv{background:
+  radial-gradient(70% 38% at 0% 0%,rgba(63,143,224,calc(.30 * var(--aura-a))),transparent 70%),
+  radial-gradient(60% 36% at 100% 24%,rgba(224,83,61,calc(.20 * var(--aura-a))),transparent 70%),
+  radial-gradient(70% 40% at 0% 78%,rgba(58,154,94,calc(.20 * var(--aura-a))),transparent 70%),
+  radial-gradient(60% 40% at 100% 100%,rgba(199,155,255,calc(.26 * var(--aura-a))),transparent 70%),
+  var(--bg)}
+/* verre */
+#list.list,.coll-list,.panel,.cs-bars,.vl-box,.cs-tiles>div,textarea#deckText,.crow:not(.coll-list>.crow),.tr-box,.dk-own,.recap{background:var(--glass);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#list.list,.coll-list{box-shadow:var(--shadow)}
+.btn.ghost,.fbtn,.fsearch,.sortsel,.icon-btn,.fopt:not([aria-pressed="true"]),.chip,.tools .link-btn:not(.strong){background-color:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.seg{background:var(--glass-2);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px var(--line)}
+.seg-thumb{border:1.5px solid transparent;background:linear-gradient(var(--seg-thumb,var(--surface)),var(--seg-thumb,var(--surface))) padding-box,var(--foil-ring) border-box;box-shadow:0 6px 16px -8px rgba(127,176,255,.7)}
+.sheet{background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3)}
+/* foil : valeurs mises en avant */
+.cs-tiles .cs-val{border:1.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--foil-ring) border-box;box-shadow:0 12px 28px -18px rgba(146,156,255,.8)}
+.cs-tiles .cs-val b,.dv-amt,.hero-amt{background:var(--foil-ink);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:foilmove 7s linear infinite}
+.dv-title b{letter-spacing:-.015em}
+/* graphiques : barres et courbe aux couleurs du foil */
+.dv-col i{background:linear-gradient(180deg,#7fb0ff,#7d4fe0);opacity:1}
+.cs-t i:not([class*="k-"]){background:linear-gradient(90deg,#7fb0ff,#c79bff)}
+.vl-line{stroke:#7d7dff}
+/* vignettes : relief, et les lignes de liste s'éclairent au toucher */
+.crow .thumb,.row .thumb{box-shadow:0 5px 12px -6px rgba(0,0,0,.55)}
+.coll-list>.crow:active,#list .row:active{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.btn:not(.ghost):not(.ghost-danger){background-image:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);background-size:250% 100%;background-position:120% 0;transition:transform .22s var(--spring),opacity .2s,box-shadow .2s,background-position .7s ease}
+.btn:not(.ghost):not(.ghost-danger):hover{background-position:-20% 0}
+@media (prefers-reduced-motion:reduce){.cs-tiles .cs-val b,.dv-amt,.hero-amt{animation:none}}
 </style>
 </head>
 <body>
@@ -1367,11 +1504,14 @@ button,.btn,select,summary{touch-action:manipulation}
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
     <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6 8h12.5l-3.5-3.5M18 16H5.5L9 19.5"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
   </defs>
 </svg>
 
-<div id="app">
+<div id="app" data-view="home">
+  <div class="hm-aura" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
   <header class="bar">
     <div class="bar-in">
       <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
@@ -1384,13 +1524,8 @@ button,.btn,select,summary{touch-action:manipulation}
   </header>
 
   <main class="wrap">
-    <!-- ── Saisie ─────────────────────────────────────── -->
-    <section class="view" id="viewInput" aria-label="Decklist">
-      <div class="intro">
-        <h1>Ta decklist au meilleur prix, en français.</h1>
-        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
-      </div>
-
+    <!-- ── Accueil ────────────────────────────────────── -->
+    <section class="view home" id="viewHome" aria-label="Accueil">
       <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
         <aside class="installbar" id="installBar" aria-label="Installer l'application">
           <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
@@ -1402,23 +1537,69 @@ button,.btn,select,summary{touch-action:manipulation}
 
       <aside class="installbar buybar" id="buyBar" aria-label="Panier à valider" hidden></aside>
 
-      <section class="collsec" id="collSec" aria-label="Mes decks et ma collection">
-        <button class="coll-open" id="btnDecks" type="button" data-empty="1">
-          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-bookmark"/></svg></span>
-          <span class="coll-t"><b>Mes decks</b><span id="decksSub">Crée un deck ou colle une liste puis « Enregistrer ».</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+      <div class="hm-hero">
+        <div class="hm-stage">
+          <div class="hm-orbit" aria-hidden="true">
+            <span class="hm-land" data-c="W"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="U"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="B"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="R"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="G"><img alt="" decoding="async"></span>
+          </div>
+          <div class="hm-halo" aria-hidden="true"></div>
+          <button class="hm-orb" id="btnColl" type="button" data-empty="1">
+            <span class="hm-ring" aria-hidden="true"></span><span class="hm-core" aria-hidden="true"></span>
+            <span class="hm-orb-t"><small>Ma collection</small><b id="hmValue">Commencer</b><span id="hmCount">Ajoute tes cartes</span><em id="hmDelta" hidden></em></span>
+          </button>
+        </div>
+        <p class="hm-sub" id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</p>
+      </div>
+
+      <section class="hm-tiles" id="collSec" aria-label="Mes decks et ma collection">
+        <button class="hm-decks" id="btnDecks" type="button" data-empty="1">
+          <span class="hm-fan" id="hmFan" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="hm-dt"><b>Mes decks <em id="hmDecksN"></em></b><span id="hmDeckNames"></span><span id="decksSub">Crée un deck ou colle une liste puis « Enregistrer ».</span></span>
         </button>
-        <button class="coll-open" id="btnColl" type="button" data-empty="1">
-          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-stack"/></svg></span>
-          <span class="coll-t"><b>Ma collection</b><span id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
-        </button>
-        <button class="coll-open coll-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
-          <span class="coll-ico" aria-hidden="true"><b>€</b></span>
-          <span class="coll-t"><b>Prix rapide</b><span>Scanne une carte : prix Cardmarket et CardTrader, sans l'ajouter.</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-camera"/></svg>
-        </button>
+        <div class="hm-row">
+          <button class="hm-tile hm-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
+            <span class="hm-scanbox" aria-hidden="true"><i></i></span>
+            <svg class="i hm-ic" aria-hidden="true"><use href="#i-camera"/></svg>
+            <span class="hm-tt"><b>Prix rapide</b><span>Scanne une carte</span></span>
+          </button>
+          <button class="hm-tile hm-build" id="btnBuild" type="button">
+            <span class="hm-top"><svg class="i hm-ic" aria-hidden="true"><use href="#i-star"/></svg><em id="hmBuildPct"></em></span>
+            <span class="hm-tt"><b>Deck à monter</b><span id="hmBuildSub">Decks EDHREC comparés à ta collection</span></span>
+          </button>
+          <button class="hm-tile hm-trade" id="btnTrade" type="button">
+            <span class="hm-top"><svg class="i hm-ic" aria-hidden="true"><use href="#i-swap"/></svg><i class="hm-live" id="hmLive" hidden></i></span>
+            <span class="hm-tt"><b>Échange</b><span id="hmTradeSub">Doublons et cartes recherchées</span></span>
+          </button>
+        </div>
       </section>
+
+      <div class="hm-new tilt" id="hmNew">
+        <span class="hm-new-ring" aria-hidden="true"></span>
+        <div class="hm-new-in">
+          <span class="hm-glint" aria-hidden="true"></span>
+          <div class="hm-new-h"><span class="hm-new-ico" aria-hidden="true"><svg class="i"><use href="#i-search"/></svg></span><b>Nouveau panier</b></div>
+          <p id="hmNewSub">Colle une decklist : on compare les offres CardTrader et on compose le panier le moins cher.</p>
+          <div class="hm-new-acts">
+            <button class="btn" type="button" id="btnNew"><span id="btnNewLabel">Coller une liste</span></button>
+            <button class="btn ghost" type="button" id="btnNew2"><span id="btnNew2Label">Exemple</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Saisie (« Nouveau panier ») ───────────────────── -->
+    <section class="view" id="viewInput" aria-label="Decklist" hidden>
+      <div class="crumb">
+        <button class="link-btn" id="btnHome" type="button"><svg class="i"><use href="#i-back"/></svg>Accueil</button>
+      </div>
+      <div class="intro">
+        <h1>Ta decklist au meilleur prix, en français.</h1>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+      </div>
 
       <div class="field">
         <div class="field-head">
@@ -1534,7 +1715,7 @@ button,.btn,select,summary{touch-action:manipulation}
   </main>
 
   <div class="dock" id="dock">
-    <div class="dock-in" id="dockInput">
+    <div class="dock-in" id="dockInput" hidden>
       <button class="btn block" id="btnRun" type="button"><svg class="i"><use href="#i-search"/></svg><span id="btnRunLabel">Chercher les offres</span></button>
     </div>
     <div class="dock-in" id="dockResults" hidden>
@@ -1548,7 +1729,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = '3319986b';
+const DD_BUILD = 'a248865b';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -4366,7 +4547,7 @@ const S = {
   demo: true, demoPref: null, proxy: false, token: '', appKey: '', address: {}, theme: 'auto', draft: null,
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
-  view: 'input', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
+  view: 'home', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
   enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [], useColl: true, push: false,
 };
 let runSeq = 0;
@@ -4532,6 +4713,7 @@ function refreshDeck() {
   paintCollSwitch();
   updateSaveButtons();
   clearTimeout(draftT); draftT = setTimeout(saveStore, 400);
+  homeSoon();
 }
 
 function readOpts() {
@@ -4549,13 +4731,16 @@ function modeHint() {
 }
 
 /* ── Vues ─────────────────────────────────────────────────────────────────────────────────── */
+/** Vues : home (accueil) → input (« Nouveau panier » : saisie et critères) → results. */
+const VIEWS = ['home', 'input', 'results'];
 function showView(v) {
   const prev = S.view; S.view = v;
-  const dir = prev === v ? '' : v === 'results' ? 'fwd' : 'back', el = $(v === 'input' ? '#viewInput' : '#viewResults');
+  const dir = prev === v ? '' : VIEWS.indexOf(v) > VIEWS.indexOf(prev) ? 'fwd' : 'back', el = $(v === 'home' ? '#viewHome' : v === 'input' ? '#viewInput' : '#viewResults');
   el.classList.remove('fwd', 'back'); if (dir) el.classList.add(dir);      // de la droite en avançant, de la gauche en revenant
-  $('#viewInput').hidden = v !== 'input'; $('#viewResults').hidden = v !== 'results';
+  $('#app').dataset.view = v; $('#viewHome').hidden = v !== 'home'; $('#viewInput').hidden = v !== 'input'; $('#viewResults').hidden = v !== 'results';
   $('#dockInput').hidden = v !== 'input'; $('#dockResults').hidden = v !== 'results';
   window.scrollTo({ top: 0, behavior: 'auto' });
+  if (v === 'home') homeSoon(0);
 }
 
 /* ── Recherche ────────────────────────────────────────────────────────────────────────────── */
@@ -5351,6 +5536,7 @@ function init() {
   xsInit(); alInit(); trInit();
   initDecks();
   refreshDeck();
+  homeInit();
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
   $('#btnColl').onclick = () => openCollection();
   $('#btnQuick').onclick = () => { haptic('tap'); openScan(); scanPriceMode(true); };      // accueil : scan directement en « prix rapide »
@@ -5751,7 +5937,7 @@ function renderDecks() {
   btn.dataset.empty = list.length ? '0' : '1';
   $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
   dksPaint();
-  paintSync(); updateSaveButtons();
+  paintSync(); updateSaveButtons(); homeSoon();
 }
 let dvT = 0;
 /** Lit en arrière-plan les fiches des cartes des decks affichés (hors collection) : image de présentation d'abord, puis prix pour la valeur estimée. */
@@ -7106,6 +7292,7 @@ function paintCollSection() {
   const al = n ? valAlertN() : 0;
   sub.textContent = n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(collCopies())} exemplaire${collCopies() > 1 ? 's' : ''}${al ? ` · ${nf0(al)} prix ${al > 1 ? 'ont' : 'a'} bougé` : ''}` : 'Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.';
   $('#btnColl').dataset.empty = n ? '0' : '1';
+  homeSoon();
 }
 function collInit() {
   collRead(); pxRead(); paintCollSection(); collMetaLoad();
@@ -9415,7 +9602,7 @@ const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine ===
 function trNeedNet() { if (!trOffline()) return true; toast('Hors ligne : réessaie une fois connecté'); return false; }
 /** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
 function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
-function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); }
+function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); }
 
 /* ── Réglages dans le compte ───────────────────────────────────────────────────────────────────────── */
 function trUser(user) {
@@ -9774,8 +9961,131 @@ function trInit() {
 }
 
 
+/* ── home.js : page d'accueil ──────────────────────────────────────────────────────────────────────
+   · Orbe « Ma collection » : valeur (prix tendance Cardmarket), cartes, variation sur 7 jours ; les 5 terrains de base tournent autour
+     (illustration de ceux de la collection s'ils y sont, sinon celle de Scryfall).
+   · « Mes decks » : les cartes de présentation des 3 derniers decks en éventail.
+   · Prix rapide · Deck à monter (le deck EDHREC dont tu as déjà la plus grande part) · Échange (doublons, cartes recherchées, lien en direct).
+   · « Nouveau panier » : ouvre la saisie (coller une liste, exemple, ou reprendre la liste en cours).
+   Tout est repeint en différé (homeSoon) quand la collection, les decks, les prix ou la liste d'échange changent. */
+const HM = { t: 0, v: null, raf: 0, best: null, bestSig: '', edhAsk: 0, covers: '', lands: false };
+const HM_LANDS = [['W', 'plains', 'Plains'], ['U', 'island', 'Island'], ['B', 'swamp', 'Swamp'], ['R', 'mountain', 'Mountain'], ['G', 'forest', 'Forest']];
+const hmEur = c => Math.round(c / 100).toLocaleString('fr-FR') + ' €';
+/** Petite image Scryfall → recadrage de l'illustration (même chemin, autre taille). */
+const hmArt = u => String(u || '').replace('/small/', '/art_crop/').replace('/normal/', '/art_crop/');
+
+function homeSoon(ms = 120) { if (typeof document === 'undefined') return; clearTimeout(HM.t); HM.t = setTimeout(homePaint, ms); }
+
+/** Valeur de la collection : somme des prix tendance (centimes) ; à défaut le dernier relevé de l'historique. */
+function homeValue() {
+  let v = 0; for (const [k, x] of Object.entries(COLL.map)) { const m = COLL.meta[k]; if (m && m.eu > 0) v += m.eu * x.q; }
+  if (!v && VAL.hist.length) v = VAL.hist[VAL.hist.length - 1].v;
+  return v;
+}
+/** Le chiffre défile jusqu'à sa valeur (euros entiers). */
+function homeCount(el, to) {
+  const from = HM.v == null ? 0 : HM.v; HM.v = to; cancelAnimationFrame(HM.raf);
+  if (reduceMotion() || from === to) { el.textContent = hmEur(to); return; }
+  const t0 = performance.now(), d = from ? 600 : 1400;
+  const step = now => { const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3); el.textContent = hmEur(Math.round(from + (to - from) * e)); if (p < 1) HM.raf = requestAnimationFrame(step); };
+  HM.raf = requestAnimationFrame(step);
+}
+
+function homePaint() {
+  const home = $('#viewHome'); if (!home) return;
+  // Orbe
+  const n = collCount(), orb = $('#btnColl'), val = $('#hmValue'), cnt = $('#hmCount'), dl = $('#hmDelta');
+  orb.dataset.empty = n ? '0' : '1';
+  if (n) {
+    const v = homeValue();
+    if (v > 0) homeCount(val, v); else { HM.v = null; val.textContent = nf0(n); }
+    cnt.textContent = v > 0 ? `${nf0(n)} carte${n > 1 ? 's' : ''}` : `carte${n > 1 ? 's' : ''}`;
+    const h = histDelta(VAL.hist, 7);
+    if (h && Math.abs(h.d) >= 100) { dl.hidden = false; dl.className = h.d < 0 ? 'down' : ''; dl.textContent = `${h.d < 0 ? '▼ −' : '▲ +'}${hmEur(Math.abs(h.d))} · 7 j`; } else dl.hidden = true;
+  } else { HM.v = null; val.textContent = 'Commencer'; cnt.textContent = 'Ajoute tes cartes'; dl.hidden = true; }
+  orb.setAttribute('aria-label', n ? `Ma collection : ${val.textContent}, ${nf0(n)} cartes` : 'Ma collection : ajoute tes cartes');
+  homeLands();
+  // Mes decks
+  const list = allDecks().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), top = list.slice(0, 3);
+  $('#hmDecksN').textContent = list.length ? nf0(list.length) : '';
+  { const ds = $('#decksSub'); ds.hidden = !!list.length && !/complet|Chargement/.test(ds.textContent); }      // « 7 decks » répète le nombre du titre : seulement « · 2 complets »
+  $('#hmDeckNames').textContent = top.length ? top.map(d => d.name).join(', ') + (list.length > 3 ? '…' : '') : '';
+  const fan = $$('#hmFan i'), need = [];
+  fan.forEach((el, i) => {
+    const d = top[i], cv = d && dkCoverCard(d.text, dmOf), src = cv ? coverImg(cv) : '', img = el.querySelector('img');
+    if (cv && !src) need.push(d);
+    if (!src) { if (img) img.remove(); return; }
+    if (img && img.getAttribute('src') === src) return;
+    const im = img || document.createElement('img'); im.alt = ''; im.decoding = 'async'; im.onerror = () => im.remove(); im.src = src; if (!img) el.appendChild(im);
+  });
+  if (need.length) homeCovers(need);
+  // Échange
+  try {
+    const st = trState(), ts = $('#hmTradeSub');
+    ts.textContent = n || st.want.length ? `${nf0(st.have.length)} doublon${st.have.length > 1 ? 's' : ''} · ${nf0(st.want.length)} recherchée${st.want.length > 1 ? 's' : ''}` : 'Doublons et cartes recherchées';
+    $('#hmLive').hidden = !TR.share;
+  } catch (e) { /* liste d'échange pas encore prête */ }
+  // Deck à monter
+  homeBuild();
+  // Nouveau panier
+  const draft = !S.isSample && S.deck && S.deck.cards.length;
+  $('#btnNewLabel').textContent = draft ? `Reprendre ma liste · ${nf0(S.deck.cards.length)} carte${S.deck.cards.length > 1 ? 's' : ''}` : 'Coller une liste';
+  $('#btnNew2Label').textContent = draft ? 'Coller' : 'Exemple';
+}
+/** Illustrations des terrains de base : celles de la collection si elle les a, sinon Scryfall (une fois). */
+function homeLands() {
+  for (const [c, k, name] of HM_LANDS) {
+    const img = $(`.hm-land[data-c="${c}"] img`); if (!img) continue;
+    const own = (COLL.map[k] && COLL.meta[k] && COLL.meta[k].im) || '', src = own ? hmArt(own) : `https://api.scryfall.com/cards/named?exact=${name}&format=image&version=art_crop`;
+    if (img.getAttribute('src') === src) continue;
+    img.onload = () => img.classList.add('ok'); img.onerror = () => img.classList.remove('ok'); img.src = src;
+  }
+}
+/** Cartes de présentation pas encore lues : lues en arrière-plan, puis l'éventail est repeint. */
+function homeCovers(decks) {
+  const sig = decks.map(d => d.id).join(','); if (HM.covers === sig) return; HM.covers = sig;
+  setTimeout(async () => {
+    try { await dmLoad(); const cv = decks.map(d => dkCoverCard(d.text, dmOf)).filter(c => c && !dmOf(c.key)); if (cv.length && await dmFetch(cv)) homeSoon(); } catch (e) { /* hors ligne : dégradés */ }
+  }, 1200);
+}
+/** Deck à monter : parmi les decks EDHREC, celui dont la collection couvre la plus grande part (fichier EDHREC chargé en différé, seulement s'il y a une collection). */
+function homeBuild() {
+  const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), n = collCount();
+  if (!n) { pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; HM.best = null; return; }
+  if (!EDH.data) {
+    if (!EDH.p && !EDH.err && !HM.edhAsk) HM.edhAsk = setTimeout(() => { edhLoad().then(homeSoon, () => {}); }, 2500);
+    pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; return;
+  }
+  const sig = [COLL.u, n, EDH.at, engSig()].join('|');
+  if (sig !== HM.bestSig) {
+    HM.bestSig = sig; HM.best = null;
+    for (const r of edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), sort: 'have' }).slice(0, 400)) {
+      if (r.total < 60) continue; const p = r.have / r.total;
+      if (!HM.best || p > HM.best.p + 1e-9) HM.best = { r, p };
+    }
+  }
+  const b = HM.best;
+  if (!b) { pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; return; }
+  const p = Math.floor(b.p * 100), name = b.r.cmd.names.join(' + ');
+  pct.textContent = p + ' %'; sub.textContent = `${name} : tu as déjà ${p} % des cartes`;
+}
+
+function homeInit() {
+  $('#btnBuild').onclick = () => {
+    haptic('tap'); openCollection('decks');
+    const b = HM.best; if (b) setTimeout(() => openEdhDeck(b.r), 260);
+  };
+  $('#btnTrade').onclick = () => { haptic('tap'); openCollection('trade'); };
+  const draft = () => !S.isSample && S.deck && S.deck.cards.length;
+  $('#btnNew').onclick = () => { haptic('tap'); showView('input'); if (!draft()) $('#btnPaste').click(); };
+  $('#btnNew2').onclick = () => { haptic('tap'); const dr = draft(); showView('input'); if (dr) $('#btnPaste').click(); else $('#btnSample').click(); };
+  $('#btnHome').onclick = () => { haptic('tap'); showView('home'); };
+  homePaint();
+}
+
+
 /* ── back.js : bouton Retour du téléphone ─────────────────────────────────────────────────────────
-   Un écran ouvert (feuille, collection, scan, éditeur de deck, visionneuse, résultats) se ferme au lieu de quitter l'app.
+   Un écran ouvert (feuille, collection, scan, éditeur de deck, visionneuse, résultats, saisie) se ferme au lieu de quitter l'app.
    Sur l'accueil : un 1er Retour affiche « Appuie encore sur Retour pour quitter », le 2e (dans les 2,5 s) quitte.
    Principe : l'historique garde toujours deux entrées [root, trap] ; Retour ramène sur « root », on traite puis on repose « trap ». */
 const BK = { armed: 0 };
@@ -9786,6 +10096,7 @@ function backClose() {
   const dvs = $$('body > .dv.on'), top = dvs[dvs.length - 1];
   if (top && top.__close) { if (top.classList.contains('bd')) bdClose(); else top.__close(); return true; }
   if (S.view === 'results') { $('#btnBack').click(); return true; }
+  if (S.view === 'input') { showView('home'); return true; }
   return false;
 }
 function backInit() {

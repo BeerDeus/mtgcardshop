@@ -3,7 +3,7 @@ import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { chromium, startWorld, newPage, txt, ok, CARDS } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, CARDS, toInput, toHome } from './e2e-world.mjs';
 
 const TESS_DIR = process.env.TESS_DIR || new URL('../tests/node_modules', import.meta.url).pathname;
 if (!existsSync(TESS_DIR + '/tesseract.js')) { console.log('· tesseract.js absent (TESS_DIR) : test OCR ignoré'); process.exit(0); }
@@ -34,7 +34,7 @@ const idle = (p, ms = 150000) => p.waitForFunction(() => !SC.working && !SC.queu
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const { ctx, p, errs } = await newPage(browser, world, { goto: false });
 await routeCdn(ctx); await p.goto(world.url); await p.waitForTimeout(700);
-await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
 await p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'no', null, { timeout: 5000 });
 assert.match(await txt(p, '.sc-hint'), /Aucun appareil photo/); assert.equal(await p.$eval('#scFile', i => i.multiple), true);
 await p.screenshot({ path: 'shots/scan-0-ouverture.png' }); assert.equal(await p.getAttribute('#scCam', 'capture'), 'environment', '« Appareil » : ouvre l\'appareil photo du téléphone'); assert.match(await p.getAttribute('#scCam', 'accept'), /image/);
@@ -175,7 +175,7 @@ await ctx.close(); await browser.close();
 // 1. on mesure où tombe le guide dans l'image de la caméra, 2. on fabrique la vidéo (cartes qui passent), 3. on relance avec cette caméra.
 const probe = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
 const pp = await newPage(probe, world, { goto: false, perms: ['camera'] }); await routeCdn(pp.ctx); await pp.p.goto(world.url); await pp.p.waitForTimeout(600);
-await pp.p.click('#btnColl'); await pp.p.waitForSelector('.coll.on'); await pp.p.click('.coll-tools [data-act="scan"]'); await pp.p.waitForSelector('.scan.on'); await pp.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 }); await pp.p.waitForTimeout(500);
+await toHome(pp.p); await pp.p.click('#btnColl'); await pp.p.waitForSelector('.coll.on'); await pp.p.click('.coll-tools [data-act="scan"]'); await pp.p.waitForSelector('.scan.on'); await pp.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 }); await pp.p.waitForTimeout(500);
 const geo = await pp.p.evaluate(() => { const s = document.querySelector('.sc-stage').getBoundingClientRect(), g = document.querySelector('.sc-guide').getBoundingClientRect(); return { cw: s.width, ch: s.height, g: { x: g.left - s.left, y: g.top - s.top, w: g.width, h: g.height } }; });
 await pp.p.waitForFunction(() => !SC.warm && !!OCR.workers.fra, null, { timeout: 15000 });
 assert.equal(await pp.p.evaluate(() => performance.getEntriesByType('resource').some(r => /tesseract/.test(r.name))), true, 'moteur OCR préparé pendant que tu cadres : le premier appui n\'attend pas son démarrage');
@@ -205,7 +205,7 @@ execFileSync('python3', ['-c', py, FX, TMP, ...Object.values(box).map(String)]);
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '5', '-i', `${TMP}/f%04d.jpg`, '-vf', 'fps=24', '-c:v', 'mjpeg', '-q:v', '3', `${TMP}/cam.mjpeg`]);      // la caméra simulée lit une image par tick à 24 i/s : on duplique pour que les durées soient réelles
 const cam = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${TMP}/cam.mjpeg`] });
 const c2 = await newPage(cam, world, { goto: false, perms: ['camera'] }); await routeCdn(c2.ctx); await c2.ctx.addInitScript(() => { window.__noFpsWatch = true; }); await c2.p.goto(world.url); await c2.p.waitForTimeout(600);
-await c2.p.click('#btnColl'); await c2.p.waitForSelector('.coll.on'); await c2.p.click('.coll-tools [data-act="scan"]'); await c2.p.waitForSelector('.scan.on');
+await toHome(c2.p); await c2.p.click('#btnColl'); await c2.p.waitForSelector('.coll.on'); await c2.p.click('.coll-tools [data-act="scan"]'); await c2.p.waitForSelector('.scan.on');
 await c2.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 });
 await c2.p.waitForFunction(() => document.querySelector('.sc-video').videoWidth > 0, null, { timeout: 8000 });
 assert.match(await txt(c2.p, '.sc-hint'), /appuie sur le cercle/);
@@ -246,7 +246,7 @@ await cam.close();
   const camS = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${TMP}/cam.mjpeg`] });
   const cs = await newPage(camS, world, { goto: false, perms: ['camera'] }); await routeCdn(cs.ctx); await cs.p.goto(world.url); await cs.p.waitForTimeout(600);
   await cs.p.evaluate(() => { SC.fpsMin = 40; });
-  await cs.p.click('#btnColl'); await cs.p.waitForSelector('.coll.on'); await cs.p.click('.coll-tools [data-act="scan"]'); await cs.p.waitForSelector('.scan.on');
+  await toHome(cs.p); await cs.p.click('#btnColl'); await cs.p.waitForSelector('.coll.on'); await cs.p.click('.coll-tools [data-act="scan"]'); await cs.p.waitForSelector('.scan.on');
   await cs.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 });
   assert.equal(await cs.p.evaluate(() => document.querySelector('.sc-native').classList.contains('hot')), false, 'au départ : bouton Photo discret');
   // pendant une lecture (OCR) le téléphone est occupé : une image lente ne compte pas
@@ -279,7 +279,7 @@ ok('caméra lente : 4 redémarrages dont 2 en qualité réduite, bouton « Appar
   const cf = await newPage(camF, world, { goto: false, perms: ['camera'] }); await routeCdn(cf.ctx);
   await cf.ctx.addInitScript(() => { window.__noFpsWatch = true; window.__req = []; const g = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = c => { window.__req.push(JSON.stringify(c.video.frameRate)); if (window.__refuseMin && c.video.frameRate.min) { const e = new Error('refusé'); e.name = 'OverconstrainedError'; return Promise.reject(e); } return g(c); }; localStorage.setItem('deckdeal:cam', 'slow'); });
   await cf.p.goto(world.url); await cf.p.waitForTimeout(600);
-  const open = async () => { await cf.p.click('#btnColl'); await cf.p.waitForSelector('.coll.on'); await cf.p.click('.coll-tools [data-act="scan"]'); await cf.p.waitForSelector('.scan.on'); await cf.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 }); };
+  const open = async () => { await toHome(cf.p); await cf.p.click('#btnColl'); await cf.p.waitForSelector('.coll.on'); await cf.p.click('.coll-tools [data-act="scan"]'); await cf.p.waitForSelector('.scan.on'); await cf.p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'on', null, { timeout: 8000 }); };
   await open();
   let r = await cf.p.evaluate(() => ({ req: window.__req, fixed: SC.fixed, old: localStorage.getItem('deckdeal:cam'), slow: camSlow() }));
   assert.deepEqual(r.req, ['{"min":24,"ideal":30}']); assert.equal(r.fixed, true); assert.equal(r.slow, false, 'ancien indicateur « lent » ignoré'); 
@@ -314,7 +314,7 @@ execFileSync('python3', ['-c', py, FX, TMP]);
 const camN = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const cn = await newPage(camN, world, { goto: false }); await routeCdn(cn.ctx);
 await cn.p.goto(world.url); await cn.p.waitForTimeout(600);
-await cn.p.click('#btnColl'); await cn.p.waitForSelector('.coll.on'); await cn.p.click('.coll-tools [data-act="scan"]'); await cn.p.waitForSelector('.scan.on');
+await toHome(cn.p); await cn.p.click('#btnColl'); await cn.p.waitForSelector('.coll.on'); await cn.p.click('.coll-tools [data-act="scan"]'); await cn.p.waitForSelector('.scan.on');
 await cn.p.evaluate(() => { window.__imgs = []; const o = loadImage; loadImage = async f => { const i = await o(f); window.__imgs.push(i); return i; }; });
 // on enchaîne : chaque photo arrive pendant que la précédente est encore en lecture
 const files = ['p1', 'p2', 'p3', 'p4', 'p5'].map(n => `${TMP}/${n}.jpg`);

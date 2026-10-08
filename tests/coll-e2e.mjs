@@ -2,7 +2,7 @@
 // commandant ; évolution des prix ; filtres du viewer ; partage et reprise.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, done, txt, ok, CARDS } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, done, txt, ok, CARDS, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18900 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -14,7 +14,7 @@ const flush = ms => p.waitForTimeout(ms);
 /* ── 1) collection vide → import CSV ManaBox ─────────────────────────────────────────────────── */
 assert.match(await txt(p, '#collSub'), /Ajoute tes cartes/); assert.equal(await p.$eval('#btnColl', b => b.dataset.empty), '1'); ok('page de saisie : section collection vide');
 await p.screenshot({ path: 'shots/coll-0-saisie.png' });
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 assert.match(await txt(p, '.coll .dv-empty'), /Ta collection est vide/); assert.equal(await p.$eval('#app', a => a.inert), true);
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 const CSV = `Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency
@@ -111,13 +111,13 @@ await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.queryS
 assert.match(await txt(p, '#collSub'), /^4 cartes · 10 exemplaires$/);
 const callsBefore = scryCalls(/^POST \/cards\/collection/);
 await p.reload(); await p.waitForTimeout(900);
-assert.match(await txt(p, '#collSub'), /^4 cartes · 10 exemplaires$/); await p.click('#btnColl'); await p.waitForSelector('.crow .px.cm', { timeout: 5000 });
+assert.match(await txt(p, '#collSub'), /^4 cartes · 10 exemplaires$/); await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.crow .px.cm', { timeout: 5000 });
 assert.equal(scryCalls(/^POST \/cards\/collection/), callsBefore, 'infos Scryfall gardées (cache), rien à relire');
 assert.equal((await rows()).length, 4); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 ok('rechargement : collection et infos gardées sur l\'appareil, aucune requête');
 
 /* ── 5b) sauvegarde : l'état est dit en toutes lettres, export, compte plus récent = annulable ──────────────── */
-await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForFunction(() => !document.querySelector('.coll-sync').hidden, null, { timeout: 8000 });
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForFunction(() => !document.querySelector('.coll-sync').hidden, null, { timeout: 8000 });
 assert.match(await txt(p, '.coll-sync'), /ne sont que sur cet appareil/); assert.ok(['warn', 'bad'].includes(await p.$eval('.coll-sync', e => e.dataset.k)), 'hors compte : bandeau d\'alerte');
 const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.coll-sync [data-act="export"]')]);
 assert.match(dl.suggestedFilename(), /^ma-collection-\d{4}-\d{2}-\d{2}\.txt$/); const exported = (await import('node:fs')).readFileSync(await dl.path(), 'utf8'); assert.match(exported, /\d+ Sol Ring/); assert.equal(exported.trim().split('\n').length, 4, 'une ligne par carte (réimportable)');
@@ -139,16 +139,16 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 
 /* ── 6) deck : la collection est déduite ─────────────────────────────────────────────────────── */
 // collection de départ propre : 1 Sol Ring, 1 Llanowar Elves (le deck en veut 2)
-await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 await p.fill('#ciText', '1 Sol Ring\n1 Llanowar Elves'); await p.click('#ciMode [data-v="replace"]'); await p.waitForTimeout(150);
 assert.match(await txt(p, '#ciSum'), /remplace les 4 cartes actuelles/); await p.click('#ciGo'); await p.waitForFunction(() => document.querySelectorAll('.crow').length === 2);
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 const DECK = "Commander\n1 Edgar Markov\n\nDeck\n1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God\n1 Craterhoof Behemoth\n1 Command Tower\n2 Llanowar Elves\n1 Ranger's Hawk\n5 Forest";
-await p.fill('#deckText', DECK); await p.waitForTimeout(300);
+await toInput(p); await p.fill('#deckText', DECK); await p.waitForTimeout(300);
 assert.equal(await p.$eval('#collRow', e => e.hidden), false); assert.match(await txt(p, '#collHint'), /2 cartes de cette liste sont dans ta collection/);
 assert.match(await txt(p, '#deckStats'), /8 cartes à chercher 1 déjà possédée 5 terrains de base à part$/, 'en-têtes Commander / Deck : pas de ligne ignorée');
 await p.screenshot({ path: 'shots/coll-5-saisie-deck.png' });
-await p.click('#btnRun'); await done(p);
+await toInput(p); await p.click('#btnRun'); await done(p);
 assert.equal(world.reqs(100), 0, 'Sol Ring possédé : aucune offre lue'); assert.ok(world.reqs(106) >= 1);
 assert.match(await txt(p, '.row[data-key="sol ring"]'), /dans ta collection.*possédée/i);
 const llan = await txt(p, '.row[data-key="llanowar elves"]'); assert.match(llan, /1 possédée/i); assert.match(llan, /0,20 €/, 'un seul exemplaire à acheter : 0,20 €'); assert.doesNotMatch(llan, /× 2/);
@@ -189,7 +189,7 @@ await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.queryS
 
 /* ── 8) évolution : nouveaux prix → écarts par carte et par deck ───────────────────────────────── */
 world.setPrice(101, 250); world.setPrice(103, 250); world.setPrice(104, 800); // Swords +0,50 · Wrath −0,50 · Craterhoof −1,00
-await p.click('#btnBack'); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main');
+await p.click('#btnBack'); await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-main');
 assert.match(await txt(p, '#deckList .deck-price'), /^20,00 €$/, 'prix du dernier relevé sur la carte du deck, pas encore d\'écart');
 await p.click('#deckList .deck-main'); await p.waitForSelector('.dv.on .dv-g');
 assert.equal(await p.$$eval('.dv-evo', e => e.length), 0, 'un seul relevé : pas d\'évolution');
@@ -205,7 +205,7 @@ await p.waitForTimeout(900); await p.screenshot({ path: 'shots/coll-9-evolution.
 await p.click('.dv-mv .mv >> nth=0'); await p.waitForSelector('.imgv-img'); assert.equal(await p.$eval('.imgv-cap b', e => e.textContent), 'Craterhoof Behemoth'); assert.match(await txt(p, '.imgv-extra'), /▼ −1,00 € par exemplaire/);
 await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 2000 }); await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.dv'), null, { timeout: 2000 });
 ok('évolution : écart total, plus fortes variations, flèches, carte en grand avec l\'écart');
-await p.click('#btnBack'); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-price .delta');
+await p.click('#btnBack'); await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('#deckList .deck-price .delta');
 assert.match(await txt(p, '#deckList .deck-price'), /^19,00 € −1,00 €$/); assert.equal(await p.$eval('#deckList .deck-price .delta', e => e.classList.contains('down')), true);
 await p.click('#deckList .deck-more'); await p.waitForSelector('.chart'); assert.match(await txt(p, '.chart-cap'), /2 relevés · de 19,00 € à 20,00 €/);
 assert.equal(await p.$$eval('.hist .t', t => t.map(x => x.textContent.replace(/\s+/g, ' ').trim()).join('|')), '19,00 €|20,00 €');
@@ -215,7 +215,7 @@ ok('historique du deck : courbe, relevés, écart sur la carte du deck');
 
 /* ── 9) « Je possède déjà cette carte » et état « collection modifiée » ───────────────────────── */
 await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkOpen'); await p.click('#dkOpen'); await p.waitForFunction(() => /Edgar/.test(document.querySelector('.deckchip') ? document.querySelector('.deckchip').textContent : ''));
-await p.click('#btnRun'); await done(p); await p.waitForTimeout(500);
+await toInput(p); await p.click('#btnRun'); await done(p); await p.waitForTimeout(500);
 const total = async () => { await p.waitForTimeout(900); return txt(p, '#heroAmt'); };
 assert.match(await total(), /19,00 €/, 'mêmes prix servis par le serveur');
 await p.click('.row[data-key="swords to plowshares"]'); await p.waitForSelector('.ownbtn'); assert.match(await txt(p, '.refline'), /Réf\. Cardmarket 1,90 € par exemplaire.*ton prix 2,50 € \(\+32 %\)/);

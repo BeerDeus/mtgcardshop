@@ -2,7 +2,7 @@
 // scan « prix rapide ». Faux CardTrader / Scryfall (e2e-world), vrai proxy.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok, done } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18950 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -14,8 +14,8 @@ const errsOf = [];
 {
   const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *EN*') }); errsOf.push(errs);
   assert.equal(await p.$eval('#buyBar', e => e.hidden), true, 'rien à valider au départ');
-  await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n2 Arcane Signet'); await p.waitForTimeout(300);
-  await p.click('#btnRun'); await done(p);
+  await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n2 Arcane Signet'); await p.waitForTimeout(300);
+  await toInput(p); await p.click('#btnRun'); await done(p);
   await p.click('#btnCart'); await p.waitForSelector('#btnGo'); await p.click('#btnGo');
   await p.waitForFunction(() => /offres? ajoutée/.test(document.querySelector('.sheet-body').textContent), null, { timeout: 20000 });
   assert.equal(world.carted.length, 2, 'Sol Ring possédé : seulement Swords + Arcane Signet envoyés au panier : ' + JSON.stringify(world.carted));
@@ -49,9 +49,9 @@ const errsOf = [];
   const decks = [{ id: 'deckA', name: 'Deck A', text: '1 Sol Ring\n1 Llanowar Elves', updatedAt: Date.now() }];
   const { p, errs } = await newPage(browser, world, { init: seed('2 Sol Ring\n1 Llanowar Elves\n1 Command Tower', decks) }); errsOf.push(errs);
   const need = () => p.evaluate(() => S.deck.cards.map(c => [c.key, c.own, c.need]));
-  await p.fill('#deckText', '2 Sol Ring\n1 Llanowar Elves'); await p.waitForTimeout(300);
+  await toInput(p); await p.fill('#deckText', '2 Sol Ring\n1 Llanowar Elves'); await p.waitForTimeout(300);
   assert.deepEqual(await need(), [['sol ring', 2, 0], ['llanowar elves', 1, 0]], 'sans deck monté : tout est déduit');
-  await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkMount');
+  await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkMount');
   assert.equal(await p.$eval('#dkMount', c => c.checked), false); assert.match(await txt(p, '#dkMountHint'), /Réserve les cartes/);
   await p.evaluate(() => document.querySelector('#dkMount').click()); await p.waitForFunction(() => document.querySelector('#dkMount').checked);
   assert.match(await txt(p, '#dkMountHint'), /2 exemplaires de ta collection réservés pour ce deck/);
@@ -65,7 +65,7 @@ const errsOf = [];
   assert.deepEqual(await need(), [['sol ring', 1, 0], ['llanowar elves', 1, 0]], 'rattaché au deck A : il utilise ses propres cartes');
   assert.doesNotMatch(await txt(p, '#collHint'), /réservé/);
   // collection : pastille sur la carte réservée
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForSelector('.crow[data-k="sol ring"]');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForSelector('.crow[data-k="sol ring"]');
   assert.match(await txt(p, '.crow[data-k="sol ring"] .tag.mount'), /Deck A/); assert.equal(await p.$('.crow[data-k="command tower"] .tag.mount'), null);
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);
   // rechargement : toujours monté ; liste enregistrée modifiée : la réservation suit
@@ -74,11 +74,11 @@ const errsOf = [];
   await p.evaluate(() => { loadDeck('deckA'); $('#deckText').value = '1 Sol Ring\n1 Llanowar Elves\n1 Command Tower'; refreshDeck(); saveCurrent('Deck A'); });
   assert.equal(await p.evaluate(() => JSON.stringify(XS.eng.deckA.q)), JSON.stringify({ 'sol ring': 1, 'llanowar elves': 1, 'command tower': 1 }), 'enregistrer le deck met la réservation à jour');
   // démontage
-  await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkMount'); await p.evaluate(() => document.querySelector('#dkMount').click());
+  await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck'); await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkMount'); await p.evaluate(() => document.querySelector('#dkMount').click());
   await p.waitForFunction(() => !document.querySelector('#dkMount').checked); await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
   await p.click('.dks [data-act="close"]'); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 });
   assert.equal(await p.evaluate(() => engIsOn('deckA')), false); assert.equal(await p.evaluate(() => JSON.stringify(XS.eng.deckA.q)), '{}', 'trace vide gardée pour la synchro');
-  await p.fill('#deckText', '2 Sol Ring'); await p.evaluate(() => { S.deckId = null; refreshDeck(); }); assert.deepEqual(await need(), [['sol ring', 2, 0]], 'démonté : tout est de nouveau déduit');
+  await toInput(p); await p.fill('#deckText', '2 Sol Ring'); await p.evaluate(() => { S.deckId = null; refreshDeck(); }); assert.deepEqual(await need(), [['sol ring', 2, 0]], 'démonté : tout est de nouveau déduit');
   // un deck sans carte possédée ne se monte pas
   await p.evaluate(() => putDeck('deckB', deckDoc({ name: 'Deck B', text: '1 Wrath of God' })));
   await p.waitForTimeout(200); await p.evaluate(() => openDeckSheet('deckB')); await p.waitForSelector('#dkMount'); await p.evaluate(() => document.querySelector('#dkMount').click());
@@ -130,7 +130,7 @@ const errsOf = [];
 /* ── D) Scan « prix rapide » ──────────────────────────────────────────────────────────────── */
 {
   const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *FR*') }); errsOf.push(errs);
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
   assert.equal(await p.$eval('.sc-pmode', b => b.getAttribute('aria-pressed')), 'false'); assert.match(await txt(p, '.dv-foot'), /Annuler/);
   await p.click('.sc-pmode'); assert.equal(await p.$eval('.scan', e => e.classList.contains('pm')), true);
   assert.match(await txt(p, '.sc-sub'), /Prix rapide/); assert.equal(await p.$eval('.dv-foot [data-act="done"]', b => b.hidden), true, 'rien à ajouter en mode prix'); assert.match(await txt(p, '.dv-foot'), /Fermer/);
@@ -166,11 +166,11 @@ const errsOf = [];
 {
   const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *FR*') }); errsOf.push(errs);
   assert.ok(await p.isVisible('#btnQuick'), 'bouton visible sur l\'accueil'); assert.match(await txt(p, '#btnQuick'), /Prix rapide/);
-  await p.click('#btnQuick'); await p.waitForSelector('.scan.on');
+  await toHome(p); await p.click('#btnQuick'); await p.waitForSelector('.scan.on');
   assert.equal(await p.$eval('.scan', e => e.classList.contains('pm')), true, 'scan ouvert en mode prix'); assert.equal(await p.$eval('.sc-pmode', b => b.getAttribute('aria-pressed')), 'true');
   assert.equal(await p.$eval('.dv-foot [data-act="done"]', b => b.hidden), true, 'rien à ajouter'); assert.equal(await p.$('.coll.on'), null, 'la collection n\'est pas ouverte');
   await p.click('.scan .dv-foot [data-act="close"]'); await p.waitForFunction(() => !document.querySelector('.scan'), null, { timeout: 3000 });
-  await p.click('#btnQuick'); await p.waitForSelector('.scan.on'); assert.equal(await p.$eval('.scan', e => e.classList.contains('pm')), true, 'à chaque ouverture');
+  await toHome(p); await p.click('#btnQuick'); await p.waitForSelector('.scan.on'); assert.equal(await p.$eval('.scan', e => e.classList.contains('pm')), true, 'à chaque ouverture');
   ok('accueil : bouton « Prix rapide » → scan directement en mode prix (sans collection ouverte)');
   await p.context().close();
 }
@@ -181,7 +181,7 @@ const errsOf = [];
   let hits = 0;
   const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *FR*\n1 Counterspell\n1 Arcane Signet *FR*\n2 Collision // Colossus *FR*') }); errsOf.push(errs);
   await p.route(world.url + 'fr-names.tsv', r => { hits++; r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: ['# fr-names', ...rows].join('\n') + '\n' }); });
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
   const nm = k => p.$eval(`.crow[data-k="${k}"] .row-name`, e => e.textContent);
   await p.waitForFunction(() => { const e = document.querySelector('.crow[data-k="sol ring"] .row-name'); return e && e.textContent === 'Anneau solaire'; }, null, { timeout: 8000 });
   assert.equal(hits, 1, 'catalogue du site lu une fois'); assert.equal(await nm('counterspell'), 'Counterspell', 'carte sans langue : anglais'); assert.equal(await nm('arcane signet'), 'Arcane Signet', 'FR mais inconnue du catalogue : anglais');
@@ -219,7 +219,7 @@ const errsOf = [];
 /* ── F) Une carte en plusieurs langues : une ligne par langue (collection, scan) ───────────────── */
 {
   const { p, errs } = await newPage(browser, world, { init: seed('2 Sol Ring *FR*\n1 Sol Ring *EN*\n1 Counterspell') }); errsOf.push(errs);
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForFunction(() => document.querySelectorAll('.crow').length === 3);
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForFunction(() => document.querySelectorAll('.crow').length === 3);
   const lines = () => p.$$eval('.crow', r => r.map(x => [x.dataset.k, x.dataset.ln, Number(x.querySelector('.qstep b').textContent), x.classList.contains('sub')]));
   assert.deepEqual(await lines(), [['counterspell', '', 1, false], ['sol ring', 'fr', 2, false], ['sol ring', 'en', 1, true]], 'une ligne par langue : fr puis en, la 2e allégée');
   assert.match(await txt(p, '.dv-title span'), /^2 cartes · 4 exemplaires/, '2 cartes différentes, 4 exemplaires');
@@ -250,7 +250,7 @@ const errsOf = [];
 {
   // scan : la même carte lue en français puis en anglais = deux lignes ; ajout dans la collection : une ligne par langue
   const { p, errs } = await newPage(browser, world, { init: seed('1 Sol Ring *FR*') }); errsOf.push(errs);
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
   await p.evaluate(() => { const m = (card, raw) => ({ key: 'sol ring', name: 'Sol Ring', card, score: 0.98, raw }); scanAdd(m('fr', 'Anneau solaire'), 1, false); scanAdd(m('en', 'Sol Ring'), 1, false); scanAdd(m('en', 'Sol Ring'), 1, false); });
   await p.waitForFunction(() => document.querySelectorAll('.sc-item[data-k="sol ring"]').length === 2);
   assert.deepEqual(await p.$$eval('.sc-item[data-k="sol ring"]', r => r.map(x => [x.querySelector('.lchip').dataset.l, Number(x.querySelector('.qstep b').textContent)])), [['en', 2], ['fr', 1]], 'FR et EN : deux lignes, chacune sa quantité (dernière lue en haut)');

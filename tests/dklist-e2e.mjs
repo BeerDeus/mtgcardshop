@@ -2,7 +2,7 @@
 // réserve Standard et images des terrains de base dans le viewer.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18980 });
 world.basics = true;
@@ -22,7 +22,7 @@ const imgOf = id => p.$eval(`.deck[data-id="${id}"] .deck-art img`, e => e.getAt
 
 /* ── 1) bouton d'accueil → écran, decks en cartes ─────────────────────────────────────────── */
 assert.equal(await txt(p, '#decksSub'), '4 decks'); assert.equal(await p.$('.deck'), null, 'plus de liste sur l\'accueil');
-await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
+await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
 assert.deepEqual(await names(), ['Rakdos', 'Edgar', 'Forêt', 'Mystère'], 'les plus récents d\'abord'); assert.equal(await txt(p, '.dks .dv-title span'), '4 decks');
 // carte de présentation par défaut : commandant (Edgar), sinon la carte la plus chère hors terrains
 await p.waitForFunction(() => document.querySelectorAll('.deck-art img.ok').length === 4, null, { timeout: 8000 });

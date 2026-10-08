@@ -1,6 +1,7 @@
 // E2E compte + decks : vrai SDK Firebase (bundle servi à la place du CDN), auth simulée par routes, Firestore hors ligne
 // (cache persistant IndexedDB), CardTrader/Scryfall simulés. Captures dans shots/acc-*.png
 import './setup-env.mjs';
+const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); }), toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });      // accueil ↔ « Nouveau panier »
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -89,7 +90,7 @@ const sheetOpen = p => p.waitForSelector('.sheet-wrap.open .sheet', { timeout: 5
 const sheetGone = p => p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 5000 });
 const ok = m => console.log('✓', m);
 // « Mes decks » est un écran ouvert depuis l'accueil (comme « Ma collection ») : D = l'ouvrir, H = revenir à l'accueil
-const D = async p => { if (!(await p.$('.dks.on'))) { await p.click('#btnDecks'); await p.waitForSelector('.dks.on'); await p.waitForTimeout(150); } };
+const D = async p => { if (!(await p.$('.dks.on'))) { await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on'); await p.waitForTimeout(150); } };
 const H = async p => { if (await p.$('.dks.on')) { await p.click('.dks [data-act="close"]'); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 }); } };
 const shot = (p, n) => p.screenshot({ path: `shots/acc-${n}.png` });
 const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom Card\n5 Plains';
@@ -100,9 +101,9 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await p.goto('http://127.0.0.1:18810/'); await p.waitForTimeout(900);
   assert.match(await T(p, '#decksSub'), /Crée un deck/); await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 0); assert.ok(await p.$('#btnNewDeck')); await H(p); ok('invité sans deck : bouton « Mes decks », écran avec le + et aucune carte de deck');
   assert.equal(await p.$eval('#btnAccount', e => e.dataset.in), '0'); ok('avatar : icône invité');
-  await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n25 Plains');
-  await p.selectOption('#optLang', 'en'); await p.click('#segMode .seg-opt[data-v="direct"]'); await p.waitForTimeout(200);
-  await p.click('#btnSave'); await sheetOpen(p);
+  await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n25 Plains');
+  await toInput(p); await p.selectOption('#optLang', 'en'); await p.click('#segMode .seg-opt[data-v="direct"]'); await p.waitForTimeout(200);
+  await toInput(p); await p.click('#btnSave'); await sheetOpen(p);
   assert.equal(await p.inputValue('#svName'), 'Sol Ring'); ok('nom proposé = première carte');
   assert.match(await T(p, '#svWhere'), /cet appareil/); assert.ok(await p.$('#svLogin')); ok('invité : indication + lien « Connecte-toi »');
   await shot(p, 'A1-save-sheet');
@@ -117,7 +118,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
 
   await p.reload(); await p.waitForTimeout(800); await D(p);
   assert.equal(await T(p, '.deck-name'), 'Mon Deck Test'); ok('persistance après rechargement'); await H(p);
-  await p.fill('#deckText', ''); await p.selectOption('#optLang', 'fr');
+  await toInput(p); await p.fill('#deckText', ''); await toInput(p); await p.selectOption('#optLang', 'fr');
   await D(p); await p.click('[data-act="more"]'); await p.waitForSelector('#dkOpen'); await p.click('#dkOpen'); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 });
   assert.equal((await p.inputValue('#deckText')).split('\n').length, 3); assert.equal(await p.inputValue('#optLang'), 'en');
   assert.equal(await p.$eval('#segMode', e => e._v), 'direct'); await D(p); assert.equal(await p.$eval('.deck', e => e.dataset.active), '1'); await H(p); ok('ouvrir un deck : liste + critères restaurés (l\'écran des decks se referme)');
@@ -138,7 +139,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.equal(await p.$$eval('.deck', n => n.length), 1); ok('supprimer en deux temps');
   // plus de 4 decks
   await H(p);
-  for (let i = 0; i < 5; i++) { await p.fill('#deckText', `1 Sol Ring\n1 Card ${i}`); await p.click('#deckStats .stat-x').catch(() => {}); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck ' + i); await p.click('#svGo'); await sheetGone(p); }
+  for (let i = 0; i < 5; i++) { await toInput(p); await p.fill('#deckText', `1 Sol Ring\n1 Card ${i}`); await p.click('#deckStats .stat-x').catch(() => {}); await toInput(p); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck ' + i); await p.click('#svGo'); await sheetGone(p); }
   await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 6); assert.equal(await p.$('#btnMoreDecks'), null); assert.equal(await T(p, '.dks .dv-title span'), '6 decks'); ok('tous les decks sont listés dans l\'écran (plus de « Afficher les N autres »)');
   await H(p);
   // compte indisponible (SDK bloqué dans ce contexte ? non : ici SDK dispo) → ouvre la feuille compte
@@ -154,8 +155,8 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   const ctx = await newCtx(); await wireFirebase(ctx); const p = await ctx.newPage(); watch(p, 'B');
   await p.goto('http://127.0.0.1:18800/'); await p.waitForTimeout(900);
   assert.notEqual((await T(p, '#modeLabel')), 'Démo'); ok('B : mode live via proxy');
-  await p.fill('#deckText', DECK4);
-  await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck local'); await p.click('#svGo'); await sheetGone(p);
+  await toInput(p); await p.fill('#deckText', DECK4);
+  await toInput(p); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck local'); await p.click('#svGo'); await sheetGone(p);
   await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 1); await H(p); ok('B : deck local créé avant connexion');
 
   await p.click('#btnAccount'); await sheetOpen(p); await p.waitForSelector('#acForm'); await p.waitForTimeout(600); await shot(p, 'B0-connexion-vide');
@@ -188,7 +189,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await p.click('[data-act="more"]'); await p.waitForSelector('#dkOpen'); await p.click('#dkOpen'); await p.waitForTimeout(300);
   // règles Firestore pas encore republiées : elles refusent le champ « snap » → le deck est renvoyé sans relevé, sans erreur visible
   await p.evaluate(() => { window.__saves = []; const real = D.cloud.save; D.cloud.save = (uid, id, data) => { window.__saves.push(!!data.snap); if (data.snap) return Promise.reject(Object.assign(new Error('denied'), { code: 'permission-denied' })); return real(uid, id, data); }; });
-  await p.click('#btnRun'); await runDone(p); await p.waitForTimeout(900);
+  await toInput(p); await p.click('#btnRun'); await runDone(p); await p.waitForTimeout(900);
   assert.deepEqual(await p.evaluate(() => window.__saves), [true, false], 'écriture avec le relevé refusée, renvoyée aussitôt sans lui'); assert.equal(await p.evaluate(() => D.noSnap), true);
   assert.doesNotMatch(await T(p, '#toast'), /Accès refusé|règles/); ok('règles Firestore anciennes : repli sans relevé, aucune erreur affichée');
   assert.ok(await p.evaluate(() => { const d = findDeck(S.deckId); const sn = snapOf(d); return !!sn && sn.items.length > 0 && !d.snap; }), 'les prix restent disponibles sur l\'appareil'); ok('les prix restent gardés sur l\'appareil');
@@ -214,7 +215,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await shot(p, 'B6-deck-historique'); await p.keyboard.press('Escape'); await sheetGone(p); await H(p);
 
   // modifier la liste puis chercher : le relevé n'est pas rattaché au deck (texte différent)
-  await p.fill('#deckText', DECK4 + '\n1 Sol Ring'); await p.click('#btnRun');
+  await toInput(p); await p.fill('#deckText', DECK4 + '\n1 Sol Ring'); await toInput(p); await p.click('#btnRun');
   await runDone(p); await p.waitForTimeout(600);
   assert.equal((await p.evaluate(() => findDeck(S.deckId).history)).length, 2); ok('liste modifiée non enregistrée : historique du deck intact');
   await p.click('#btnBack');
@@ -240,7 +241,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
 {
   const ctx = await newCtx(); await wireFirebase(ctx, { sdk: false }); const p = await ctx.newPage(); watch(p, 'C');
   await p.goto('http://127.0.0.1:18810/'); await p.waitForTimeout(900);
-  await p.fill('#deckText', '1 Sol Ring'); await p.click('#btnSave'); await sheetOpen(p);
+  await toInput(p); await p.fill('#deckText', '1 Sol Ring'); await toInput(p); await p.click('#btnSave'); await sheetOpen(p);
   assert.equal(await p.$('#svLogin'), null); ok('C : pas de lien de connexion si indisponible');
   await p.fill('#svName', 'Local seulement'); await p.click('#svGo'); await sheetGone(p);
   await D(p); assert.equal(await T(p, '.deck-name'), 'Local seulement'); assert.equal(await T(p, '#decksSyncTxt'), 'Sur cet appareil'); assert.equal(await p.$eval('#decksSync', e => e.disabled), true); await H(p); ok('C : enregistrement local OK, libellé « Sur cet appareil »');
@@ -270,12 +271,12 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   p.on('request', r => { if (/\/api\//.test(r.url())) apiReq.push({ url: r.url(), h: r.headers() }); });
   await p.goto('http://127.0.0.1:18820/'); await p.waitForTimeout(1000);
   assert.equal(await p.evaluate(() => CTX.needsLogin), true); assert.equal(await p.evaluate(() => CTX.needsKey), false); ok('E : le serveur annonce « réservé aux comptes », pas de clé');
-  await p.fill('#deckText', DECK4); await p.waitForTimeout(250);
-  await p.click('#btnRun'); await sheetOpen(p);
+  await toInput(p); await p.fill('#deckText', DECK4); await p.waitForTimeout(250);
+  await toInput(p); await p.click('#btnRun'); await sheetOpen(p);
   assert.match(await T(p, '.sheet-head h2'), /Compte/); assert.equal(apiReq.length, 0, 'aucune requête /api/ sans compte'); ok('E : sans compte → la fenêtre Compte s\'ouvre, aucune requête partie');
   await p.keyboard.press('Escape'); await sheetGone(p);
   await login(p, 'beer@test.dev'); assert.equal(await p.$eval('#btnAccount', e => e.dataset.in), '1'); ok('E : connexion avec le compte autorisé');
-  await p.click('#btnRun'); await runDone(p);
+  await toInput(p); await p.click('#btnRun'); await runDone(p);
   assert.ok(apiReq.length > 0 && apiReq.every(r => r.h['x-firebase-token'] && r.h['x-firebase-token'].split('.').length === 3), 'chaque requête /api/ porte le jeton Firebase');
   assert.ok(apiReq.every(r => !r.h['x-app-key']), 'aucune clé partagée envoyée');
   assert.match(await T(p, '#heroCount'), /3 \/ 4 cartes/); ok('E : recherche complète avec le compte autorisé (' + apiReq.length + ' requêtes, toutes avec jeton)');
@@ -290,7 +291,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   // compte connecté mais non autorisé
   const ctx2 = await newCtx(); await wireFirebase(ctx2); const q = await ctx2.newPage(); watch(q, 'E2');
   await q.goto('http://127.0.0.1:18820/'); await q.waitForTimeout(1000); await login(q, 'intrus@test.dev');
-  await q.fill('#deckText', DECK4); await q.waitForTimeout(250); await q.click('#btnRun');
+  await toInput(q); await q.fill('#deckText', DECK4); await q.waitForTimeout(250); await toInput(q); await q.click('#btnRun');
   await q.waitForFunction(() => /pas autorisé/.test(document.querySelector('#alerts').textContent), null, { timeout: 15000 });
   const al = await T(q, '#alerts'); console.log('  alerte :', al);
   assert.match(al, /ALLOWED_UIDS/); assert.ok(await q.$('#alerts button[data-act="account"]')); ok('E : compte non autorisé → message clair + bouton Compte');

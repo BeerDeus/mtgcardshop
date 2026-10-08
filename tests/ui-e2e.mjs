@@ -2,7 +2,7 @@
 // reflet du total, fondu des onglets de la collection, illustration de collection vide.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok, done } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18940 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -37,7 +37,7 @@ ok('feuille : le bouton fermer reste un bouton');
 
 /* barre : filet seulement quand le contenu passe dessous */
 assert.equal(await p.$eval('.bar', b => b.classList.contains('scrolled')), false);
-await p.click('#btnSample'); await p.waitForTimeout(200);
+await toInput(p); await p.click('#btnSample'); await p.waitForTimeout(200);
 await p.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' })); await p.waitForTimeout(500);
 assert.equal(await p.$eval('.bar', b => b.classList.contains('scrolled')), true, 'filet sous la barre après scroll');
 await p.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' })); await p.waitForFunction(() => !document.querySelector('.bar').classList.contains('scrolled'), null, { timeout: 3000 }).catch(() => {});
@@ -45,8 +45,8 @@ assert.equal(await p.$eval('.bar', b => b.classList.contains('scrolled')), false
 ok('barre : filet au scroll seulement');
 
 /* transitions de vue : de la droite en avançant, de la gauche en revenant ; reflet sur le total à l'arrivée */
-await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet'); await p.waitForTimeout(300);
-await p.click('#btnRun'); await done(p);
+await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet'); await p.waitForTimeout(300);
+await toInput(p); await p.click('#btnRun'); await done(p);
 assert.equal(await p.$eval('#viewResults', e => e.classList.contains('fwd') && !e.classList.contains('back')), true, 'résultats : classe fwd');
 assert.equal(await p.$eval('#hero', e => e.classList.contains('shine')), true, 'reflet sur le total');
 await p.click('#btnBack'); await p.waitForTimeout(100);
@@ -55,14 +55,14 @@ assert.equal(await p.$eval('#viewResults', e => e.hidden), true);
 ok('vues : sens des transitions (fwd / back) et reflet du total');
 
 /* collection vide : illustration + fondu des onglets */
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 assert.equal(await p.$$eval('.empty-art i', e => e.length), 3, 'collection vide : trois cartes en éventail'); assert.match(await txt(p, '.dv-empty'), /Ta collection est vide/);
 ok('collection vide : illustration');
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 await p.fill('#ciText', '1 Sol Ring\n1 Llanowar Elves'); await p.waitForTimeout(150); await p.click('#ciGo');
 await p.waitForFunction(() => document.querySelectorAll('.crow').length === 2);
 await p.waitForTimeout(500); if (await p.$('.sheet-wrap.open')) { await p.keyboard.press('Escape'); await p.waitForTimeout(500); }
-if (!(await p.$('#collSeg'))) { await p.click('#btnColl'); await p.waitForSelector('#collSeg'); }
+if (!(await p.$('#collSeg'))) { await toHome(p); await p.click('#btnColl'); await p.waitForSelector('#collSeg'); }
 await p.click('#collSeg [data-v="stats"]'); await p.waitForSelector('.cs-tiles');
 assert.equal(await p.$eval('.coll-main', e => e.classList.contains('tabin')), true, 'onglet : fondu à l’arrivée');
 await p.click('#collSeg [data-v="list"]'); await p.waitForSelector('.crow');

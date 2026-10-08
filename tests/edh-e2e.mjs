@@ -2,7 +2,7 @@
 // filtres, feuille d'un deck), chargement du deck dans la page de saisie, cache, fichier absent. Faux edh.tsv servi par une route Playwright.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18930 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -25,7 +25,7 @@ const rows = () => p.$$eval('.crow:not(.dk)', r => r.map(x => ({ name: x.querySe
 const dks = () => p.$$eval('.crow.dk', r => r.map(x => ({ name: x.querySelector('.row-name').firstChild.textContent.trim(), rank: (x.querySelector('.dk-rank') || { textContent: '' }).textContent, pips: x.querySelectorAll('.dk-pips .mc').length, have: x.querySelector('.dk-have').textContent.replace(/\s+/g, ' ').trim(), lab: (x.querySelector('.dk-lab') || { textContent: '' }).textContent, px: x.querySelector('.dk-px').innerText.replace(/\s+/g, ' ').trim(), tier: (x.querySelector('.dk-tier') || { textContent: '' }).textContent, tags: [...x.querySelectorAll('.tag')].map(t => t.textContent.replace(/\s+/g, ' ').trim()) })));
 
 /* ── collection : Edgar Markov, Sol Ring ×2, Arcane Signet, Llanowar Elves, Craterhoof ──────── */
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 await p.fill('#ciText', '1 Edgar Markov\n2 Sol Ring\n1 Arcane Signet\n1 Llanowar Elves\n1 Craterhoof Behemoth\n3 Plains'); await p.waitForTimeout(150); await p.click('#ciGo');
 await p.waitForFunction(() => document.querySelectorAll('.crow:not(.dk)').length === 6); await p.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 });
@@ -186,11 +186,11 @@ assert.equal(await p.$eval('#optColl', c => c.checked), true, 'collection dédui
 ok('feuille : 23 cartes à acheter (la plus chère d\'abord), lien EDHREC sûr ; « Chercher les manquantes » charge le deck, collection déduite');
 
 /* ── 5) cache : une 2e ouverture ne retélécharge pas ; fichier absent → message + repli ─────── */
-await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk'); assert.equal(hits, 1, 'copie locale (moins de 6 jours)');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk'); assert.equal(hits, 1, 'copie locale (moins de 6 jours)');
 await p.close();
 mode = 'absent';
 const b = await newPage(browser, world); await b.p.route('**/edh.tsv', r => { hits++; return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"asset_missing"}' }); });
-await b.p.click('#btnColl'); await b.p.waitForSelector('.coll.on'); await b.p.click('.coll-tools [data-act="import"]'); await b.p.waitForSelector('#ciText'); await b.p.fill('#ciText', '1 Edgar Markov\n1 Sol Ring'); await b.p.waitForTimeout(150); await b.p.click('#ciGo');
+await toHome(b.p); await b.p.click('#btnColl'); await b.p.waitForSelector('.coll.on'); await b.p.click('.coll-tools [data-act="import"]'); await b.p.waitForSelector('#ciText'); await b.p.fill('#ciText', '1 Edgar Markov\n1 Sol Ring'); await b.p.waitForTimeout(150); await b.p.click('#ciGo');
 await b.p.waitForFunction(() => document.querySelectorAll('.crow').length === 2); await b.p.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 2, null, { timeout: 8000 });
 await b.p.click('#collSeg [data-v="decks"]'); await b.p.waitForSelector('.coll-main .dv-empty'); assert.match(await txt(b.p, '.coll-main .dv-empty'), /Decks indisponibles.*edh\.bin\.gz/);
 await b.p.click('#collSeg [data-v="list"]'); await b.p.click('.coll .fbtn'); await b.p.click('.coll .fopt[data-x="played"]'); await b.p.waitForSelector('.coll-main .dv-empty [data-act="dcan"]');
@@ -204,7 +204,7 @@ await b.ctx.close();
 import { createRequire } from 'node:module'; import { gzipSync } from 'node:zlib';
 const req = createRequire(import.meta.url), CORE = req('../src/core.js'), BIN = gzipSync(Buffer.from(req('../src/edhbin.js').edhPack(CORE.edhModelFromTsv(FILE), CORE.ownKey)));
 const openDecks = async pg => {
-  await pg.click('#btnColl'); await pg.waitForSelector('.coll.on'); await pg.click('.coll-tools [data-act="import"]'); await pg.waitForSelector('#ciText');
+  await toHome(pg); await pg.click('#btnColl'); await pg.waitForSelector('.coll.on'); await pg.click('.coll-tools [data-act="import"]'); await pg.waitForSelector('#ciText');
   await pg.fill('#ciText', '1 Edgar Markov\n2 Sol Ring\n1 Arcane Signet\n1 Llanowar Elves\n1 Craterhoof Behemoth\n3 Plains'); await pg.waitForTimeout(150); await pg.click('#ciGo');
   await pg.waitForFunction(() => document.querySelectorAll('.crow:not(.dk)').length === 6); await pg.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 });
   await pg.click('#collSeg [data-v="decks"]'); await pg.waitForSelector('.crow.dk', { timeout: 8000 });
@@ -221,7 +221,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   await c.p.fill('#dkQ', 'tymna'); await c.p.waitForTimeout(260); assert.equal((await names(c.p)).length, 1, 'recherche sur l\'index binaire');
   if (mode === 'gzip brut') {      // copie gardée : après rechargement, affichée tout de suite ; le texte n'est pas redemandé, le binaire n'est qu'une lecture de contrôle
     await c.p.unroute('**/edh.bin.gz'); await c.p.unroute('**/edh.tsv'); let again = 0; await c.p.route('**/edh.bin.gz', r => { again++; return r.fulfill({ status: 404, body: '{}' }); }); await c.p.route('**/edh.tsv', r => { again++; return r.fulfill({ status: 404, body: '{}' }); });
-    await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(500); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 });
+    await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(500); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 });
     assert.equal((await names(c.p)).length, 4, 'decks lus depuis la copie binaire de l\'appareil'); await c.p.waitForTimeout(300); assert.equal(again, 1, 'une seule lecture de contrôle en arrière-plan (404 ici, ignorée) : la copie de l\'appareil reste');
   }
   ok('fichier binaire (' + mode + ') : 4 decks identiques, 1 requête, texte non demandé, feuille et recherche fonctionnent' + (mode === 'gzip brut' ? ', copie gardée hors ligne' : ''));
@@ -238,7 +238,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   await openDecks(c.p); const n0 = (await names(c.p)).length; assert.ok(n0 < 4, 'ancienne version : ' + n0 + ' deck(s)');
   // le site publie une version plus récente (autre ETag) ; au rechargement la copie s'affiche, puis est remplacée sans rien toucher
   cur = { body: NEW, etag: '"new"' };
-  const reopen = async () => { await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(400); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 }); };
+  const reopen = async () => { await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(400); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 }); };
   await reopen(); await c.p.waitForFunction(() => document.querySelectorAll('.crow.dk').length === 4, null, { timeout: 8000 });
   assert.deepEqual((await names(c.p)).length, 4, 'version récente affichée en arrière-plan');
   // ETag inchangé : rien n'est relu, les données restent

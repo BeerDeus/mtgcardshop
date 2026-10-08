@@ -365,6 +365,7 @@ function paintCollSection() {
   const al = n ? valAlertN() : 0;
   sub.textContent = n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(collCopies())} exemplaire${collCopies() > 1 ? 's' : ''}${al ? ` · ${nf0(al)} prix ${al > 1 ? 'ont' : 'a'} bougé` : ''}` : 'Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.';
   $('#btnColl').dataset.empty = n ? '0' : '1';
+  homeSoon();
 }
 function collInit() {
   collRead(); pxRead(); paintCollSection(); collMetaLoad();

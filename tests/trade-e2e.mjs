@@ -2,7 +2,7 @@
 // visiteur en lecture seule (recherche FR/EN, filtres), deck partagé (viewer public, main de départ), lien arrêté. Faux Firestore (partages) côté test.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, ok, txt } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, ok, txt, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18960 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -46,7 +46,7 @@ await p.evaluate(deck => {
 }, DECK);
 const nextId = async () => { const id = 'Share' + String(++ids).padStart(12, '0'); await p.evaluate(i => { window.__shareIdNext = i; }, id); return id; };
 
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
 {
   const have = await p.$$eval('.tr-list .tr-row', r => r.map(x => [x.dataset.k, x.querySelector('.tr-q b').textContent.trim()]));
@@ -203,7 +203,7 @@ const tradeId = [...shares.keys()][0];
     assert.equal(await V.p.$eval('.pub-row[data-k="craterhoof behemoth"] img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'), 'visiteur : vignette de l\'illustration choisie');
     assert.match(await txt(V.p, '.pub-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.split(' · ').pop()));
     await V.ctx.close(); }
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
   await p.waitForSelector('.tr-row[data-k="craterhoof behemoth"]');
   assert.match(await txt(p, '.tr-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.equal(await p.$eval('.tr-row[data-k="craterhoof behemoth"] .thumb img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'));
@@ -214,7 +214,7 @@ const tradeId = [...shares.keys()][0];
 /* ── Lien arrêté, lien invalide ───────────────────────────────────────────────────────────────── */
 {
   await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
-  await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box.on');
+  await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box.on');
   await p.click('[data-act="troff"]'); await p.waitForSelector('[data-act="tron"]');
   assert.ok(!shares.has(tradeId), 'document supprimé');
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);

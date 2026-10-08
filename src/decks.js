@@ -167,7 +167,7 @@ function renderDecks() {
   btn.dataset.empty = list.length ? '0' : '1';
   $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
   dksPaint();
-  paintSync(); updateSaveButtons();
+  paintSync(); updateSaveButtons(); homeSoon();
 }
 let dvT = 0;
 /** Lit en arrière-plan les fiches des cartes des decks affichés (hors collection) : image de présentation d'abord, puis prix pour la valeur estimée. */

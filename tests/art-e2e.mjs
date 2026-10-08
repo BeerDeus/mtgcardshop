@@ -1,7 +1,7 @@
 // E2E : bouton « Illustrations » de l'aperçu en grand : impressions de la carte dans la langue affichée, choix gardé (aperçus d'une carte seule), « Par défaut ».
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok, done } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18991 });
 world.basics = true; world.variants['Llanowar Elves'] = { fr: 0, en: 1 };
@@ -18,7 +18,7 @@ const store = () => p.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:a
 const openCard = async n => { await p.click(`.dv-g .dvc[aria-label^="${n}"], .dv-cmd[aria-label^="${n}"]`); await p.waitForSelector('.imgv-img.ok', { timeout: 8000 }); };
 const closeImg = async () => { await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 }); };
 
-await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
+await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
 await p.click('.deck[data-id="d1"] [data-act="open"]'); await p.waitForSelector('.dv.on[aria-label^="Deck viewer"] .dvc');
 
 /* ── 1) le bouton apparaît quand la carte a au moins 2 impressions dans la langue affichée ──────────────── */
@@ -90,7 +90,7 @@ ok('langue affichée respectée (anglais / français), une seule impression : pa
 /* ── 5) aperçu d'une offre : on feuillette les illustrations, mais l'impression de l'offre n'est pas remplacée durablement ───────────── */
 await p.evaluate(() => { localStorage.removeItem('deckdeal:art:v1'); }); await p.reload(); await p.waitForTimeout(800);
 await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
-await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares'); await p.waitForTimeout(300); await p.click('#btnRun'); await done(p);
+await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares'); await p.waitForTimeout(300); await toInput(p); await p.click('#btnRun'); await done(p);
 await p.click('#list .rw .thumb, #list .rw img >> nth=0').catch(() => {});
 if (!(await p.$('.imgv'))) { await p.click('#btnViewer'); await p.waitForSelector('.dv.on .dvc'); await p.click('.dv-g .dvc >> nth=0'); }
 await p.waitForSelector('.imgv-img.ok', { timeout: 8000 }); await p.waitForSelector('.imgv-art:not([hidden])', { timeout: 8000 });
@@ -100,7 +100,7 @@ assert.deepEqual(await store(), {}, 'rien de gardé pour l\'aperçu d\'une offre
 ok('aperçu d\'une offre : illustrations consultables, rien de retenu');
 /* ── 6) collection : même bouton, même langue ; une collection qui se charge en fond (file Scryfall encombrée) ne le retarde pas ───────── */
 await p.reload(); await p.waitForTimeout(800); await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
-await p.click('#btnColl'); await p.waitForSelector('.coll.on .crow'); await p.waitForFunction(() => document.querySelectorAll('.crow .thumb img.ok').length >= 2, null, { timeout: 12000 });
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on .crow'); await p.waitForFunction(() => document.querySelectorAll('.crow .thumb img.ok').length >= 2, null, { timeout: 12000 });
 await p.evaluate(() => { for (let i = 0; i < 30; i++) limScry.schedule(() => new Promise(r => setTimeout(r, 200))); });      // ~16 s de lectures de fond en attente
 const t0 = Date.now();
 await p.locator('.crow', { hasText: 'Sol Ring' }).first().locator('.thumb').click(); await p.waitForSelector('.imgv-img.ok', { timeout: 8000 });

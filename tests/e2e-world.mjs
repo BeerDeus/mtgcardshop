@@ -135,3 +135,6 @@ export async function newPage(browser, world, opts = {}) {
 export const done = p => p.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 40000 });
 export const txt = (p, sel) => p.$eval(sel, e => e.innerText.replace(/\s+/g, ' ').trim());
 export const ok = m => console.log('✓', m);
+/** Accueil → écran « Nouveau panier » (saisie), ou retour à l'accueil. */
+export const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); });
+export const toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });

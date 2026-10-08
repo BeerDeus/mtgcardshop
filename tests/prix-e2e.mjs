@@ -1,7 +1,7 @@
 // E2E « Prix réels » de la collection : offre CardTrader la moins chère par carte, filtre de langue, lots, valeur, arrêt, persistance.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18930 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -15,7 +15,7 @@ const sumTxt = () => txt(p, '#pxSum');
 // collection : 2 Sol Ring (fr), Swords (sans langue → langue de la recherche), Craterhoof (en), Ranger's Hawk (fr, aucune offre), Edgar Markov (fr) + 10 Plains (ignorés)
 await p.evaluate(() => { COLL.map = { 'sol ring': { n: 'Sol Ring', q: 2, l: 'fr' }, 'swords to plowshares': { n: 'Swords to Plowshares', q: 1 }, 'craterhoof behemoth': { n: 'Craterhoof Behemoth', q: 1, l: 'en' }, 'rangers hawk': { n: "Ranger's Hawk", q: 1, l: 'fr' }, 'edgar markov': { n: 'Edgar Markov', q: 1, l: 'fr' }, plains: { n: 'Plains', q: 10 } }; collChanged(); });
 world.en[104] = 700;                                    // Craterhoof : 7,00 € en anglais (estimation Cardmarket 9,00 €)
-await p.click('#btnColl'); await p.waitForSelector('.coll.on');
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 }).catch(async e => { console.log('DEBUG', await p.evaluate(() => JSON.stringify({ map: COLL.map, meta: COLL.meta, rows: document.querySelectorAll('.crow').length, st: document.querySelector('.coll-status').textContent, enr: COLL.enrichErr }))); throw e; });
 assert.equal(await p.$$eval('.coll-px', b => b.length), 1); assert.match(await p.getAttribute('.coll-px', 'aria-label'), /prix réels/i);
 await p.screenshot({ path: 'shots/px-0-bouton.png' });
@@ -79,7 +79,7 @@ assert.match(await txt(p, '.cs-tiles > div:nth-child(3) span'), /4 au prix réel
 assert.deepEqual(await p.$$eval('.cs-top .crow .row-name', n => n.map(x => x.textContent)), ['Craterhoof Behemoth', 'Edgar Markov', 'Sol Ring', 'Swords to Plowshares', "Ranger's Hawk"], 'CT, par lot (2 × 1,20 € = 2,40 € devant 2,00 €)');
 assert.match(await txt(p, '.cs-top .crow:first-child'), /prix réel.*7,00 €/i); assert.equal(await p.evaluate(() => localStorage.getItem('deckdeal:coll:src')), 'ct');
 await p.screenshot({ path: 'shots/px-4b-stats-ct.png' });
-await p.reload(); await p.waitForTimeout(500); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="stats"]'); await p.waitForSelector('.cs-val');
+await p.reload(); await p.waitForTimeout(500); await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="stats"]'); await p.waitForSelector('.cs-val');
 assert.equal(await val(), '16,45 €', 'choix CT retenu après rechargement');
 await p.focus('.cs-val'); await p.keyboard.press('Enter'); assert.equal(await val(), '18,95 €', 'Entrée : retour à CM'); assert.equal(await p.evaluate(() => document.activeElement.className), 'cs-val', 'focus gardé sur la tuile');
 await p.keyboard.press(' '); assert.equal(await val(), '16,45 €', 'Espace : CT'); await p.click('.cs-val .cs-src'); assert.equal(await val(), '18,95 €', 'appui n\'importe où dans la tuile : CM');
@@ -89,7 +89,7 @@ ok('valeur de la collection (CM par défaut, bascule CT : clic, clavier, retenue
 
 /* 5) persistance : rien à relire après rechargement */
 const before = world.reqs();
-await p.reload(); await p.waitForTimeout(900); await p.click('#btnColl'); await p.waitForSelector('.crow .px.ct', { timeout: 5000 });
+await p.reload(); await p.waitForTimeout(900); await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.crow .px.ct', { timeout: 5000 });
 assert.deepEqual(await t('craterhoof behemoth'), ['CM 9,00 €', 'CT 7,00 €']); assert.equal(world.reqs(), before, 'aucune requête CardTrader au rechargement');
 assert.equal(await p.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('deckdeal:px:v1'))).length), 5);
 ok('prix réels gardés sur l\'appareil (localStorage), aucune requête au rechargement');

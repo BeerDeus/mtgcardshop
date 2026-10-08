@@ -21,11 +21,14 @@
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
     <symbol id="i-stack" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="16" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2h9"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6 8h12.5l-3.5-3.5M18 16H5.5L9 19.5"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6M14 7h6M4 17h10M18 17h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
   </defs>
 </svg>
 
-<div id="app">
+<div id="app" data-view="home">
+  <div class="hm-aura" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b></div>
   <header class="bar">
     <div class="bar-in">
       <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Deck Deal</span></div>
@@ -38,13 +41,8 @@
   </header>
 
   <main class="wrap">
-    <!-- ── Saisie ─────────────────────────────────────── -->
-    <section class="view" id="viewInput" aria-label="Decklist">
-      <div class="intro">
-        <h1>Ta decklist au meilleur prix, en français.</h1>
-        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
-      </div>
-
+    <!-- ── Accueil ────────────────────────────────────── -->
+    <section class="view home" id="viewHome" aria-label="Accueil">
       <div class="collapsible closed" id="installWrap" aria-hidden="true"><div>
         <aside class="installbar" id="installBar" aria-label="Installer l'application">
           <span class="ib-ico" aria-hidden="true"><i class="mark"></i></span>
@@ -56,23 +54,69 @@
 
       <aside class="installbar buybar" id="buyBar" aria-label="Panier à valider" hidden></aside>
 
-      <section class="collsec" id="collSec" aria-label="Mes decks et ma collection">
-        <button class="coll-open" id="btnDecks" type="button" data-empty="1">
-          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-bookmark"/></svg></span>
-          <span class="coll-t"><b>Mes decks</b><span id="decksSub">Crée un deck ou colle une liste puis « Enregistrer ».</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+      <div class="hm-hero">
+        <div class="hm-stage">
+          <div class="hm-orbit" aria-hidden="true">
+            <span class="hm-land" data-c="W"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="U"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="B"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="R"><img alt="" decoding="async"></span>
+            <span class="hm-land" data-c="G"><img alt="" decoding="async"></span>
+          </div>
+          <div class="hm-halo" aria-hidden="true"></div>
+          <button class="hm-orb" id="btnColl" type="button" data-empty="1">
+            <span class="hm-ring" aria-hidden="true"></span><span class="hm-core" aria-hidden="true"></span>
+            <span class="hm-orb-t"><small>Ma collection</small><b id="hmValue">Commencer</b><span id="hmCount">Ajoute tes cartes</span><em id="hmDelta" hidden></em></span>
+          </button>
+        </div>
+        <p class="hm-sub" id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</p>
+      </div>
+
+      <section class="hm-tiles" id="collSec" aria-label="Mes decks et ma collection">
+        <button class="hm-decks" id="btnDecks" type="button" data-empty="1">
+          <span class="hm-fan" id="hmFan" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="hm-dt"><b>Mes decks <em id="hmDecksN"></em></b><span id="hmDeckNames"></span><span id="decksSub">Crée un deck ou colle une liste puis « Enregistrer ».</span></span>
         </button>
-        <button class="coll-open" id="btnColl" type="button" data-empty="1">
-          <span class="coll-ico" aria-hidden="true"><svg class="i"><use href="#i-stack"/></svg></span>
-          <span class="coll-t"><b>Ma collection</b><span id="collSub">Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
-        </button>
-        <button class="coll-open coll-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
-          <span class="coll-ico" aria-hidden="true"><b>€</b></span>
-          <span class="coll-t"><b>Prix rapide</b><span>Scanne une carte : prix Cardmarket et CardTrader, sans l'ajouter.</span></span>
-          <svg class="i chev" aria-hidden="true"><use href="#i-camera"/></svg>
-        </button>
+        <div class="hm-row">
+          <button class="hm-tile hm-quick" id="btnQuick" type="button" aria-label="Prix rapide : scanner une carte sans l'ajouter à la collection">
+            <span class="hm-scanbox" aria-hidden="true"><i></i></span>
+            <svg class="i hm-ic" aria-hidden="true"><use href="#i-camera"/></svg>
+            <span class="hm-tt"><b>Prix rapide</b><span>Scanne une carte</span></span>
+          </button>
+          <button class="hm-tile hm-build" id="btnBuild" type="button">
+            <span class="hm-top"><svg class="i hm-ic" aria-hidden="true"><use href="#i-star"/></svg><em id="hmBuildPct"></em></span>
+            <span class="hm-tt"><b>Deck à monter</b><span id="hmBuildSub">Decks EDHREC comparés à ta collection</span></span>
+          </button>
+          <button class="hm-tile hm-trade" id="btnTrade" type="button">
+            <span class="hm-top"><svg class="i hm-ic" aria-hidden="true"><use href="#i-swap"/></svg><i class="hm-live" id="hmLive" hidden></i></span>
+            <span class="hm-tt"><b>Échange</b><span id="hmTradeSub">Doublons et cartes recherchées</span></span>
+          </button>
+        </div>
       </section>
+
+      <div class="hm-new tilt" id="hmNew">
+        <span class="hm-new-ring" aria-hidden="true"></span>
+        <div class="hm-new-in">
+          <span class="hm-glint" aria-hidden="true"></span>
+          <div class="hm-new-h"><span class="hm-new-ico" aria-hidden="true"><svg class="i"><use href="#i-search"/></svg></span><b>Nouveau panier</b></div>
+          <p id="hmNewSub">Colle une decklist : on compare les offres CardTrader et on compose le panier le moins cher.</p>
+          <div class="hm-new-acts">
+            <button class="btn" type="button" id="btnNew"><span id="btnNewLabel">Coller une liste</span></button>
+            <button class="btn ghost" type="button" id="btnNew2"><span id="btnNew2Label">Exemple</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Saisie (« Nouveau panier ») ───────────────────── -->
+    <section class="view" id="viewInput" aria-label="Decklist" hidden>
+      <div class="crumb">
+        <button class="link-btn" id="btnHome" type="button"><svg class="i"><use href="#i-back"/></svg>Accueil</button>
+      </div>
+      <div class="intro">
+        <h1>Ta decklist au meilleur prix, en français.</h1>
+        <p>Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Deck Deal cherche les offres sur CardTrader et compose le panier le moins cher.</p>
+      </div>
 
       <div class="field">
         <div class="field-head">
@@ -188,7 +232,7 @@
   </main>
 
   <div class="dock" id="dock">
-    <div class="dock-in" id="dockInput">
+    <div class="dock-in" id="dockInput" hidden>
       <button class="btn block" id="btnRun" type="button"><svg class="i"><use href="#i-search"/></svg><span id="btnRunLabel">Chercher les offres</span></button>
     </div>
     <div class="dock-in" id="dockResults" hidden>

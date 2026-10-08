@@ -11,7 +11,7 @@ const rd = f => readFileSync(join(root, 'src', f), 'utf8');
 writeFileSync(join(root, 'edhbin.cjs'), rd('edhbin.js'));      // copie pour le générateur (gen-edhrec.mjs), déployée avec lui
 const css = rd('style.css').trim();
 const body = rd('body.html').trim();
-const js = ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
+const js = ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
 const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
 const TITLE = 'Deck Deal';

@@ -1,7 +1,7 @@
 // E2E : créateur de deck « + » (Standard / Commander), collection d'abord, réserve, règles, montage automatique, modification.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18960 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -11,7 +11,7 @@ const errsOf = [];
 const step = (p, k, tgt, d) => p.click(`.bd-row[data-k="${k}"][data-t="${tgt}"] [data-d="${d}"]`);
 const tab = async (p, v) => { await p.click(`#bdSeg .seg-opt[data-v="${v}"]`); await p.waitForTimeout(80); };
 const qty = (p, k, tgt) => p.$eval(`.bd-row[data-k="${k}"][data-t="${tgt}"] .qstep b`, e => Number(e.textContent));
-const decks = async p => { if (!(await p.$('.dks.on'))) { await p.click('#btnDecks'); await p.waitForSelector('.dks.on'); } };      // écran « Mes decks » (bouton de l'accueil)
+const decks = async p => { if (!(await p.$('.dks.on'))) { await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on'); } };      // écran « Mes decks » (bouton de l'accueil)
 const newDeck = async (p, name, fmt) => {
   await decks(p); await p.click('#btnNewDeck'); await p.waitForSelector('#ndName');
   await p.fill('#ndName', name); await p.click(`#ndFmt .seg-opt[data-v="${fmt}"]`);
