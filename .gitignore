@@ -10,3 +10,6 @@ tests/logs/
 tests/run-tests.out
 shots/
 .claude/worktrees/
+.idea/
+*.iml
+android-app/android/app/google-services.json.bak
