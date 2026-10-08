@@ -1,10 +1,11 @@
 // Alertes de prix du proxy : enregistrement, relevés Scryfall, seuils (baisse en % et en €, prix cible), cooldown, résumé, abonnement expiré,
-// persistance, limites. Faux Scryfall et faux service de push : aucun accès réseau réel.
+// persistance, limites (budget par IP, appareils par IP, serveur plein sans éviction d'un abonné, cartes au total, taille de la liste, un relevé par heure).
+// Faux Scryfall et faux service de push : aucun accès réseau réel.
 import './setup-env.mjs';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { mkdtempSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createECDH, randomBytes, hkdfSync, createDecipheriv, generateKeyPairSync } from 'node:crypto';
@@ -54,7 +55,7 @@ function decrypt(body, br) {
 }
 const dir = mkdtempSync(join(tmpdir(), 'alerts-')), FILE = join(dir, 'alerts.json');
 const env = { VAPID_PUBLIC_KEY: VPUB, VAPID_PRIVATE_KEY: vk.d, VAPID_SUBJECT: 'mailto:test@example.com', PUSH_ALLOW_HOSTS: `127.0.0.1:${port(upPush)}`, SCRYFALL_UPSTREAM: `http://127.0.0.1:${port(upScry)}`,
-  ALERT_FILE: FILE, ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '120', ALERT_CHECK_GAP_MS: '0', ALERT_COOLDOWN_MS: '5000' };
+  ALERT_FILE: FILE, ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '120', ALERT_CHECK_GAP_MS: '0', ALERT_COOLDOWN_MS: '5000', ALERT_HIST_GAP_MS: '0' };
 const set = o => { for (const [k, v] of Object.entries(o)) price.set(k.toLowerCase(), v); };
 const check = (B, id) => J(B, '/api/alerts/check?id=' + id, { method: 'POST', body: '{}' });
 const pushesFor = br => pushed.filter(p => p.url.endsWith(br.sub.endpoint.split('/').pop()));
@@ -113,7 +114,8 @@ ps = pushesFor(A); m = decrypt(ps[ps.length - 1].body, A); assert.equal(m.title,
 // 5) abonnement expiré
 const Bx = browser('devGone');
 r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: Bx.sub, thr: 30, items: [{ k: 'sol ring', n: 'Sol Ring' }, { k: 'mana crypt', n: 'Mana Crypt' }] }) }); const IDX = r.o.id; assert.notEqual(IDX, ID);
-await sleep(300); set({ 'Mana Crypt': '30.00' }); goneStatus = 410; await check(B, ID); goneStatus = 0;
+await sleep(300); set({ 'Mana Crypt': '30.00' }); goneStatus = 410; const pA = pushesFor(A).length; await check(B, IDX); goneStatus = 0;
+assert.equal(pushesFor(A).length, pA, 'contrôle d\'un appareil : les autres ne sont pas notifiés');
 assert.equal((await J(B, '/api/alerts?id=' + ID)).s, 200, 'les autres appareils ne sont pas touchés');
 r = await J(B, '/api/alerts?id=' + IDX); assert.equal(r.s, 404, 'abonnement refusé (410) : retiré'); ok('abonnement expiré (410) retiré');
 
@@ -141,5 +143,61 @@ r = await J(B2, '/api/alerts?id=' + IDD, { method: 'DELETE' }); assert.equal(r.o
 await start({ ...env, APP_KEY: 'secret-secret-1234', ALERT_FILE: join(dir, 'k.json') }, 18863); const B3 = 'http://127.0.0.1:18863';
 r = await J(B3, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub, items: [{ k: 'sol ring', n: 'Sol Ring' }] }) }); assert.equal(r.s, 200, 'sans clé : accepté');
 r = await J(B3, '/api/info'); assert.equal(r.s, 401, 'CardTrader reste protégé'); ok('alertes ouvertes à tous ; CardTrader reste protégé');
+
+
+// 10) limites d'une route publique : budget par IP, appareils par IP, serveur plein (jamais d'abonné évincé), taille de la liste
+{
+  const now = Date.now(), FK = join(dir, 'full.json'), sub = tag => browser(tag).sub;
+  const rec = (id, at, items, extra = {}) => ({ id: id.repeat(24), sub: sub('old' + id), thr: 30, at, items: items.map(n => ({ k: n.toLowerCase(), n, nk: n.toLowerCase() })), hits: [], ...extra });
+  writeFileSync(FK, JSON.stringify({ v: 1, last: { at: 0 }, px: { 'sol ring': [[now - 7200e3, 300]] }, subs: [
+    rec('a', now - 7200e3, ['Zzz Carte Bidon']),                                      // inactif : aucune carte au prix connu, enregistré il y a 2 h → seul évinçable
+    rec('b', now - 7200e3, ['Sol Ring']),                                             // abonné : carte au prix connu
+    rec('c', now - 40 * 86400e3, ['Zzz Autre Bidon'], { pushed: now - 39 * 86400e3 }),  // ancien, mais une notification a déjà abouti
+  ] }));
+  await start({ ...env, ALERT_FILE: FK, ALERT_MAX_SUBS: '6', ALERT_MAX_PER_IP: '2', ALERT_RATE_PER_H: '6' }, 18864); const BL = 'http://127.0.0.1:18864';
+  const put = (s, ip, its = [{ k: 'arcane signet', n: 'Arcane Signet' }]) => J(BL, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: s, items: its }) }, ip ? { 'x-forwarded-for': ip } : {});
+  r = await put(sub('U1'), '1.1.1.1'); assert.equal(r.s, 200); const U1 = r.o.id;
+  r = await put(sub('X1'), '9.9.9.9'); assert.equal(r.s, 200); r = await put(sub('X2'), '9.9.9.9'); assert.equal(r.s, 200);
+  r = await put(sub('X3'), '9.9.9.9'); assert.equal(r.s, 429); assert.equal(r.o.error, 'too_many_devices'); ok('10 appareils par IP au plus (ici 2) : le suivant est refusé');
+  r = await put(sub('X1'), '9.9.9.9', [{ k: 'sol ring', n: 'Sol Ring' }]); assert.equal(r.s, 200, 'appareil déjà enregistré : mise à jour permise');
+  r = await put(sub('Y1'), '8.8.8.8'); assert.equal(r.s, 200, 'serveur plein (6) : l\'enregistrement inactif laisse sa place');
+  assert.equal((await J(BL, '/api/alerts?id=' + 'a'.repeat(24))).s, 404, 'inactif évincé');
+  r = await put(sub('Y2'), '8.8.8.8'); assert.equal(r.s, 507); assert.equal(r.o.error, 'alerts_full'); assert.ok(r.h.get('retry-after'));
+  for (const id of ['b'.repeat(24), 'c'.repeat(24), U1]) assert.equal((await J(BL, '/api/alerts?id=' + id)).s, 200, 'abonné jamais évincé : ' + id);
+  ok('serveur plein : nouvel appareil refusé (507), aucun abonné évincé ; seul un enregistrement sans prix ni notification laisse sa place');
+  // budget : 6 enregistrements par heure et par IP (9.9.9.9 en a utilisé 4)
+  for (let i = 0; i < 2; i++) assert.equal((await J(BL, '/api/alerts', { method: 'PUT', body: '{}' }, { 'x-forwarded-for': '9.9.9.9' })).s, 400);
+  r = await put(sub('X1'), '9.9.9.9'); assert.equal(r.s, 429); assert.equal(r.o.error, 'rate_limited'); assert.ok(Number(r.h.get('retry-after')) > 0);
+  assert.equal((await put(sub('U1'), '1.1.1.1')).s, 200, 'autre IP servie'); ok('enregistrements limités par IP et par heure (429 + Retry-After)');
+  // contrôles à la demande : même budget, par appareil seulement
+  for (let i = 0; i < 6; i++) { r = await J(BL, '/api/alerts/check?id=' + U1, { method: 'POST', body: '{}' }, { 'x-forwarded-for': '5.5.5.5' }); assert.equal(r.s, 200); assert.equal(r.o.last.ok, 1, 'les cartes de cet appareil seulement'); }
+  r = await J(BL, '/api/alerts/check?id=' + U1, { method: 'POST', body: '{}' }, { 'x-forwarded-for': '5.5.5.5' }); assert.equal(r.s, 429); ok('contrôles à la demande limités par IP ; chacun ne relève que les cartes de l\'appareil');
+  // liste de plus de 64 Ko : refusée sans être lue jusqu'au bout
+  const huge = Array.from({ length: 400 }, (_, i) => ({ k: 'carte ' + i, n: 'Carte Numero ' + i + ' ' + 'x'.repeat(120), d: ['Deck ' + 'y'.repeat(35)] }));
+  r = await put(sub('Z1'), '7.7.7.7', huge); assert.equal(r.s, 413); assert.equal(r.o.error, 'too_large'); ok('liste de plus de 64 Ko : 413');
+}
+// 11) cartes au total plafonnées (ALERT_MAX_CARDS) : un nouveau venu est refusé, une liste existante n'est pas perdue
+{
+  await start({ ...env, ALERT_FILE: join(dir, 'cards.json'), ALERT_MAX_CARDS: '5' }, 18866); const BC = 'http://127.0.0.1:18866';
+  const its = n => Array.from({ length: n }, (_, i) => ({ k: 'c' + i, n: 'Carte ' + i }));
+  const S1 = browser('cards1').sub, S2 = browser('cards2').sub;
+  r = await J(BC, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: S1, items: its(3) }) }); assert.equal(r.s, 200); const C1 = r.o.id;
+  r = await J(BC, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: S2, items: its(3) }) }); assert.equal(r.s, 507); assert.equal(r.o.error, 'alerts_full');
+  r = await J(BC, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: S1, items: its(5) }) }); assert.equal(r.s, 200, 'sa propre liste ne compte pas deux fois');
+  r = await J(BC, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: S1, items: its(6) }) }); assert.equal(r.s, 507);
+  r = await J(BC, '/api/alerts?id=' + C1); assert.equal(r.o.watching, 5, 'liste précédente gardée'); ok('cartes au total plafonnées : refus (507) sans rien perdre');
+}
+// 12) un relevé par carte et par heure au plus (réglage par défaut) : les contrôles répétés remplacent le dernier, la médiane de référence ne raccourcit pas
+{
+  await start({ ...env, ALERT_FILE: join(dir, 'hour.json'), ALERT_HIST_GAP_MS: '3600000', ALERT_CHECK_GAP_MS: '90000' }, 18865); const BH = 'http://127.0.0.1:18865';
+  set({ 'Sol Ring': '3.00' }); const H1 = browser('hour1'), H2 = browser('hour2'), its = [{ k: 'sol ring', n: 'Sol Ring' }];
+  const idH1 = (await J(BH, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: H1.sub, items: its }) })).o.id, idH2 = (await J(BH, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: H2.sub, items: its }) })).o.id;
+  await sleep(500); r = await check(BH, idH1); assert.equal(r.o.ok, true); assert.equal(r.o.skipped, undefined);
+  r = await check(BH, idH1); assert.equal(r.o.skipped, true, 'second contrôle du même appareil dans les 90 s : ignoré'); assert.ok(r.o.retry > 80);
+  set({ 'Sol Ring': '1.00' }); const n0 = pushed.length;
+  r = await check(BH, idH2); assert.equal(r.o.ok, true, 'un autre appareil a son propre délai');
+  r = await J(BH, '/api/alerts?id=' + idH1); assert.deepEqual(r.o.prices['sol ring'], { c: 100, b: 0 }, 'un seul relevé dans l\'heure : remplacé par le prix du jour, pas de référence raccourcie');
+  assert.equal(pushed.length, n0, 'pas d\'alerte sur des relevés de la même heure'); ok('un relevé par carte et par heure : les contrôles répétés le remplacent');
+}
 
 console.log('ALERTS OK'); process.exit(0);

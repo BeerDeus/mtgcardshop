@@ -48,7 +48,7 @@ const STATIC = new Map([
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
 
-// ── Données EDHREC (edh.bin.gz) : le serveur récupère tout seul la dernière version générée par GitHub Actions (chaque lundi), sans redéploiement ──
+// ── Données EDHREC (edh.bin.gz) : le serveur récupère tout seul la dernière version générée par GitHub Actions (lundi et jeudi), sans redéploiement ──
 // Au démarrage puis toutes les 6 h : lecture conditionnelle (ETag) du fichier du dépôt ; il n'est gardé que s'il est lisible (gzip + EDH2), assez fourni et plus récent
 // que celui servi. Copie gardée en mémoire et dans .data/ (non versionné : ne gêne jamais un « git pull » de déploiement). Panne ou fichier douteux : on garde l'ancien.
 const EDH_SRC = (process.env.EDH_SOURCE_URL === undefined ? 'https://raw.githubusercontent.com/BeerDeus/mtgcardshop/main/pwa/edh.bin.gz' : process.env.EDH_SOURCE_URL).trim();      // '' : désactivé
@@ -131,6 +131,8 @@ const AUTH_FB = ALLOWED_UIDS.size + ALLOWED_EMAILS.size > 0;
 const JWKS_URL = process.env.FIREBASE_JWKS_URL || 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'; // surchargeable pour les tests
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
+// Serveur local (lié à la boucle locale) : seuls ces noms d'hôte sont servis, contre le « DNS rebinding » (une page piégée qui se fait passer pour localhost).
+const LOCAL = LOOPBACK.has(HOST), LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 if (TOKEN && !LOOPBACK.has(HOST) && !APP_KEY && !AUTH_FB) {
   console.error('Refus de démarrer : HOST=' + HOST + ' expose ton token CardTrader. Définis ALLOWED_UIDS=<ton uid Firebase> (recommandé) ou APP_KEY=un-secret.');
   process.exit(1);
@@ -170,11 +172,20 @@ const JOB_CONC = 4, JOB_MAX_RUNNING = Number(process.env.JOB_MAX_RUNNING) || 8, 
 const JOB_KEEP = Number(process.env.JOB_KEEP_MS ?? 15 * 60e3);
 const OFFER_TTL = Number(process.env.OFFER_TTL_MS ?? 10 * 60e3), OFFER_TTL_EMPTY = Number(process.env.OFFER_TTL_EMPTY_MS ?? 3 * 3600e3);
 const OFFERS_MAX = (Number(process.env.OFFERS_CACHE_MB) || 40) * 1024 * 1024;
+// Token d'un utilisateur : 2 recherches en cours au plus (les places de JOB_MAX_RUNNING restent aux autres) ; résultats gardés par toutes les tâches : plafond mémoire.
+const JOB_PER_TOKEN = Number(process.env.JOB_MAX_PER_TOKEN) || 2, JOB_RES_MAX = (Number(process.env.JOB_RESULTS_MB) || 64) * 1024 * 1024;
 const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+/** Empreinte d'un token CardTrader : seule forme gardée en mémoire au-delà d'une requête ou d'une recherche (jamais le token lui-même). */
+const tokHash = t => createHash('sha256').update(String(t)).digest('base64url').slice(0, 22);
 
 // Cadence des requêtes marketplace/products (tâches de fond ET relais direct) : un budget par token, la limite CardTrader étant propre à chaque compte.
+// Clé : empreinte du token ; une entrée inactive depuis 60 s est oubliée à la création suivante.
 const PACE = new Map();
-const paceOf = tok => { let p = PACE.get(tok); if (!p) { if (PACE.size > 2000) for (const [k, v] of PACE) if (v.at < Date.now() - 60e3) PACE.delete(k); p = { at: 0, slow: 0 }; PACE.set(tok, p); } return p; };
+const paceOf = tok => {
+  const k = tokHash(tok); let p = PACE.get(k);
+  if (!p) { const old = Date.now() - 60e3; for (const [kk, v] of PACE) if (v.at < old) PACE.delete(kk); p = { at: 0, slow: 0 }; PACE.set(k, p); }
+  return p;
+};
 async function pace(tok = TOKEN) {
   const p = paceOf(tok), rate = p.slow > 0 ? Math.max(3, JOB_RATE * 0.6) : JOB_RATE; if (p.slow > 0) p.slow--;
   const now = Date.now(), at = Math.max(now, p.at); p.at = at + 1000 / rate;
@@ -183,6 +194,15 @@ async function pace(tok = TOKEN) {
 const throttle = (tok, ms) => { const p = paceOf(tok); p.slow = 40; p.at = Math.max(p.at, Date.now() + ms); };   // 429 : pause puis cadence réduite pendant 40 requêtes
 /** Token CardTrader de l'utilisateur (en-tête X-CT-Token) : il cherche avec son propre compte, sans passer par le token du serveur. '' sinon. */
 const userTok = req => { const t = String(req.headers['x-ct-token'] || '').trim(); return /^[A-Za-z0-9._~+/=-]{20,4096}$/.test(t) ? t : ''; };
+// Token utilisateur que CardTrader a déjà accepté (une réponse 2xx depuis moins de 6 h) : lui seul lit les caches partagés (catalogues, offres),
+// remplis avec d'autres tokens ; un token inventé n'obtient que la réponse de CardTrader. Empreintes seulement, 5 000 au plus (les plus anciennes sortent).
+const CT_OK = new Map();
+const tokOk = th => !th || (CT_OK.get(th) || 0) > Date.now() - CACHE_TTL;
+function tokSeen(th) {
+  if (!th) return;
+  CT_OK.delete(th); while (CT_OK.size >= 5000) CT_OK.delete(CT_OK.keys().next().value);
+  CT_OK.set(th, Date.now());
+}
 
 const offers = new Map(); let offersBytes = 0;
 const okey = (bp, lang, foil) => bp + '|' + lang + '|' + foil;
@@ -191,11 +211,14 @@ function offersGet(k) {
   if (Date.now() - e.t > (e.products.length ? OFFER_TTL : OFFER_TTL_EMPTY)) { offers.delete(k); offersBytes -= e.size; return null; }
   return e;
 }
+/** Met en cache les offres d'un blueprint ; retourne leur taille (octets environ), comptée aussi dans le plafond des résultats de tâches. */
 function offersSet(k, products) {
-  if (!(products.length ? OFFER_TTL : OFFER_TTL_EMPTY)) return;
-  const size = 96 + JSON.stringify(products).length, old = offers.get(k); if (old) offersBytes -= old.size;
+  const size = 96 + JSON.stringify(products).length;
+  if (!(products.length ? OFFER_TTL : OFFER_TTL_EMPTY)) return size;
+  const old = offers.get(k); if (old) offersBytes -= old.size;
   offers.delete(k); offers.set(k, { t: Date.now(), products, size }); offersBytes += size;
   for (const [kk, v] of offers) { if (offersBytes <= OFFERS_MAX) break; offers.delete(kk); offersBytes -= v.size; }
+  return size;
 }
 // On ne garde que les champs lus par l'application (3× plus léger en mémoire et sur le réseau).
 const pick = (o, keys) => o && Object.fromEntries(keys.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
@@ -413,7 +436,10 @@ function pushWhenDone(job) {
    · passe sous le prix cible fixé à la main.
    Une carte déjà signalée n'est plus signalée pendant 5 jours, sauf nouvelle chute de 15 % ou plus. Un seul message par appareil et par
    passage (plusieurs cartes = un résumé). Stocké dans .data/alerts.json (abonnements, listes, relevés), écriture atomique ; un
-   abonnement refusé par le service de push (404 / 410, jeton FCM périmé) est retiré. Le serveur doit tourner en continu pour que les passages aient lieu. */
+   abonnement refusé par le service de push (404 / 410, jeton FCM périmé) est retiré. Le serveur doit tourner en continu pour que les passages aient lieu.
+   Route publique, donc bornée : enregistrements et contrôles à la demande comptés par IP, 10 appareils par IP, 64 Ko par liste, cartes au total plafonnées ;
+   serveur plein : un nouvel appareil est refusé (507), jamais un abonné évincé (seulement un enregistrement sans prix ni notification réussie).
+   « Vérifier les prix » ne relève que les cartes de cet appareil ; un relevé par carte et par heure au plus (sinon il remplace le dernier). */
 const ALERTS_ON = (PUSH_ON || FCM_ON) && process.env.ALERTS !== '0';
 const SCRY_UP = (process.env.SCRYFALL_UPSTREAM || 'https://api.scryfall.com').replace(/\/+$/, '');            // surchargeable pour les tests
 const AL_EVERY = Number(process.env.ALERT_EVERY_MS) || 6 * 3600e3;
@@ -422,7 +448,10 @@ const AL_FILE = process.env.ALERT_FILE || join(EDH_DIR, 'alerts.json');
 const AL_SEED = Number(process.env.ALERT_SEED_MS ?? 2500);
 const AL_MIN_DROP = Number(process.env.ALERT_MIN_DROP_CENTS) || 50, AL_COOL = Number(process.env.ALERT_COOLDOWN_MS ?? 5 * 86400e3), AL_CHECK_GAP = Number(process.env.ALERT_CHECK_GAP_MS ?? 90e3);
 const AL_MAX_ITEMS = 400, AL_MAX_SUBS = Number(process.env.ALERT_MAX_SUBS) || 500, AL_HIST_MAX = 48, AL_HIST_AGE = 14 * 86400e3, AL_HITS_KEEP = 20, AL_BASE_WIN = 12;
-const AL = { subs: new Map(), px: new Map(), run: null, saveT: null, seedT: null, checkAt: 0, last: { at: 0, ok: 0, miss: 0, hits: 0, err: '' }, warned: false };
+const AL_RATE = Number(process.env.ALERT_RATE_PER_H ?? 30), AL_PER_IP = Number(process.env.ALERT_MAX_PER_IP) || 10, AL_MAX_CARDS = Number(process.env.ALERT_MAX_CARDS) || 50000;
+const AL_HIST_GAP = Number(process.env.ALERT_HIST_GAP_MS ?? 3600e3), AL_BODY_MAX = 64 * 1024, AL_STALE = 30 * 86400e3;
+// ip : appareil → réseau qui l'a enregistré, en mémoire seulement (jamais écrit sur disque) ; sert au plafond par IP.
+const AL = { subs: new Map(), px: new Map(), ip: new Map(), run: null, saveT: null, seedT: null, last: { at: 0, ok: 0, miss: 0, hits: 0, err: '' }, warned: false };
 const alKey = name => String(name || '').split('//')[0].replace(/æ/gi, 'ae').replace(/œ/gi, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const alEur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
 const alId = key => createHash('sha1').update(key).digest('hex').slice(0, 24);                  // key : pushKey(cible) → un enregistrement par abonnement ou jeton FCM
@@ -503,56 +532,72 @@ function alMessage(hits) {
   return { title: `${hits.length} cartes en baisse`, body: hits.slice(0, 3).map(part).join(', ') + (hits.length > 3 ? ` et ${hits.length - 3} autre${hits.length > 4 ? 's' : ''}` : '') };
 }
 
-/** Un passage : relève les prix de toutes les cartes suivies, puis prévient chaque appareil concerné. `seed` : seulement les cartes jamais relevées (pas d'alerte). */
-async function alTick({ seed = false } = {}) {
+/** Un passage : relève les prix des cartes suivies, puis prévient chaque appareil concerné. `seed` : seulement les cartes jamais relevées (pas d'alerte) ;
+    `rec` : un seul appareil (« Vérifier les prix »), résultat gardé dans rec.last. Les passages s'attendent les uns les autres, jamais deux à la fois. */
+async function alTick(opt = {}) {
   if (!ALERTS_ON) return null;
-  if (AL.run) return AL.run;
-  AL.run = (async () => {
-    const now = Date.now();
-    try {
-      const want = new Map();
-      for (const rec of AL.subs.values()) for (const it of rec.items) if (!want.has(it.nk)) want.set(it.nk, it.n);
-      const ask = [...want].filter(([k]) => !seed || !(AL.px.get(k) || []).length);
-      if (!ask.length && seed) return;
-      const got = ask.length ? await alFetch(ask) : new Map();
-      let ok = 0, miss = 0;
-      for (const [k, c] of got) {
-        if (c == null) { miss++; continue; }
-        ok++; const h = AL.px.get(k) || []; h.push([now, c]);
-        while (h.length > AL_HIST_MAX || (h.length > 2 && now - h[0][0] > AL_HIST_AGE)) h.shift();
-        AL.px.set(k, h);
-      }
-      if (!seed) for (const k of [...AL.px.keys()]) if (!want.has(k)) AL.px.delete(k);
-      AL.last = { at: seed ? AL.last.at : now, ok: seed ? AL.last.ok : ok, miss: seed ? AL.last.miss : miss, hits: AL.last.hits, err: '' };
-      if (!seed) {
-        let sent = 0;
-        for (const rec of [...AL.subs.values()]) {
-          const hits = alEval(rec, now); if (!hits.length) continue;
-          rec.hits = [...hits, ...(rec.hits || [])].slice(0, AL_HITS_KEEP);
-          const m = alMessage(hits), st = await sendPush({ sub: rec.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
-          if (st && st < 300) { sent++; console.log('alerte envoyée (' + hits.length + ' carte' + (hits.length > 1 ? 's' : '') + ')'); }
-          else if (st === 404 || st === 410) { AL.subs.delete(rec.id); console.warn('alerte : ' + (rec.sub.fcm ? 'jeton FCM périmé' : 'abonnement expiré') + ', retiré'); }
-          else console.warn('alerte refusée (' + (st || 'réseau') + ')');
-        }
-        AL.last.hits = sent;
-      }
-    } catch (e) { AL.last = { ...AL.last, err: String(e && e.message || e).slice(0, 160) }; console.warn('Alertes : ' + AL.last.err); }
-    alSaveSoon();
-  })().finally(() => { AL.run = null; });
+  while (AL.run) await AL.run;
+  AL.run = alPass(opt).finally(() => { AL.run = null; });
   return AL.run;
+}
+async function alPass({ seed = false, rec = null }) {
+  const now = Date.now(), recs = rec ? [rec] : [...AL.subs.values()], out = { at: now, ok: 0, miss: 0, hits: 0, err: '' };
+  try {
+    const want = new Map();
+    for (const r of recs) for (const it of r.items) if (!want.has(it.nk)) want.set(it.nk, it.n);
+    const ask = [...want].filter(([k]) => !seed || !(AL.px.get(k) || []).length);
+    if (!ask.length && seed) return AL.last;
+    const got = ask.length ? await alFetch(ask) : new Map();
+    for (const [k, c] of got) {
+      if (c == null) { out.miss++; continue; }
+      out.ok++; const h = AL.px.get(k) || [], l = h[h.length - 1];
+      if (l && now - l[0] < AL_HIST_GAP) l[1] = c;                                // relevé de moins d'une heure : remplacé (contrôles répétés : la médiane garde sa profondeur)
+      else h.push([now, c]);
+      while (h.length > AL_HIST_MAX || (h.length > 2 && now - h[0][0] > AL_HIST_AGE)) h.shift();
+      AL.px.set(k, h);
+    }
+    if (!seed && !rec) for (const k of [...AL.px.keys()]) if (!want.has(k)) AL.px.delete(k);
+    if (seed) AL.last.err = '';
+    else {
+      for (const r of recs) {
+        const hits = alEval(r, now); if (!hits.length) continue;
+        r.hits = [...hits, ...(r.hits || [])].slice(0, AL_HITS_KEEP);
+        const m = alMessage(hits), st = await sendPush({ sub: r.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
+        if (st && st < 300) { out.hits++; r.pushed = now; console.log('alerte envoyée (' + hits.length + ' carte' + (hits.length > 1 ? 's' : '') + ')'); }
+        else if (st === 404 || st === 410) { AL.subs.delete(r.id); console.warn('alerte : ' + (r.sub.fcm ? 'jeton FCM périmé' : 'abonnement expiré') + ', retiré'); }
+        else console.warn('alerte refusée (' + (st || 'réseau') + ')');
+      }
+      if (!rec) AL.last = out;
+    }
+  } catch (e) { out.err = String(e && e.message || e).slice(0, 160); if (!rec) AL.last = { ...AL.last, err: out.err }; console.warn('Alertes : ' + out.err); }
+  if (rec) rec.last = out;
+  alSaveSoon();
+  return rec ? out : AL.last;
 }
 function alSeedSoon() { if (AL.seedT) return; AL.seedT = setTimeout(() => { AL.seedT = null; alTick({ seed: true }); }, AL_SEED); AL.seedT.unref(); }
 
 const alStr = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '';
+/** Serveur plein : retire l'enregistrement le plus ancien qui ne peut être un abonné actif (aucune notification réussie, et aucune carte au prix connu
+    depuis plus d'une heure, ou pas réenregistré depuis 30 jours alors que l'appli le refait toutes les 12 h). Faux si aucun : le nouveau venu est refusé. */
+function alEvict(now, keep = '') {
+  let pick = null;
+  for (const r of AL.subs.values()) {
+    if (r.id === keep || r.pushed || !(now - r.at > AL_STALE || (now - r.at > 3600e3 && !r.items.some(it => (AL.px.get(it.nk) || []).length)))) continue;
+    if (!pick || r.at < pick.at) pick = r;
+  }
+  if (pick) { AL.subs.delete(pick.id); console.warn('Alertes : serveur plein, enregistrement inactif retiré'); }
+  return !!pick;
+}
 async function alertsApi(req, res, path, url) {
   if (!ALERTS_ON) return json(res, 404, { error: 'alerts_disabled', message: PUSH_ON || FCM_ON ? 'Alertes désactivées (ALERTS=0).' : 'Notifications non configurées (clés VAPID ou compte de service FCM manquants).' });
   const sub = path.replace(/^alerts\/?/, '');
   const id = String(url.searchParams.get('id') || '');
   if (req.method === 'PUT' && !sub) {
-    let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
+    const wait = rateWait(req, 'alerts', AL_RATE, 3600e3); if (wait) return tooMany(res, wait);
+    let b; try { b = JSON.parse((await readBody(req, AL_BODY_MAX)).toString('utf8') || '{}'); } catch (e) { return e.status === 413 ? tooLarge(res) : json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
     const pu = parsePush({ sub: b && b.sub, url: './?alerts=1' });
     if (!pu) return json(res, 400, { error: 'bad_subscription', message: 'Abonnement push invalide ou refusé.' });
-    const rid = alId(pushKey(pu.sub)), old = AL.subs.get(rid), oldItems = new Map(((old && old.items) || []).map(x => [x.nk, x]));
+    const rid = alId(pushKey(pu.sub)), old = AL.subs.get(rid), oldItems = new Map(((old && old.items) || []).map(x => [x.nk, x])), net = clientOf(req), now = Date.now();
     const items = new Map();
     for (const x of Array.isArray(b.items) ? b.items : []) {
       if (items.size >= AL_MAX_ITEMS) break;
@@ -562,8 +607,14 @@ async function alertsApi(req, res, path, url) {
     }
     if (!items.size) { AL.subs.delete(rid); alSaveSoon(); return json(res, 200, { ok: true, id: rid, watching: 0 }); }
     const thr = Math.min(80, Math.max(10, Math.round(Number(b.thr)) || 30));
-    if (!old && AL.subs.size >= AL_MAX_SUBS) { const oldest = [...AL.subs.values()].sort((x, y) => x.at - y.at)[0]; if (oldest) AL.subs.delete(oldest.id); }
-    AL.subs.set(rid, { id: rid, sub: pu.sub, thr, at: Date.now(), items: [...items.values()], hits: (old && old.hits) || [] });
+    if (!old) {
+      if (net && [...AL.subs.keys()].filter(k => AL.ip.get(k) === net).length >= AL_PER_IP) return json(res, 429, { error: 'too_many_devices', message: 'Trop d\'appareils enregistrés depuis ce réseau.' });
+      if (AL.subs.size >= AL_MAX_SUBS && !alEvict(now)) return json(res, 507, { error: 'alerts_full', message: 'Le serveur surveille déjà le maximum d\'appareils : réessaie plus tard.' }, { 'Retry-After': '3600' });
+    }
+    const cards = () => { let n = items.size; for (const r of AL.subs.values()) if (r.id !== rid) n += r.items.length; return n; };
+    while (cards() > AL_MAX_CARDS) if (!alEvict(now, rid)) return json(res, 507, { error: 'alerts_full', message: 'Le serveur surveille déjà le maximum de cartes : réessaie plus tard.' }, { 'Retry-After': '3600' });
+    AL.subs.set(rid, { ...(old || {}), id: rid, sub: pu.sub, thr, at: now, items: [...items.values()], hits: (old && old.hits) || [] });
+    if (net) { AL.ip.set(rid, net); if (AL.ip.size > 2 * AL_MAX_SUBS) for (const k of AL.ip.keys()) if (!AL.subs.has(k)) AL.ip.delete(k); }
     alSaveSoon(); alSeedSoon();
     return json(res, 200, { ok: true, id: rid, watching: items.size, thr, last: AL.last.at, next: AL.last.at ? AL.last.at + AL_EVERY : 0 });
   }
@@ -572,86 +623,102 @@ async function alertsApi(req, res, path, url) {
     if (!rec) return json(res, 404, { error: 'not_registered', message: 'Cet appareil n\'est pas (ou plus) enregistré pour les alertes.' });
     const prices = {};
     for (const it of rec.items) { const h = AL.px.get(it.nk); if (h && h.length) prices[it.k] = { c: h[h.length - 1][1], b: h.length > 1 ? alMedian(h.slice(0, -1).slice(-AL_BASE_WIN).map(x => x[1])) : 0 }; }
-    return json(res, 200, { id: rec.id, thr: rec.thr, watching: rec.items.length, priced: Object.keys(prices).length, last: AL.last, next: AL.last.at ? AL.last.at + AL_EVERY : 0, every: AL_EVERY, prices, hits: rec.hits || [] });
+    const last = rec.last && rec.last.at > AL.last.at ? rec.last : AL.last;          // le plus récent : passage de toutes les 6 h ou contrôle de cet appareil
+    return json(res, 200, { id: rec.id, thr: rec.thr, watching: rec.items.length, priced: Object.keys(prices).length, last, next: AL.last.at ? AL.last.at + AL_EVERY : 0, every: AL_EVERY, prices, hits: rec.hits || [] });
   }
   if (req.method === 'DELETE' && !sub) { const had = AL.subs.delete(id); if (had) alSaveSoon(); return json(res, 200, { ok: true, removed: had }); }
   if (req.method === 'POST' && sub === 'check') {
     if (!rec) return json(res, 404, { error: 'not_registered', message: 'Cet appareil n\'est pas (ou plus) enregistré pour les alertes.' });
-    const wait = AL.checkAt + AL_CHECK_GAP - Date.now();
-    if (wait > 0 && !AL.run) return json(res, 200, { ok: true, skipped: true, retry: Math.ceil(wait / 1000), last: AL.last });
-    AL.checkAt = Date.now(); await alTick();
-    return json(res, 200, { ok: !AL.last.err, last: AL.last, error: AL.last.err || undefined });
+    const gap = (rec.checkAt || 0) + AL_CHECK_GAP - Date.now();
+    if (gap > 0) return json(res, 200, { ok: true, skipped: true, retry: Math.ceil(gap / 1000), last: rec.last || AL.last });
+    const wait = rateWait(req, 'alcheck', AL_RATE, 3600e3); if (wait) return tooMany(res, wait);
+    rec.checkAt = Date.now(); const last = await alTick({ rec });
+    return json(res, 200, { ok: !last.err, last, error: last.err || undefined });
   }
   return json(res, 405, { error: 'method_not_allowed' });
 }
 
-const jobs = new Map();
-function newJob({ lang, foil, bps, fresh, tok = TOKEN }) {
+const jobs = new Map(); let jobBytes = 0;                            // jobBytes : résultats gardés par toutes les tâches (plafond JOB_RES_MAX)
+function newJob({ lang, foil, bps, fresh, tok = TOKEN, th = '' }) {
   const sig = createHash('sha1').update([tok === TOKEN ? '' : tok, lang, foil, ...bps.slice().sort((a, b) => a - b)].join(',')).digest('hex');      // un token différent : une tâche à part (elle tourne avec ce token)
   const now = Date.now();
   let same = null;                                                    // la tâche la plus récente de même signature (en cours, ou terminée et encore valable)
   for (const j of jobs.values()) if (j.sig === sig && (j.status === 'running' || (j.status === 'done' && !fresh && now - j.end < OFFER_TTL)) && (!same || j.t0 > same.t0)) same = j;
   if (same) return { job: same, attached: true };
-  if ([...jobs.values()].filter(j => j.status === 'running').length >= JOB_MAX_RUNNING) return { busy: true };
-  const job = { id: randomBytes(12).toString('hex'), sig, tok, lang, foil, fresh: !!fresh, bps, queue: bps.slice(), total: bps.length, results: [], done: 0, cached: 0, cacheAge: 0, oldest: Infinity, errors: 0, sent: 0, stamps: [],
+  const running = [...jobs.values()].filter(j => j.status === 'running');
+  if (running.length >= JOB_MAX_RUNNING) return { busy: true };
+  if (th && running.filter(j => j.th === th).length >= JOB_PER_TOKEN) return { busy: true, mine: true };
+  // th : empreinte du token de l'utilisateur ('' : token du serveur) ; tok n'est gardé que le temps de la recherche (effacé dès la fin, l'échec ou l'annulation).
+  const job = { id: randomBytes(12).toString('hex'), sig, tok, th, lang, foil, fresh: !!fresh, bps, queue: bps.slice(), total: bps.length, results: [], bytes: 0, done: 0, cached: 0, cacheAge: 0, oldest: Infinity, errors: 0, sent: 0, stamps: [],
     status: 'running', fatal: null, ctl: new AbortController(), t0: now, end: 0, pushes: [], seenEnd: false };
   jobs.set(job.id, job);
   runJob(job);
   return { job, attached: false };
 }
+const jobDrop = j => { jobs.delete(j.id); jobBytes -= j.bytes; };
+const jobStop = (j, status) => { j.status = status; j.ctl.abort(); j.tok = null; j.end = Date.now(); };
+/** Garde un résultat dans la limite JOB_RES_MAX : les tâches terminées les plus anciennes sont oubliées d'abord ; plafond encore dépassé, la tâche
+    échoue (l'appli relance ce qui manque, lu dans le cache des offres, puis le lit elle-même). Faux si la tâche s'arrête. */
+function jobKeep(job, res, size) {
+  if (jobBytes + size > JOB_RES_MAX) for (const j of [...jobs.values()].filter(x => x.end).sort((a, b) => a.end - b.end)) { jobDrop(j); if (jobBytes + size <= JOB_RES_MAX) break; }
+  if (jobBytes + size > JOB_RES_MAX) { jobStop(job, 'failed'); return false; }
+  job.results.push(res); job.bytes += size; jobBytes += size; return true;
+}
 async function runJob(job) {
   const worker = async () => {
     while (job.status === 'running') {
       const bp = job.queue.shift(); if (bp === undefined) return;
-      const k = okey(bp, job.lang, job.foil), hit = job.fresh ? null : offersGet(k);
-      let products = null, error = null;
-      if (hit) { products = hit.products; job.cached++; job.cacheAge = Math.max(job.cacheAge, Date.now() - hit.t); job.oldest = Math.min(job.oldest, hit.t); }
+      const k = okey(bp, job.lang, job.foil), hit = job.fresh || !tokOk(job.th) ? null : offersGet(k);       // cache partagé : seulement pour un token déjà accepté par CardTrader
+      let products = null, error = null, size = 64;
+      if (hit) { products = hit.products; size = hit.size; job.cached++; job.cacheAge = Math.max(job.cacheAge, Date.now() - hit.t); job.oldest = Math.min(job.oldest, hit.t); }
       else {
-        try { const at = Date.now(); products = await fetchProducts(bp, job.lang, job.foil, job.ctl.signal, job.tok); offersSet(k, products); job.sent++; job.stamps.push(Date.now()); job.oldest = Math.min(job.oldest, at); }
+        try { const at = Date.now(); products = await fetchProducts(bp, job.lang, job.foil, job.ctl.signal, job.tok); tokSeen(job.th); size = offersSet(k, products); job.sent++; job.stamps.push(Date.now()); job.oldest = Math.min(job.oldest, at); }
         catch (e) {
           if (e.cancelled) return;
-          if (e.fatal) { job.fatal = e.fatal; job.status = 'failed'; job.ctl.abort(); return; }
+          if (e.fatal) { job.fatal = e.fatal; jobStop(job, 'failed'); return; }
           error = e.message || 'error'; job.errors++;
         }
       }
-      job.results.push(error ? { bp, error } : { bp, products }); job.done++;
+      if (job.status !== 'running' || !jobKeep(job, error ? { bp, error } : { bp, products }, size)) return;
+      job.done++;
     }
   };
   try { await Promise.all(Array.from({ length: Math.min(JOB_CONC, job.queue.length) }, worker)); }
   catch (e) { console.error('job:', e); if (job.status === 'running') job.status = 'failed'; }
   if (job.status === 'running') job.status = 'done';
-  job.end = Date.now();
+  job.tok = null; job.end = job.end || Date.now();
   pushWhenDone(job);
 }
 function gcJobs() {
   const now = Date.now(), fin = [];
-  for (const [id, j] of jobs) {
-    if (j.status === 'running' && now - j.t0 > 30 * 60e3) { j.status = 'cancelled'; j.ctl.abort(); j.end = now; }
-    if (j.end && now - j.end > JOB_KEEP) jobs.delete(id); else if (j.end) fin.push(j);
+  for (const j of jobs.values()) {
+    if (j.status === 'running' && now - j.t0 > 30 * 60e3) jobStop(j, 'cancelled');
+    if (j.end && now - j.end > JOB_KEEP) jobDrop(j); else if (j.end) fin.push(j);
   }
-  fin.sort((a, b) => a.end - b.end); while (fin.length > JOB_MAX_KEPT) jobs.delete(fin.shift().id);
+  fin.sort((a, b) => a.end - b.end); while (fin.length > JOB_MAX_KEPT) jobDrop(fin.shift());
 }
 if (JOBS_ON) setInterval(gcJobs, 30e3).unref();
 
-async function jobsApi(req, res, path, url, tok = TOKEN) {
+async function jobsApi(req, res, path, url, tok = TOKEN, th = '') {
   if (!JOBS_ON) return json(res, 404, { error: 'jobs_disabled' });
   const m = /^jobs(?:\/([a-f0-9]{24}))?$/.exec(path);
   if (!m) return json(res, 404, { error: 'not_found' });
   if (req.method === 'POST' && !m[1]) {
-    let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
+    if (th) { const wait = rateWait(req, 'jobs', USER_JOBS_H, 3600e3); if (wait) return tooMany(res, wait); }
+    let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return e.status === 413 ? tooLarge(res) : json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
     const lang = b && b.lang == null ? '' : String(b && b.lang), foil = b && b.foil == null ? 'any' : String(b && b.foil);
     const ids = Array.isArray(b && b.bps) ? [...new Set(b.bps)] : [];
     if (!b || b.type !== 'offers' || !/^([a-z]{2}(-[A-Za-z]{2})?)?$/.test(lang) || !['no', 'yes', 'any'].includes(foil) || !ids.length || ids.length > JOB_MAX_BPS || !ids.every(x => Number.isSafeInteger(x) && x > 0))
       return json(res, 400, { error: 'bad_request', message: 'Paramètres invalides (type, lang, foil ou bps).' });
-    const r = newJob({ lang, foil, bps: ids, fresh: !!b.fresh, tok });
-    if (r.busy) return json(res, 429, { error: 'busy', message: 'Trop de recherches en cours sur le serveur.' }, { 'Retry-After': '10' });
+    const r = newJob({ lang, foil, bps: ids, fresh: !!b.fresh, tok, th });
+    if (r.busy) return json(res, 429, { error: 'busy', message: r.mine ? 'Trop de recherches en cours avec ce token.' : 'Trop de recherches en cours sur le serveur.' }, { 'Retry-After': '10' });
     const pu = parsePush(b.push);
     if (pu && r.job.status === 'running' && r.job.pushes.length < 3 && !r.job.pushes.some(x => pushKey(x.sub) === pushKey(pu.sub))) r.job.pushes.push(pu);
     return json(res, 202, { id: r.job.id, total: r.job.total, attached: r.attached, status: r.job.status, push: !!pu });
   }
   const job = m[1] && jobs.get(m[1]);
   if (!job) return json(res, m[1] ? 404 : 405, { error: m[1] ? 'job_not_found' : 'method_not_allowed', message: m[1] ? 'Recherche introuvable (serveur redémarré ou trop ancienne).' : undefined });
-  if (req.method === 'DELETE') { if (job.status === 'running') { job.status = 'cancelled'; job.ctl.abort(); job.end = Date.now(); job.pushes.length = 0; } return json(res, 200, { id: job.id, status: job.status }); }
+  if (req.method === 'DELETE') { if (job.status === 'running') { jobStop(job, 'cancelled'); job.pushes.length = 0; } return json(res, 200, { id: job.id, status: job.status }); }
   if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
   if (job.status !== 'running') job.seenEnd = true;               // quelqu'un relève le résultat final : pas de notification
   const from = Math.max(0, Math.floor(Number(url.searchParams.get('from')) || 0));
@@ -680,7 +747,8 @@ const json = (res, status, obj, extra = {}) => {
 const BAD = new Map(), BAD_MAX = 15, BAD_WIN = 10 * 60e3, BAD_LOCK = 5 * 60e3;
 const ipOf = req => String(req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress || '?';
 const isLocked = req => { const e = BAD.get(ipOf(req)); return !!e && e.until > Date.now(); };
-async function badKey(req, res, error = 'bad_app_key', status = 401) {
+/** Essai invalide : compté pour l'IP (blocage au 15e) puis freiné. */
+async function badHit(req) {
   const k = ipOf(req), now = Date.now();
   if (BAD.size > 1000) for (const [kk, v] of BAD) if (now - v.first > BAD_WIN && v.until < now) BAD.delete(kk);
   let e = BAD.get(k);
@@ -689,8 +757,38 @@ async function badKey(req, res, error = 'bad_app_key', status = 401) {
   if (e.n >= BAD_MAX && req.headers['x-forwarded-for']) e.until = now + BAD_LOCK;
   BAD.set(k, e);
   await new Promise(r => setTimeout(r, Number(process.env.BAD_KEY_DELAY_MS ?? 400)));
+}
+async function badKey(req, res, error = 'bad_app_key', status = 401) {
+  await badHit(req);
   return json(res, status, { error, message: error === 'forbidden' ? 'Ce compte n\'est pas autorisé sur ce serveur.' : error === 'bad_token' ? 'Jeton de connexion invalide.' : undefined });
 }
+
+// Budgets par client sur les routes publiques coûteuses (seau de jetons : `cap` requêtes d'avance, rechargé de `cap` par période `per`).
+// Client : l'IP ci-dessus, réseau /64 pour une IPv6 (une box en reçoit des milliards). Sans X-Forwarded-For, clients indiscernables : pas de limite, comme pour
+// le blocage BAD (sinon, derrière un proxy qui ne l'ajoute pas, tous les visiteurs partageraient un seul budget). Les plafonds globaux restent.
+// Token d'un utilisateur : 360 relais par minute (le rythme maximal de l'appli, 6/s) ; 120 recherches par heure (un refus renvoie l'appli à la lecture depuis l'appareil).
+const IMPORT_RATE = Number(process.env.IMPORT_RATE_PER_H ?? 30), USER_RATE = Number(process.env.USER_RATE_PER_MIN ?? 360), USER_JOBS_H = Number(process.env.USER_JOBS_PER_H ?? 120);
+const BUCKETS = new Map();
+/** Réseau d'une adresse : IPv4 telle quelle, préfixe /64 d'une IPv6. */
+function netOf(ip) {
+  const v4 = /(?:^|:)(\d+\.\d+\.\d+\.\d+)$/.exec(ip); if (v4 || !ip.includes(':')) return v4 ? v4[1] : ip;
+  const [a, b] = ip.split('::'), h = a ? a.split(':') : [], t = b ? b.split(':') : [];
+  const g = b === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t];
+  return g.slice(0, 4).map(x => (parseInt(x, 16) || 0).toString(16)).join(':') + '::/64';
+}
+const clientOf = req => req.headers['x-forwarded-for'] ? netOf(ipOf(req)) : '';
+/** 0 : requête permise (un jeton consommé) ; sinon secondes à attendre. cap ≤ 0 : sans limite. */
+function rateWait(req, name, cap, per) {
+  const c = clientOf(req); if (!c || !(cap > 0)) return 0;
+  const k = name + ' ' + c, now = Date.now(); let b = BUCKETS.get(k);
+  if (!b) { if (BUCKETS.size > 10000) for (const [kk, v] of BUCKETS) if (now - v.t > v.per) BUCKETS.delete(kk); b = { n: cap, t: now, per }; BUCKETS.set(k, b); }
+  b.n = Math.min(cap, b.n + (now - b.t) * cap / per); b.t = now;
+  if (b.n >= 1) { b.n--; return 0; }
+  return Math.max(1, Math.ceil((1 - b.n) * per / cap / 1000));
+}
+const tooMany = (res, s) => json(res, 429, { error: 'rate_limited', message: 'Trop de requêtes depuis ce réseau : réessaie dans quelques minutes.', retry: s }, { 'Retry-After': String(s) });
+// Corps trop gros : réponse puis fermeture de la connexion (le reste du corps n'est jamais lu).
+const tooLarge = res => json(res, 413, { error: 'too_large', message: 'Requête trop grosse.' }, { Connection: 'close' });
 
 /* ── Jeton Firebase (JWT RS256) : vérification sans dépendance ───────────────────────────────── */
 const authErr = (code, message) => Object.assign(new Error(message || code), { authCode: code });
@@ -739,9 +837,11 @@ const safeEq = (a, b) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+// Au-delà de `max` : lecture arrêtée (requête en pause), erreur 413 ; la réponse (tooLarge) ferme ensuite la connexion.
 const readBody = (req, max = 256 * 1024) => new Promise((resolve, reject) => {
   const chunks = []; let n = 0;
-  req.on('data', c => { n += c.length; if (n > max) { reject(Object.assign(new Error('too large'), { status: 413 })); req.destroy(); } else chunks.push(c); });
+  const onData = c => { n += c.length; if (n > max) { req.off('data', onData); req.pause(); reject(Object.assign(new Error('too large'), { status: 413 })); } else chunks.push(c); };
+  req.on('data', onData);
   req.on('end', () => resolve(Buffer.concat(chunks)));
   req.on('error', reject);
 });
@@ -767,18 +867,21 @@ async function authorize(req, res) {
 }
 
 
-/** Ce visiteur peut-il chercher avec le token du serveur ? (compte autorisé, bonne clé, ou serveur local ouvert) Sans pénalité : ce n'est pas une devinette. */
+/** Ce visiteur peut-il chercher avec le token du serveur ? (compte autorisé, bonne clé, ou serveur local ouvert) Jeton Firebase refusé : sans pénalité
+    (aucune devinette possible) ; mauvaise APP_KEY : comptée et freinée comme dans authorize, IP bloquée → false (sinon /__me servirait à deviner la clé). */
 async function serverOk(req) {
   if (!TOKEN) return false;
   if (!APP_KEY && !AUTH_FB) return true;
+  if (isLocked(req)) return false;
   const key = String(req.headers['x-app-key'] || ''), tok = String(req.headers['x-firebase-token'] || '');
   if (APP_KEY && key && safeEq(key, APP_KEY)) return true;
-  if (AUTH_FB && tok) { try { await verifyIdToken(tok); return true; } catch (e) { return false; } }
+  if (AUTH_FB && tok) { try { await verifyIdToken(tok); return true; } catch (e) { /* jeton refusé */ } }
+  if (APP_KEY && key) await badHit(req);
   return false;
 }
 
 /* ── Import d'une liste depuis un lien (menu « Partager » de l'appli EDHREC, Archidekt, Moxfield) ──────────────────────────
-   Lecture seule, hôtes en liste blanche, aucune redirection suivie, 2 Mo et 8 s maximum. Le serveur renvoie la liste en texte
+   Ouvert à tous (limité par IP), lecture seule, hôtes en liste blanche, aucune redirection suivie, 2 Mo et 8 s maximum. Le serveur renvoie la liste en texte
    « 1 Sol Ring » avec un en-tête « Commander » si le site le distingue. Archidekt et Moxfield : au mieux (leurs API peuvent changer). */
 const IMPORT_UP = (process.env.IMPORT_UPSTREAM || '').replace(/\/+$/, '');          // tests uniquement
 const IMPORT_MAX = 2 * 1024 * 1024, IMPORT_LINES = 450;
@@ -790,9 +893,15 @@ async function getJsonLimited(url, headers = {}) {
   if (r.status >= 300 && r.status < 400) throw Object.assign(new Error('Redirection non suivie'), { status: 502 });
   if (r.status === 404) throw Object.assign(new Error('Liste introuvable (privée ou lien incomplet ?)'), { status: 404 });
   if (!r.ok) throw Object.assign(new Error('Le site a refusé la lecture (' + r.status + ')'), { status: 502 });
-  const len = Number(r.headers.get('content-length')); if (len > IMPORT_MAX) throw Object.assign(new Error('Réponse trop grosse'), { status: 413 });
-  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > IMPORT_MAX) throw Object.assign(new Error('Réponse trop grosse'), { status: 413 });
-  try { return JSON.parse(buf.toString('utf8')); } catch (e) { throw Object.assign(new Error('Réponse illisible'), { status: 502 }); }
+  const big = () => Object.assign(new Error('Réponse trop grosse'), { status: 413 });
+  const len = Number(r.headers.get('content-length')); if (len > IMPORT_MAX) { r.body && r.body.cancel().catch(() => {}); throw big(); }
+  const parts = []; let n = 0;                                          // lu en flux : une réponse sans longueur annoncée est coupée dès IMPORT_MAX
+  if (r.body) {
+    const rd = r.body.getReader();
+    try { for (let c; !(c = await rd.read()).done;) { n += c.value.length; if (n > IMPORT_MAX) throw big(); parts.push(c.value); } }
+    catch (e) { rd.cancel().catch(() => {}); throw e.status ? e : Object.assign(new Error('Site injoignable'), { status: 502 }); }
+  }
+  try { return JSON.parse(Buffer.concat(parts).toString('utf8')); } catch (e) { throw Object.assign(new Error('Réponse illisible'), { status: 502 }); }
 }
 const qn = v => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n > 0 && n < 100 ? n : 1; };
 const cleanName = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 150) : '';
@@ -846,6 +955,7 @@ async function importApi(req, res, url) {
   } else if (host === 'moxfield.com' && segs[0] === 'decks' && mox.test(segs[1] || '')) {
     site = 'Moxfield'; parse = fromMoxfield; target = (IMPORT_UP ? IMPORT_UP + '/moxfield' : 'https://api2.moxfield.com') + '/v3/decks/all/' + segs[1]; headers = { Referer: 'https://moxfield.com/', Origin: 'https://moxfield.com' };
   } else return json(res, 400, { error: 'unsupported', message: 'Lien non pris en charge : EDHREC (average-decks), Archidekt ou Moxfield.' });
+  const wait = rateWait(req, 'import', IMPORT_RATE, 3600e3); if (wait) return tooMany(res, wait);       // route publique : IMPORT_RATE_PER_H lectures par heure et par IP (un lien refusé d'office ne compte pas)
   try {
     const r = parse(await getJsonLimited(target, headers));
     if (!r.main.length && !r.cmd.length) return json(res, 422, { error: 'empty', message: 'Aucune carte trouvée dans cette liste.' });
@@ -855,22 +965,25 @@ async function importApi(req, res, url) {
 
 async function api(req, res, url) {
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
+  // Serveur local sans compte : un POST d'une autre page (formulaire, text/plain : pas de pré-vérification CORS) ne doit rien déclencher.
+  if (LOCAL && req.method === 'POST' && !/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) return json(res, 415, { error: 'bad_content_type', message: 'Content-Type: application/json attendu.' });
   // Ouvert à tous : import d'une liste depuis un lien, alertes de prix (Scryfall + push). Ni l'un ni l'autre n'utilise de token CardTrader.
   if (path === 'import') return importApi(req, res, url);
   if (path === 'alerts' || path.startsWith('alerts/')) return alertsApi(req, res, path, url);
   // CardTrader : avec le token de l'utilisateur (X-CT-Token), ou celui du serveur pour les comptes autorisés (ALLOWED_UIDS / APP_KEY).
   const ut = userTok(req);
   if (!ut && !(await authorize(req, res))) return;
-  const tok = ut || TOKEN;
+  const tok = ut || TOKEN, th = ut ? tokHash(ut) : '';
   if (!tok) return json(res, 401, { error: 'no_token', message: 'Token CardTrader requis : ajoute le tien dans les réglages.' });
-  if (path === 'jobs' || path.startsWith('jobs/')) return jobsApi(req, res, path, url, tok);
+  if (path === 'jobs' || path.startsWith('jobs/')) return jobsApi(req, res, path, url, tok, th);
   const allowed = ALLOW[req.method];
   if (!allowed) return json(res, 405, { error: 'method_not_allowed' });
   if (!allowed.has(path)) return json(res, 403, { error: 'blocked', message: 'Route non autorisée par le proxy : ' + path });
+  if (th) { const wait = rateWait(req, 'ct', 2 * USER_RATE, 120e3); if (wait) return tooMany(res, wait); }      // token d'un utilisateur : relais plafonnés par IP (USER_RATE par minute, rafale de 2 min)
 
   const target = UPSTREAM + path + url.search;
   const cacheable = req.method === 'GET' && (path === 'expansions' || path === 'blueprints/export');
-  if (cacheable) {
+  if (cacheable && tokOk(th)) {
     const hit = cache.get(target);
     if (hit && Date.now() - hit.t < CACHE_TTL) {
       res.writeHead(200, { ...SEC, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'x-cache': 'HIT' });
@@ -894,6 +1007,7 @@ async function api(req, res, url) {
   } finally { upDone(); }
   const headers = { ...SEC, 'Content-Type': up.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' };
   const ra = up.headers.get('retry-after'); if (ra) headers['Retry-After'] = ra;
+  if (up.ok) tokSeen(th);
   if (cacheable && up.ok) cacheSet(target, body);
   res.writeHead(up.status, headers);
   res.end(body);
@@ -935,6 +1049,9 @@ function warmFiles() {
 
 const server = http.createServer(async (req, res) => {
   try {
+    if (LOCAL && !LOCAL_HOSTS.test(String(req.headers.host || ''))) return json(res, 403, { error: 'bad_host', message: 'Serveur local : ouvre-le par http://localhost.' });
+    // Servi en https par le reverse proxy de l'hébergeur : le navigateur s'en souvient 180 jours (jamais en http, où l'en-tête n'aurait pas de sens).
+    if (String(req.headers['x-forwarded-proto'] || '').split(',').pop().trim().toLowerCase() === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000');
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__me') return json(res, 200, { server: await serverOk(req) });
     if (url.pathname === '/__prices') return json(res, 200, { source: PX_SRC ? 'GitHub' : '', ...PX_ST });
@@ -962,8 +1079,11 @@ const server = http.createServer(async (req, res) => {
     }
     json(res, 404, { error: 'not_found' });
   } catch (e) {
-    if (!res.headersSent) json(res, e && e.status || 500, { error: 'proxy_error', message: String(e && e.message || e) });
-    else res.end();
+    const st = e && e.status || 500;                                    // 500 : détail (chemins, erreurs système) dans le journal seulement
+    if (st >= 500) console.error('Erreur ' + req.method + ' ' + String(req.url).split('?')[0].slice(0, 200) + ' :', e);
+    if (res.headersSent) res.end();
+    else if (st === 413) tooLarge(res);
+    else json(res, st, { error: 'proxy_error', message: st >= 500 ? 'Erreur interne du serveur.' : String(e && e.message || e) });
   }
 });
 

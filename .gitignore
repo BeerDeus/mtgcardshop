@@ -15,3 +15,7 @@ shots/
 android-app/android/app/google-services.json.bak
 # Configuration Firebase de l'appli Android : propre à chaque installation, placée à la main (docs/android.md, 2 bis)
 android-app/android/app/google-services.json
+# Clés de compte de service Firebase / Google (notifications FCM) : secrets, jamais dans le dépôt (variable FCM_SERVICE_ACCOUNT à la place)
+*firebase-adminsdk*.json
+service-account*.json
+*service-account*.json
