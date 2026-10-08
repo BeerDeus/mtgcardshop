@@ -315,7 +315,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
     await r.click('#acDelGo'); await r.waitForFunction(() => document.querySelector('#acMsg').textContent.trim(), null, { timeout: 3000 }); assert.match(await T(r, '#acMsg'), /mot de passe/i);
     await r.fill('#acDelPw', 'faux'); await r.click('#acDelGo'); await r.waitForFunction(() => /incorrect/.test(document.querySelector('#acMsg').textContent), null, { timeout: 5000 }); ok('mauvais mot de passe : refusé, rien n\'est effacé');
     await r.fill('#acDelPw', 'secret12'); await r.click('#acDelGo');
-    await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 20000 });
+    await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 30000 });
     assert.equal(await r.evaluate(() => D.uid), 'uid-allowed'); assert.equal(await r.$eval('#acDelGo', e => e.disabled), false); assert.ok(!idLog.includes('accounts:delete'), 'le compte n\'est pas supprimé tant que ses données ne le sont pas'); ok('serveur injoignable : message, compte et synchronisation intacts, le compte n\'est pas supprimé avant ses données');
     await r.click('#acDelNo'); await r.waitForSelector('#acDel'); ok('Annuler : retour à la fiche du compte');
     await r.click('#acDel'); await r.waitForSelector('#acDelGo'); ok('Compte › Supprimer mon compte : écran de suppression');

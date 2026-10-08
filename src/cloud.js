@@ -125,7 +125,8 @@ function makeCloud(m) {
      *  local : liens connus de cet appareil (créés ici, peut-être jamais arrivés dans le document « trade » du compte). */
     async wipe(uid, local = []) {
       const ref = (...p) => m.fs.doc(db, 'users', uid, ...p);
-      const tr = await m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), td = tr && tr.exists() ? tr.data() : {};
+      // lectures en parallèle (hors ligne, chacune attend ~10 s avant d'échouer) ; decks illisibles : arrêt avant d'avoir rien effacé
+      const [tr, decks] = await Promise.all([m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), m.fs.getDocsFromServer(col(uid))]), td = tr && tr.exists() ? tr.data() : {};
       const shares = [...new Set([td.share, ...Object.values(td.dsh || {}), ...local].filter(x => typeof x === 'string' && x))];
       let failed = 0;
       for (const id of shares) {
@@ -134,7 +135,6 @@ function makeCloud(m) {
         try { if ((await m.fs.getDocFromServer(s)).exists()) await m.fs.deleteDoc(s); }
         catch (e) { if (e && e.code === 'not-found') continue; failed++; console.warn('Lien public non effacé :', id, e && e.code); }      // on continue : le reste du compte doit partir
       }
-      const decks = await m.fs.getDocsFromServer(col(uid));
       const refs = [...decks.docs.map(d => d.ref), ...['collection', 'engaged', 'history', 'trade', 'profile'].map(id => ref('meta', id)), ref('binder', 'lands')];
       for (let i = 0; i < refs.length; i += 400) { const b = m.fs.writeBatch(db); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
       return { decks: decks.docs.length, shares: shares.length, failed };
