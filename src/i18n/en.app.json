@@ -417,5 +417,15 @@
   "Panier": "Cart",
   "0,00 €": "€0.00",
   "Colle une decklist : le prix de chaque carte et le total, ou le panier CardTrader le moins cher.": "Paste a decklist: the price of each card and the total, or the cheapest CardTrader cart.",
-  "Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit donne le prix Cardmarket de chaque carte, ou compose le panier CardTrader le moins cher avec ton token.": "Paste an EDHREC, Moxfield or Archidekt export, one card per line. Mana Orbit shows the Cardmarket price of each card, or builds the cheapest CardTrader cart with your token."
+  "Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit donne le prix Cardmarket de chaque carte, ou compose le panier CardTrader le moins cher avec ton token.": "Paste an EDHREC, Moxfield or Archidekt export, one card per line. Mana Orbit shows the Cardmarket price of each card, or builds the cheapest CardTrader cart with your token.",
+  "<b>Cardmarket</b> : prix tendance relevés chaque jour, gratuits et sans compte, pour estimer ta collection et tes decks. <b>CardTrader</b> : offres réelles des vendeurs, frais de port optimisés et remplissage de ton panier.": "<b>Cardmarket</b>: trend prices updated daily, free and with no account, to value your collection and decks. <b>CardTrader</b>: real seller offers, optimised shipping and filling your cart.",
+  "Fin de recherche et alertes de prix.": "Search finished and price alerts.",
+  "Fin de recherche et alertes de prix": "Search finished and price alerts",
+  "Gérer les notifications": "Manage notifications",
+  "Fin de recherche": "Search finished",
+  "Serveur injoignable : prix simulés en attendant.": "Server unreachable: simulated prices for now.",
+  "CardTrader avec le compte du serveur : ton compte Mana Orbit y est autorisé, aucun token à saisir.": "CardTrader with the server's account: your Mana Orbit account is authorised, no token needed.",
+  "Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles et le panier.": "Cardmarket trend prices. CardTrader is available: pick it for real offers and the cart.",
+  "Prix tendance Cardmarket (impression la moins chère, hors port). Pour CardTrader, ajoute ton token ci-dessous.": "Cardmarket trend prices (cheapest printing, shipping excluded). For CardTrader, add your token below.",
+  "Mode démo (serveur injoignable) : prix réels indisponibles pour l'instant": "Demo mode (server unreachable): real prices unavailable for now"
 }

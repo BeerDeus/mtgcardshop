@@ -42,8 +42,8 @@ const { ctx, p, errs } = A;
 const jobBodies = []; p.on('request', r => { if (r.method() === 'POST' && /\/api\/jobs$/.test(r.url())) { try { jobBodies.push(JSON.parse(r.postData())); } catch (e) { /* ignore */ } } });
 await p.goto(world.url); await p.waitForTimeout(900);
 const ls = k => p.evaluate(k => JSON.parse(localStorage.getItem('__t_' + k)), k);
-const openSet = async () => { await p.click('#btnSettings'); await p.waitForSelector('#pushBox'); await p.waitForSelector('#setPush', { timeout: 5000 }); };
-const closeSheet = async () => { await p.keyboard.press('Escape'); await p.waitForTimeout(350); };
+const openSet = async () => { await p.click('#btnSettings'); await p.waitForSelector('#btnNotif'); await p.click('#btnNotif'); await p.waitForSelector('#pushBox'); await p.waitForSelector('#setPush', { timeout: 5000 }); };
+const closeSheet = async () => { for (let i = 0; i < 3 && await p.$('.sheet-wrap'); i++) { await p.keyboard.press('Escape'); await p.waitForTimeout(350); } };      // notifications puis réglages
 
 /* ── Réglages ────────────────────────────────────────────────────────────────────────────────── */
 await openSet(); assert.equal(await p.$eval('#setPush', c => c.checked), false);
@@ -87,8 +87,8 @@ world.delay = 0; await toInput(B.p); await B.p.fill('#deckText', DECK); const n1
 assert.ok(jobBodies[n1] && jobBodies[n1].push, 'la charge utile est jointe'); assert.equal(pushed.length, 1, 'app ouverte à la fin : aucune notification');
 ok('app ouverte jusqu\'à la fin : pas de notification');
 // réglage coupé
-await B.p.click('#btnSettings'); await B.p.waitForSelector('#setPush'); await B.p.click('label[for="setPush"] .switch'); await B.p.waitForFunction(() => !document.querySelector('#setPush').checked);
-assert.equal(await B.p.evaluate(() => JSON.parse(localStorage.getItem('__t_unsub'))), 1, 'abonnement résilié'); await B.p.keyboard.press('Escape'); await B.p.waitForTimeout(350);
+await B.p.click('#btnSettings'); await B.p.waitForSelector('#btnNotif'); await B.p.click('#btnNotif'); await B.p.waitForSelector('#setPush'); await B.p.click('label[for="setPush"] .switch'); await B.p.waitForFunction(() => !document.querySelector('#setPush').checked);
+assert.equal(await B.p.evaluate(() => JSON.parse(localStorage.getItem('__t_unsub'))), 1, 'abonnement résilié'); await B.p.keyboard.press('Escape'); await B.p.waitForTimeout(350); await B.p.keyboard.press('Escape'); await B.p.waitForTimeout(350);
 await B.p.click('#btnBack'); await B.p.waitForSelector('#deckText', { state: 'visible', timeout: 5000 });
 await toInput(B.p); await B.p.fill('#deckText', DECK + '\n1 Ranger\'s Hawk'); const n2 = jobBodies.length; await toInput(B.p); await B.p.click('#btnRun'); await done(B.p); await sleep(800);
 assert.ok(jobBodies[n2] && !('push' in jobBodies[n2]), 'réglage coupé : aucune charge utile'); assert.equal(pushed.length, 1);

@@ -59,7 +59,7 @@ const ls = k => p.evaluate(k => JSON.parse(localStorage.getItem('__t_' + k)), k)
 const server = async id => { const r = await fetch(world.url + '/api/alerts?id=' + id); return { s: r.status, o: await r.json() }; };
 const myId = () => p.evaluate(() => AC.id);
 const sheetGone = () => p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 4000 });
-const openSet = async () => { await p.click('#btnSettings'); await p.waitForSelector('#alertBox #setAlert', { timeout: 5000 }); };
+const openSet = async () => { await p.click('#btnSettings'); await p.waitForSelector('#btnNotif'); await p.click('#btnNotif'); await p.waitForSelector('#alertBox #setAlert', { timeout: 5000 }); };      // Réglages › Gérer les notifications
 
 /* ── Activation ───────────────────────────────────────────────────────────────────────────── */
 await openSet(); assert.equal(await p.$eval('#setAlert', c => c.checked), false);
@@ -125,7 +125,7 @@ await p.click('label[for="setPush"] .switch'); await p.waitForFunction(() => doc
 await p.click('label[for="setPush"] .switch'); await p.waitForFunction(() => !document.querySelector('#setPush').checked); await p.waitForTimeout(300);
 assert.equal(await ls('unsub'), 1, 'recherche coupée mais alertes actives : l\'abonnement reste'); assert.ok(await ls('sub'));
 ok('abonnement push partagé : couper « recherche terminée » ne coupe pas les alertes');
-await p.keyboard.press('Escape'); await sheetGone();
+await p.keyboard.press('Escape'); await sleep(350); await p.keyboard.press('Escape'); await sheetGone();      // notifications puis réglages
 
 /* ── Fiche d'une carte : « Prévenir si le prix baisse » ──────────────────────────────────── */
 await toInput(p); await p.fill('#deckText', '1 Sol Ring'); await p.waitForTimeout(300); await toInput(p); await p.click('#btnRun'); await done(p);

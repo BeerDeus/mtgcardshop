@@ -237,7 +237,7 @@ const PX_STEPS = { prints: T('impressions'), catalog: T('extensions'), offers: T
 /** Lit les prix réels de ces cartes (targets : [{ key, name, lang }]) par lots, une langue après l'autre (o.fresh : sans le cache du serveur). Progression dans la barre de la collection et en pastille flottante. */
 async function pxRun(targets, o = {}) {
   if (COLL.pxRun || !targets.length) return;
-  if (S.demo) { toast(T('Mode démo : les prix réels viennent de CardTrader, désactive la démo')); return; }
+  if (S.demo) { toast(T('Mode démo (serveur injoignable) : prix réels indisponibles pour l\'instant')); return; }
   if (S.run && S.run.status === 'running') { toast(T('Une recherche est en cours : attends sa fin')); return; }
   readOpts();
   if (!CTX.proxy && !CTX.token) { toast(T('Ajoute ton token CardTrader dans les réglages')); openSettings(); return; }

@@ -69,6 +69,18 @@ await p.click('#collSeg [data-v="list"]'); await p.waitForSelector('.crow');
 assert.equal(await p.$eval('.coll-main', e => e.classList.contains('tabin')), true);
 ok('collection : fondu des onglets');
 
+// premier lancement sur un petit écran (ou police système agrandie) : l'écran défile, « Commencer » reste atteignable
+{ const S2 = await newPage(browser, world, { ctx: { viewport: { width: 360, height: 520 } } });
+  await S2.p.evaluate(() => obOpen()); await S2.p.waitForSelector('.ob.on'); await S2.p.waitForTimeout(400);
+  const g = await S2.p.$eval('.ob-s', s => ({ sh: s.scrollHeight, ch: s.clientHeight }));
+  assert.ok(g.sh > g.ch, 'contenu plus haut que l\'écran : la première page défile (' + JSON.stringify(g) + ')');
+  await S2.p.$eval('.ob-s', s => { s.scrollTop = s.scrollHeight; }); await S2.p.waitForTimeout(200);
+  const r = await S2.p.$eval('.ob-s [data-ob="next"]', b => { const x = b.getBoundingClientRect(); return { top: x.top, bottom: x.bottom, vh: innerHeight }; });
+  assert.ok(r.top >= 0 && r.bottom <= r.vh, '« Commencer » visible en bas après défilement : ' + JSON.stringify(r));
+  await S2.p.click('.ob-s [data-ob="next"]'); await S2.p.waitForTimeout(500);
+  assert.deepEqual(S2.errs, []); await S2.ctx.close(); }
+ok('premier lancement : défile sur un petit écran, « Commencer » atteignable');
+
 assert.deepEqual(errs, [], 'aucune erreur page : ' + errs.join(' | '));
 await browser.close(); world.stop();
 console.log('OK');

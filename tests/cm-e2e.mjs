@@ -52,7 +52,7 @@ const run = async p => { await toInput(p); await p.fill('#deckText', DECK); awai
   // réglages : source des prix + token perso
   const ctHdr = []; p.on('request', r => { if (/\/api\/(marketplace|blueprints|expansions|info|jobs)/.test(r.url())) ctHdr.push(r.headers()['x-ct-token'] || ''); });
   await p.click('#btnSettings'); await p.waitForSelector('#segSrc');
-  assert.equal(await p.$eval('#segSrc', e => e._v), 'cm'); assert.match(await txt(p, '#connMsg'), /Prix tendance Cardmarket.*Ajoute ton token/);
+  assert.equal(await p.$eval('#segSrc', e => e._v), 'cm'); assert.match(await txt(p, '#connMsg'), /Prix tendance Cardmarket.*ajoute ton token/);
   await p.click('#segSrc [data-v="ct"]'); await p.waitForTimeout(200); assert.equal(await p.$eval('#segSrc', e => e._v), 'cm', 'CardTrader sans token : refusé'); assert.match(await txt(p, '#toast'), /token CardTrader/);
   await p.fill('#setToken', 'mon-token-cardtrader-1234567890'); await p.waitForTimeout(150);
   assert.equal(await p.$eval('#segSrc', e => e._v), 'ct'); assert.match(await txt(p, '#connMsg'), /CardTrader avec ton token/); assert.equal(await txt(p, '#modeLabel'), 'CardTrader');

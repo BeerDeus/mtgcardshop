@@ -51,6 +51,7 @@ svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-widt
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 
 /* ── Header ───────────────────────────────────────────── */
+html::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:19;pointer-events:none}      /* appli Android (bord à bord) : fond fixe sous la barre d'état, la page qui défile n'y passe plus */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--line)}
 .bar-in{max-width:640px;margin-inline:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
@@ -1488,8 +1489,9 @@ button,.btn,select,summary{touch-action:manipulation}
 .ob-aura i:nth-child(3){left:-80px;bottom:60px;background:radial-gradient(circle,rgba(58,154,94,.34),transparent 65%);animation-name:hmDrift3}
 .ob-aura i:nth-child(4){right:-90px;bottom:-60px;background:radial-gradient(circle,rgba(199,155,255,.36),transparent 65%)}
 .ob-skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;z-index:2;color:#b6bdd4}
-.ob-track{flex:1;display:flex;transition:transform .45s cubic-bezier(.22,.8,.25,1);position:relative;z-index:1}
+.ob-track{flex:1;min-height:0;display:flex;transition:transform .45s cubic-bezier(.22,.8,.25,1);position:relative;z-index:1}
 .ob-s{flex:0 0 100%;box-sizing:border-box;padding:72px 24px 24px;display:flex;flex-direction:column;gap:16px;max-width:520px;margin:0 auto;overflow-y:auto}
+.ob-s>*{flex-shrink:0}      /* page plus haute que l'écran : on défile, rien n'est écrasé (le bouton tombait à 0 px) */
 .ob-s h1{font:800 32px/1.1 var(--font-display,inherit);letter-spacing:-.03em;margin:4px 0 0}
 .ob-s h2{font:800 28px/1.15 var(--font-display,inherit);letter-spacing:-.02em;margin:0}
 .ob-s p{margin:0;font-size:16px;line-height:1.5}

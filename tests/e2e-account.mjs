@@ -288,7 +288,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.ok(apiReq.every(r => !r.h['x-app-key']), 'aucune clé partagée envoyée');
   assert.match(await T(p, '#heroCount'), /3 \/ 4 cartes/); ok('E : recherche complète avec le compte autorisé (' + apiReq.length + ' requêtes, toutes avec jeton)');
   await p.click('#btnSettings'); await sheetOpen(p); await p.waitForTimeout(600);
-  assert.match(await T(p, '#connStatus'), /CardTrader via le serveur \(compte autorisé\)/); assert.equal(await p.$eval('#boxKey', e => e.hidden), true); ok('E : réglages — statut « connecté », pas de champ de clé');
+  assert.match(await T(p, '#connStatus'), /CardTrader avec le compte du serveur/); assert.equal(await p.$eval('#boxKey', e => e.hidden), true); ok('E : réglages — statut « connecté », pas de champ de clé');
   await p.keyboard.press('Escape'); await sheetGone(p);
   await p.click('#btnAccount'); await sheetOpen(p); await p.waitForSelector('#acUid');
   assert.equal(await T(p, '#acUid'), 'uid-allowed'); assert.match(await T(p, '.sheet-body'), /réservé aux comptes autorisés/); await p.waitForTimeout(500); await shot(p, 'E1-compte-uid'); ok('E : Compte affiche l\'identifiant (UID) et l\'état du serveur');
@@ -303,7 +303,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
     await r.fill('#acEmail', 'beer@test.dev'); await r.fill('#acPw', 'secret12'); await r.click('#acGo');
     await r.waitForSelector('#acDelGo', { timeout: 5000 }); assert.ok(await r.$('.sheet-wrap.open .sheet'), 'la feuille reste ouverte'); assert.match(await T(r, '#toast'), /Connecté/);
     assert.match(await T(r, '.sheet-body'), /Suppression définitive de beer@test\.dev/); assert.equal(await r.$eval('#acWipeLocal', e => e.checked), true); ok('connexion depuis le lien : la feuille reste ouverte et passe tout de suite à l\'écran de suppression (avertissement, « effacer aussi cet appareil » cochée)');
-    await r.click('#acDelGo'); assert.match(await T(r, '#acMsg'), /mot de passe/i);
+    await r.click('#acDelGo'); await r.waitForFunction(() => document.querySelector('#acMsg').textContent.trim(), null, { timeout: 3000 }); assert.match(await T(r, '#acMsg'), /mot de passe/i);
     await r.fill('#acDelPw', 'faux'); await r.click('#acDelGo'); await r.waitForFunction(() => /incorrect/.test(document.querySelector('#acMsg').textContent), null, { timeout: 5000 }); ok('mauvais mot de passe : refusé, rien n\'est effacé');
     await r.fill('#acDelPw', 'secret12'); await r.click('#acDelGo');
     await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 20000 });

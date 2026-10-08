@@ -953,18 +953,25 @@ function applyTheme() {
   if (S.theme === 'light' || S.theme === 'dark') r.setAttribute('data-theme', S.theme); else r.removeAttribute('data-theme');
 }
 function syncCTX() { CTX.token = S.token; CTX.appKey = S.appKey; }
+/** Réglages › Gérer les notifications : fin de recherche (push) et alertes de prix, dans leur propre feuille. */
+function openNotifSettings() {
+  openSheet(T('Notifications'), T('Fin de recherche et alertes de prix'), api => {
+    api.body.innerHTML = `<div class="sec-title">${T('Fin de recherche')}</div><div id="pushBox" class="installbox"></div>
+      <div class="sec-title">${T('Alertes de prix')}</div><div id="alertBox" class="installbox"></div>`;
+    paintPushBox($('#pushBox', api.body)); alPaintBox($('#alertBox', api.body));
+  });
+}
 function openSettings() {
   openSheet(T('Réglages'), T('Prix, compte et affichage'), api => {
     api.body.innerHTML = `
       <div class="sec-title">${T('Prix')}</div>
       <div class="seg" id="segSrc" role="radiogroup" aria-label="${esc(T('Source des prix'))}"></div>
+      <p class="hint">${T('<b>Cardmarket</b> : prix tendance relevés chaque jour, gratuits et sans compte, pour estimer ta collection et tes decks. <b>CardTrader</b> : offres réelles des vendeurs, frais de port optimisés et remplissage de ton panier.')}</p>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
       <div class="field-in" id="boxToken"><label class="label" for="setToken">${T('Token CardTrader (facultatif)')}</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="${esc(T('Colle ton token API'))}" value="${esc(S.token)}">
         <span class="hint">${T('Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Gardé sur cet appareil, il passe par notre serveur seulement pour interroger CardTrader avec ton compte, sans jamais y être enregistré.')}</span></div>
       <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">${T('Clé du proxy')}</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? `<span class="hint">${T('Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.')}</span>` : ''}</div>
       <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">${T('Tester CardTrader')}</button>
-      <div class="switch-row"><span class="t"><b>${T('Mode démo')}</b><span class="hint">${T('Prix simulés, aucune requête envoyée.')}</span></span>
-        <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
       <div class="sec-title">${T('Affichage')}</div>
       <div class="field-in"><label class="label" for="setLang">${T('Langue')}</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="${esc(T('Thème'))}"></div>
@@ -972,11 +979,9 @@ function openSettings() {
         <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
       <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">${T('Vider le cache du catalogue')}</button>
       <div class="sec-title">${T('Notifications')}</div>
-      <div id="pushBox" class="installbox"></div>
-      <div class="sec-title">${T('Alertes de prix')}</div>
-      <div id="alertBox" class="installbox"></div>
-      <div class="sec-title">${T('Application')}</div>
-      <div id="appBox" class="installbox"></div>
+      <div class="installbox"><p class="hint">${T('Fin de recherche et alertes de prix.')}</p><button class="btn ghost small" type="button" id="btnNotif" style="align-self:flex-start">${T('Gérer les notifications')}</button></div>
+      ${typeof isNativeApp === 'function' && isNativeApp() ? '' : `<div class="sec-title">${T('Application')}</div>
+      <div id="appBox" class="installbox"></div>`}
       <div class="sec-title">${T('Confidentialité')}</div>
       <div id="privBox" class="installbox"><p class="hint">${T('Sans compte, tout reste sur cet appareil. Aucune publicité ni mesure d\'audience.')}</p>
         <div class="cart-actions"><a class="btn ghost small" href="privacy" target="_blank" rel="noopener">${T('Politique de confidentialité')}</a><button class="btn ghost small" type="button" id="btnAbout">${T('Mentions et sources')}</button></div>
@@ -990,9 +995,9 @@ function openSettings() {
     { const mo = typeof natPlugin === 'function' && natPlugin('ManaOrbit');
       if (mo) Promise.resolve().then(() => mo.info()).then(i => { const v = $('.set-apkv', b), f = $('.set-fb', b); if (!i || !v || !f) return; if (i.version) v.textContent = ' ' + i.version + (i.build ? ' (' + i.build + ')' : ''); f.textContent = ' ' + (i.firebase ? '✓' : '✗') + 'Firebase'; }).catch(() => {}); }
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
-    const appBox = $('#appBox', b);
+    const appBox = $('#appBox', b);      // absent dans l'appli Android : rien à installer
     const paintApp = () => {
-      if (!appBox.isConnected) { off(); return; }
+      if (!appBox || !appBox.isConnected) { off(); return; }
       const st = PWA.state();
       const okRow = t => `<div class="status" data-ok="1"><span class="dot"></span><span>${t}</span></div>`;
       const hint = t => `<p class="hint">${t}</p>`;
@@ -1014,15 +1019,15 @@ function openSettings() {
       else $('#btnWipe', wipe).onclick = () => paintWipe(true);
     };
     paintWipe(false);
-    paintPushBox($('#pushBox', b)); alPaintBox($('#alertBox', b));
+    $('#btnNotif', b).onclick = openNotifSettings;
     const seg = $('#segSrc', b);
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b), src = priceSrc(), mine = !!S.token;
       const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };
-      if (src === 'demo') say(false, T('Démo active : prix simulés. Désactive-la pour de vrais prix.'));
-      else if (src === 'ct') say(true, mine ? T('CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.') : T('CardTrader via le serveur (compte autorisé) : offres réelles et panier.'));
-      else if (ctReady()) say(true, T('Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles.'));
-      else say(true, T('Prix tendance Cardmarket, relevés chaque jour (impression la moins chère, hors port). Ajoute ton token CardTrader pour les offres réelles et le panier.'));
+      if (src === 'demo') say(false, T('Serveur injoignable : prix simulés en attendant.'));
+      else if (src === 'ct') say(true, mine ? T('CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.') : T('CardTrader avec le compte du serveur : ton compte Mana Orbit y est autorisé, aucun token à saisir.'));
+      else if (ctReady()) say(true, T('Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles et le panier.'));
+      else say(true, T('Prix tendance Cardmarket (impression la moins chère, hors port). Pour CardTrader, ajoute ton token ci-dessous.'));
       if (seg.setValue) seg.setValue(src === 'ct' ? 'ct' : 'cm');
       seg.classList.toggle('dim', src === 'demo');
       $('#btnTest', b).hidden = !mine && !(CTX.proxy && CTX.hasToken);
@@ -1033,7 +1038,6 @@ function openSettings() {
       S.src = v === 'cm' ? 'cm' : 'auto'; saveStore(); status();
     });
     status();
-    $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; status(); saveStore(); };
     $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); if (S.token) S.src = 'auto'; syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
     mountSeg($('#segTheme', b), [{ v: 'auto', label: T('Auto') }, { v: 'light', label: T('Clair') }, { v: 'dark', label: T('Sombre') }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
@@ -1160,7 +1164,7 @@ function init() {
   const saved = loadStore();
   if (saved.opts) Object.assign(S.opts, saved.opts);
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.theme = saved.theme || 'auto';
-  S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null; S.src = saved.src === 'cm' ? 'cm' : 'auto';
+  S.demoPref = null; S.src = saved.src === 'cm' ? 'cm' : 'auto';      // ancien interrupteur « Mode démo » retiré (choix enregistré ignoré) : démo seulement sans serveur joignable
   S.useColl = saved.useColl !== false; S.push = saved.push === true;
   S.haptic = saved.haptic !== false; S.sort = ['deck', 'price-desc', 'price-asc', 'name'].includes(saved.sort) ? saved.sort : 'deck';
   S.demo = S.demoPref == null ? !S.token : S.demoPref;
