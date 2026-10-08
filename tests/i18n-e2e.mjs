@@ -31,7 +31,7 @@ assert.match(await txt(p, '#btnCartTxt'), /Cardmarket/); assert.doesNotMatch(awa
 const res = await leftovers(p); console.log('  résultats, encore en français :', res.length ? res : 'rien');
 ok('recherche au prix Cardmarket : libellés et montants en anglais (€19.50)');
 
-await p.click('#btnSettings'); await p.waitForSelector('#setLang');
+await p.click('#btnSettings'); await p.waitForSelector('#setLang'); await p.waitForSelector('.sheet-wrap.open .sheet-head');      // classe « open » posée deux images après l'ouverture
 assert.match(await txt(p, '.sheet-wrap.open .sheet-head'), /Settings/); assert.match(await txt(p, '.sheet-body .fan'), /unofficial Fan Content/);
 const set = await leftovers(p); console.log('  réglages, encore en français :', set.length ? set : 'rien');
 await Promise.all([p.waitForEvent('load'), p.selectOption('#setLang', 'fr')]); await p.waitForTimeout(700);
