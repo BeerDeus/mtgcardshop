@@ -143,7 +143,7 @@ Anglais : `First Android release: collection and value at Cardmarket prices, on-
 - **Type** : Application (pas Jeu). **Gratuite.**
 - **Catégorie** : **Divertissement** (appli compagnon d'un jeu de cartes). **Outils** convient aussi.
 - **Tags** (5 au plus, à choisir dans la liste que propose la Play Console) : cartes à collectionner / jeux de cartes, collection, comparateur de prix, outils de jeu, scanner. Garde ceux qui existent dans la liste, dans cet ordre de priorité.
-- **Site web** : `https://card.m2s-photo.fr` · **E-mail** : l'adresse de contact du développeur (obligatoire, visible sur la fiche) · **Règles de confidentialité** : `https://card.m2s-photo.fr/privacy`.
+- **Site web** : `https://card.m2s-photo.fr` · **E-mail** : `martin.stuis11@gmail.com` (obligatoire, visible sur la fiche ; c'est aussi le contact de la politique de confidentialité) · **Règles de confidentialité** : `https://card.m2s-photo.fr/privacy`.
 
 ## 6. Classification du contenu (questionnaire IARC)
 
@@ -169,7 +169,7 @@ Résultat attendu : PEGI 3 à 7, ESRB Everyone à Everyone 10+, avec la mention 
 
 - **Tranches d'âge** : 13 à 15 ans, 16 à 17 ans, 18 ans et plus. Ne coche aucune tranche de moins de 13 ans (sinon le programme Familles s'applique, incompatible avec le bandeau AdMob tel qu'il est réglé).
 - **L'appli peut-elle attirer les enfants ?** Non : outil de collection pour un jeu de cartes destiné aux 13 ans et plus.
-- **Annonces** : **Oui, l'appli contient des annonces.** Bandeau Google AdMob en haut de l'écran, dans l'appli Android seulement ; aucun bandeau pour les comptes autorisés (`ALLOWED_UIDS`), ni sur l'accueil du premier lancement, pendant le scan et la carte en grand.
+- **Annonces** : **Oui, l'appli contient des annonces.** Bandeau Google AdMob en haut de l'écran, dans l'appli Android seulement ; aucun bandeau pour les comptes autorisés (`ALLOWED_UIDS`, seulement si le serveur a `CARDTRADER_TOKEN`), ni sur l'accueil du premier lancement, pendant le scan et la carte en grand.
 - **Identifiant publicitaire** : **Oui**, utilisé pour la **publicité ou le marketing** (SDK Google Mobile Ads).
 
 ## 8. Sécurité des données (résumé pour le formulaire)
@@ -180,7 +180,7 @@ Réponses générales :
 |---|---|
 | L'appli collecte-t-elle ou partage-t-elle des données ? | **Oui** |
 | Données chiffrées en transit ? | **Oui** (HTTPS partout : site, serveur, Firebase, Google) |
-| Les utilisateurs peuvent-ils demander la suppression ? | **Oui** : dans l'appli (Compte › Supprimer mon compte) et sur le web : `https://card.m2s-photo.fr/?delete-account` |
+| Les utilisateurs peuvent-ils demander la suppression ? | **Oui** : dans l'appli (Compte › Supprimer mon compte) et sur le web : `https://card.m2s-photo.fr/?delete-account`. La suppression arrête aussi les alertes et notifications sur le serveur. |
 | Compte | Facultatif : **e-mail et mot de passe, ou Google** (Firebase Authentication). L'appli marche sans compte. |
 | Lien de suppression du compte (rubrique dédiée) | `https://card.m2s-photo.fr/?delete-account` |
 | Données vendues ? | Jamais |
@@ -190,18 +190,23 @@ Types de données à cocher :
 | Type (catégorie Play) | Collectée | Partagée | Facultative | Finalité | Détail |
 |---|---|---|---|---|---|
 | Infos personnelles › **Adresse e-mail** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli, gestion du compte | Firebase Authentication. |
+| Infos personnelles › **Nom** | Oui | Non | Oui (connexion Google) | Gestion du compte | Nom du profil Google, gardé par Firebase Authentication quand on se connecte avec Google. |
 | Infos personnelles › **ID utilisateur** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli, gestion du compte | Identifiant Firebase du compte. |
 | Activité dans l'appli › **Autre contenu généré par l'utilisateur** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli | Collection, decks, historique de valeur, liste d'échange, dans le compte (Firestore). Les liens publics sont créés par l'utilisateur lui-même : ce n'est pas un « partage » au sens de Google. |
-| Activité dans l'appli › **Autres actions** | Oui | Non | Oui | Fonctionnalités de l'appli | Alertes de prix : cartes surveillées et seuils, gardés sur le serveur tant que l'alerte est active. |
-| Identifiants › **ID de l'appareil ou autres** | Oui | **Oui** (publicité) | Non (pub) / Oui (notifications) | Publicité ou marketing ; fonctionnalités de l'appli | Identifiant publicitaire (SDK AdMob) ; jeton Firebase Cloud Messaging des notifications, gardé sur le serveur tant qu'elles sont actives. |
+| Activité dans l'appli › **Autres actions** | Oui | Non | Oui | Fonctionnalités de l'appli | Alertes de prix : cartes surveillées, seuils et nom des decks concernés, gardés sur le serveur tant que l'alerte est active. |
+| Identifiants › **ID de l'appareil ou autres** | Oui | **Oui** (publicité) | Non (pub) / Oui (notifications) | Publicité ou marketing ; fonctionnalités de l'appli | Identifiant publicitaire (SDK AdMob) ; jeton Firebase Cloud Messaging des notifications, gardé sur le serveur tant qu'elles sont actives (le texte des notifications, noms de cartes et de decks, passe par FCM chez Google, prestataire d'envoi). |
 | Position › **Position approximative** | Oui | **Oui** | Non | Publicité ou marketing, prévention des fraudes | Déduite de l'adresse IP par le SDK AdMob. |
 | Activité dans l'appli › **Interactions avec l'appli** | Oui | **Oui** | Non | Publicité ou marketing, statistiques | SDK AdMob (affichages et clics sur les annonces). |
 | Infos et performances de l'appli › **Journaux de plantage, Diagnostics, Autres données de performances** | Oui | **Oui** | Non | Statistiques, publicité, prévention des fraudes | SDK AdMob. |
-| Infos personnelles › **Autres infos** | Oui, **traitement éphémère** | Non | Oui | Fonctionnalités de l'appli | Avec un token CardTrader seulement : le token et la liste cherchée passent par le serveur pour interroger CardTrader ; gardés en mémoire le temps de la recherche (15 min au plus après la fin), jamais écrits ni dans le compte ni sur disque. Cas limite : un token n'est pas une donnée personnelle classique, mais le déclarer ne coûte rien. |
+| Infos personnelles › **Autres infos** | Oui, **traitement éphémère** | Non | Oui | Fonctionnalités de l'appli | Avec un token CardTrader seulement : envoyé au serveur avec les seules recherches CardTrader (jamais les alertes ni l'import), utilisé en mémoire le temps de la recherche ; le serveur n'en garde qu'une empreinte SHA-256 pour espacer les requêtes et ne l'écrit jamais sur disque, dans les journaux ni dans le compte. Cas limite : un token n'est pas une donnée personnelle classique, mais le déclarer ne coûte rien. |
 
 Non collecté : photos et vidéos (le scan lit l'image sur le téléphone et ne l'envoie jamais), contacts, position précise, données financières, santé, messages, fichiers, historique de navigation.
 
-Avant d'envoyer le formulaire, compare la partie AdMob avec la page officielle (elle change parfois) : https://developers.google.com/admob/android/privacy/play-data-disclosure
+Photo de profil Google : Firebase Authentication garde le lien de la photo du compte Google, que l'appli n'affiche ni ne télécharge. Le type « Photos » du formulaire vise les photos de l'utilisateur : laisse-le décoché (la politique de confidentialité la mentionne). Pour tout déclarer quand même : Photos et vidéos › Photos, collectée, non partagée, facultative, gestion du compte.
+
+Avant d'envoyer le formulaire, compare avec les pages officielles (elles changent parfois) et ajoute ce qui manque :
+- AdMob : https://developers.google.com/admob/android/privacy/play-data-disclosure
+- ML Kit (reconnaissance de texte du scan, via les services Google Play) : https://developers.google.com/ml-kit/android-data-disclosure
 
 À garder en tête :
 - La politique de confidentialité (`/privacy`) doit déjà parler du bandeau AdMob le jour de la publication. C'est le cas dans la version qui ajoute AdMob ; vérifie qu'elle est bien en ligne.
@@ -219,7 +224,7 @@ Avant d'envoyer le formulaire, compare la partie AdMob avec la page officielle (
 
 Ordre conseillé des captures : accueil, collection, valeur dans le temps, decks à monter, viewer de deck, prix d'une liste, scan, échange. Les deux premières comptent le plus : ce sont celles que montrent les résultats de recherche.
 
-Les captures sont celles de la vraie appli (thème sombre), avec une collection d'exemple : 510 cartes, environ 2 340 €, quatre decks. Les images des cartes y sont des cartes factices dessinées par le script (aucune illustration réelle) ; les vrais téléphones affichent les images Scryfall. La bannière ne contient ni logo ni symbole de Wizards of the Coast. Aucune capture ne montre le bandeau publicitaire.
+Les captures sont celles de la vraie appli (thème sombre), avec une collection d'exemple : 515 cartes (1 030 exemplaires), environ 2 340 €, quatre decks. Les images des cartes y sont des cartes factices dessinées par le script (aucune illustration réelle) ; les vrais téléphones affichent les images Scryfall. La bannière ne contient ni logo ni symbole de Wizards of the Coast. Aucune capture ne montre le bandeau publicitaire.
 
 ### Refaire les visuels
 
