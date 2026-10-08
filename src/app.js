@@ -987,6 +987,8 @@ function openSettings() {
       <div class="installbox"><p class="hint">${T('Fin de recherche et alertes de prix.')}</p><button class="btn ghost small" type="button" id="btnNotif" style="align-self:flex-start">${T('Gérer les notifications')}</button></div>
       ${typeof isNativeApp === 'function' && isNativeApp() ? '' : `<div class="sec-title">${T('Application')}</div>
       <div id="appBox" class="installbox"></div>`}
+      ${typeof isNativeApp === 'function' && isNativeApp() ? '<div id="widgetBox"></div>' : ''}
+      <div id="helpBox"></div>
       <div class="sec-title">${T('Confidentialité')}</div>
       <div id="privBox" class="installbox"><p class="hint">${T('Sans compte, tout reste sur cet appareil. Aucune publicité ni mesure d\'audience.')}</p>
         <div class="cart-actions"><a class="btn ghost small" href="privacy" target="_blank" rel="noopener">${T('Politique de confidentialité')}</a><button class="btn ghost small" type="button" id="btnAbout">${T('Mentions et sources')}</button></div>
@@ -1025,6 +1027,9 @@ function openSettings() {
     };
     paintWipe(false);
     $('#btnNotif', b).onclick = openNotifSettings;
+    // rubriques fournies par d'autres modules (widget.js : réglages du widget dans l'appli ; help.js : aide, avis) — absentes tant que le module ne les définit pas
+    if (typeof widgetSettings === 'function' && $('#widgetBox', b)) widgetSettings($('#widgetBox', b));
+    if (typeof helpSettings === 'function') helpSettings($('#helpBox', b));
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b), src = priceSrc(), mine = !!S.token;
       const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };      // le choix Cardmarket / CardTrader se fait sur « Nouveau panier » : ici, seulement ce qui est disponible

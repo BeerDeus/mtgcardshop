@@ -3,6 +3,8 @@
 ## Prochaines améliorations (prévues)
 - **Système d'échanges** (liste d'échange, lien public) : à retravailler. Attentes à préciser.
 - **Widget Android** (valeur de la collection : `ValueWidget`, `ManaOrbitPlugin.setWidget`, `src/widget.js`) : à améliorer. Attentes à préciser.
+- **Proposition d'échange équilibrée** (plus tard) : cocher des cartes des deux côtés, balance de valeur, récapitulatif à partager.
+- **Outils de partie** (plus tard, rien dans le code) : pas de compteur de vies dans Mana Orbit ; éventuellement un lien vers l'appli du propriétaire sur Google Play.
 
 ## Avant la publication sur le Play Store
 - Attendre les réponses d'EDHREC et d'Archidekt (`docs/mails-partenaires.md`).
