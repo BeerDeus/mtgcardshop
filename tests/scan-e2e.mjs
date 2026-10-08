@@ -341,7 +341,8 @@ await camN.close();
 }
 
 { // Appli Android (Capacitor simulé) : aperçu natif derrière la page, image de l'aperçu recadrée sur la bande, lecture ML Kit — aucun moteur Tesseract chargé
-  const nat = await newPage(browser, world, { goto: false }); const np = nat.p;
+  const bN = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
+  const nat = await newPage(bN, world, { goto: false }); const np = nat.p;
   const jpg = readFileSync(fx('sceau.jpg')).toString('base64');
   await nat.ctx.addInitScript(b64 => {
     window.__nat = { starts: [], stops: 0, ocr: [] };
@@ -360,7 +361,7 @@ await camN.close();
   assert.equal(cdnHits.slice(hits0).filter(h => /tesseract/.test(h)).length, 0, 'aucun téléchargement de Tesseract dans l\'appli');
   await np.click('.scan [data-act="close"]'); await np.waitForTimeout(400);
   assert.equal(await np.evaluate(() => [window.__nat.stops, document.documentElement.classList.contains('nat-cam')].join()), '1,false');
-  assert.deepEqual(nat.errs, []); await nat.ctx.close();
+  assert.deepEqual(nat.errs, []); await nat.ctx.close(); await bN.close();
   ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), caméra rendue à la fermeture');
 }
 
