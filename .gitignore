@@ -13,3 +13,5 @@ shots/
 .idea/
 *.iml
 android-app/android/app/google-services.json.bak
+# Configuration Firebase de l'appli Android : propre à chaque installation, placée à la main (docs/android.md, 2 bis)
+android-app/android/app/google-services.json
