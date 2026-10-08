@@ -26,4 +26,13 @@ const chunks = []; for (let i = 0; i < lines.length; i += 7) chunks.push(Buffer.
 const m2 = new Map(), n = await pxStream(Readable.from(chunks), m2);
 assert.equal(n, 3); assert.deepEqual(m2.get('A'), { e: 50, u: 100 }); assert.deepEqual(m2.get('B'), { e: 200, u: 0 });
 console.log('✓ pxStream : lecture en flux, objets coupés entre deux morceaux');
+{ // fichier sur une seule ligne (minifié), accolades dans les chaînes, puis le même compressé en gzip
+  const { gzipSync } = await import('node:zlib');
+  const one = JSON.stringify([card('C', '3.00', null, { oracle_text: 'Pay {1}: draw "a card" \\ }' }), card('D', '4.00', '5.00')]);
+  const cut = s => { const out = []; for (let i = 0; i < s.length; i += 5) out.push(Buffer.from(s.slice(i, i + 5))); return out; };
+  const m3 = new Map(); assert.equal(await pxStream(Readable.from(cut(one)), m3), 2); assert.deepEqual(m3.get('C'), { e: 300, u: 0 }); assert.deepEqual(m3.get('D'), { e: 400, u: 500 });
+  const gz = gzipSync(Buffer.from(one)), parts = []; for (let i = 0; i < gz.length; i += 7) parts.push(gz.subarray(i, i + 7));
+  const m4 = new Map(); assert.equal(await pxStream(Readable.from(parts), m4), 2); assert.deepEqual(m4.get('D'), { e: 400, u: 500 });
+  console.log('✓ pxStream : fichier minifié sur une ligne, accolades et guillemets dans les textes, gzip détecté');
+}
 console.log('\nPRICES OK');

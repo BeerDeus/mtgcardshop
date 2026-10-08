@@ -7,7 +7,8 @@
 // Le serveur (proxy.mjs) le relit toutes les 6 h et le sert sur /prices.tsv.
 // Format : 1re ligne « #MOPX1 <date ISO> <nombre> », puis « nom \t centimes € \t centimes $ » (vide si aucun prix).
 import { writeFileSync, renameSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, createGunzip } from 'node:zlib';
+import { Readable } from 'node:stream';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,16 +33,34 @@ export function pxText(map, at) {
   const rows = [...map.entries()].filter(([, v]) => v.e || v.u).sort((a, b) => a[0] < b[0] ? -1 : 1);
   return `#MOPX1 ${at} ${rows.length}\n` + rows.map(([n, v]) => n + '\t' + (v.e || '') + '\t' + (v.u || '')).join('\n') + '\n';
 }
-/** Lit un flux JSON Scryfall (un objet carte par ligne, entre « [ » et « ] ») et remplit le tableau. */
+/** Lit un flux JSON Scryfall (tableau d'objets carte, sur une ou plusieurs lignes, compressé en gzip ou non) et remplit le tableau.
+ *  Les objets sont découpés au fil de l'eau en suivant les accolades (hors chaînes) : le fichier n'est jamais gardé en entier. */
 export async function pxStream(stream, map) {
-  const dec = new TextDecoder(); let buf = '', n = 0;
-  const line = l => { l = l.trim().replace(/,$/, ''); if (l.length < 2 || l[0] !== '{') return; try { pxAdd(map, JSON.parse(l)); n++; } catch (e) { /* ligne incomplète : ignorée */ } };
-  for await (const chunk of stream) {
-    buf += typeof chunk === 'string' ? chunk : dec.decode(chunk, { stream: true });
-    let i; while ((i = buf.indexOf('\n')) >= 0) { line(buf.slice(0, i)); buf = buf.slice(i + 1); }
-  }
-  line(buf);
+  let n = 0, depth = 0, inStr = false, esc = false, parts = [];
+  const take = txt => { try { pxAdd(map, JSON.parse(txt)); n++; } catch (e) { /* objet illisible : ignoré */ } };
+  const feed = str => {
+    let start = depth > 0 ? 0 : -1;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (inStr) { if (esc) esc = false; else if (c === 92) esc = true; else if (c === 34) inStr = false; continue; }
+      if (c === 34) { if (depth > 0) inStr = true; }
+      else if (c === 123) { if (depth++ === 0) { start = i; parts = []; } }
+      else if (c === 125 && depth > 0) { if (--depth === 0) { parts.push(str.slice(start, i + 1)); take(parts.join('')); parts = []; start = -1; } }
+    }
+    if (depth > 0 && start >= 0) parts.push(str.slice(start));
+  };
+  const dec = new TextDecoder();
+  for await (const chunk of await gunzipMaybe(stream)) feed(typeof chunk === 'string' ? chunk : dec.decode(chunk, { stream: true }));
   return n;
+}
+/** Flux d'octets → même flux, décompressé s'il commence par la signature gzip (1f 8b). */
+async function gunzipMaybe(stream) {
+  const it = (stream[Symbol.asyncIterator] ? stream : Readable.fromWeb(stream))[Symbol.asyncIterator]();
+  const first = await it.next(); if (first.done) return [];
+  const head = first.value, rest = { [Symbol.asyncIterator]: () => it };
+  async function* all() { yield head; yield* rest; }
+  const gz = typeof head !== 'string' && head.length > 1 && head[0] === 0x1f && head[1] === 0x8b;
+  return gz ? Readable.from(all()).pipe(createGunzip()) : all();
 }
 
 /** Adresse du fichier à télécharger : download_uri (nom historique), ou tout champ « download… », ou toute adresse de data.scryfall.io. */
@@ -68,6 +87,7 @@ async function main() {
   console.log(`  fichier Scryfall du ${meta.updated_at} (${Math.round((meta.size || 0) / 1048576)} Mo)`);
   const r = await fetch(meta.dl, { headers: H });
   if (!r.ok || !r.body) throw new Error('Scryfall : téléchargement refusé (' + r.status + ')');
+  console.log(`  ${meta.dl} · ${r.headers.get('content-type') || '?'} · ${r.headers.get('content-encoding') || 'sans compression HTTP'}`);
   const map = new Map(), n = await pxStream(r.body, map), txt = pxText(map, String(meta.updated_at || new Date().toISOString()));
   const rows = txt.split('\n').length - 2;
   console.log(`  ${n} impressions lues, ${rows} cartes avec un prix`);
