@@ -6,7 +6,7 @@
 //   EDH_TOP=2000 (commandants avec deck moyen) · EDH_ARCH=2 (decks Archidekt Budget / Premium, 0 = désactivé) · EDH_ARCH_TOP=2000 · EDH_ARCH_ROT=8 (1 commandant sur 8 relu à chaque passage, deux par semaine)
 //   EDH_ARCH_CAND=10 (decks récents comparés pour Budget / Premium) · EDH_RECENT_DAYS=365 · EDH_CEDH_TOP=100 (commandants cEDH d'EDHTop16, 0 = aucun) · EDH_CEDH_MIN=30 (participations sur 6 mois)
 //   EDH_ARCH_MIN=130 (minutes pour Archidekt) · EDH_BUDGET=210 (minutes au total) · EDH_PREV=fichier précédent (cache des decks Archidekt, par défaut la sortie) · EDH_DEBUG=edh-debug
-// Lancé chaque semaine par .github/workflows/edhrec.yml. Le fichier existant n'est remplacé que si le nouveau est plausible.
+// Lancé lundi et jeudi par .github/workflows/edhrec.yml. Le fichier existant n'est remplacé que si le nouveau est plausible.
 // Aucune API officielle chez EDHREC : on lit les mêmes fichiers JSON que son site, lentement (≈ 3 requêtes par seconde au plus), avec un User-Agent qui s'annonce.
 import { writeFileSync, renameSync, mkdirSync, appendFileSync, readFileSync, existsSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
