@@ -9,7 +9,11 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
+    implementation project(':capacitor-community-admob')
     implementation project(':capacitor-community-camera-preview')
+    implementation project(':capacitor-firebase-authentication')
+    implementation project(':capacitor-preferences')
+    implementation project(':capacitor-push-notifications')
     implementation project(':pantrist-capacitor-plugin-ml-kit-text-recognition')
 
 }

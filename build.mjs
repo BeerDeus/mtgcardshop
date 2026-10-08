@@ -9,7 +9,9 @@ const root = dirname(fileURLToPath(import.meta.url));
 const rd = f => readFileSync(join(root, 'src', f), 'utf8');
 
 writeFileSync(join(root, 'edhbin.cjs'), rd('edhbin.js'));      // copie pour le générateur (gen-edhrec.mjs), déployée avec lui
-const css = rd('style.css').trim();
+// Feuille principale + feuilles par fonction (src/css/*.css, ordre alphabétique) : une seule <style>.
+const CSS_DIR = join(root, 'src', 'css');
+const css = [rd('style.css'), ...(existsSync(CSS_DIR) ? readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort().map(f => readFileSync(join(CSS_DIR, f), 'utf8')) : [])].join('\n').trim();
 const body = rd('body.html').trim();
 // Dictionnaires des langues (src/i18n/<code>.json : { « texte français » : « traduction » }) : un seul objet, placé avant le code.
 const I18N_DIR = join(root, 'src', 'i18n');
@@ -20,7 +22,7 @@ for (const f of (existsSync(I18N_DIR) ? readdirSync(I18N_DIR) : []).sort((a, b) 
   const m = /^([a-z]{2}(?:-[A-Z]{2})?)(?:\.[a-z0-9-]+)?\.json$/.exec(f); if (!m) continue;
   Object.assign(i18nAll[m[1]] = i18nAll[m[1]] || {}, JSON.parse(readFileSync(join(I18N_DIR, f), 'utf8')));
 }
-const js = 'const I18N_ALL = ' + JSON.stringify(i18nAll) + ';\n\n' + ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
+const js = 'const I18N_ALL = ' + JSON.stringify(i18nAll) + ';\n\n' + ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'native.js', 'ads.js', 'widget.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
 const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
 const TITLE = 'Mana Orbit';

@@ -4,4 +4,6 @@
     <string name="title_activity_main">Mana Orbit</string>
     <string name="package_name">app.manaorbit</string>
     <string name="custom_url_scheme">app.manaorbit</string>
+    <!-- AdMob : identifiant de TEST de Google, à remplacer par le tien (console AdMob › Applis › Paramètres). -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
 </resources>

@@ -24,6 +24,11 @@
 
         </activity>
 
+        <!-- AdMob : identifiant d'application. Celui-ci est l'identifiant de TEST de Google ; remplace-le par le tien (console AdMob › Applis) avant la publication. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -38,6 +43,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Notifications (Android 13 et plus : demandée à l'utilisateur quand il active les notifications dans l'appli) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Scan des cartes : appareil photo natif (aperçu CameraX + reconnaissance du texte ML Kit, sur l'appareil) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

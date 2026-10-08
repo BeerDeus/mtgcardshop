@@ -44,11 +44,10 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+// Firebase (connexion Google, notifications) : google-services.json est OBLIGATOIRE, sinon l'appli se fermerait au lancement.
+// À télécharger depuis la console Firebase (projet m2s-mtg › Ajouter une appli Android « app.manaorbit ») et à placer dans android/app/ (voir docs/android.md).
+def servicesJSON = file('google-services.json')
+if (!servicesJSON.exists() || !servicesJSON.text) {
+    throw new GradleException("google-services.json manquant dans android/app/ : télécharge-le depuis la console Firebase (voir docs/android.md, étape « Firebase »).")
 }
+apply plugin: 'com.google.gms.google-services'
