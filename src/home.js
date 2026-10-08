@@ -4,7 +4,7 @@
    · « Mes decks » : les cartes de présentation des 3 derniers decks en éventail.
    · Prix rapide · Deck à monter (le deck EDHREC dont tu as déjà la plus grande part) · Échange (doublons, cartes recherchées, lien en direct).
    · « Nouveau panier » : ouvre la saisie (coller une liste, exemple, ou reprendre la liste en cours).
-   · « Prochaines extensions » en bas (sets.js), cachée tant qu'elle n'a rien à montrer.
+   · « Prochaines extensions » (sets.js, cachée tant qu'elle n'a rien à montrer) et « Comment ça marche ? » (aide, help.js) en bas.
    Tout est repeint en différé (homeSoon) quand la collection, les decks, les prix ou la liste d'échange changent. */
 const HM = { t: 0, v: null, raf: 0, best: null, bestSig: '', edhAsk: 0, covers: '', lands: false };
 const HM_LANDS = [['W', 'plains', 'Plains'], ['U', 'island', 'Island'], ['B', 'swamp', 'Swamp'], ['R', 'mountain', 'Mountain'], ['G', 'forest', 'Forest']];
@@ -71,6 +71,7 @@ function homePaint() {
   $('#btnNewLabel').textContent = draft ? T('Reprendre ma liste · {cards}', { cards: TN(S.deck.cards.length, '{n} carte', '{n} cartes') }) : T('Coller une liste');
   $('#btnNew2Label').textContent = draft ? T('Coller') : T('Exemple');
   if (typeof setsSoon === 'function') setsSoon();                                        // prochaines extensions (sets.js)
+  if (typeof rateTick === 'function') rateTick();                                        // demande de note : decks devenus complets (help.js)
 }
 /** Illustrations des terrains de base : celles de la collection si elle les a, sinon la fiche Scryfall lue une fois par la file de l'appli
  *  (cache de l'appareil, pause Scryfall respectée) ; en attendant, un dégradé aux couleurs du terrain. */
@@ -129,5 +130,6 @@ function homeInit() {
   $('#btnNew').onclick = () => { haptic('tap'); showView('input'); if (!draft()) $('#btnPaste').click(); };
   $('#btnNew2').onclick = () => { haptic('tap'); const dr = draft(); showView('input'); if (dr) $('#btnPaste').click(); else $('#btnSample').click(); };
   $('#btnHome').onclick = () => { haptic('tap'); showView('home'); };
+  $('#btnHelp').onclick = () => { haptic('tap'); openHelp(); };
   homePaint();
 }
