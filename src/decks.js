@@ -336,15 +336,15 @@ function openCoverPicker(id, done) {
 }
 
 /* ── Feuille : compte ─────────────────────────────────────────────────────────────────────── */
-function openAccount() {
-  openSheet('Compte', null, api => { D.account = { api, mode: 'in' }; paintAccount(); });
+function openAccount(view) {
+  openSheet('Compte', null, api => { D.account = { api, mode: 'in', del: view === 'delete' }; paintAccount(); });
 }
 function accountOpen() { return D.account && sheets.indexOf(D.account.api) >= 0; }
 function paintAccount() {
   if (!accountOpen()) return;
   const { api } = D.account, b = api.body;
   api.setFoot('');
-  if (D.user) return paintAccountIn(api);
+  if (D.user) return D.account.del ? paintAccountDelete(api) : paintAccountIn(api);
   if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>Chargement…</span></div>'; return; }
   if (D.state === 'unavailable') {
     b.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(D.err)}</span></div>
@@ -357,7 +357,7 @@ function paintAccount() {
 }
 function paintAuthForm(api) {
   const b = api.body, st = D.account, up = st.mode === 'up';
-  b.innerHTML = `<div class="auth">
+  b.innerHTML = `<div class="auth">${st.del ? '<div class="status" data-ok="0"><span class="dot"></span><span>Connecte-toi au compte à supprimer.</span></div>' : ''}
     <div class="seg" id="acSeg" role="radiogroup" aria-label="Connexion ou création de compte"></div>
     <form id="acForm" novalidate>
       <div class="field-in"><label class="label" for="acEmail">Email</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
@@ -368,7 +368,7 @@ function paintAuthForm(api) {
     </form>
     <div class="divider"><span>ou</span></div>
     <button class="btn ghost block" type="button" id="acGoogle">Continuer avec Google</button>
-    <p class="hint">Tes decks sont enregistrés sur ton compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p></div>`;
+    <p class="hint">Tes decks sont enregistrés sur ton compte. Ton token CardTrader reste sur cet appareil.</p></div>`;
   mountSeg($('#acSeg', b), [{ v: 'in', label: 'Connexion' }, { v: 'up', label: 'Créer un compte' }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
   const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? 'Créer mon compte' : 'Me connecter'); };
@@ -396,14 +396,58 @@ function paintAccountIn(api) {
   const state = D.listErr ? D.listErr : D.pending ? 'Synchronisation…' : `Synchronisé · ${n} deck${n > 1 ? 's' : ''}`;
   b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || 'Compte')}</b><span id="acState">${esc(state)}</span></div></div>
     ${local ? `<div class="import-row"><span>${local} deck${local > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" id="acImport">Importer</button></div>` : ''}
-    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader et ton adresse restent sur cet appareil.</p>
+    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.</p>
     ${CTX.proxy ? `<div class="sec-title">Accès au serveur</div>
       ${CTX.needsLogin ? '<div class="status" data-ok="1"><span class="dot"></span><span>Le serveur est réservé aux comptes autorisés : plus de clé à saisir.</span></div>' : '<p class="hint">Pour réserver ce serveur à ton compte (et supprimer la clé APP_KEY), ajoute cet identifiant dans les variables d\'environnement Hostinger sous le nom <b>ALLOWED_UIDS</b>, puis redéploie.</p>'}
       <div class="uid-row"><code id="acUid">${esc(u.uid)}</code><button class="btn ghost small" type="button" id="acCopyUid">Copier</button></div>` : ''}`;
+  b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">Supprimer mon compte</button>');
+  $('#acDel', b).onclick = () => { D.account.del = true; paintAccount(); };
   api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">Se déconnecter</button>');
   $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast('Déconnecté'); } catch (err) { e.target.disabled = false; toast('Déconnexion impossible'); } };
   const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
   const cu = $('#acCopyUid', b); if (cu) cu.onclick = () => copyText(u.uid);
+}
+
+/** Suppression définitive du compte (exigée par Google Play) : reconnexion, effacement des données en ligne, puis du compte. */
+function paintAccountDelete(api) {
+  const b = api.body, pw = D.cloud.provider() === 'password';
+  b.innerHTML = `<div class="auth">
+    <div class="status" data-ok="0"><span class="dot"></span><span><b>Suppression définitive</b> de ${esc(D.user.email || 'ce compte')}</span></div>
+    <p class="hint">Tout ce que le compte a en ligne est effacé : decks, collection, historique de valeur, liste d'échange et liens partagés. C'est irréversible.</p>
+    <div class="switch-row"><span class="t"><b>Effacer aussi cet appareil</b><span class="hint">Collection, decks et réglages gardés sur ce téléphone ou cet ordinateur.</span></span><label class="switch"><input type="checkbox" id="acWipeLocal" checked><i></i></label></div>
+    ${pw ? '<div class="field-in"><label class="label" for="acDelPw">Mot de passe, pour confirmer</label><input type="password" id="acDelPw" autocomplete="current-password"></div>' : '<p class="hint">Google te demandera de confirmer ton identité.</p>'}
+    <div class="auth-msg" id="acMsg" role="alert" hidden></div></div>`;
+  api.setFoot('<button class="btn ghost" type="button" id="acDelNo">Annuler</button><button class="btn danger" type="button" id="acDelGo">Supprimer définitivement</button>');
+  const msg = t => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; };
+  $('#acDelNo', api.foot).onclick = () => { D.account.del = false; paintAccount(); };
+  $('#acDelGo', api.foot).onclick = async e => {
+    const btn = e.target, local = $('#acWipeLocal', b).checked, p = pw ? $('#acDelPw', b).value : null;
+    if (pw && !p) return msg('Saisis ton mot de passe.');
+    msg(''); btn.disabled = true; btn.textContent = 'Vérification…';
+    try { await D.cloud.reauth(p); }
+    catch (err) { btn.disabled = false; btn.textContent = 'Supprimer définitivement'; const t = authMessage(err); if (t) msg(t); return; }
+    btn.textContent = 'Suppression…';
+    const uid = D.uid;
+    // Plus aucune synchronisation pendant l'effacement : sinon une copie locale pourrait être renvoyée dans le compte.
+    if (D.unsub) { try { D.unsub(); } catch (x) { /* ignore */ } D.unsub = null; }
+    collUser(null); xsUser(null); trUser(null); D.uid = null;
+    try { await D.cloud.wipe(uid); await D.cloud.deleteUser(); }
+    catch (err) {
+      D.uid = uid; onUser(D.user);      // rien de cassé : on reprend la synchronisation
+      btn.disabled = false; btn.textContent = 'Supprimer définitivement';
+      msg(err && err.code === 'auth/requires-recent-login' ? 'Reconnecte-toi puis recommence.' : err && /^auth\//.test(err.code || '') ? authMessage(err) : 'Suppression impossible pour l\'instant (connexion ?). Rien n\'a été perdu de ce qui reste : réessaie.');
+      return;
+    }
+    api.close();
+    if (local) wipeDevice(); else toast('Compte supprimé');
+  };
+}
+/** Efface tout ce que l'appli garde sur cet appareil (réglages, collection, decks, caches), puis recharge. */
+async function wipeDevice() {
+  try { Object.keys(localStorage).filter(k => /^deckdeal[:-]/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
+  try { await Cache.clear(); } catch (e) { /* ignore */ }
+  try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith('deckdeal-')) await caches.delete(k); } catch (e) { /* ignore */ }
+  toast('Données effacées'); setTimeout(() => location.reload(), 700);
 }
 
 /** Envoie les decks de cet appareil dans le compte. Les copies locales ne sont retirées qu'une fois le serveur d'accord. */

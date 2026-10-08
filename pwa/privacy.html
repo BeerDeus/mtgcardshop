@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Mana Orbit · Confidentialité</title>
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<style>
+:root{--bg:#f1f3f8;--card:#fff;--ink:#10152b;--mute:#4a5470;--line:#d9dfeb;--acc:#3a46d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0f1c;--card:#141a2e;--ink:#eaeefb;--mute:#a3abbf;--line:#262e48;--acc:#9fb4ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+header img{width:44px;height:44px;border-radius:11px}
+h1{font-size:26px;line-height:1.2;margin:0}
+h2{font-size:19px;margin:30px 0 6px}
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 20px 18px;margin-top:18px}
+p,li{color:var(--ink)}
+.mute{color:var(--mute);font-size:14px}
+a{color:var(--acc)}
+nav{display:flex;gap:10px;margin:14px 0 0}
+nav a{padding:6px 12px;border:1px solid var(--line);border-radius:999px;text-decoration:none;background:var(--card)}
+ul{padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+<header><img src="icons/icon-192.png" alt=""><h1>Mana Orbit</h1></header>
+<nav><a href="#fr" hreflang="fr">Français</a><a href="#en" hreflang="en">English</a></nav>
+
+<section id="fr" lang="fr">
+<h2>Politique de confidentialité</h2>
+<p class="mute">Dernière mise à jour : 8 octobre 2026</p>
+<p>Mana Orbit est une application gratuite pour suivre sa collection de cartes Magic, ses decks et leurs prix. Elle collecte le moins de données possible et n'en vend aucune.</p>
+
+<h2>Sans compte : tout reste sur ton appareil</h2>
+<p>Ta collection, tes decks, tes réglages et, si tu en saisis un, ton token CardTrader sont enregistrés dans le stockage de ton navigateur ou de l'application, sur ton appareil. Nous n'y avons pas accès.</p>
+<p>Le scan de cartes utilise l'appareil photo uniquement quand tu l'ouvres. Les images sont analysées sur ton appareil et ne sont jamais envoyées.</p>
+
+<h2>Avec un compte (facultatif)</h2>
+<p>Le compte sert à retrouver tes données sur tous tes appareils. Il repose sur Firebase Authentication et Cloud Firestore (Google). Sont enregistrés :</p>
+<ul>
+<li>ton adresse e-mail et ton mode de connexion (e-mail ou Google) ;</li>
+<li>tes decks, ta collection, l'historique de sa valeur et ta liste d'échange.</li>
+</ul>
+<p>Ces données sont gardées tant que le compte existe. Ton token CardTrader n'est jamais enregistré dans le compte.</p>
+
+<h2>Liens partagés</h2>
+<p>Quand tu partages ta liste d'échange ou un deck, son contenu est lisible par toute personne qui a le lien. Il ne contient ni ton e-mail ni ton identifiant. Tu peux retirer un lien à tout moment.</p>
+
+<h2>Notre serveur</h2>
+<p>Le serveur de Mana Orbit (hébergé par Hostinger) relaie les requêtes vers CardTrader, Scryfall et EDHREC et garde en cache des prix publics. Si tu les actives :</p>
+<ul>
+<li><b>notifications</b> : l'adresse technique d'abonnement fournie par ton navigateur ;</li>
+<li><b>alertes de prix</b> : la liste des cartes surveillées et tes seuils.</li>
+</ul>
+<p>Elles sont supprimées quand tu les désactives. L'hébergeur peut tenir des journaux techniques (adresse IP, date, page demandée) pour la sécurité.</p>
+
+<h2>Services tiers</h2>
+<p>Ton appareil contacte directement : Scryfall (images et données des cartes, prix tendance), Google Fonts (polices), Google (SDK Firebase) et jsDelivr (moteur de reconnaissance du scan). Comme pour tout site web, ces services reçoivent ton adresse IP. Si tu saisis ton token CardTrader, tes recherches et ton panier passent par CardTrader avec ton propre compte.</p>
+
+<h2>Publicité et mesure d'audience</h2>
+<p>Mana Orbit n'affiche aujourd'hui aucune publicité et ne mesure pas l'audience. Si un bandeau publicitaire est ajouté pour financer l'hébergement, cette page sera mise à jour avant, et ton consentement sera demandé là où la loi l'exige.</p>
+
+<h2>Tes droits</h2>
+<p>Tu peux à tout moment accéder à tes données, les exporter, les corriger ou les supprimer (RGPD). Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).</p>
+<p><b>Supprimer ton compte :</b> dans l'application, Compte › Supprimer mon compte, ou directement sur <a href="./?delete-account">cette page</a>. Tout ce que le compte a en ligne est effacé : decks, collection, historique, liste d'échange et liens partagés. Les données de ton appareil peuvent être effacées en même temps, ou à part depuis Réglages › Confidentialité.</p>
+<p>Pour toute question, écris à l'adresse e-mail du développeur indiquée sur la fiche Google Play de l'application.</p>
+
+<h2>Contenu de fan</h2>
+<p class="mute">Mana Orbit est un contenu de fan non officiel autorisé par la Fan Content Policy. Il n'est ni approuvé ni soutenu par Wizards of the Coast. Certains éléments utilisés sont la propriété de Wizards of the Coast. ©Wizards of the Coast LLC.</p>
+</section>
+
+<section id="en" lang="en">
+<h2>Privacy policy</h2>
+<p class="mute">Last updated: October 8, 2026</p>
+<p>Mana Orbit is a free app to track your Magic card collection, your decks and their prices. It collects as little data as possible and never sells any.</p>
+
+<h2>Without an account: everything stays on your device</h2>
+<p>Your collection, decks, settings and, if you enter one, your CardTrader token are stored in your browser's or the app's storage, on your device. We cannot access them.</p>
+<p>Card scanning uses the camera only while you have it open. Images are analysed on your device and are never uploaded.</p>
+
+<h2>With an account (optional)</h2>
+<p>An account lets you get your data back on all your devices. It relies on Firebase Authentication and Cloud Firestore (Google). We store:</p>
+<ul>
+<li>your email address and sign-in method (email or Google);</li>
+<li>your decks, your collection, its value history and your trade list.</li>
+</ul>
+<p>This data is kept as long as the account exists. Your CardTrader token is never stored in the account.</p>
+
+<h2>Shared links</h2>
+<p>When you share your trade list or a deck, its content can be read by anyone who has the link. It contains neither your email nor your user ID. You can remove a link at any time.</p>
+
+<h2>Our server</h2>
+<p>The Mana Orbit server (hosted by Hostinger) relays requests to CardTrader, Scryfall and EDHREC and caches public prices. If you turn them on:</p>
+<ul>
+<li><b>notifications</b>: the technical subscription address provided by your browser;</li>
+<li><b>price alerts</b>: the list of watched cards and your thresholds.</li>
+</ul>
+<p>They are deleted when you turn them off. The host may keep technical logs (IP address, date, requested page) for security.</p>
+
+<h2>Third-party services</h2>
+<p>Your device contacts directly: Scryfall (card images and data, trend prices), Google Fonts (fonts), Google (Firebase SDK) and jsDelivr (scan recognition engine). As with any website, these services receive your IP address. If you enter your CardTrader token, your searches and cart go through CardTrader with your own account.</p>
+
+<h2>Advertising and analytics</h2>
+<p>Mana Orbit currently shows no ads and runs no analytics. If an ad banner is added to pay for hosting, this page will be updated beforehand and your consent will be asked where the law requires it.</p>
+
+<h2>Your rights</h2>
+<p>You can access, export, correct or delete your data at any time (GDPR). You can also lodge a complaint with your data protection authority.</p>
+<p><b>Delete your account:</b> in the app, Account › Delete my account, or directly from <a href="./?delete-account">this page</a>. Everything the account holds online is erased: decks, collection, history, trade list and shared links. Data on your device can be erased at the same time, or separately from Settings › Privacy.</p>
+<p>For any question, write to the developer email address shown on the app's Google Play listing.</p>
+
+<h2>Fan content</h2>
+<p class="mute">Mana Orbit is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>
+</section>
+</main>
+</body>
+</html>

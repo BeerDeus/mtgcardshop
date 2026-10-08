@@ -101,5 +101,32 @@ assert.deepEqual(states.at(-1).names, ['Imp 2', 'Imp 1', 'Alpha 2']); console.lo
   un2();
 }
 un(); unsub();
+
+{ // Suppression du compte (faux SDK : le vrai Firestore hors ligne ne lit pas le serveur) : liens publics, decks, documents annexes, puis le compte
+  const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/AUTRE', {}]]);
+  const ref = (...p) => ({ path: p.slice(1).join('/') });
+  const user = { email: 'a@b.c', providerData: [{ providerId: 'password' }] };
+  const m = {
+    app: { getApps: () => [1], getApp: () => ({}) },
+    auth: { getAuth: () => ({ currentUser: user }), EmailAuthProvider: { credential: (e, p) => ({ e, p }) }, GoogleAuthProvider: class { setCustomParameters() {} },
+      reauthenticateWithCredential: async (u, c) => { log.push('reauth:' + c.p); if (c.p !== 'ok') throw Object.assign(new Error('x'), { code: 'auth/invalid-credential' }); },
+      reauthenticateWithPopup: async () => { log.push('popup'); }, deleteUser: async u => { log.push('deleteUser:' + u.email); } },
+    fs: { initializeFirestore: () => ({}), persistentLocalCache: () => ({}), persistentMultipleTabManager: () => ({}), collection: (...p) => ({ path: p.slice(1).join('/') }), doc: (...p) => p.length === 1 ? { id: 'n' } : ref(...p),
+      getDocFromServer: async r => ({ exists: () => store.has(r.path), data: () => store.get(r.path) }),
+      getDocsFromServer: async c => ({ docs: [...store.keys()].filter(k => k.startsWith(c.path + '/')).map(k => ({ ref: { path: k } })) }),
+      deleteDoc: async r => { log.push('del:' + r.path); store.delete(r.path); },
+      writeBatch: () => { const ops = []; return { delete: r => ops.push(r.path), commit: async () => { log.push('batch:' + ops.length); ops.forEach(k => store.delete(k)); } }; } },
+  };
+  const c = makeCloud(m);
+  assert.equal(c.provider(), 'password');
+  await assert.rejects(c.reauth('mauvais'), e => e.code === 'auth/invalid-credential');
+  await c.reauth('ok');
+  const r = await c.wipe('u1'); await c.deleteUser();
+  assert.deepEqual(r, { decks: 2, shares: 2 });
+  assert.deepEqual([...store.keys()], ['shares/AUTRE'], 'tout le compte effacé, rien d\'autre');
+  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'batch:7', 'deleteUser:a@b.c']);
+  user.providerData = [{ providerId: 'google.com' }]; assert.equal(c.provider(), 'google'); await c.reauth(null); assert.equal(log.at(-1), 'popup');
+  console.log('✓ suppression du compte : reconnexion, liens publics, decks et documents annexes effacés, puis le compte');
+}
 console.log('\nCLOUD OK');
 process.exit(0);

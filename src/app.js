@@ -105,7 +105,7 @@ const SAMPLE = `1 Cloud, Midgar Mercenary
 
 /* ── État ─────────────────────────────────────────────────────────────────────────────────── */
 const S = {
-  demo: true, demoPref: null, proxy: false, token: '', appKey: '', address: {}, theme: 'auto', draft: null,
+  demo: true, demoPref: null, proxy: false, token: '', appKey: '', theme: 'auto', draft: null,
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'home', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
@@ -122,7 +122,7 @@ const deckLabel = () => { const d = findDeck(S.deckId); return d ? d.name : sugg
 function loadStore() { try { return JSON.parse(localStorage.getItem('deckdeal:v1') || '{}'); } catch (e) { return {}; } }
 function saveStore() {
   try {
-    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, address: S.address, theme: S.theme, haptic: S.haptic, sort: S.sort, useColl: S.useColl, push: S.push, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
+    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, theme: S.theme, haptic: S.haptic, sort: S.sort, useColl: S.useColl, push: S.push, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
   } catch (e) { /* stockage indisponible */ }
 }
 
@@ -806,8 +806,6 @@ function cartParts() {
 function openCartSheet() {
   const r = curRes(), parts = cartParts(); if (!parts.length) return;
   const nItems = parts.reduce((a, p) => a + p.n, 0);
-  const addr = S.address && S.address.street ? S.address : null;
-  const addrBody = addr && { name: addr.name, street: addr.street, zip: addr.zip, city: addr.city, state_or_province: addr.state || undefined, country_code: (addr.country || 'FR').toUpperCase() };
   const money = m => m && typeof m.cents === 'number' ? fmt(m.cents, m.currency) : null;
   const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '');
   openSheet('Remplir le panier', 'CardTrader', api => {
@@ -822,7 +820,7 @@ function openCartSheet() {
     const intro = () => {
       api.body.innerHTML = `<dl class="kv"><dt>Articles</dt><dd>${nItems}</dd><dt>Livraison</dt><dd>${S.opts.mode === 'zero' ? 'Zero, 1 colis' : r.sellerCount + ' vendeur' + (r.sellerCount > 1 ? 's' : '')}</dd><dt class="total">Total articles</dt><dd>${fmt(r.items)}</dd></dl>
         ${S.demo ? '' : '<div class="switch-row"><span class="t"><b>Vider le panier d\'abord</b><span class="hint">Retire tout ce qui est déjà dans ton panier CardTrader (même ajouté hors Mana Orbit), avec confirmation.</span></span><label class="switch"><input type="checkbox" id="cfClear"><i></i></label></div>'}
-        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}${!S.demo && !addr ? ' Tu n\'as pas renseigné d\'adresse : tu la saisiras sur CardTrader.' : ''}</p>`;
+        <p class="hint">${S.demo ? 'Mode démo : le panier est simulé, rien n\'est envoyé à CardTrader.' : 'Les articles sont ajoutés à ton panier CardTrader. Si une offre n\'est plus disponible, Mana Orbit essaie automatiquement la suivante. Le paiement se fait sur CardTrader, rien n\'est acheté ici.'}</p>`;
       api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="btnGo">Remplir le panier</button>');
       $('#btnGo', api.foot).onclick = () => go(!S.demo && !!($('#cfClear', api.body) || {}).checked);
     };
@@ -865,7 +863,7 @@ function openCartSheet() {
           }
         }
         begin('Ajout des articles…'); task.label('Remplissage du panier');
-        const res = await cartFill(parts, S.opts.mode, addrBody, ctrl.signal, (i, n) => prog('Ajout des articles', i, n, 'Ajout'), S.demo);
+        const res = await cartFill(parts, S.opts.mode, null, ctrl.signal, (i, n) => prog('Ajout des articles', i, n, 'Ajout'), S.demo);
         if (res.gone.length) { res.gone.forEach(id => S.gone.add(id)); scheduleRecompute(true); } // offres indisponibles : retirées de la recherche
         if (!S.demo) buyRemember(res.added, !!clearItems);      // « J'ai acheté » : les cartes réellement au panier attendent ta validation
         const rep = res.replaced.length;
@@ -907,8 +905,7 @@ function applyTheme() {
 }
 function syncCTX() { CTX.token = S.token; CTX.appKey = S.appKey; }
 function openSettings() {
-  openSheet('Réglages', 'Connexion, adresse et affichage', api => {
-    const a = S.address || {};
+  openSheet('Réglages', 'Connexion et affichage', api => {
     api.body.innerHTML = `
       <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Données simulées, aucune requête envoyée.</span></span>
         <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
@@ -916,13 +913,6 @@ function openSettings() {
       <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Utilisé seulement sans proxy" value="${esc(S.token)}"><span class="hint">Avec le proxy local, le token reste dans son environnement et n'est pas nécessaire ici.</span></div>
       <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? '<span class="hint">Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.</span>' : ''}</div>
       <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester la connexion</button>
-      <div class="sec-title">Adresse de livraison (facultatif)</div>
-      <div class="field-in"><label class="label" for="adName">Nom</label><input type="text" id="adName" autocomplete="name" value="${esc(a.name || '')}"></div>
-      <div class="field-in"><label class="label" for="adStreet">Rue</label><input type="text" id="adStreet" autocomplete="street-address" value="${esc(a.street || '')}"></div>
-      <div class="grid2"><div class="field-in"><label class="label" for="adZip">Code postal</label><input type="text" id="adZip" autocomplete="postal-code" value="${esc(a.zip || '')}"></div>
-      <div class="field-in"><label class="label" for="adCity">Ville</label><input type="text" id="adCity" autocomplete="address-level2" value="${esc(a.city || '')}"></div></div>
-      <div class="grid2"><div class="field-in"><label class="label" for="adState">Région ou département</label><input type="text" id="adState" value="${esc(a.state || '')}"></div>
-      <div class="field-in"><label class="label" for="adCountry">Pays (2 lettres)</label><input type="text" id="adCountry" maxlength="2" autocomplete="country" value="${esc(a.country || 'FR')}"></div></div>
       <div class="sec-title">Affichage</div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
       <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
@@ -934,9 +924,14 @@ function openSettings() {
       <div id="alertBox" class="installbox"></div>
       <div class="sec-title">Application</div>
       <div id="appBox" class="installbox"></div>
+      <div class="sec-title">Confidentialité</div>
+      <div id="privBox" class="installbox"><p class="hint">Sans compte, tout reste sur cet appareil. Aucune publicité ni mesure d'audience.</p>
+        <div class="cart-actions"><a class="btn ghost small" href="privacy" target="_blank" rel="noopener">Politique de confidentialité</a><button class="btn ghost small" type="button" id="btnAbout">Mentions et sources</button></div>
+        <div id="wipeBox"></div></div>
       <div class="sec-title">Panier CardTrader</div>
       <div id="cartBox" class="cartbox"></div>
-      <p class="hint set-ver">Version ${esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev')}</p>`;
+      <p class="hint set-ver">Version ${esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev')}</p>
+      <p class="hint fan">${FAN_CONTENT}</p>`;
     const b = api.body;
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
     const appBox = $('#appBox', b);
@@ -953,6 +948,15 @@ function openSettings() {
       const bi = $('#btnInstall', appBox); if (bi) bi.onclick = doInstall;
     };
     const off = PWA.on(paintApp); paintApp();
+    $('#btnAbout', b).onclick = openAbout;
+    const wipe = $('#wipeBox', b), paintWipe = ask => {
+      wipe.innerHTML = ask ? `<div class="status" data-ok="0"><span class="dot"></span><span>Collection, decks, réglages et caches de cet appareil seront effacés.${typeof D !== 'undefined' && D.user ? ' Ton compte et ses données en ligne restent intacts.' : ''}</span></div>
+        <div class="cart-actions"><button class="btn ghost small" type="button" id="btnWipeNo">Annuler</button><button class="btn ghost-danger small" type="button" id="btnWipeGo">Tout effacer</button></div>`
+        : '<button class="btn ghost-danger small" type="button" id="btnWipe" style="align-self:flex-start">Effacer les données de cet appareil</button>';
+      if (ask) { $('#btnWipeNo', wipe).onclick = () => paintWipe(false); $('#btnWipeGo', wipe).onclick = async () => { if (typeof D !== 'undefined' && D.cloud && D.user) { try { await D.cloud.signOut(); } catch (e) { /* ignore */ } } wipeDevice(); }; }
+      else $('#btnWipe', wipe).onclick = () => paintWipe(true);
+    };
+    paintWipe(false);
     paintPushBox($('#pushBox', b)); alPaintBox($('#alertBox', b));
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b);
@@ -967,8 +971,6 @@ function openSettings() {
     $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; modeLabel(); status(); saveStore(); };
     $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
-    const addrIds = { name: 'adName', street: 'adStreet', zip: 'adZip', city: 'adCity', state: 'adState', country: 'adCountry' };
-    Object.entries(addrIds).forEach(([k, id]) => { $('#' + id, b).oninput = e => { S.address = { ...S.address, [k]: e.target.value }; saveStore(); }; });
     mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
     $('#setHaptic', b).onchange = e => { S.haptic = e.target.checked; saveStore(); haptic('ok'); };
     $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
@@ -1024,6 +1026,26 @@ function openSettings() {
   });
 }
 /* ── Installation (bannière de la page d'accueil) ─────────────────────────────────────────────── */
+const FAN_CONTENT = 'Mana Orbit est un contenu de fan non officiel autorisé par la Fan Content Policy. Il n\'est ni approuvé ni soutenu par Wizards of the Coast. Certains éléments utilisés sont la propriété de Wizards of the Coast. ©Wizards of the Coast LLC.';
+/** Mentions et sources : contenu de fan (Wizards of the Coast), d'où viennent les données, bibliothèques. */
+function openAbout() {
+  const src = [
+    ['Scryfall', 'https://scryfall.com', 'images et données des cartes, prix tendance Cardmarket'],
+    ['CardTrader', 'https://www.cardtrader.com', 'offres des vendeurs et panier (avec ton token)'],
+    ['EDHREC', 'https://edhrec.com', 'classement des commandants et decks moyens'],
+    ['Archidekt', 'https://archidekt.com', 'decks Budget, Premium et cEDH'],
+    ['EDHTop16', 'https://edhtop16.com', 'commandants joués en tournoi cEDH'],
+    ['Mana', 'https://mana.andrewgioia.com', 'symboles de mana (Andrew Gioia, licences OFL et MIT)'],
+    ['Tesseract.js', 'https://tesseract.projectnaptha.com', 'reconnaissance du texte au scan (Apache 2.0)'],
+    ['Firebase', 'https://firebase.google.com', 'compte et synchronisation'],
+  ];
+  openSheet('Mentions et sources', null, api => {
+    api.body.innerHTML = `<p class="hint">${FAN_CONTENT}</p>
+      <p class="hint">Mana Orbit n'est affiliée à aucun des services ci-dessous. Merci à eux de rendre leurs données accessibles à la communauté.</p>
+      <dl class="kv about">${src.map(([n, u, w]) => `<dt><a href="${u}" target="_blank" rel="noopener">${n}</a></dt><dd>${w}</dd>`).join('')}</dl>
+      <a class="btn ghost small" href="privacy" target="_blank" rel="noopener" style="align-self:flex-start">Politique de confidentialité</a>`;
+  });
+}
 async function doInstall() { const r = await PWA.install(); if (r === 'dismissed') PWA.snooze(); }
 function paintInstallBar() {
   const w = $('#installWrap'); if (!w) return;
@@ -1066,7 +1088,7 @@ function recapText() {
 function init() {
   const saved = loadStore();
   if (saved.opts) Object.assign(S.opts, saved.opts);
-  S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.address = saved.address || {}; S.theme = saved.theme || 'auto';
+  S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.theme = saved.theme || 'auto';
   S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null;
   S.useColl = saved.useColl !== false; S.push = saved.push === true;
   S.haptic = saved.haptic !== false; S.sort = ['deck', 'price-desc', 'price-asc', 'name'].includes(saved.sort) ? saved.sort : 'deck';
@@ -1158,9 +1180,10 @@ function resumeRun() {
 function handleLaunch() {
   let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
   if (![...q.keys()].length) return;
-  const resume = q.has('resume'), alerts = q.has('alerts'), shared = q.has('text') || q.has('url') || q.has('title');
+  const resume = q.has('resume'), alerts = q.has('alerts'), shared = q.has('text') || q.has('url') || q.has('title'), del = q.has('delete-account');
   try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
-  if (resume) resumeRun();
+  if (del) setTimeout(() => openAccount('delete'), 600);                                  // lien « supprimer mon compte » de la politique de confidentialité
+  else if (resume) resumeRun();
   else if (alerts) setTimeout(alertsOpen, 900);
   else if (shared) onShared(extractShared({ title: q.get('title'), text: q.get('text'), url: q.get('url') }));
 }

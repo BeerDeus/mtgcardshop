@@ -81,6 +81,25 @@ function makeCloud(m) {
     pullMeta: (uid, id) => m.fs.getDocFromServer(m.fs.doc(db, 'users', uid, 'meta', id)).then(s => ({ data: s.exists() ? s.data() : null })),
     saveMany(uid, items) { const b = m.fs.writeBatch(db); items.forEach(d => b.set(m.fs.doc(col(uid), d.id), d.data)); return b.commit(); },
     /** Partages publics (shares/{id}) : identifiant aléatoire (non devinable), écriture, suppression. Lus par le visiteur via l'API REST (shareFetch). */
+    /** Suppression du compte. Firebase exige une connexion récente : mot de passe redemandé, ou fenêtre Google. */
+    provider: () => { const u = auth.currentUser; return u && u.providerData.some(p => p.providerId === 'password') ? 'password' : 'google'; },
+    reauth(pw) {
+      const u = auth.currentUser; if (!u) return Promise.reject(Object.assign(new Error('déconnecté'), { code: 'auth/no-current-user' }));
+      if (pw == null) { const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.reauthenticateWithPopup(u, p); }
+      return m.auth.reauthenticateWithCredential(u, m.auth.EmailAuthProvider.credential(u.email, pw));
+    },
+    /** Efface tout ce que le compte a en ligne : liens publics (liste d'échange, decks partagés), decks, documents annexes. Exige le réseau. */
+    async wipe(uid) {
+      const ref = (...p) => m.fs.doc(db, 'users', uid, ...p);
+      const tr = await m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), td = tr && tr.exists() ? tr.data() : {};
+      const shares = [td.share, ...Object.values(td.dsh || {})].filter(x => typeof x === 'string' && x);
+      for (const id of shares) await m.fs.deleteDoc(m.fs.doc(db, 'shares', id)).catch(() => {});      // lien déjà retiré : rien à faire
+      const decks = await m.fs.getDocsFromServer(col(uid));
+      const refs = [...decks.docs.map(d => d.ref), ...['collection', 'engaged', 'history', 'trade'].map(id => ref('meta', id)), ref('binder', 'lands')];
+      for (let i = 0; i < refs.length; i += 400) { const b = m.fs.writeBatch(db); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
+      return { decks: decks.docs.length, shares: shares.length };
+    },
+    deleteUser: () => m.auth.deleteUser(auth.currentUser),
     shareId: () => m.fs.doc(m.fs.collection(db, 'shares')).id,
     saveShare: (id, data) => m.fs.setDoc(m.fs.doc(db, 'shares', id), data),
     dropShare: id => m.fs.deleteDoc(m.fs.doc(db, 'shares', id)),

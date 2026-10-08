@@ -1453,3 +1453,9 @@ button,.btn,select,summary{touch-action:manipulation}
 .btn:not(.ghost):not(.ghost-danger){background-image:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);background-size:250% 100%;background-position:120% 0;transition:transform .22s var(--spring),opacity .2s,box-shadow .2s,background-position .7s ease}
 .btn:not(.ghost):not(.ghost-danger):hover{background-position:-20% 0}
 @media (prefers-reduced-motion:reduce){.cs-tiles .cs-val b,.dv-amt,.hero-amt{animation:none}}
+/* Confidentialité, mentions, suppression de compte */
+.fan{margin:6px 0 0;text-align:center;font-size:11.5px;line-height:1.45}
+.kv.about{grid-template-columns:auto 1fr}
+.kv.about dd{font-family:var(--font-body);font-weight:400;text-align:left;color:var(--ink-2)}
+.kv.about a{color:var(--ink);font-weight:600}
+.link-btn.ac-del{align-self:flex-start;margin-top:14px;color:var(--bad)}

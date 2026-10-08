@@ -9,7 +9,7 @@ const root = new URL('../', import.meta.url).pathname;
 process.chdir(root);
 if (!process.env.PWA_DIR) {
   const dir = mkdtempSync(join(tmpdir(), 'deckdeal-pwa-'));
-  for (const f of ['manifest.webmanifest', 'sw.js', 'icons']) cpSync(join(root, 'pwa', f), join(dir, f), { recursive: true });
+  for (const f of ['manifest.webmanifest', 'sw.js', 'privacy.html', 'icons']) cpSync(join(root, 'pwa', f), join(dir, f), { recursive: true });
   process.env.PWA_DIR = dir;
   process.on('exit', () => { try { rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ } });
 }

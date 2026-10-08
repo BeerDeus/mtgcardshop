@@ -288,6 +288,21 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await p.keyboard.press('Escape'); await sheetGone(p);
   await ctx.close();
 
+  // suppression du compte : lien de la politique de confidentialité, reconnexion exigée, échec réseau sans rien casser
+  { const cx = await newCtx(); await wireFirebase(cx); const r = await cx.newPage(); watch(r, 'DEL');
+    await r.goto('http://127.0.0.1:18820/?delete-account'); await sheetOpen(r); await r.waitForSelector('#acForm');
+    assert.match(await T(r, '.sheet-body'), /Connecte-toi au compte à supprimer/); assert.equal(await r.evaluate(() => location.search), ''); ok('?delete-account : Compte s\'ouvre en mode suppression (connexion demandée), adresse nettoyée');
+    await r.fill('#acEmail', 'beer@test.dev'); await r.fill('#acPw', 'secret12'); await r.click('#acGo'); await sheetGone(r); await r.waitForTimeout(600);
+    await r.click('#btnAccount'); await sheetOpen(r); await r.waitForSelector('#acDel'); await r.click('#acDel');
+    await r.waitForSelector('#acDelGo'); assert.match(await T(r, '.sheet-body'), /Suppression définitive de beer@test\.dev/); assert.equal(await r.$eval('#acWipeLocal', e => e.checked), true); ok('Compte › Supprimer mon compte : avertissement, case « effacer aussi cet appareil » cochée');
+    await r.click('#acDelGo'); assert.match(await T(r, '#acMsg'), /mot de passe/i);
+    await r.fill('#acDelPw', 'faux'); await r.click('#acDelGo'); await r.waitForFunction(() => /incorrect/.test(document.querySelector('#acMsg').textContent), null, { timeout: 5000 }); ok('mauvais mot de passe : refusé, rien n\'est effacé');
+    await r.fill('#acDelPw', 'secret12'); await r.click('#acDelGo');
+    await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 20000 });
+    assert.equal(await r.evaluate(() => D.uid), 'uid-allowed'); assert.equal(await r.$eval('#acDelGo', e => e.disabled), false); assert.ok(!idLog.includes('accounts:delete'), 'le compte n\'est pas supprimé tant que ses données ne le sont pas'); ok('serveur injoignable : message, compte et synchronisation intacts, le compte n\'est pas supprimé avant ses données');
+    await r.click('#acDelNo'); await r.waitForSelector('#acDel'); ok('Annuler : retour à la fiche du compte');
+    await cx.close(); }
+
   // compte connecté mais non autorisé
   const ctx2 = await newCtx(); await wireFirebase(ctx2); const q = await ctx2.newPage(); watch(q, 'E2');
   await q.goto('http://127.0.0.1:18820/'); await q.waitForTimeout(1000); await login(q, 'intrus@test.dev');

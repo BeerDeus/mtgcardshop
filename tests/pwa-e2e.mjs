@@ -143,5 +143,25 @@ const fakePrompt = outcome => {
   assert.deepEqual(errs, []); await c.close();
   console.log('✓ mode application : état « installée », rien à proposer');
 }
+{ // politique de confidentialité servie (lien de la fiche Google Play), mentions et sources, effacement des données de l'appareil
+  const pol = await fetch(URL0 + 'privacy'); assert.equal(pol.status, 200); const html = await pol.text();
+  assert.match(html, /Politique de confidentialité/); assert.match(html, /Privacy policy/); assert.match(html, /\?delete-account/); assert.match(html, /Fan Content Policy/);
+  assert.equal((await fetch(URL0 + 'privacy.html')).status, 200);
+  const { c, pg, errs } = await mk();
+  await pg.goto(URL0); await pg.waitForTimeout(500);
+  await pg.evaluate(() => { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: '1 Sol Ring', u: 1, s: '', b: null })); localStorage.setItem('autre-site', '1'); });
+  await pg.click('#btnSettings'); await pg.waitForSelector('#privBox');
+  assert.equal(await pg.$('#adStreet'), null, 'plus de champ adresse');
+  assert.match(await pg.textContent('.sheet-body .fan'), /Fan Content Policy/); assert.equal(await pg.$eval('#privBox a', a => a.getAttribute('href')), 'privacy');
+  await pg.click('#btnAbout'); await pg.waitForFunction(() => document.querySelectorAll('.sheet-wrap.open').length === 2);
+  const about = await pg.textContent('.kv.about'); for (const n of ['Scryfall', 'CardTrader', 'EDHREC', 'Archidekt', 'EDHTop16']) assert.match(about, new RegExp(n));
+  await pg.keyboard.press('Escape'); await pg.waitForTimeout(400);
+  await pg.click('#btnWipe'); await pg.waitForSelector('#btnWipeGo'); assert.match(await pg.textContent('#wipeBox'), /seront effacés/);
+  await pg.click('#btnWipeNo'); await pg.waitForSelector('#btnWipe'); assert.ok(await pg.evaluate(() => localStorage.getItem('deckdeal:coll:v1')), 'annuler : rien n\'est effacé');
+  await pg.click('#btnWipe'); await pg.click('#btnWipeGo'); await pg.waitForEvent('load', { timeout: 8000 }); await pg.waitForTimeout(400);
+  assert.equal(await pg.evaluate(() => localStorage.getItem('deckdeal:coll:v1')), null); assert.equal(await pg.evaluate(() => localStorage.getItem('autre-site')), '1', 'seules les clés de l\'appli sont effacées');
+  assert.deepEqual(errs, []); await c.close();
+  console.log('✓ confidentialité : /privacy servie (FR + EN, lien de suppression, mention Fan Content), mentions et sources, plus d\'adresse, effacement de l\'appareil en deux temps');
+}
 console.log('\nPWA E2E OK');
 await browser.close(); proxy.kill(); up.close(); process.exit(0);
