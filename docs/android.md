@@ -40,6 +40,16 @@ npm run open
 - `npm run setup` installe Capacitor et ses plugins, puis prépare le projet Android. Compte 1 à 2 minutes.
 - `npm run open` ouvre le projet dans Android Studio.
 
+**Variante sans terminal externe, depuis Android Studio :**
+1. Sur l'écran d'accueil, clique **Clone Repository** (cloner un dépôt).
+2. Dans **URL**, mets `https://github.com/BeerDeus/mtgcardshop.git`. Dans **Directory** (dossier), choisis l'emplacement, puis **Clone** (cloner).
+3. Ouvre l'onglet **Terminal** en bas de la fenêtre, puis tape :
+   ```bash
+   cd android-app
+   npm run setup
+   ```
+4. **File › Open…** (Fichier › Ouvrir) : choisis `mtgcardshop/android-app/android`, puis **OK**. Le projet Android est dans ce sous-dossier, pas à la racine du dépôt.
+
 Si `npm run open` ne trouve pas Android Studio, ouvre le projet à la main :
 1. Dans Android Studio : **File › Open…** (Fichier › Ouvrir).
 2. Choisis le dossier `mtgcardshop/android-app/android`.
