@@ -1,0 +1,2945 @@
+{
+ "creature": 15,
+ "instant": 13,
+ "sorcery": 7,
+ "artifact": 13,
+ "enchantment": 7,
+ "battle": 0,
+ "planeswalker": 7,
+ "land": 37,
+ "basic": 10,
+ "nonbasic": 27,
+ "similar": [
+  "Breya, Etherium Shaper",
+  "Commodore Guff",
+  "Atraxa, Praetors' Voice",
+  "Aminatou, the Fateshifter",
+  "Jared Carthalion",
+  "Esika, God of the Tree"
+ ],
+ "bracket_counts": {
+  "1": 12,
+  "2": 394,
+  "3": 681,
+  "4": 147,
+  "5": 56
+ },
+ "budget_counts": {
+  "budget": 803,
+  "middle": 6433,
+  "expensive": 803
+ },
+ "tag_counts": [
+  {
+   "count": 337,
+   "slug": "tokens",
+   "value": "Tokens"
+  },
+  {
+   "count": 322,
+   "slug": "planeswalkers",
+   "value": "Planeswalkers"
+  },
+  {
+   "count": 235,
+   "slug": "polymorph",
+   "value": "Polymorph"
+  },
+  {
+   "count": 88,
+   "slug": "control",
+   "value": "Control"
+  },
+  {
+   "count": 69,
+   "slug": "combo",
+   "value": "Combo"
+  },
+  {
+   "count": 48,
+   "slug": "good-stuff",
+   "value": "Good Stuff"
+  },
+  {
+   "count": 41,
+   "slug": "empower-jace",
+   "value": "Empower Jace"
+  },
+  {
+   "count": 37,
+   "slug": "midrange",
+   "value": "Midrange"
+  },
+  {
+   "count": 36,
+   "slug": "chaos",
+   "value": "Chaos"
+  },
+  {
+   "count": 36,
+   "slug": "legends",
+   "value": "Legends"
+  },
+  {
+   "count": 35,
+   "slug": "blink",
+   "value": "Blink"
+  },
+  {
+   "count": 33,
+   "slug": "go-wide",
+   "value": "Go Wide"
+  },
+  {
+   "count": 32,
+   "slug": "historic",
+   "value": "Historic"
+  },
+  {
+   "count": 30,
+   "slug": "populate",
+   "value": "Populate"
+  },
+  {
+   "count": 26,
+   "slug": "morph",
+   "value": "Morph"
+  },
+  {
+   "count": 24,
+   "slug": "proliferate",
+   "value": "Proliferate"
+  },
+  {
+   "count": 23,
+   "slug": "pillow-fort",
+   "value": "Pillow Fort"
+  },
+  {
+   "count": 16,
+   "slug": "spellslinger",
+   "value": "Spellslinger"
+  },
+  {
+   "count": 14,
+   "slug": "aggro",
+   "value": "Aggro"
+  },
+  {
+   "count": 14,
+   "slug": "birthing-pod",
+   "value": "Birthing Pod"
+  },
+  {
+   "count": 14,
+   "slug": "ramp",
+   "value": "Ramp"
+  },
+  {
+   "count": 12,
+   "slug": "artifacts",
+   "value": "Artifacts"
+  },
+  {
+   "count": 12,
+   "slug": "mill",
+   "value": "Mill"
+  },
+  {
+   "count": 11,
+   "slug": "plus-1-plus-1-counters",
+   "value": "+1/+1 Counters"
+  },
+  {
+   "count": 11,
+   "slug": "big-mana",
+   "value": "Big Mana"
+  },
+  {
+   "count": 11,
+   "slug": "stax",
+   "value": "Stax"
+  },
+  {
+   "count": 11,
+   "slug": "toolbox",
+   "value": "Toolbox"
+  },
+  {
+   "count": 10,
+   "slug": "flying",
+   "value": "Flying"
+  },
+  {
+   "count": 10,
+   "slug": "tempo",
+   "value": "Tempo"
+  },
+  {
+   "count": 8,
+   "slug": "clones",
+   "value": "Clones"
+  },
+  {
+   "count": 8,
+   "slug": "etb",
+   "value": "ETB"
+  },
+  {
+   "count": 8,
+   "slug": "infect",
+   "value": "Infect"
+  },
+  {
+   "count": 8,
+   "slug": "reanimator",
+   "value": "Reanimator"
+  },
+  {
+   "count": 7,
+   "slug": "aristocrats",
+   "value": "Aristocrats"
+  },
+  {
+   "count": 7,
+   "slug": "card-draw",
+   "value": "Card Draw"
+  },
+  {
+   "count": 7,
+   "slug": "theft",
+   "value": "Theft"
+  },
+  {
+   "count": 5,
+   "slug": "burn",
+   "value": "Burn"
+  },
+  {
+   "count": 5,
+   "slug": "cascade",
+   "value": "Cascade"
+  },
+  {
+   "count": 5,
+   "slug": "commander-matters",
+   "value": "Commander Matters"
+  },
+  {
+   "count": 5,
+   "slug": "eggs",
+   "value": "Eggs"
+  },
+  {
+   "count": 5,
+   "slug": "extra-turns",
+   "value": "Extra Turns"
+  },
+  {
+   "count": 5,
+   "slug": "group-slug",
+   "value": "Group Slug"
+  },
+  {
+   "count": 5,
+   "slug": "lifegain",
+   "value": "Lifegain"
+  },
+  {
+   "count": 4,
+   "slug": "angels",
+   "value": "Angels"
+  },
+  {
+   "count": 4,
+   "slug": "group-hug",
+   "value": "Group Hug"
+  },
+  {
+   "count": 4,
+   "slug": "monarch",
+   "value": "Monarch"
+  },
+  {
+   "count": 4,
+   "slug": "rock",
+   "value": "Rock"
+  },
+  {
+   "count": 3,
+   "slug": "discard",
+   "value": "Discard"
+  },
+  {
+   "count": 3,
+   "slug": "donate",
+   "value": "Donate"
+  },
+  {
+   "count": 3,
+   "slug": "enchantress",
+   "value": "Enchantress"
+  },
+  {
+   "count": 3,
+   "slug": "sneak-attack",
+   "value": "Sneak Attack"
+  },
+  {
+   "count": 3,
+   "slug": "storm",
+   "value": "Storm"
+  },
+  {
+   "count": 2,
+   "slug": "activated-abilities",
+   "value": "Activated Abilities"
+  },
+  {
+   "count": 2,
+   "slug": "aikido",
+   "value": "Aikido"
+  },
+  {
+   "count": 2,
+   "slug": "attack-triggers",
+   "value": "Attack Triggers"
+  },
+  {
+   "count": 2,
+   "slug": "creatureless",
+   "value": "Creatureless"
+  },
+  {
+   "count": 2,
+   "slug": "discover",
+   "value": "Discover"
+  },
+  {
+   "count": 2,
+   "slug": "exile",
+   "value": "Exile"
+  },
+  {
+   "count": 2,
+   "slug": "extra-combats",
+   "value": "Extra Combats"
+  },
+  {
+   "count": 2,
+   "slug": "hatebears",
+   "value": "Hatebears"
+  },
+  {
+   "count": 2,
+   "slug": "land-destruction",
+   "value": "Land Destruction"
+  },
+  {
+   "count": 2,
+   "slug": "prison",
+   "value": "Prison"
+  },
+  {
+   "count": 2,
+   "slug": "rube-goldberg",
+   "value": "Rube Goldberg"
+  },
+  {
+   "count": 2,
+   "slug": "stompy",
+   "value": "Stompy"
+  },
+  {
+   "count": 2,
+   "slug": "topdeck",
+   "value": "Topdeck"
+  },
+  {
+   "count": 2,
+   "slug": "voltron",
+   "value": "Voltron"
+  },
+  {
+   "count": 2,
+   "slug": "zoo",
+   "value": "Zoo"
+  },
+  {
+   "count": 1,
+   "slug": "arcane",
+   "value": "Arcane"
+  },
+  {
+   "count": 1,
+   "slug": "birds",
+   "value": "Birds"
+  },
+  {
+   "count": 1,
+   "slug": "cantrips",
+   "value": "Cantrips"
+  },
+  {
+   "count": 1,
+   "slug": "coin-flip",
+   "value": "Coin Flip"
+  },
+  {
+   "count": 1,
+   "slug": "counterspells",
+   "value": "Counterspells"
+  },
+  {
+   "count": 1,
+   "slug": "cycling",
+   "value": "Cycling"
+  },
+  {
+   "count": 1,
+   "slug": "demons",
+   "value": "Demons"
+  },
+  {
+   "count": 1,
+   "slug": "dungeon",
+   "value": "Dungeon"
+  },
+  {
+   "count": 1,
+   "slug": "eldrazi",
+   "value": "Eldrazi"
+  },
+  {
+   "count": 1,
+   "slug": "energy",
+   "value": "Energy"
+  },
+  {
+   "count": 1,
+   "slug": "forced-combat",
+   "value": "Forced Combat"
+  },
+  {
+   "count": 1,
+   "slug": "glass-cannon",
+   "value": "Glass Cannon"
+  },
+  {
+   "count": 1,
+   "slug": "horrors",
+   "value": "Horrors"
+  },
+  {
+   "count": 1,
+   "slug": "humans",
+   "value": "Humans"
+  },
+  {
+   "count": 1,
+   "slug": "indestructible",
+   "value": "Indestructible"
+  },
+  {
+   "count": 1,
+   "slug": "keywords",
+   "value": "Keywords"
+  },
+  {
+   "count": 1,
+   "slug": "lifedrain",
+   "value": "Lifedrain"
+  },
+  {
+   "count": 1,
+   "slug": "mutate",
+   "value": "Mutate"
+  },
+  {
+   "count": 1,
+   "slug": "politics",
+   "value": "Politics"
+  },
+  {
+   "count": 1,
+   "slug": "power",
+   "value": "Power"
+  },
+  {
+   "count": 1,
+   "slug": "power-matters",
+   "value": "Power Matters"
+  },
+  {
+   "count": 1,
+   "slug": "self-mill",
+   "value": "Self-Mill"
+  },
+  {
+   "count": 1,
+   "slug": "surveil",
+   "value": "Surveil"
+  },
+  {
+   "count": 1,
+   "slug": "turbo",
+   "value": "Turbo"
+  },
+  {
+   "count": 1,
+   "slug": "whales",
+   "value": "Whales"
+  },
+  {
+   "count": 1,
+   "slug": "wheels",
+   "value": "Wheels"
+  },
+  {
+   "count": 1,
+   "slug": "wizards",
+   "value": "Wizards"
+  },
+  {
+   "count": 1,
+   "slug": "x-spells",
+   "value": "X Spells"
+  }
+ ],
+ "savedate_counts": {
+  "2026-09-17": 150,
+  "2026-09-18": 269,
+  "2026-09-19": 182,
+  "2026-09-20": 209,
+  "2026-09-21": 208,
+  "2026-09-22": 181,
+  "2026-09-23": 176,
+  "2026-09-24": 160,
+  "2026-09-25": 220,
+  "2026-09-26": 342,
+  "2026-09-27": 393,
+  "2026-09-28": 434,
+  "2026-09-29": 429,
+  "2026-09-30": 449,
+  "2026-10-01": 430,
+  "2026-10-02": 541,
+  "2026-10-03": 630,
+  "2026-10-04": 703,
+  "2026-10-05": 702,
+  "2026-10-06": 812,
+  "2026-10-07": 419
+ },
+ "archidekt": [
+  {
+   "c": "c",
+   "f": 0,
+   "q": 1,
+   "u": "55cd03d9-2535-4cf3-a8b2-1418e1190f4a"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c6b6117c-faab-4bbb-b851-07bd8061ef03"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "af690536-b0bc-4d85-8bb8-f6856b9f927b"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "9b29492a-8bdd-4806-8d1b-3058ed277cc1"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "0862060d-3198-4eeb-af8c-efeb27f42a99"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "3ef87948-0ad9-4757-a692-2262c8e24367"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "d5e141ad-5cb8-416b-9acf-bce1baeb6b6b"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e6fcedb4-4152-47c3-a97e-34f4483ff94d"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a263e71d-953f-4648-b326-33133cfa7e00"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "8ee443cc-e17a-493b-9c93-1f9e141a30e4"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "d4ba86c8-8052-4c9e-a0d0-ac6ad0b2679c"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "78d5366f-eb6d-4ec1-880b-111872863766"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "36bd614f-ab3b-4ad1-ab5c-a7ca0a641f32"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "454ed9c8-3ec1-4b65-bf3f-29a186742aed"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 4,
+   "u": "f3cc07cd-cc79-4745-b0b7-eade60175cc3"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "2a844b96-6616-4c39-8f4f-5d14a3b2bd55"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 3,
+   "u": "8ab0f4c0-b331-4c57-b68f-2e24bb5ba06c"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 2,
+   "u": "b7387103-1df1-4fd0-9e91-1544509792c7"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "137b69ad-3296-49f1-bddf-24818a03830f"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "95ff951b-a098-409c-86c8-373b6c9f8331"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ff65f46b-0f82-49b8-93b9-7ac0243ce941"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "0c33024e-9473-4d5b-8433-9898380282c4"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "f4ff6bf9-89a9-4c2a-84a2-d4ceb7168adf"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "137acb70-a1fd-4ea9-a5d9-f4b438eb5e82"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "1874c58d-00ce-4973-a318-50ce21d1a675"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "60d05210-c2b1-4248-a470-e0f8123d33f8"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e969d1f3-9595-498b-81cb-6cf4df2cad5d"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a022d35a-9d24-4818-9ff3-a522cfcb178e"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "152d9e61-40f4-489a-b94d-af17a3674441"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "2185c08f-bb4d-49d5-8b6c-c629a48bb61c"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "0a69b668-7b7c-4da9-af49-e8cbc13797cc"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c41b9ba2-0006-4d8e-b600-efe81ff5e0cc"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "0d52b0fd-60a4-4e90-bc4a-3200493779d3"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "9bbfad2d-a3b5-4119-aea4-0793b7a9da88"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "f7474f9e-a994-4ed7-83df-22edd8219e24"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c4effc17-0d0e-423a-b5f2-597ea6c71f67"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "605ca3c0-7c9a-4bc1-9795-82aeb6f552ee"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e2652c4d-38a7-4014-94bb-7efd277de992"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e1de5fb8-7206-44a6-b827-5c6a21c25296"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "235f5564-0928-411f-ade8-53838890f720"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ec7d6864-7b6b-4f74-8474-9b9ec96b1d33"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "2dc20172-4cf0-4ada-a4f3-4ef951cb8207"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "2c09f45f-54a5-47b5-afd7-9ac7c05438e7"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "cfc54011-647e-4428-bcdb-59400e1da49d"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "3ffe82a4-584e-4ebd-9551-a745bed01e26"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a60834b0-38ab-40c9-9fd9-db3a23b13076"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "282588b9-3656-453b-aa25-2419e078ddc1"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e5fcfaff-2fd0-46d8-b863-ad25558c9e95"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "22e08a78-55b7-46b0-bd1a-a51548fc1861"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "83a01121-e5cd-45ba-97c2-7bd7d50158e6"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "d42b9f9e-2df2-491e-b6ac-3b2bac8a8d8e"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "f7e12477-d59f-442b-a678-1be746d0b7be"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "78ab1d69-da01-424b-9d09-ef985aef4cbd"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ef7d3676-b1db-4329-9201-18f8a6c54ea6"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ca814c7c-9908-4727-b556-3f85bfd653ca"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "cd112d5c-102f-45a6-b26c-f80cc97d4df2"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "1ac6cb62-45da-4e9a-84c6-09e6eacf0664"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "f9274fad-3f30-454a-8d61-d487165090d7"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "4acb0f92-74be-40e8-b70e-61c4aaaeb47b"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "d11c5fe0-1528-4c94-a8cc-42bcab9d7487"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "76edd22f-808e-4a7c-b941-13c0f5e30418"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ae07ff9f-d5a8-4220-b08f-fe8fad5adcb7"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "3c726a60-8de7-4d5e-8ad5-8405e6ac36b5"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "b3169b9a-f5e3-402e-883a-08274d0c7b12"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "15ca0b68-33a1-4d25-b622-d3f5ba05b0a5"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "fa32d90e-1153-42ab-b8ff-0eb82698692c"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "b1aaa7b0-1cac-4a92-b880-7ef1ac00618f"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "fec4ca25-ef4c-4500-9bec-60d29c060b83"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a93c2e0b-3fca-476e-ae5b-a331ccacae19"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "f8cd6aae-a1cb-43b1-aca9-09fe2778969f"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "cbc4281a-b70d-4f96-b309-38e986484829"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "109900a9-6dcb-4f89-b84c-0ce0a0175e8f"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "9fb3938c-9ecf-46cc-865a-0091455419f9"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "2b20fa73-c6de-49c1-b3d0-6ebd543a00d0"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "be340a1c-f1e7-446e-ae91-86ecb884479c"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "b8652a52-d9f6-42ad-9746-6827845b540e"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "0cb04417-063e-45f7-86d3-7648111d04d7"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "92039341-152a-4797-a3df-e89e8d5145d3"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "8d86f7f8-492d-4e19-8b61-39084c6299ac"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e8b05f37-815f-4854-bf82-ca544ca67532"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "bc3c096f-7f6c-474c-a2c8-75d3e6ddd6f5"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "bc010302-e715-4946-89eb-a214e0b836ba"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a91d9163-c1f2-4eae-acab-5dabbc71d7d4"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "74087795-0b38-4fd2-9841-147583baca41"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c8817585-0d32-4d56-9142-0d29512e86a9"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c5408607-af8f-48fe-bc40-32828d1976de"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "20bb8c55-4b0b-425f-8201-b54fa2fdde86"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "e5b16141-d185-4be2-97c1-5b0ef5483728"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "5c4d0ad9-4d57-4e5c-b478-059220f5b1dd"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "b29db023-28d0-411d-864a-8f1e22ae1f74"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "c4554f5b-791b-48f6-bf54-ad28699e1beb"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "83d274f4-452b-4ff2-b026-83667e9ba98f"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "a560b9a7-4c00-4c0c-b63d-774d3f6b9aa9"
+  },
+  {
+   "c": "m",
+   "f": 0,
+   "q": 1,
+   "u": "ae7a778c-f4a7-447f-90f0-146997e03398"
+  }
+ ],
+ "deck": {
+  "commander": [
+   "Jace, Multiverse Architect"
+  ],
+  "commander_v2": [
+   [
+    "Jace, Multiverse Architect",
+    1
+   ]
+  ],
+  "cards": {
+   "Artifact": [
+    [
+     "Arcane Signet",
+     1
+    ],
+    [
+     "Azorius Signet",
+     1
+    ],
+    [
+     "Chromatic Lantern",
+     1
+    ],
+    [
+     "Dimir Signet",
+     1
+    ],
+    [
+     "Fellwar Stone",
+     1
+    ],
+    [
+     "Izzet Signet",
+     1
+    ],
+    [
+     "Proteus Staff",
+     1
+    ],
+    [
+     "Rakdos Signet",
+     1
+    ],
+    [
+     "Sol Ring",
+     1
+    ],
+    [
+     "Talisman of Creativity",
+     1
+    ],
+    [
+     "Talisman of Dominance",
+     1
+    ],
+    [
+     "Talisman of Indulgence",
+     1
+    ],
+    [
+     "Talisman of Progress",
+     1
+    ]
+   ],
+   "Land": [
+    [
+     "Battlefield Forge",
+     1
+    ],
+    [
+     "Caves of Koilos",
+     1
+    ],
+    [
+     "Clifftop Retreat",
+     1
+    ],
+    [
+     "Command Tower",
+     1
+    ],
+    [
+     "Contaminated Landscape",
+     1
+    ],
+    [
+     "Drowned Catacomb",
+     1
+    ],
+    [
+     "Exotic Orchard",
+     1
+    ],
+    [
+     "Fabled Passage",
+     1
+    ],
+    [
+     "Fetid Heath",
+     1
+    ],
+    [
+     "Glacial Fortress",
+     1
+    ],
+    [
+     "Island",
+     4
+    ],
+    [
+     "Isolated Chapel",
+     1
+    ],
+    [
+     "Kher Keep",
+     1
+    ],
+    [
+     "Mountain",
+     1
+    ],
+    [
+     "Mystic Gate",
+     1
+    ],
+    [
+     "Path of Ancestry",
+     1
+    ],
+    [
+     "Perilous Landscape",
+     1
+    ],
+    [
+     "Plains",
+     3
+    ],
+    [
+     "Prairie Stream",
+     1
+    ],
+    [
+     "Radiant Summit",
+     1
+    ],
+    [
+     "Reflecting Pool",
+     1
+    ],
+    [
+     "Restless Anchorage",
+     1
+    ],
+    [
+     "Shivan Reef",
+     1
+    ],
+    [
+     "Sulfur Falls",
+     1
+    ],
+    [
+     "Sulfurous Springs",
+     1
+    ],
+    [
+     "Sunken Ruins",
+     1
+    ],
+    [
+     "Swamp",
+     2
+    ],
+    [
+     "Turbulent Crater",
+     1
+    ],
+    [
+     "Turbulent Shore",
+     1
+    ],
+    [
+     "Turbulent Wetlands",
+     1
+    ],
+    [
+     "Underground River",
+     1
+    ]
+   ],
+   "Creature": [
+    [
+     "Archfiend of Despair",
+     1
+    ],
+    [
+     "Archon of Cruelty",
+     1
+    ],
+    [
+     "Avacyn, Angel of Horror",
+     1
+    ],
+    [
+     "Darksteel Angel",
+     1
+    ],
+    [
+     "Ginger, Queen of Sweets",
+     1
+    ],
+    [
+     "Hullbreaker Horror",
+     1
+    ],
+    [
+     "Jhoira, Weatherlight Corsair",
+     1
+    ],
+    [
+     "Memnarch, the Warden",
+     1
+    ],
+    [
+     "Nissa, Leyline Tamer",
+     1
+    ],
+    [
+     "Ob Nixilis, the Ascended",
+     1
+    ],
+    [
+     "Overlord of the Mistmoors",
+     1
+    ],
+    [
+     "Sanctum Lurker",
+     1
+    ],
+    [
+     "Serra's Emissary",
+     1
+    ],
+    [
+     "Spark Double",
+     1
+    ],
+    [
+     "Tamiyo, Upriser Crowned",
+     1
+    ]
+   ],
+   "Enchantment": [
+    [
+     "Dreadhorde Invasion",
+     1
+    ],
+    [
+     "Oath of Teferi",
+     1
+    ],
+    [
+     "Plan for All Outcomes",
+     1
+    ],
+    [
+     "Shark Typhoon",
+     1
+    ],
+    [
+     "Skrelv's Hive",
+     1
+    ],
+    [
+     "Whirlwind of Thought",
+     1
+    ],
+    [
+     "Windcrag Siege",
+     1
+    ]
+   ],
+   "Instant": [
+    [
+     "Brainstorm",
+     1
+    ],
+    [
+     "Brainsurge",
+     1
+    ],
+    [
+     "Despark",
+     1
+    ],
+    [
+     "Fatehold Charm",
+     1
+    ],
+    [
+     "Flawless Maneuver",
+     1
+    ],
+    [
+     "Grand Crescendo",
+     1
+    ],
+    [
+     "Jace's Machinations",
+     1
+    ],
+    [
+     "Occult Epiphany",
+     1
+    ],
+    [
+     "Path to Exile",
+     1
+    ],
+    [
+     "Secure the Wastes",
+     1
+    ],
+    [
+     "Stroke of Midnight",
+     1
+    ],
+    [
+     "Swords to Plowshares",
+     1
+    ],
+    [
+     "Synthetic Destiny",
+     1
+    ]
+   ],
+   "Planeswalker": [
+    [
+     "Ajani Unrelenting",
+     1
+    ],
+    [
+     "Aminatou, the Fateshifter",
+     1
+    ],
+    [
+     "Elspeth, Sun's Champion",
+     1
+    ],
+    [
+     "Jace, Reality Sculptor",
+     1
+    ],
+    [
+     "Jace, the Mind Sculptor",
+     1
+    ],
+    [
+     "Nicol Bolas, Dragon-God",
+     1
+    ],
+    [
+     "The Theorist, Jace Beleren",
+     1
+    ]
+   ],
+   "Sorcery": [
+    [
+     "Lingering Souls",
+     1
+    ],
+    [
+     "Martial Coup",
+     1
+    ],
+    [
+     "Mass Polymorph",
+     1
+    ],
+    [
+     "Overwrite the Multiverse",
+     1
+    ],
+    [
+     "Polymorph",
+     1
+    ],
+    [
+     "Sunfall",
+     1
+    ],
+    [
+     "White Sun's Twilight",
+     1
+    ]
+   ]
+  }
+ },
+ "header": "Average Deck for Jace, Multiverse Architect",
+ "panels": {
+  "piechart": {
+   "content": [
+    {
+     "label": "Land",
+     "value": 37,
+     "color": "#e98125"
+    },
+    {
+     "label": "Planeswalker",
+     "value": 7,
+     "color": "#7b6688"
+    },
+    {
+     "label": "Enchantment",
+     "value": 7,
+     "color": "#d8d138"
+    },
+    {
+     "label": "Artifact",
+     "value": 13,
+     "color": "#634c22"
+    },
+    {
+     "label": "Sorcery",
+     "value": 7,
+     "color": "#961818"
+    },
+    {
+     "label": "Instant",
+     "value": 13,
+     "color": "#2081c1"
+    },
+    {
+     "label": "Creature",
+     "value": 15,
+     "color": "#64a61f"
+    }
+   ],
+   "title": "Average Type Distribution"
+  },
+  "taglinks": [
+   {
+    "count": 337,
+    "slug": "tokens",
+    "value": "Tokens"
+   },
+   {
+    "count": 322,
+    "slug": "planeswalkers",
+    "value": "Planeswalkers"
+   },
+   {
+    "count": 235,
+    "slug": "polymorph",
+    "value": "Polymorph"
+   },
+   {
+    "count": 88,
+    "slug": "control",
+    "value": "Control"
+   },
+   {
+    "count": 69,
+    "slug": "combo",
+    "value": "Combo"
+   },
+   {
+    "count": 48,
+    "slug": "good-stuff",
+    "value": "Good Stuff"
+   },
+   {
+    "count": 41,
+    "slug": "empower-jace",
+    "value": "Empower Jace"
+   },
+   {
+    "count": 37,
+    "slug": "midrange",
+    "value": "Midrange"
+   },
+   {
+    "count": 36,
+    "slug": "chaos",
+    "value": "Chaos"
+   },
+   {
+    "count": 36,
+    "slug": "legends",
+    "value": "Legends"
+   },
+   {
+    "count": 35,
+    "slug": "blink",
+    "value": "Blink"
+   },
+   {
+    "count": 33,
+    "slug": "go-wide",
+    "value": "Go Wide"
+   },
+   {
+    "count": 32,
+    "slug": "historic",
+    "value": "Historic"
+   },
+   {
+    "count": 30,
+    "slug": "populate",
+    "value": "Populate"
+   },
+   {
+    "count": 26,
+    "slug": "morph",
+    "value": "Morph"
+   },
+   {
+    "count": 24,
+    "slug": "proliferate",
+    "value": "Proliferate"
+   },
+   {
+    "count": 23,
+    "slug": "pillow-fort",
+    "value": "Pillow Fort"
+   },
+   {
+    "count": 16,
+    "slug": "spellslinger",
+    "value": "Spellslinger"
+   },
+   {
+    "count": 14,
+    "slug": "aggro",
+    "value": "Aggro"
+   },
+   {
+    "count": 14,
+    "slug": "birthing-pod",
+    "value": "Birthing Pod"
+   },
+   {
+    "count": 14,
+    "slug": "ramp",
+    "value": "Ramp"
+   },
+   {
+    "count": 12,
+    "slug": "artifacts",
+    "value": "Artifacts"
+   },
+   {
+    "count": 12,
+    "slug": "mill",
+    "value": "Mill"
+   },
+   {
+    "count": 11,
+    "slug": "plus-1-plus-1-counters",
+    "value": "+1/+1 Counters"
+   },
+   {
+    "count": 11,
+    "slug": "big-mana",
+    "value": "Big Mana"
+   },
+   {
+    "count": 11,
+    "slug": "stax",
+    "value": "Stax"
+   },
+   {
+    "count": 11,
+    "slug": "toolbox",
+    "value": "Toolbox"
+   },
+   {
+    "count": 10,
+    "slug": "flying",
+    "value": "Flying"
+   },
+   {
+    "count": 10,
+    "slug": "tempo",
+    "value": "Tempo"
+   },
+   {
+    "count": 8,
+    "slug": "clones",
+    "value": "Clones"
+   },
+   {
+    "count": 8,
+    "slug": "etb",
+    "value": "ETB"
+   },
+   {
+    "count": 8,
+    "slug": "infect",
+    "value": "Infect"
+   },
+   {
+    "count": 8,
+    "slug": "reanimator",
+    "value": "Reanimator"
+   },
+   {
+    "count": 7,
+    "slug": "aristocrats",
+    "value": "Aristocrats"
+   },
+   {
+    "count": 7,
+    "slug": "card-draw",
+    "value": "Card Draw"
+   },
+   {
+    "count": 7,
+    "slug": "theft",
+    "value": "Theft"
+   },
+   {
+    "count": 5,
+    "slug": "burn",
+    "value": "Burn"
+   },
+   {
+    "count": 5,
+    "slug": "cascade",
+    "value": "Cascade"
+   },
+   {
+    "count": 5,
+    "slug": "commander-matters",
+    "value": "Commander Matters"
+   },
+   {
+    "count": 5,
+    "slug": "eggs",
+    "value": "Eggs"
+   },
+   {
+    "count": 5,
+    "slug": "extra-turns",
+    "value": "Extra Turns"
+   },
+   {
+    "count": 5,
+    "slug": "group-slug",
+    "value": "Group Slug"
+   },
+   {
+    "count": 5,
+    "slug": "lifegain",
+    "value": "Lifegain"
+   },
+   {
+    "count": 4,
+    "slug": "angels",
+    "value": "Angels"
+   },
+   {
+    "count": 4,
+    "slug": "group-hug",
+    "value": "Group Hug"
+   },
+   {
+    "count": 4,
+    "slug": "monarch",
+    "value": "Monarch"
+   },
+   {
+    "count": 4,
+    "slug": "rock",
+    "value": "Rock"
+   },
+   {
+    "count": 3,
+    "slug": "discard",
+    "value": "Discard"
+   },
+   {
+    "count": 3,
+    "slug": "donate",
+    "value": "Donate"
+   },
+   {
+    "count": 3,
+    "slug": "enchantress",
+    "value": "Enchantress"
+   },
+   {
+    "count": 3,
+    "slug": "sneak-attack",
+    "value": "Sneak Attack"
+   },
+   {
+    "count": 3,
+    "slug": "storm",
+    "value": "Storm"
+   },
+   {
+    "count": 2,
+    "slug": "activated-abilities",
+    "value": "Activated Abilities"
+   },
+   {
+    "count": 2,
+    "slug": "aikido",
+    "value": "Aikido"
+   },
+   {
+    "count": 2,
+    "slug": "attack-triggers",
+    "value": "Attack Triggers"
+   },
+   {
+    "count": 2,
+    "slug": "creatureless",
+    "value": "Creatureless"
+   },
+   {
+    "count": 2,
+    "slug": "discover",
+    "value": "Discover"
+   },
+   {
+    "count": 2,
+    "slug": "exile",
+    "value": "Exile"
+   },
+   {
+    "count": 2,
+    "slug": "extra-combats",
+    "value": "Extra Combats"
+   },
+   {
+    "count": 2,
+    "slug": "hatebears",
+    "value": "Hatebears"
+   },
+   {
+    "count": 2,
+    "slug": "land-destruction",
+    "value": "Land Destruction"
+   },
+   {
+    "count": 2,
+    "slug": "prison",
+    "value": "Prison"
+   },
+   {
+    "count": 2,
+    "slug": "rube-goldberg",
+    "value": "Rube Goldberg"
+   },
+   {
+    "count": 2,
+    "slug": "stompy",
+    "value": "Stompy"
+   },
+   {
+    "count": 2,
+    "slug": "topdeck",
+    "value": "Topdeck"
+   },
+   {
+    "count": 2,
+    "slug": "voltron",
+    "value": "Voltron"
+   },
+   {
+    "count": 2,
+    "slug": "zoo",
+    "value": "Zoo"
+   },
+   {
+    "count": 1,
+    "slug": "arcane",
+    "value": "Arcane"
+   },
+   {
+    "count": 1,
+    "slug": "birds",
+    "value": "Birds"
+   },
+   {
+    "count": 1,
+    "slug": "cantrips",
+    "value": "Cantrips"
+   },
+   {
+    "count": 1,
+    "slug": "coin-flip",
+    "value": "Coin Flip"
+   },
+   {
+    "count": 1,
+    "slug": "counterspells",
+    "value": "Counterspells"
+   },
+   {
+    "count": 1,
+    "slug": "cycling",
+    "value": "Cycling"
+   },
+   {
+    "count": 1,
+    "slug": "demons",
+    "value": "Demons"
+   },
+   {
+    "count": 1,
+    "slug": "dungeon",
+    "value": "Dungeon"
+   },
+   {
+    "count": 1,
+    "slug": "eldrazi",
+    "value": "Eldrazi"
+   },
+   {
+    "count": 1,
+    "slug": "energy",
+    "value": "Energy"
+   },
+   {
+    "count": 1,
+    "slug": "forced-combat",
+    "value": "Forced Combat"
+   },
+   {
+    "count": 1,
+    "slug": "glass-cannon",
+    "value": "Glass Cannon"
+   },
+   {
+    "count": 1,
+    "slug": "horrors",
+    "value": "Horrors"
+   },
+   {
+    "count": 1,
+    "slug": "humans",
+    "value": "Humans"
+   },
+   {
+    "count": 1,
+    "slug": "indestructible",
+    "value": "Indestructible"
+   },
+   {
+    "count": 1,
+    "slug": "keywords",
+    "value": "Keywords"
+   },
+   {
+    "count": 1,
+    "slug": "lifedrain",
+    "value": "Lifedrain"
+   },
+   {
+    "count": 1,
+    "slug": "mutate",
+    "value": "Mutate"
+   },
+   {
+    "count": 1,
+    "slug": "politics",
+    "value": "Politics"
+   },
+   {
+    "count": 1,
+    "slug": "power",
+    "value": "Power"
+   },
+   {
+    "count": 1,
+    "slug": "power-matters",
+    "value": "Power Matters"
+   },
+   {
+    "count": 1,
+    "slug": "self-mill",
+    "value": "Self-Mill"
+   },
+   {
+    "count": 1,
+    "slug": "surveil",
+    "value": "Surveil"
+   },
+   {
+    "count": 1,
+    "slug": "turbo",
+    "value": "Turbo"
+   },
+   {
+    "count": 1,
+    "slug": "whales",
+    "value": "Whales"
+   },
+   {
+    "count": 1,
+    "slug": "wheels",
+    "value": "Wheels"
+   },
+   {
+    "count": 1,
+    "slug": "wizards",
+    "value": "Wizards"
+   },
+   {
+    "count": 1,
+    "slug": "x-spells",
+    "value": "X Spells"
+   }
+  ],
+  "mana_curve": {
+   "1": 7,
+   "2": 19,
+   "3": 11,
+   "4": 6,
+   "5": 4,
+   "6": 6,
+   "7": 5,
+   "8": 3,
+   "9": 1,
+   "10": 1
+  },
+  "articles": [
+   {
+    "alt": "Article",
+    "date": "Sep 29, 2026",
+    "href": "https://edhrec.com/articles/how-fun-are-the-reality-fracture-commanders/",
+    "value": "How Fun Are The Reality Fracture Commanders?",
+    "author": {
+     "avatar": "https://secure.gravatar.com/avatar/e3ca889c6ec530fa49053e9259078cc4419d6b5d7b90a6abeb78330a4b372223?s=96&d=mm&r=g",
+     "id": 176,
+     "link": "https://edhrec.com/articles/author/benjamin-levin/",
+     "name": "Benjamin Levin"
+    },
+    "excerpt": "Ranking all 32 rare and mythic legends from Reality Fracture not by power, but by how fun they are to build and play in Commander.",
+    "media": "https://cloudflare.edhrec.com/articles/wp-content/uploads/2026/09/FRA_Fun_Ranking_Thumbnail-1024x576.png"
+   },
+   {
+    "alt": "Article",
+    "date": "Sep 23, 2026",
+    "href": "https://edhrec.com/articles/the-best-planeswalkers-in-reality-fracture/",
+    "value": "The Best Planeswalkers in Reality Fracture",
+    "author": {
+     "avatar": "https://secure.gravatar.com/avatar/c6ae2df6569a6a24eeb29ed778a6cb2c7db40b2ae4b7d30de58de99f6122fea9?s=96&d=mm&r=g",
+     "id": 108,
+     "link": "https://edhrec.com/articles/author/nicholas-lucchesi/",
+     "name": "Nicholas Lucchesi"
+    },
+    "excerpt": "A  look at every planeswalker in Reality Fracture—the mirrored Ajani, Garruk, and Chandra pairs, plus the four Jaces vying for the top spot.",
+    "media": "https://cloudflare.edhrec.com/articles/wp-content/uploads/2026/08/frc-363-the-theorist-jace-beleren.jpg"
+   }
+  ]
+ },
+ "description": "",
+ "container": {
+  "breadcrumb": [
+   {
+    "/average-decks": "Decks"
+   },
+   {
+    "/average-decks/jace-multiverse-architect": "Jace, Multiverse Architect"
+   }
+  ],
+  "description": "Average deck for Jace, Multiverse Architect",
+  "json_dict": {
+   "cardlists": [
+    {
+     "header": "Creatures",
+     "tag": "creatures",
+     "cardviews": [
+      {
+       "id": "137b69ad-3296-49f1-bddf-24818a03830f",
+       "name": "Archfiend of Despair",
+       "sanitized": "archfiend-of-despair",
+       "slug": "archfiend-of-despair",
+       "url": "/cards/archfiend-of-despair",
+       "label": "Archfiend of Despair"
+      },
+      {
+       "id": "95ff951b-a098-409c-86c8-373b6c9f8331",
+       "name": "Archon of Cruelty",
+       "sanitized": "archon-of-cruelty",
+       "slug": "archon-of-cruelty",
+       "url": "/cards/archon-of-cruelty",
+       "label": "Archon of Cruelty"
+      },
+      {
+       "id": "ff65f46b-0f82-49b8-93b9-7ac0243ce941",
+       "name": "Avacyn, Angel of Horror",
+       "sanitized": "avacyn-angel-of-horror",
+       "slug": "avacyn-angel-of-horror",
+       "url": "/cards/avacyn-angel-of-horror",
+       "label": "Avacyn, Angel of Horror"
+      },
+      {
+       "id": "0c33024e-9473-4d5b-8433-9898380282c4",
+       "name": "Darksteel Angel",
+       "sanitized": "darksteel-angel",
+       "slug": "darksteel-angel",
+       "url": "/cards/darksteel-angel",
+       "label": "Darksteel Angel"
+      },
+      {
+       "id": "f4ff6bf9-89a9-4c2a-84a2-d4ceb7168adf",
+       "name": "Ginger, Queen of Sweets",
+       "sanitized": "ginger-queen-of-sweets",
+       "slug": "ginger-queen-of-sweets",
+       "url": "/cards/ginger-queen-of-sweets",
+       "label": "Ginger, Queen of Sweets"
+      },
+      {
+       "id": "137acb70-a1fd-4ea9-a5d9-f4b438eb5e82",
+       "name": "Hullbreaker Horror",
+       "sanitized": "hullbreaker-horror",
+       "slug": "hullbreaker-horror",
+       "url": "/cards/hullbreaker-horror",
+       "label": "Hullbreaker Horror"
+      },
+      {
+       "id": "1874c58d-00ce-4973-a318-50ce21d1a675",
+       "name": "Jhoira, Weatherlight Corsair",
+       "sanitized": "jhoira-weatherlight-corsair",
+       "slug": "jhoira-weatherlight-corsair",
+       "url": "/cards/jhoira-weatherlight-corsair",
+       "label": "Jhoira, Weatherlight Corsair"
+      },
+      {
+       "id": "60d05210-c2b1-4248-a470-e0f8123d33f8",
+       "name": "Memnarch, the Warden",
+       "sanitized": "memnarch-the-warden",
+       "slug": "memnarch-the-warden",
+       "url": "/cards/memnarch-the-warden",
+       "label": "Memnarch, the Warden"
+      },
+      {
+       "id": "e969d1f3-9595-498b-81cb-6cf4df2cad5d",
+       "name": "Nissa, Leyline Tamer",
+       "sanitized": "nissa-leyline-tamer",
+       "slug": "nissa-leyline-tamer",
+       "url": "/cards/nissa-leyline-tamer",
+       "label": "Nissa, Leyline Tamer"
+      },
+      {
+       "id": "a022d35a-9d24-4818-9ff3-a522cfcb178e",
+       "name": "Ob Nixilis, the Ascended",
+       "sanitized": "ob-nixilis-the-ascended",
+       "slug": "ob-nixilis-the-ascended",
+       "url": "/cards/ob-nixilis-the-ascended",
+       "label": "Ob Nixilis, the Ascended"
+      },
+      {
+       "id": "152d9e61-40f4-489a-b94d-af17a3674441",
+       "name": "Overlord of the Mistmoors",
+       "sanitized": "overlord-of-the-mistmoors",
+       "slug": "overlord-of-the-mistmoors",
+       "url": "/cards/overlord-of-the-mistmoors",
+       "label": "Overlord of the Mistmoors"
+      },
+      {
+       "id": "2185c08f-bb4d-49d5-8b6c-c629a48bb61c",
+       "name": "Sanctum Lurker",
+       "sanitized": "sanctum-lurker",
+       "slug": "sanctum-lurker",
+       "url": "/cards/sanctum-lurker",
+       "label": "Sanctum Lurker"
+      },
+      {
+       "id": "0a69b668-7b7c-4da9-af49-e8cbc13797cc",
+       "name": "Serra's Emissary",
+       "sanitized": "serras-emissary",
+       "slug": "serras-emissary",
+       "url": "/cards/serras-emissary",
+       "label": "Serra's Emissary"
+      },
+      {
+       "id": "c41b9ba2-0006-4d8e-b600-efe81ff5e0cc",
+       "name": "Spark Double",
+       "sanitized": "spark-double",
+       "slug": "spark-double",
+       "url": "/cards/spark-double",
+       "label": "Spark Double"
+      },
+      {
+       "id": "0d52b0fd-60a4-4e90-bc4a-3200493779d3",
+       "name": "Tamiyo, Upriser Crowned",
+       "sanitized": "tamiyo-upriser-crowned",
+       "slug": "tamiyo-upriser-crowned",
+       "url": "/cards/tamiyo-upriser-crowned",
+       "label": "Tamiyo, Upriser Crowned"
+      }
+     ]
+    },
+    {
+     "header": "Instants",
+     "tag": "instants",
+     "cardviews": [
+      {
+       "id": "ec7d6864-7b6b-4f74-8474-9b9ec96b1d33",
+       "name": "Brainstorm",
+       "sanitized": "brainstorm",
+       "slug": "brainstorm",
+       "url": "/cards/brainstorm",
+       "label": "Brainstorm"
+      },
+      {
+       "id": "2dc20172-4cf0-4ada-a4f3-4ef951cb8207",
+       "name": "Brainsurge",
+       "sanitized": "brainsurge",
+       "slug": "brainsurge",
+       "url": "/cards/brainsurge",
+       "label": "Brainsurge"
+      },
+      {
+       "id": "2c09f45f-54a5-47b5-afd7-9ac7c05438e7",
+       "name": "Despark",
+       "sanitized": "despark",
+       "slug": "despark",
+       "url": "/cards/despark",
+       "label": "Despark"
+      },
+      {
+       "id": "cfc54011-647e-4428-bcdb-59400e1da49d",
+       "name": "Fatehold Charm",
+       "sanitized": "fatehold-charm",
+       "slug": "fatehold-charm",
+       "url": "/cards/fatehold-charm",
+       "label": "Fatehold Charm"
+      },
+      {
+       "id": "3ffe82a4-584e-4ebd-9551-a745bed01e26",
+       "name": "Flawless Maneuver",
+       "sanitized": "flawless-maneuver",
+       "slug": "flawless-maneuver",
+       "url": "/cards/flawless-maneuver",
+       "label": "Flawless Maneuver"
+      },
+      {
+       "id": "a60834b0-38ab-40c9-9fd9-db3a23b13076",
+       "name": "Grand Crescendo",
+       "sanitized": "grand-crescendo",
+       "slug": "grand-crescendo",
+       "url": "/cards/grand-crescendo",
+       "label": "Grand Crescendo"
+      },
+      {
+       "id": "282588b9-3656-453b-aa25-2419e078ddc1",
+       "name": "Jace's Machinations",
+       "sanitized": "jaces-machinations",
+       "slug": "jaces-machinations",
+       "url": "/cards/jaces-machinations",
+       "label": "Jace's Machinations"
+      },
+      {
+       "id": "e5fcfaff-2fd0-46d8-b863-ad25558c9e95",
+       "name": "Occult Epiphany",
+       "sanitized": "occult-epiphany",
+       "slug": "occult-epiphany",
+       "url": "/cards/occult-epiphany",
+       "label": "Occult Epiphany"
+      },
+      {
+       "id": "22e08a78-55b7-46b0-bd1a-a51548fc1861",
+       "name": "Path to Exile",
+       "sanitized": "path-to-exile",
+       "slug": "path-to-exile",
+       "url": "/cards/path-to-exile",
+       "label": "Path to Exile"
+      },
+      {
+       "id": "83a01121-e5cd-45ba-97c2-7bd7d50158e6",
+       "name": "Secure the Wastes",
+       "sanitized": "secure-the-wastes",
+       "slug": "secure-the-wastes",
+       "url": "/cards/secure-the-wastes",
+       "label": "Secure the Wastes"
+      },
+      {
+       "id": "d42b9f9e-2df2-491e-b6ac-3b2bac8a8d8e",
+       "name": "Stroke of Midnight",
+       "sanitized": "stroke-of-midnight",
+       "slug": "stroke-of-midnight",
+       "url": "/cards/stroke-of-midnight",
+       "label": "Stroke of Midnight"
+      },
+      {
+       "id": "f7e12477-d59f-442b-a678-1be746d0b7be",
+       "name": "Swords to Plowshares",
+       "sanitized": "swords-to-plowshares",
+       "slug": "swords-to-plowshares",
+       "url": "/cards/swords-to-plowshares",
+       "label": "Swords to Plowshares"
+      },
+      {
+       "id": "78ab1d69-da01-424b-9d09-ef985aef4cbd",
+       "name": "Synthetic Destiny",
+       "sanitized": "synthetic-destiny",
+       "slug": "synthetic-destiny",
+       "url": "/cards/synthetic-destiny",
+       "label": "Synthetic Destiny"
+      }
+     ]
+    },
+    {
+     "header": "Sorceries",
+     "tag": "sorceries",
+     "cardviews": [
+      {
+       "id": "e5b16141-d185-4be2-97c1-5b0ef5483728",
+       "name": "Lingering Souls",
+       "sanitized": "lingering-souls",
+       "slug": "lingering-souls",
+       "url": "/cards/lingering-souls",
+       "label": "Lingering Souls"
+      },
+      {
+       "id": "5c4d0ad9-4d57-4e5c-b478-059220f5b1dd",
+       "name": "Martial Coup",
+       "sanitized": "martial-coup",
+       "slug": "martial-coup",
+       "url": "/cards/martial-coup",
+       "label": "Martial Coup"
+      },
+      {
+       "id": "b29db023-28d0-411d-864a-8f1e22ae1f74",
+       "name": "Mass Polymorph",
+       "sanitized": "mass-polymorph",
+       "slug": "mass-polymorph",
+       "url": "/cards/mass-polymorph",
+       "label": "Mass Polymorph"
+      },
+      {
+       "id": "c4554f5b-791b-48f6-bf54-ad28699e1beb",
+       "name": "Overwrite the Multiverse",
+       "sanitized": "overwrite-the-multiverse",
+       "slug": "overwrite-the-multiverse",
+       "url": "/cards/overwrite-the-multiverse",
+       "label": "Overwrite the Multiverse"
+      },
+      {
+       "id": "83d274f4-452b-4ff2-b026-83667e9ba98f",
+       "name": "Polymorph",
+       "sanitized": "polymorph",
+       "slug": "polymorph",
+       "url": "/cards/polymorph",
+       "label": "Polymorph"
+      },
+      {
+       "id": "a560b9a7-4c00-4c0c-b63d-774d3f6b9aa9",
+       "name": "Sunfall",
+       "sanitized": "sunfall",
+       "slug": "sunfall",
+       "url": "/cards/sunfall",
+       "label": "Sunfall"
+      },
+      {
+       "id": "ae7a778c-f4a7-447f-90f0-146997e03398",
+       "name": "White Sun's Twilight",
+       "sanitized": "white-suns-twilight",
+       "slug": "white-suns-twilight",
+       "url": "/cards/white-suns-twilight",
+       "label": "White Sun's Twilight"
+      }
+     ]
+    },
+    {
+     "header": "Artifacts",
+     "tag": "artifacts",
+     "cardviews": [
+      {
+       "id": "c6b6117c-faab-4bbb-b851-07bd8061ef03",
+       "name": "Arcane Signet",
+       "sanitized": "arcane-signet",
+       "slug": "arcane-signet",
+       "url": "/cards/arcane-signet",
+       "label": "Arcane Signet"
+      },
+      {
+       "id": "af690536-b0bc-4d85-8bb8-f6856b9f927b",
+       "name": "Azorius Signet",
+       "sanitized": "azorius-signet",
+       "slug": "azorius-signet",
+       "url": "/cards/azorius-signet",
+       "label": "Azorius Signet"
+      },
+      {
+       "id": "9b29492a-8bdd-4806-8d1b-3058ed277cc1",
+       "name": "Chromatic Lantern",
+       "sanitized": "chromatic-lantern",
+       "slug": "chromatic-lantern",
+       "url": "/cards/chromatic-lantern",
+       "label": "Chromatic Lantern"
+      },
+      {
+       "id": "0862060d-3198-4eeb-af8c-efeb27f42a99",
+       "name": "Dimir Signet",
+       "sanitized": "dimir-signet",
+       "slug": "dimir-signet",
+       "url": "/cards/dimir-signet",
+       "label": "Dimir Signet"
+      },
+      {
+       "id": "3ef87948-0ad9-4757-a692-2262c8e24367",
+       "name": "Fellwar Stone",
+       "sanitized": "fellwar-stone",
+       "slug": "fellwar-stone",
+       "url": "/cards/fellwar-stone",
+       "label": "Fellwar Stone"
+      },
+      {
+       "id": "d5e141ad-5cb8-416b-9acf-bce1baeb6b6b",
+       "name": "Izzet Signet",
+       "sanitized": "izzet-signet",
+       "slug": "izzet-signet",
+       "url": "/cards/izzet-signet",
+       "label": "Izzet Signet"
+      },
+      {
+       "id": "e6fcedb4-4152-47c3-a97e-34f4483ff94d",
+       "name": "Proteus Staff",
+       "sanitized": "proteus-staff",
+       "slug": "proteus-staff",
+       "url": "/cards/proteus-staff",
+       "label": "Proteus Staff"
+      },
+      {
+       "id": "a263e71d-953f-4648-b326-33133cfa7e00",
+       "name": "Rakdos Signet",
+       "sanitized": "rakdos-signet",
+       "slug": "rakdos-signet",
+       "url": "/cards/rakdos-signet",
+       "label": "Rakdos Signet"
+      },
+      {
+       "id": "8ee443cc-e17a-493b-9c93-1f9e141a30e4",
+       "name": "Sol Ring",
+       "sanitized": "sol-ring",
+       "slug": "sol-ring",
+       "url": "/cards/sol-ring",
+       "label": "Sol Ring"
+      },
+      {
+       "id": "d4ba86c8-8052-4c9e-a0d0-ac6ad0b2679c",
+       "name": "Talisman of Creativity",
+       "sanitized": "talisman-of-creativity",
+       "slug": "talisman-of-creativity",
+       "url": "/cards/talisman-of-creativity",
+       "label": "Talisman of Creativity"
+      },
+      {
+       "id": "78d5366f-eb6d-4ec1-880b-111872863766",
+       "name": "Talisman of Dominance",
+       "sanitized": "talisman-of-dominance",
+       "slug": "talisman-of-dominance",
+       "url": "/cards/talisman-of-dominance",
+       "label": "Talisman of Dominance"
+      },
+      {
+       "id": "36bd614f-ab3b-4ad1-ab5c-a7ca0a641f32",
+       "name": "Talisman of Indulgence",
+       "sanitized": "talisman-of-indulgence",
+       "slug": "talisman-of-indulgence",
+       "url": "/cards/talisman-of-indulgence",
+       "label": "Talisman of Indulgence"
+      },
+      {
+       "id": "454ed9c8-3ec1-4b65-bf3f-29a186742aed",
+       "name": "Talisman of Progress",
+       "sanitized": "talisman-of-progress",
+       "slug": "talisman-of-progress",
+       "url": "/cards/talisman-of-progress",
+       "label": "Talisman of Progress"
+      }
+     ]
+    },
+    {
+     "header": "Enchantments",
+     "tag": "enchantments",
+     "cardviews": [
+      {
+       "id": "9bbfad2d-a3b5-4119-aea4-0793b7a9da88",
+       "name": "Dreadhorde Invasion",
+       "sanitized": "dreadhorde-invasion",
+       "slug": "dreadhorde-invasion",
+       "url": "/cards/dreadhorde-invasion",
+       "label": "Dreadhorde Invasion"
+      },
+      {
+       "id": "f7474f9e-a994-4ed7-83df-22edd8219e24",
+       "name": "Oath of Teferi",
+       "sanitized": "oath-of-teferi",
+       "slug": "oath-of-teferi",
+       "url": "/cards/oath-of-teferi",
+       "label": "Oath of Teferi"
+      },
+      {
+       "id": "c4effc17-0d0e-423a-b5f2-597ea6c71f67",
+       "name": "Plan for All Outcomes",
+       "sanitized": "plan-for-all-outcomes",
+       "slug": "plan-for-all-outcomes",
+       "url": "/cards/plan-for-all-outcomes",
+       "label": "Plan for All Outcomes"
+      },
+      {
+       "id": "605ca3c0-7c9a-4bc1-9795-82aeb6f552ee",
+       "name": "Shark Typhoon",
+       "sanitized": "shark-typhoon",
+       "slug": "shark-typhoon",
+       "url": "/cards/shark-typhoon",
+       "label": "Shark Typhoon"
+      },
+      {
+       "id": "e2652c4d-38a7-4014-94bb-7efd277de992",
+       "name": "Skrelv's Hive",
+       "sanitized": "skrelvs-hive",
+       "slug": "skrelvs-hive",
+       "url": "/cards/skrelvs-hive",
+       "label": "Skrelv's Hive"
+      },
+      {
+       "id": "e1de5fb8-7206-44a6-b827-5c6a21c25296",
+       "name": "Whirlwind of Thought",
+       "sanitized": "whirlwind-of-thought",
+       "slug": "whirlwind-of-thought",
+       "url": "/cards/whirlwind-of-thought",
+       "label": "Whirlwind of Thought"
+      },
+      {
+       "id": "235f5564-0928-411f-ade8-53838890f720",
+       "name": "Windcrag Siege",
+       "sanitized": "windcrag-siege",
+       "slug": "windcrag-siege",
+       "url": "/cards/windcrag-siege",
+       "label": "Windcrag Siege"
+      }
+     ]
+    },
+    {
+     "header": "Planeswalkers",
+     "tag": "planeswalkers",
+     "cardviews": [
+      {
+       "id": "bc3c096f-7f6c-474c-a2c8-75d3e6ddd6f5",
+       "name": "Ajani Unrelenting",
+       "sanitized": "ajani-unrelenting",
+       "slug": "ajani-unrelenting",
+       "url": "/cards/ajani-unrelenting",
+       "label": "Ajani Unrelenting"
+      },
+      {
+       "id": "bc010302-e715-4946-89eb-a214e0b836ba",
+       "name": "Aminatou, the Fateshifter",
+       "sanitized": "aminatou-the-fateshifter",
+       "slug": "aminatou-the-fateshifter",
+       "url": "/cards/aminatou-the-fateshifter",
+       "label": "Aminatou, the Fateshifter"
+      },
+      {
+       "id": "a91d9163-c1f2-4eae-acab-5dabbc71d7d4",
+       "name": "Elspeth, Sun's Champion",
+       "sanitized": "elspeth-suns-champion",
+       "slug": "elspeth-suns-champion",
+       "url": "/cards/elspeth-suns-champion",
+       "label": "Elspeth, Sun's Champion"
+      },
+      {
+       "id": "74087795-0b38-4fd2-9841-147583baca41",
+       "name": "Jace, Reality Sculptor",
+       "sanitized": "jace-reality-sculptor",
+       "slug": "jace-reality-sculptor",
+       "url": "/cards/jace-reality-sculptor",
+       "label": "Jace, Reality Sculptor"
+      },
+      {
+       "id": "c8817585-0d32-4d56-9142-0d29512e86a9",
+       "name": "Jace, the Mind Sculptor",
+       "sanitized": "jace-the-mind-sculptor",
+       "slug": "jace-the-mind-sculptor",
+       "url": "/cards/jace-the-mind-sculptor",
+       "label": "Jace, the Mind Sculptor"
+      },
+      {
+       "id": "c5408607-af8f-48fe-bc40-32828d1976de",
+       "name": "Nicol Bolas, Dragon-God",
+       "sanitized": "nicol-bolas-dragon-god",
+       "slug": "nicol-bolas-dragon-god",
+       "url": "/cards/nicol-bolas-dragon-god",
+       "label": "Nicol Bolas, Dragon-God"
+      },
+      {
+       "id": "20bb8c55-4b0b-425f-8201-b54fa2fdde86",
+       "name": "The Theorist, Jace Beleren",
+       "sanitized": "the-theorist-jace-beleren",
+       "slug": "the-theorist-jace-beleren",
+       "url": "/cards/the-theorist-jace-beleren",
+       "label": "The Theorist, Jace Beleren"
+      }
+     ]
+    },
+    {
+     "header": "Lands",
+     "tag": "lands",
+     "cardviews": [
+      {
+       "id": "ef7d3676-b1db-4329-9201-18f8a6c54ea6",
+       "name": "Battlefield Forge",
+       "sanitized": "battlefield-forge",
+       "slug": "battlefield-forge",
+       "url": "/cards/battlefield-forge",
+       "label": "Battlefield Forge"
+      },
+      {
+       "id": "ca814c7c-9908-4727-b556-3f85bfd653ca",
+       "name": "Caves of Koilos",
+       "sanitized": "caves-of-koilos",
+       "slug": "caves-of-koilos",
+       "url": "/cards/caves-of-koilos",
+       "label": "Caves of Koilos"
+      },
+      {
+       "id": "cd112d5c-102f-45a6-b26c-f80cc97d4df2",
+       "name": "Clifftop Retreat",
+       "sanitized": "clifftop-retreat",
+       "slug": "clifftop-retreat",
+       "url": "/cards/clifftop-retreat",
+       "label": "Clifftop Retreat"
+      },
+      {
+       "id": "1ac6cb62-45da-4e9a-84c6-09e6eacf0664",
+       "name": "Command Tower",
+       "sanitized": "command-tower",
+       "slug": "command-tower",
+       "url": "/cards/command-tower",
+       "label": "Command Tower"
+      },
+      {
+       "id": "f9274fad-3f30-454a-8d61-d487165090d7",
+       "name": "Contaminated Landscape",
+       "sanitized": "contaminated-landscape",
+       "slug": "contaminated-landscape",
+       "url": "/cards/contaminated-landscape",
+       "label": "Contaminated Landscape"
+      },
+      {
+       "id": "4acb0f92-74be-40e8-b70e-61c4aaaeb47b",
+       "name": "Drowned Catacomb",
+       "sanitized": "drowned-catacomb",
+       "slug": "drowned-catacomb",
+       "url": "/cards/drowned-catacomb",
+       "label": "Drowned Catacomb"
+      },
+      {
+       "id": "d11c5fe0-1528-4c94-a8cc-42bcab9d7487",
+       "name": "Exotic Orchard",
+       "sanitized": "exotic-orchard",
+       "slug": "exotic-orchard",
+       "url": "/cards/exotic-orchard",
+       "label": "Exotic Orchard"
+      },
+      {
+       "id": "76edd22f-808e-4a7c-b941-13c0f5e30418",
+       "name": "Fabled Passage",
+       "sanitized": "fabled-passage",
+       "slug": "fabled-passage",
+       "url": "/cards/fabled-passage",
+       "label": "Fabled Passage"
+      },
+      {
+       "id": "ae07ff9f-d5a8-4220-b08f-fe8fad5adcb7",
+       "name": "Fetid Heath",
+       "sanitized": "fetid-heath",
+       "slug": "fetid-heath",
+       "url": "/cards/fetid-heath",
+       "label": "Fetid Heath"
+      },
+      {
+       "id": "3c726a60-8de7-4d5e-8ad5-8405e6ac36b5",
+       "name": "Glacial Fortress",
+       "sanitized": "glacial-fortress",
+       "slug": "glacial-fortress",
+       "url": "/cards/glacial-fortress",
+       "label": "Glacial Fortress"
+      },
+      {
+       "id": "b3169b9a-f5e3-402e-883a-08274d0c7b12",
+       "name": "Isolated Chapel",
+       "sanitized": "isolated-chapel",
+       "slug": "isolated-chapel",
+       "url": "/cards/isolated-chapel",
+       "label": "Isolated Chapel"
+      },
+      {
+       "id": "15ca0b68-33a1-4d25-b622-d3f5ba05b0a5",
+       "name": "Kher Keep",
+       "sanitized": "kher-keep",
+       "slug": "kher-keep",
+       "url": "/cards/kher-keep",
+       "label": "Kher Keep"
+      },
+      {
+       "id": "fa32d90e-1153-42ab-b8ff-0eb82698692c",
+       "name": "Mystic Gate",
+       "sanitized": "mystic-gate",
+       "slug": "mystic-gate",
+       "url": "/cards/mystic-gate",
+       "label": "Mystic Gate"
+      },
+      {
+       "id": "b1aaa7b0-1cac-4a92-b880-7ef1ac00618f",
+       "name": "Path of Ancestry",
+       "sanitized": "path-of-ancestry",
+       "slug": "path-of-ancestry",
+       "url": "/cards/path-of-ancestry",
+       "label": "Path of Ancestry"
+      },
+      {
+       "id": "fec4ca25-ef4c-4500-9bec-60d29c060b83",
+       "name": "Perilous Landscape",
+       "sanitized": "perilous-landscape",
+       "slug": "perilous-landscape",
+       "url": "/cards/perilous-landscape",
+       "label": "Perilous Landscape"
+      },
+      {
+       "id": "a93c2e0b-3fca-476e-ae5b-a331ccacae19",
+       "name": "Prairie Stream",
+       "sanitized": "prairie-stream",
+       "slug": "prairie-stream",
+       "url": "/cards/prairie-stream",
+       "label": "Prairie Stream"
+      },
+      {
+       "id": "f8cd6aae-a1cb-43b1-aca9-09fe2778969f",
+       "name": "Radiant Summit",
+       "sanitized": "radiant-summit",
+       "slug": "radiant-summit",
+       "url": "/cards/radiant-summit",
+       "label": "Radiant Summit"
+      },
+      {
+       "id": "cbc4281a-b70d-4f96-b309-38e986484829",
+       "name": "Reflecting Pool",
+       "sanitized": "reflecting-pool",
+       "slug": "reflecting-pool",
+       "url": "/cards/reflecting-pool",
+       "label": "Reflecting Pool"
+      },
+      {
+       "id": "109900a9-6dcb-4f89-b84c-0ce0a0175e8f",
+       "name": "Restless Anchorage",
+       "sanitized": "restless-anchorage",
+       "slug": "restless-anchorage",
+       "url": "/cards/restless-anchorage",
+       "label": "Restless Anchorage"
+      },
+      {
+       "id": "9fb3938c-9ecf-46cc-865a-0091455419f9",
+       "name": "Shivan Reef",
+       "sanitized": "shivan-reef",
+       "slug": "shivan-reef",
+       "url": "/cards/shivan-reef",
+       "label": "Shivan Reef"
+      },
+      {
+       "id": "2b20fa73-c6de-49c1-b3d0-6ebd543a00d0",
+       "name": "Sulfur Falls",
+       "sanitized": "sulfur-falls",
+       "slug": "sulfur-falls",
+       "url": "/cards/sulfur-falls",
+       "label": "Sulfur Falls"
+      },
+      {
+       "id": "be340a1c-f1e7-446e-ae91-86ecb884479c",
+       "name": "Sulfurous Springs",
+       "sanitized": "sulfurous-springs",
+       "slug": "sulfurous-springs",
+       "url": "/cards/sulfurous-springs",
+       "label": "Sulfurous Springs"
+      },
+      {
+       "id": "b8652a52-d9f6-42ad-9746-6827845b540e",
+       "name": "Sunken Ruins",
+       "sanitized": "sunken-ruins",
+       "slug": "sunken-ruins",
+       "url": "/cards/sunken-ruins",
+       "label": "Sunken Ruins"
+      },
+      {
+       "id": "0cb04417-063e-45f7-86d3-7648111d04d7",
+       "name": "Turbulent Crater",
+       "sanitized": "turbulent-crater",
+       "slug": "turbulent-crater",
+       "url": "/cards/turbulent-crater",
+       "label": "Turbulent Crater"
+      },
+      {
+       "id": "92039341-152a-4797-a3df-e89e8d5145d3",
+       "name": "Turbulent Shore",
+       "sanitized": "turbulent-shore",
+       "slug": "turbulent-shore",
+       "url": "/cards/turbulent-shore",
+       "label": "Turbulent Shore"
+      },
+      {
+       "id": "8d86f7f8-492d-4e19-8b61-39084c6299ac",
+       "name": "Turbulent Wetlands",
+       "sanitized": "turbulent-wetlands",
+       "slug": "turbulent-wetlands",
+       "url": "/cards/turbulent-wetlands",
+       "label": "Turbulent Wetlands"
+      },
+      {
+       "id": "e8b05f37-815f-4854-bf82-ca544ca67532",
+       "name": "Underground River",
+       "sanitized": "underground-river",
+       "slug": "underground-river",
+       "url": "/cards/underground-river",
+       "label": "Underground River"
+      }
+     ]
+    },
+    {
+     "header": "Basics",
+     "tag": "basics",
+     "cardviews": [
+      {
+       "id": "f3cc07cd-cc79-4745-b0b7-eade60175cc3",
+       "name": "Island",
+       "sanitized": "island",
+       "slug": "island",
+       "url": "/cards/island",
+       "label": "4 Island"
+      },
+      {
+       "id": "2a844b96-6616-4c39-8f4f-5d14a3b2bd55",
+       "name": "Mountain",
+       "sanitized": "mountain",
+       "slug": "mountain",
+       "url": "/cards/mountain",
+       "label": "Mountain"
+      },
+      {
+       "id": "8ab0f4c0-b331-4c57-b68f-2e24bb5ba06c",
+       "name": "Plains",
+       "sanitized": "plains",
+       "slug": "plains",
+       "url": "/cards/plains",
+       "label": "3 Plains"
+      },
+      {
+       "id": "b7387103-1df1-4fd0-9e91-1544509792c7",
+       "name": "Swamp",
+       "sanitized": "swamp",
+       "slug": "swamp",
+       "url": "/cards/swamp",
+       "label": "2 Swamp"
+      }
+     ]
+    }
+   ],
+   "card": {
+    "num_decks": 8039,
+    "rank": 334,
+    "cmc": 5,
+    "color_identity": [
+     "W",
+     "U",
+     "B",
+     "R"
+    ],
+    "id": "55cd03d9-2535-4cf3-a8b2-1418e1190f4a",
+    "image_uris": [
+     {
+      "normal": "https://card-images.edhrec.com/normal/front/5/5/55cd03d9-2535-4cf3-a8b2-1418e1190f4a.jpg?1789644316",
+      "art_crop": "https://card-images.edhrec.com/art_crop/front/5/5/55cd03d9-2535-4cf3-a8b2-1418e1190f4a.jpg?1789644316"
+     }
+    ],
+    "layout": "normal",
+    "name": "Jace, Multiverse Architect",
+    "names": [
+     "Jace, Multiverse Architect"
+    ],
+    "prices": {
+     "cardhoarder": null,
+     "cardkingdom": {
+      "price": 2.49,
+      "slug": "mtg/reality-fracture-commander-variants/jace-multiverse-architect-0001-borderless-foil"
+     },
+     "cardmarket": {
+      "price": 0.86,
+      "set": "Commander: Reality Fracture",
+      "slug": "Jace%2C+Multiverse+Architect"
+     },
+     "cardsphere": {
+      "price": 0.58,
+      "set": "FRC",
+      "slug": "153982"
+     },
+     "cardtrader": {
+      "price": 0.66,
+      "slug": "413637"
+     },
+     "face2face": {
+      "price": 1.4,
+      "slug": "Jace, Multiverse Architect"
+     },
+     "manapool": {
+      "price": 0.39,
+      "slug": "frc/1/jace-multiverse-architect"
+     },
+     "mtgstocks": {
+      "price": 1.25,
+      "slug": "147867-jace-multiverse-architect-borderless"
+     },
+     "scg": null,
+     "tcgplayer": {
+      "price": 1.05,
+      "price_source": "marketPrice",
+      "slug": "718671/magic-commander-reality-fracture-jace-multiverse-architect-borderless",
+      "sub_type": "Normal",
+      "tier": 1
+     }
+    },
+    "primary_type": "Planeswalker",
+    "rarity": "mythic",
+    "sanitized": "jace-multiverse-architect",
+    "scryfall_uri": "https://scryfall.com/card/frc/1/jace-multiverse-architect?utm_source=api",
+    "slug": "jace-multiverse-architect",
+    "type_line": "Legendary Planeswalker — Jace",
+    "type": "Legendary Planeswalker — Jace",
+    "is_commander": true,
+    "legal_commander": true,
+    "new": true,
+    "precon": "Multiverse Reforged",
+    "url": "/commanders/jace-multiverse-architect"
+   }
+  },
+  "keywords": "Average,Deck,for,Jace,Multiverse,Architect",
+  "title": "Average Deck for Jace, Multiverse Architect"
+ }
+}

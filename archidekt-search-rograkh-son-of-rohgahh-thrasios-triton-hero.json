@@ -1,0 +1,2581 @@
+{
+ "count": 1000,
+ "next": "http://archidekt.com/api/decks/v3/?commanderName=Rograkh%2C+Son+of+Rohgahh&deckFormat=3&edhBracket=5&orderBy=-viewCount&page=2",
+ "results": [
+  {
+   "id": 8216504,
+   "name": "Rog/Reyhan Landless Turbo Suicide Engine",
+   "size": 100,
+   "updatedAt": "2026-09-10T06:47:30.561565Z",
+   "createdAt": "2024-06-29T01:39:27.962137Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 49635,
+   "comments": 30,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 691987,
+     "tag": 3,
+     "deck": 8216504,
+     "name": "cEDH",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 294932,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 207722,
+    "username": "marsey",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 0,
+    "B": 37,
+    "R": 26,
+    "G": 32
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 5592014,
+   "name": "Faster than the Speed of Slop",
+   "size": 100,
+   "updatedAt": "2026-09-28T14:01:39.572977Z",
+   "createdAt": "2023-10-10T02:27:10.464892Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/7/c/7c5e4382-3f5c-46c7-915f-df9373d316bf.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "viewCount": 4525,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 246536,
+     "tag": 3,
+     "deck": 5592014,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 254519,
+     "tag": 244,
+     "deck": 5592014,
+     "name": "Ad Nauseam",
+     "position": "M-510000"
+    }
+   ],
+   "parentFolderId": 291053,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 204939,
+    "username": "Nykar",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar2049392023-09-02-04:17:44.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 21,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 8880091,
+   "name": "Rohg Doggin cEDH",
+   "size": 100,
+   "updatedAt": "2026-10-04T21:24:06.234389Z",
+   "createdAt": "2024-08-20T00:00:21.935257Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/0/5/05e9d580-5da2-4559-b611-870726c53791.webp",
+   "customFeatured": "",
+   "viewCount": 4038,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 634299,
+     "tag": 3,
+     "deck": 8880091,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 1271049,
+     "tag": 244,
+     "deck": 8880091,
+     "name": "Ad Nauseam",
+     "position": "M-510000"
+    }
+   ],
+   "parentFolderId": 388654,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 271463,
+    "username": "TheChrimsonGhost",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar2714632024-08-13-01:10:33.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 20,
+    "R": 20,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18833008,
+   "name": "[cEDH] Celes, Rune-Knight: Persist Combo",
+   "size": 100,
+   "updatedAt": "2026-10-07T19:12:04.081078Z",
+   "createdAt": "2026-01-09T17:58:35.628776Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/d/3/d30dd823-9a04-4e3d-89c6-0fc5afc9efa4.webp",
+   "customFeatured": "",
+   "viewCount": 3987,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 1690140,
+     "tag": 5,
+     "deck": 18833008,
+     "name": "Combo",
+     "position": "M-500000"
+    },
+    {
+     "id": 1804493,
+     "tag": 56,
+     "deck": 18833008,
+     "name": "Graveyard",
+     "position": "M-510000"
+    },
+    {
+     "id": 1804494,
+     "tag": 3,
+     "deck": 18833008,
+     "name": "cEDH",
+     "position": "M-520000"
+    },
+    {
+     "id": 1928995,
+     "tag": 22,
+     "deck": 18833008,
+     "name": "Reanimator",
+     "position": "M-530000"
+    }
+   ],
+   "parentFolderId": 1374643,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 888749,
+    "username": "bobhangman",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 21,
+    "U": 0,
+    "B": 22,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 16440368,
+   "name": "[cEDH]Rog/Thras: Cradle Storm",
+   "size": 100,
+   "updatedAt": "2026-10-07T11:38:03.281563Z",
+   "createdAt": "2025-10-03T12:01:14.517174Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/c/7/c7e7c27a-47e4-47d1-90b3-88a936839cbc.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/spg/78b14ae1-fc8b-43df-b6a2-e9f8edc0b8dd_art_crop.jpg",
+   "viewCount": 3192,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1536708,
+     "tag": 51,
+     "deck": 16440368,
+     "name": "Big Mana",
+     "position": "M-500000"
+    },
+    {
+     "id": 1536709,
+     "tag": 199,
+     "deck": 16440368,
+     "name": "Midrange",
+     "position": "M-510000"
+    },
+    {
+     "id": 1536710,
+     "tag": 3,
+     "deck": 16440368,
+     "name": "cEDH",
+     "position": "M-520000"
+    }
+   ],
+   "parentFolderId": 981337,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 79902,
+    "username": "Jacetms1417",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar799022025-04-18-13:52:46.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 25,
+    "B": 0,
+    "R": 4,
+    "G": 39
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 7817397,
+   "name": "Fist of the North Star ✨",
+   "size": 100,
+   "updatedAt": "2026-05-22T03:56:18.114252Z",
+   "createdAt": "2024-05-26T03:48:29.990359Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/dmr/6e7b0e29-09d9-4b3e-ab94-f1f4a61d9159_art_crop.jpg",
+   "viewCount": 3073,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 541503,
+     "tag": 3,
+     "deck": 7817397,
+     "name": "cEDH",
+     "position": "M-491250"
+    },
+    {
+     "id": 513494,
+     "tag": 244,
+     "deck": 7817397,
+     "name": "Ad Nauseam",
+     "position": "M-495000"
+    },
+    {
+     "id": 518326,
+     "tag": 23,
+     "deck": 7817397,
+     "name": "Storm",
+     "position": "M-505000"
+    }
+   ],
+   "parentFolderId": 274299,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 193024,
+    "username": "Teews",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar1930242024-10-20-05:22:33.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 25,
+    "B": 20,
+    "R": 10,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 21268302,
+   "name": "Scrambled Eggs",
+   "size": 101,
+   "updatedAt": "2026-10-07T23:35:12.253047Z",
+   "createdAt": "2026-03-31T00:55:02.436310Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/c/7/c7e7c27a-47e4-47d1-90b3-88a936839cbc.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/cmm/8e86b6e0-782c-49ce-8c99-133eb9192572_art_crop.jpg",
+   "viewCount": 2934,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 2322739,
+     "tag": 248,
+     "deck": 21268302,
+     "name": "Eggs",
+     "position": "M-490000"
+    },
+    {
+     "id": 2322721,
+     "tag": 92,
+     "deck": 21268302,
+     "name": "Polymorph",
+     "position": "M-495000"
+    },
+    {
+     "id": 2322686,
+     "tag": 69,
+     "deck": 21268302,
+     "name": "Stax",
+     "position": "M-500000"
+    },
+    {
+     "id": 2322687,
+     "tag": 201,
+     "deck": 21268302,
+     "name": "Prison",
+     "position": "M-510000"
+    },
+    {
+     "id": 2322689,
+     "tag": 213,
+     "deck": 21268302,
+     "name": "Boardwipes",
+     "position": "M-530000"
+    },
+    {
+     "id": 2322692,
+     "tag": 280,
+     "deck": 21268302,
+     "name": "Color Hack",
+     "position": "M-550000"
+    },
+    {
+     "id": 2322704,
+     "tag": 269,
+     "deck": 21268302,
+     "name": "Hellbent",
+     "position": "M-560000"
+    },
+    {
+     "id": 2322711,
+     "tag": 81,
+     "deck": 21268302,
+     "name": "Theft",
+     "position": "M-570000"
+    },
+    {
+     "id": 2322719,
+     "tag": 277,
+     "deck": 21268302,
+     "name": "Salty",
+     "position": "M-580000"
+    },
+    {
+     "id": 2322691,
+     "tag": 3,
+     "deck": 21268302,
+     "name": "cEDH",
+     "position": "M-590000"
+    }
+   ],
+   "parentFolderId": 593576,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 420670,
+    "username": "EggsTailored.ttv",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 0,
+    "B": 20,
+    "R": 28,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 17654347,
+   "name": "Rog/Tym GoFundMyNuclearWarhead",
+   "size": 100,
+   "updatedAt": "2026-09-18T21:39:40.681369Z",
+   "createdAt": "2025-11-23T10:48:15.957452Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/sld/ff9d0f64-2bc2-42da-a2f3-f56235c2bf54_art_crop.jpg",
+   "viewCount": 2612,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 2156938,
+     "tag": 3,
+     "deck": 17654347,
+     "name": "cEDH",
+     "position": "M-490000"
+    },
+    {
+     "id": 1680285,
+     "tag": 244,
+     "deck": 17654347,
+     "name": "Ad Nauseam",
+     "position": "M-500000"
+    },
+    {
+     "id": 1680286,
+     "tag": 51,
+     "deck": 17654347,
+     "name": "Big Mana",
+     "position": "M-510000"
+    },
+    {
+     "id": 1680290,
+     "tag": 7,
+     "deck": 17654347,
+     "name": "Aggro",
+     "position": "M-515000"
+    },
+    {
+     "id": 2436427,
+     "tag": 30,
+     "deck": 17654347,
+     "name": "Spellslinger",
+     "position": "M-525000"
+    },
+    {
+     "id": 2436438,
+     "tag": 5,
+     "deck": 17654347,
+     "name": "Combo",
+     "position": "M-535000"
+    },
+    {
+     "id": 2436443,
+     "tag": 56,
+     "deck": 17654347,
+     "name": "Graveyard",
+     "position": "M-545000"
+    },
+    {
+     "id": 2436450,
+     "tag": 101,
+     "deck": 17654347,
+     "name": "Self-Mill",
+     "position": "M-555000"
+    },
+    {
+     "id": 2436451,
+     "tag": 247,
+     "deck": 17654347,
+     "name": "Self-Damage",
+     "position": "M-565000"
+    },
+    {
+     "id": 2436454,
+     "tag": 53,
+     "deck": 17654347,
+     "name": "Spell Copy",
+     "position": "M-575000"
+    }
+   ],
+   "parentFolderId": 1160244,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": true,
+   "description": null,
+   "owner": {
+    "id": 602110,
+    "username": "Nachoo",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar6021102025-02-22-06:52:22.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 13,
+    "U": 0,
+    "B": 18,
+    "R": 31,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 9709869,
+   "name": "The king is dead, long live Rog",
+   "size": 100,
+   "updatedAt": "2026-08-21T09:44:08.359145Z",
+   "createdAt": "2024-10-19T15:34:42.764585Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 2496,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 983849,
+     "tag": 3,
+     "deck": 9709869,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 983851,
+     "tag": 5,
+     "deck": 9709869,
+     "name": "Combo",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 536881,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 380058,
+    "username": "MichaelMuller",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 9678268,
+   "name": "RogSi cEDH",
+   "size": 100,
+   "updatedAt": "2025-11-04T14:53:24.519865Z",
+   "createdAt": "2024-10-17T02:43:06.359192Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 2477,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 607023,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 430668,
+    "username": "ENGI9ER",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 21,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 14349192,
+   "name": "Play to Win RogSi",
+   "size": 101,
+   "updatedAt": "2025-07-19T16:39:29.246997Z",
+   "createdAt": "2025-07-07T20:19:23.667271Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 2316,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1067213,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 92323,
+    "username": "Stanzione36",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar923232025-06-08-03:20:23.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 6932597,
+   "name": "ROGSI - CEDH",
+   "size": 100,
+   "updatedAt": "2026-04-02T12:11:22.037493Z",
+   "createdAt": "2024-03-05T14:26:56.564439Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 2314,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 400839,
+     "tag": 3,
+     "deck": 6932597,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 400840,
+     "tag": 244,
+     "deck": 6932597,
+     "name": "Ad Nauseam",
+     "position": "M-510000"
+    }
+   ],
+   "parentFolderId": 68115,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 47949,
+    "username": "susHi_x",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_golgari.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 18,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 15960497,
+   "name": "I Should breezeCall Her",
+   "size": 100,
+   "updatedAt": "2026-09-27T18:19:12.755149Z",
+   "createdAt": "2025-09-12T13:36:02.109969Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "",
+   "viewCount": 2106,
+   "comments": 1,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1587819,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 192433,
+    "username": "PBN01",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar1924332024-02-06-19:23:37.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 26,
+    "B": 0,
+    "R": 5,
+    "G": 34
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 8084899,
+   "name": "[cEDH] Rograkh, Son of Rohgahh // Silas Renn, Seeker Adept - FreeLittleFreak",
+   "size": 100,
+   "updatedAt": "2025-05-26T18:32:49.781888Z",
+   "createdAt": "2024-06-17T20:51:53.072318Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1970,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 691641,
+     "tag": 3,
+     "deck": 8084899,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 691642,
+     "tag": 5,
+     "deck": 8084899,
+     "name": "Combo",
+     "position": "M-510000"
+    },
+    {
+     "id": 705310,
+     "tag": 23,
+     "deck": 8084899,
+     "name": "Storm",
+     "position": "M-520000"
+    },
+    {
+     "id": 705311,
+     "tag": 244,
+     "deck": 8084899,
+     "name": "Ad Nauseam",
+     "position": "M-530000"
+    }
+   ],
+   "parentFolderId": 1234410,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 236905,
+    "username": "Reassembling.Skeleton",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar2369052024-08-26-16:53:21.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 20,
+    "B": 21,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 12157675,
+   "name": "The Cradle Will Rog",
+   "size": 100,
+   "updatedAt": "2026-10-05T22:18:04.110923Z",
+   "createdAt": "2025-03-28T02:25:08.587267Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.webp",
+   "customFeatured": "",
+   "viewCount": 1967,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1318632,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 326652,
+    "username": "zbritt13",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_garcia_simic.jpg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 29,
+    "B": 0,
+    "R": 7,
+    "G": 31
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 11589389,
+   "name": "RogSi, Let It Ride >:D 3.5",
+   "size": 100,
+   "updatedAt": "2026-08-20T15:07:15.906002Z",
+   "createdAt": "2025-02-25T01:28:31.836758Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/soa/763fb195-6fd1-428a-b129-ec688f7b0066_art_crop.jpg",
+   "viewCount": 1944,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 300264,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 211408,
+    "username": "SUPERSONICX11",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18882767,
+   "name": "Lefty Loosy",
+   "size": 100,
+   "updatedAt": "2026-08-14T20:34:12.662564Z",
+   "createdAt": "2026-01-11T07:03:18.037368Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1899,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 390651,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 272830,
+    "username": "Apjkuhl",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_garcia_golgari.jpg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 22,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 10718476,
+   "name": "Rog Si cedh",
+   "size": 100,
+   "updatedAt": "2026-08-12T04:23:47.265989Z",
+   "createdAt": "2025-01-03T01:32:57.093001Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1813,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 497370,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 351566,
+    "username": "Shandr0",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 12023060,
+   "name": "rog & bird (cedh)",
+   "size": 100,
+   "updatedAt": "2026-10-03T09:35:19.525555Z",
+   "createdAt": "2025-03-21T16:09:26.058639Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "viewCount": 1655,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 2275733,
+     "tag": 3,
+     "deck": 12023060,
+     "name": "cEDH",
+     "position": "M-510000"
+    },
+    {
+     "id": 2275735,
+     "tag": 5,
+     "deck": 12023060,
+     "name": "Combo",
+     "position": "M-520000"
+    }
+   ],
+   "parentFolderId": 874692,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 622003,
+    "username": "Jonathan_Hecht",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar6220032025-03-21-16:46:01.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": [
+     10
+    ]
+   },
+   "colors": {
+    "W": 11,
+    "U": 36,
+    "B": 0,
+    "R": 16,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 12871452,
+   "name": "Rog Me Si Ways- Gas it to the finish line!",
+   "size": 100,
+   "updatedAt": "2026-09-15T22:45:56.321149Z",
+   "createdAt": "2025-05-02T02:51:55.865567Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/c/7/c7e7c27a-47e4-47d1-90b3-88a936839cbc.webp",
+   "customFeatured": "",
+   "viewCount": 1654,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1825273,
+     "tag": 3,
+     "deck": 12871452,
+     "name": "cEDH",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 590677,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 418604,
+    "username": "TheGoodVoice",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_izzet.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 21,
+    "B": 19,
+    "R": 21,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 9808254,
+   "name": "Turbo little shits.exe",
+   "size": 100,
+   "updatedAt": "2026-04-16T02:39:08.493785Z",
+   "createdAt": "2024-10-26T15:47:55.361010Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cm2/8afad106-a49b-4910-959e-228c109ea983_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/fin/f150d6e9-3da6-4655-9c63-dd34525d08a1_art_crop.jpg",
+   "viewCount": 1580,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1594916,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 229638,
+    "username": "Darklight961",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 0,
+    "B": 46,
+    "R": 20,
+    "G": 32
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18048346,
+   "name": "Pyrrhic RogSi",
+   "size": 100,
+   "updatedAt": "2026-09-16T12:50:32.419855Z",
+   "createdAt": "2025-12-09T18:00:12.743134Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/c/7/c7e7c27a-47e4-47d1-90b3-88a936839cbc.webp",
+   "customFeatured": "",
+   "viewCount": 1522,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 1602968,
+     "tag": 23,
+     "deck": 18048346,
+     "name": "Storm",
+     "position": "M-510000"
+    },
+    {
+     "id": 1602970,
+     "tag": 5,
+     "deck": 18048346,
+     "name": "Combo",
+     "position": "M-520000"
+    },
+    {
+     "id": 3019728,
+     "tag": 433,
+     "deck": 18048346,
+     "name": "Turbo",
+     "position": "M-530000"
+    }
+   ],
+   "parentFolderId": 1210356,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 802338,
+    "username": "King5OO",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar8023382025-10-04-18:04:29.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 20,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 9968371,
+   "name": "Rog/Si cEDH",
+   "size": 100,
+   "updatedAt": "2026-08-15T03:38:05.342344Z",
+   "createdAt": "2024-11-07T02:51:42.997127Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1462,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 793383,
+     "tag": 3,
+     "deck": 9968371,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 793387,
+     "tag": 23,
+     "deck": 9968371,
+     "name": "Storm",
+     "position": "M-500000"
+    },
+    {
+     "id": 793388,
+     "tag": 244,
+     "deck": 9968371,
+     "name": "Ad Nauseam",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 776217,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 347703,
+    "username": "LostPrints",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 27,
+    "B": 21,
+    "R": 14,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 20079335,
+   "name": "Kobold and his pet fish - RogThras",
+   "size": 100,
+   "updatedAt": "2026-10-04T08:55:50.284865Z",
+   "createdAt": "2026-02-17T23:08:59.329497Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/b/b/bb16341a-f793-4b0e-b4ef-3fc56aae3807.webp",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/mh3/746533fe-7fe2-4985-8655-9aca4b08b419_art_crop.jpg",
+   "viewCount": 1443,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 2555983,
+     "tag": 3,
+     "deck": 20079335,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 2555985,
+     "tag": 5,
+     "deck": 20079335,
+     "name": "Combo",
+     "position": "M-510000"
+    },
+    {
+     "id": 2555989,
+     "tag": 154,
+     "deck": 20079335,
+     "name": "Faeries",
+     "position": "M-520000"
+    }
+   ],
+   "parentFolderId": 882057,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 627529,
+    "username": "SoraDesu",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 29,
+    "B": 0,
+    "R": 7,
+    "G": 32
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 2954912,
+   "name": "Voltron",
+   "size": 100,
+   "updatedAt": "2025-11-25T16:18:44.018751Z",
+   "createdAt": "2022-07-11T01:04:09.315713Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1414,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 247873,
+     "tag": 27,
+     "deck": 2954912,
+     "name": "Equipment",
+     "position": "M-500000"
+    },
+    {
+     "id": 247874,
+     "tag": 24,
+     "deck": 2954912,
+     "name": "Artifacts",
+     "position": "M-510000"
+    },
+    {
+     "id": 247875,
+     "tag": 86,
+     "deck": 2954912,
+     "name": "Voltron",
+     "position": "M-520000"
+    },
+    {
+     "id": 247876,
+     "tag": 5,
+     "deck": 2954912,
+     "name": "Combo",
+     "position": "M-530000"
+    },
+    {
+     "id": 247877,
+     "tag": 6,
+     "deck": 2954912,
+     "name": "Control",
+     "position": "M-540000"
+    }
+   ],
+   "parentFolderId": 226647,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 160369,
+    "username": "SeaBiscuit44",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 29,
+    "U": 0,
+    "B": 0,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 16319046,
+   "name": "Scion of the ur dragon cEDH",
+   "size": 100,
+   "updatedAt": "2026-09-27T03:08:37.054157Z",
+   "createdAt": "2025-09-28T11:58:56.498324Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/f/1/f18f6066-e31f-484a-a342-c19aa1c3f743.webp",
+   "customFeatured": "",
+   "viewCount": 1381,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1849225,
+     "tag": 3,
+     "deck": 16319046,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 1849226,
+     "tag": 115,
+     "deck": 16319046,
+     "name": "Dragons",
+     "position": "M-510000"
+    },
+    {
+     "id": 1849227,
+     "tag": 5,
+     "deck": 16319046,
+     "name": "Combo",
+     "position": "M-520000"
+    }
+   ],
+   "parentFolderId": 1336093,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 419301,
+    "username": "WBKRAD12022",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_garcia_izzet.jpg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 6,
+    "U": 14,
+    "B": 28,
+    "R": 7,
+    "G": 13
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 15762779,
+   "name": "Cottage cheese and flapjacks? I thought you asked for Tzat-based cheese and flip-stax!",
+   "size": 100,
+   "updatedAt": "2026-04-03T20:23:15.537882Z",
+   "createdAt": "2025-09-03T21:44:55.535935Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1373,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1364387,
+     "tag": 3,
+     "deck": 15762779,
+     "name": "cEDH",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 726371,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 517918,
+    "username": "UberZord",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 0,
+    "B": 23,
+    "R": 23,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 16009639,
+   "name": "Rogsiiiiiikkkeeeee naus in yo face",
+   "size": 100,
+   "updatedAt": "2026-10-07T01:21:57.464911Z",
+   "createdAt": "2025-09-14T20:27:46.984412Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/7/c/7c5e4382-3f5c-46c7-915f-df9373d316bf.webp",
+   "customFeatured": "",
+   "viewCount": 1355,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [],
+   "parentFolderId": 1177908,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 785823,
+    "username": "Evan_Shaf",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 26,
+    "B": 17,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 17210671,
+   "name": "Thrasios/Rograkh CEDH",
+   "size": 100,
+   "updatedAt": "2026-05-08T04:10:41.858942Z",
+   "createdAt": "2025-11-05T05:05:30.495659Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "viewCount": 1328,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1679588,
+     "tag": 313,
+     "deck": 17210671,
+     "name": "Activated Abilities",
+     "position": "M-500000"
+    },
+    {
+     "id": 1679589,
+     "tag": 24,
+     "deck": 17210671,
+     "name": "Artifacts",
+     "position": "M-510000"
+    },
+    {
+     "id": 1679590,
+     "tag": 51,
+     "deck": 17210671,
+     "name": "Big Mana",
+     "position": "M-520000"
+    },
+    {
+     "id": 1679593,
+     "tag": 3,
+     "deck": 17210671,
+     "name": "cEDH",
+     "position": "M-530000"
+    },
+    {
+     "id": 1679595,
+     "tag": 5,
+     "deck": 17210671,
+     "name": "Combo",
+     "position": "M-540000"
+    },
+    {
+     "id": 1679597,
+     "tag": 273,
+     "deck": 17210671,
+     "name": "Commander Matters",
+     "position": "M-550000"
+    },
+    {
+     "id": 1679598,
+     "tag": 93,
+     "deck": 17210671,
+     "name": "Counterspells",
+     "position": "M-560000"
+    },
+    {
+     "id": 1679602,
+     "tag": 21,
+     "deck": 17210671,
+     "name": "Draw",
+     "position": "M-570000"
+    },
+    {
+     "id": 1679607,
+     "tag": 382,
+     "deck": 17210671,
+     "name": "Speed",
+     "position": "M-590000"
+    },
+    {
+     "id": 1679608,
+     "tag": 211,
+     "deck": 17210671,
+     "name": "Scry",
+     "position": "M-600000"
+    }
+   ],
+   "parentFolderId": 1262188,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": true,
+   "description": null,
+   "owner": {
+    "id": 575527,
+    "username": "Zackeljack",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_garcia_gruul.jpg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 32,
+    "B": 0,
+    "R": 7,
+    "G": 32
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 20169306,
+   "name": "Fentanyl Farm - Rogshai cEDH",
+   "size": 119,
+   "updatedAt": "2026-09-27T14:43:51.659314Z",
+   "createdAt": "2026-02-20T20:13:06.445240Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "",
+   "viewCount": 1296,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 600319,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 425668,
+    "username": "pelangraveyard",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar4256682026-06-16-19:16:19.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 16,
+    "U": 46,
+    "B": 0,
+    "R": 20,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 15890445,
+   "name": "Duck Dodger of the 21st and a half century",
+   "size": 100,
+   "updatedAt": "2026-10-07T01:34:49.449684Z",
+   "createdAt": "2025-09-09T12:06:00.176562Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "",
+   "viewCount": 1265,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 1376670,
+     "tag": 244,
+     "deck": 15890445,
+     "name": "Ad Nauseam",
+     "position": "M-500000"
+    },
+    {
+     "id": 1376671,
+     "tag": 223,
+     "deck": 15890445,
+     "name": "Alternate Wincon",
+     "position": "M-510000"
+    },
+    {
+     "id": 1376672,
+     "tag": 5,
+     "deck": 15890445,
+     "name": "Combo",
+     "position": "M-520000"
+    },
+    {
+     "id": 1376675,
+     "tag": 271,
+     "deck": 15890445,
+     "name": "Good Stuff",
+     "position": "M-540000"
+    },
+    {
+     "id": 1448610,
+     "tag": 101,
+     "deck": 15890445,
+     "name": "Self-Mill",
+     "position": "M-550000"
+    },
+    {
+     "id": 1448619,
+     "tag": 3,
+     "deck": 15890445,
+     "name": "cEDH",
+     "position": "M-560000"
+    },
+    {
+     "id": 2287408,
+     "tag": 23,
+     "deck": 15890445,
+     "name": "Storm",
+     "position": "M-570000"
+    },
+    {
+     "id": 2463726,
+     "tag": 433,
+     "deck": 15890445,
+     "name": "Turbo",
+     "position": "M-580000"
+    }
+   ],
+   "parentFolderId": 410135,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 287571,
+    "username": "Satanasmorrigan",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 20975193,
+   "name": "All Gas No Breaks #3: Or How I learned to love the Rog (全開~!!!)",
+   "size": 105,
+   "updatedAt": "2026-09-01T21:56:02.638543Z",
+   "createdAt": "2026-03-20T13:34:26.353197Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1224,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 2236218,
+     "tag": 3,
+     "deck": 20975193,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 2236220,
+     "tag": 244,
+     "deck": 20975193,
+     "name": "Ad Nauseam",
+     "position": "M-510000"
+    }
+   ],
+   "parentFolderId": 1190701,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 792452,
+    "username": "RyanCoolPP",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 26,
+    "B": 19,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 16227900,
+   "name": "Stummy ache but fast",
+   "size": 100,
+   "updatedAt": "2026-09-22T23:29:58.410762Z",
+   "createdAt": "2025-09-24T11:06:32.650175Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/c/7/c7e7c27a-47e4-47d1-90b3-88a936839cbc.webp",
+   "customFeatured": "",
+   "viewCount": 1221,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1568260,
+     "tag": 3,
+     "deck": 16227900,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 1568263,
+     "tag": 5,
+     "deck": 16227900,
+     "name": "Combo",
+     "position": "M-510000"
+    },
+    {
+     "id": 1568265,
+     "tag": 244,
+     "deck": 16227900,
+     "name": "Ad Nauseam",
+     "position": "M-520000"
+    }
+   ],
+   "parentFolderId": 540979,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 382953,
+    "username": "Ls97",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 21,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18944056,
+   "name": "The Dark RogSide",
+   "size": 100,
+   "updatedAt": "2026-10-04T01:22:41.290481Z",
+   "createdAt": "2026-01-13T06:12:56.455415Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "",
+   "viewCount": 1221,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 975763,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 350320,
+    "username": "BigPapaFish1",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 20,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 4965269,
+   "name": "[5] Rograkh Silas: Ad Nauseam Turbo",
+   "size": 100,
+   "updatedAt": "2026-02-17T10:43:43.956096Z",
+   "createdAt": "2023-07-20T19:46:33.095115Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1199,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 463028,
+     "tag": 3,
+     "deck": 4965269,
+     "name": "cEDH",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 145573,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 102913,
+    "username": "ClearIt",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 24,
+    "B": 19,
+    "R": 17,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 20543414,
+   "name": "Thuggish RogIsh Bone",
+   "size": 100,
+   "updatedAt": "2026-09-05T16:51:13.240128Z",
+   "createdAt": "2026-03-04T23:18:22.151739Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/pf25/05e9d580-5da2-4559-b611-870726c53791_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1178,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 2140062,
+     "tag": 3,
+     "deck": 20543414,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 2140063,
+     "tag": 21,
+     "deck": 20543414,
+     "name": "Draw",
+     "position": "M-510000"
+    },
+    {
+     "id": 2140064,
+     "tag": 6,
+     "deck": 20543414,
+     "name": "Control",
+     "position": "M-520000"
+    },
+    {
+     "id": 2140065,
+     "tag": 195,
+     "deck": 20543414,
+     "name": "Counters Matter",
+     "position": "M-530000"
+    }
+   ],
+   "parentFolderId": 650232,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 462220,
+    "username": "jacobh.challenger@gmail.com",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 13,
+    "U": 39,
+    "B": 0,
+    "R": 16,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18485713,
+   "name": "Rog Thras",
+   "size": 100,
+   "updatedAt": "2026-10-05T05:22:22.610509Z",
+   "createdAt": "2025-12-28T05:17:19.208352Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/5/f/5f13417d-3fe1-4357-b826-cb48dd111247.webp",
+   "customFeatured": "",
+   "viewCount": 1170,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [],
+   "parentFolderId": 1065513,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 726519,
+    "username": "PandaBear333",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 29,
+    "B": 0,
+    "R": 6,
+    "G": 33
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 21079108,
+   "name": "Rog/Si so sly",
+   "size": 100,
+   "updatedAt": "2026-09-09T04:32:08.281947Z",
+   "createdAt": "2026-03-24T06:31:38.030578Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1164,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 761678,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 543216,
+    "username": "Devlov",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_red.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 29,
+    "B": 15,
+    "R": 14,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 10028973,
+   "name": "RogSi_2026-04-24",
+   "size": 100,
+   "updatedAt": "2026-04-25T19:27:19.813265Z",
+   "createdAt": "2024-11-11T00:37:34.661290Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/a4fab67f-00c2-4125-9262-d21a29411797_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1156,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1569515,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 518614,
+    "username": "Philipkroy@icloud.com",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 21,
+    "R": 15,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 8670945,
+   "name": "2Rog2Si 🏎️⏩🚽",
+   "size": 100,
+   "updatedAt": "2026-06-06T12:56:55.348856Z",
+   "createdAt": "2024-08-04T09:52:35.528877Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/cmr/c7e7c27a-47e4-47d1-90b3-88a936839cbc_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/2xm/a9f2c53e-ff58-4aa8-89a6-4f45628cc571_art_crop.jpg",
+   "viewCount": 1149,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1424819,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 341423,
+    "username": "turner747",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar3414232025-07-15-00:06:09.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 20,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 17235153,
+   "name": "A Court of Thorns and RogSi",
+   "size": 100,
+   "updatedAt": "2026-10-04T02:12:51.547870Z",
+   "createdAt": "2025-11-06T05:26:43.636126Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/b/b/bb16341a-f793-4b0e-b4ef-3fc56aae3807.webp",
+   "customFeatured": "",
+   "viewCount": 1137,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": 1,
+   "tags": [
+    {
+     "id": 1525182,
+     "tag": 3,
+     "deck": 17235153,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 1525183,
+     "tag": 5,
+     "deck": 17235153,
+     "name": "Combo",
+     "position": "M-510000"
+    },
+    {
+     "id": 1525186,
+     "tag": 244,
+     "deck": 17235153,
+     "name": "Ad Nauseam",
+     "position": "M-520000"
+    },
+    {
+     "id": 1584568,
+     "tag": 56,
+     "deck": 17235153,
+     "name": "Graveyard",
+     "position": "M-530000"
+    }
+   ],
+   "parentFolderId": 1348262,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 733156,
+    "username": "ProjectSupport",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar7331562025-10-11-13:54:31.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 22,
+    "R": 18,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 16922152,
+   "name": "RogSi or How I Learned To Stop Worrying And Love The Cannon",
+   "size": 100,
+   "updatedAt": "2026-10-03T16:05:51.536354Z",
+   "createdAt": "2025-10-23T20:54:08.276517Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://card-images.archidekt.com/art/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.webp",
+   "customFeatured": "",
+   "viewCount": 1136,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1581479,
+     "tag": 3,
+     "deck": 16922152,
+     "name": "cEDH",
+     "position": "M-500000"
+    }
+   ],
+   "parentFolderId": 755373,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 325739,
+    "username": "BubblyMTG",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_garcia_orzhov.jpg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 20,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 17107220,
+   "name": "Rodger Science Guy- Grixis Turbo",
+   "size": 100,
+   "updatedAt": "2026-09-13T22:04:43.751579Z",
+   "createdAt": "2025-10-31T16:53:27.879807Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "https://storage.googleapis.com/archidekt-card-images/j20/fdbe0cf7-38e2-4b2e-8fcb-c08f160caf19_art_crop.jpg",
+   "viewCount": 1127,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [
+    {
+     "id": 1789740,
+     "tag": 3,
+     "deck": 17107220,
+     "name": "cEDH",
+     "position": "M-500000"
+    },
+    {
+     "id": 1789743,
+     "tag": 244,
+     "deck": 17107220,
+     "name": "Ad Nauseam",
+     "position": "M-510000"
+    }
+   ],
+   "parentFolderId": 1100969,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 521725,
+    "username": "AyyyDani",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/avatar5217252026-03-09-02:41:10.png",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 23,
+    "B": 20,
+    "R": 19,
+    "G": 0
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 15896267,
+   "name": "Rog/Thras Semi-Blue cEDH",
+   "size": 104,
+   "updatedAt": "2025-09-14T22:57:43.644106Z",
+   "createdAt": "2025-09-09T17:52:32.327516Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/sld/bb16341a-f793-4b0e-b4ef-3fc56aae3807_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1118,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 1179721,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 616409,
+    "username": "GraySTT",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_colorless.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 26,
+    "B": 0,
+    "R": 12,
+    "G": 39
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 13327984,
+   "name": "Rog/Thras cradle farm",
+   "size": 100,
+   "updatedAt": "2026-08-10T13:40:35.733382Z",
+   "createdAt": "2025-05-23T16:22:34.579128Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https://storage.googleapis.com/archidekt-card-images/c16/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a_art_crop.jpg",
+   "customFeatured": "",
+   "viewCount": 1101,
+   "comments": 0,
+   "private": false,
+   "unlisted": false,
+   "theorycrafted": false,
+   "game": null,
+   "tags": [],
+   "parentFolderId": 382532,
+   "parentFolderName": null,
+   "parentFolderCreatedAt": null,
+   "hasPrimer": false,
+   "description": null,
+   "owner": {
+    "id": 267053,
+    "username": "Ra_VI1237",
+    "avatar": "https://storage.googleapis.com/topdekt-user/avatars/default/avatar_gruul.svg",
+    "moderator": false,
+    "pledgeLevel": null,
+    "roles": []
+   },
+   "colors": {
+    "W": 0,
+    "U": 30,
+    "B": 0,
+    "R": 6,
+    "G": 31
+   },
+   "cardPackage": null,
+   "deckHelp": null,
+   "contest": null
+  },
+  {
+   "id": 18269674,
+   "name": "Rog Black - Turbo Skull",
+   "size": 100,
+   "updatedAt": "2026-05-14T16:33:55.308297Z",
+   "createdAt": "2025-12-18T23:38:27.597112Z",
+   "deckFormat": 3,
+   "edhBracket": 5,
+   "featured": "https:/

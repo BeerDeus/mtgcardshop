@@ -1,0 +1,71 @@
+Génération : top 2000, Archidekt Budget / Premium (10 decks récents comparés) pour les 2000 premiers, cEDH pour 100 au plus, 1 commandant sur 8 relu
+  listes : 3154 commandants (3000 dans la liste du mois)
+   · forme : related_info,header,description,container · cardlists 1 (header,tag,cardviews,total_pages,more) · carte id,name,sanitized,slug,url,num_decks,potential_decks,rank,trend_zscore
+   · commanders/month.json → 100 commandants · suite commanders/month-pastmonth-1.json
+   · commanders/month-pastmonth-1.json → 100 commandants · suite commanders/month-pastmonth-2.json
+   · commanders/month-pastmonth-2.json → 100 commandants · suite commanders/month-pastmonth-3.json
+   · forme : related_info,header,description,container · cardlists 1 (header,tag,cardviews,total_pages,more) · carte id,name,sanitized,slug,url,num_decks,potential_decks,rank,trend_zscore
+   · commanders/year.json → 100 commandants · suite commanders/year-past2years-1.json
+   · commanders/year-past2years-1.json → 100 commandants · suite commanders/year-past2years-2.json
+   · commanders/year-past2years-2.json → 100 commandants · suite commanders/year-past2years-3.json
+3154 commandants au total ; decks moyens pour les 2000 premiers
+  thèmes (exemple) jace-multiverse-architect : Tokens 337, Planeswalkers 322, Control 88
+  decks moyens : 50 lus sur 50 essayés
+  decks moyens : 100 lus sur 100 essayés
+  decks moyens : 149 lus sur 150 essayés
+  decks moyens : 199 lus sur 200 essayés
+  decks moyens : 249 lus sur 250 essayés
+  decks moyens : 299 lus sur 300 essayés
+  decks moyens : 349 lus sur 350 essayés
+  decks moyens : 399 lus sur 400 essayés
+  decks moyens : 449 lus sur 450 essayés
+  decks moyens : 499 lus sur 500 essayés
+  decks moyens : 549 lus sur 550 essayés
+  decks moyens : 599 lus sur 600 essayés
+  decks moyens : 649 lus sur 650 essayés
+  decks moyens : 699 lus sur 700 essayés
+  decks moyens : 749 lus sur 750 essayés
+  decks moyens : 799 lus sur 800 essayés
+  decks moyens : 849 lus sur 850 essayés
+  decks moyens : 899 lus sur 900 essayés
+  decks moyens : 949 lus sur 950 essayés
+  decks moyens : 999 lus sur 1000 essayés
+  decks moyens : 1049 lus sur 1050 essayés
+  decks moyens : 1099 lus sur 1100 essayés
+  decks moyens : 1149 lus sur 1150 essayés
+  decks moyens : 1199 lus sur 1200 essayés
+  decks moyens : 1249 lus sur 1250 essayés
+  decks moyens : 1299 lus sur 1300 essayés
+  decks moyens : 1349 lus sur 1350 essayés
+  decks moyens : 1399 lus sur 1400 essayés
+  decks moyens : 1449 lus sur 1450 essayés
+  decks moyens : 1499 lus sur 1500 essayés
+  decks moyens : 1549 lus sur 1550 essayés
+  decks moyens : 1599 lus sur 1600 essayés
+  decks moyens : 1649 lus sur 1650 essayés
+  decks moyens : 1699 lus sur 1700 essayés
+  decks moyens : 1749 lus sur 1750 essayés
+  decks moyens : 1799 lus sur 1800 essayés
+  decks moyens : 1849 lus sur 1850 essayés
+  decks moyens : 1899 lus sur 1900 essayés
+  decks moyens : 1949 lus sur 1950 essayés
+  decks moyens : 1999 lus sur 2000 essayés
+  decks moyens : 1999 (dont 1986 avec des thèmes EDHREC) ; ignorés : 1
+   · whtz-the-bibliophile: 253 cartes
+  cEDH (EDHTop16, 6 derniers mois) : 100 commandants, 100 retrouvés dans la liste
+  Archidekt : 1698 commandants gardés du fichier précédent, 301 à chercher (57 sans deck récent)
+  Archidekt : 100 commandants cherchés, 51 avec des decks récents, cedh 98, budget 1700, premium 1694, pop 44
+  Archidekt : 200 commandants cherchés, 151 avec des decks récents, cedh 98, budget 1700, premium 1694, pop 44
+  Archidekt : 300 commandants cherchés, 251 avec des decks récents, cedh 98, budget 1700, premium 1694, pop 44
+  decks Archidekt : 278 commandants à départager (Budget / Premium), déjà placés : cedh 98, budget 1700, premium 1694, pop 44 · 1028 lus, 622 déjà connus (327 commandants cherchés, 14 noms à deux faces corrigés, 0 erreurs, 460 écartés pour leur taille)
+Scryfall : prix de 23671 cartes
+  scryfall : 3000 / 23248 cartes
+  scryfall : 6000 / 23248 cartes
+  scryfall : 9000 / 23248 cartes
+  scryfall : 12000 / 23248 cartes
+  scryfall : 15000 / 23248 cartes
+  scryfall : 18000 / 23248 cartes
+  scryfall : 21000 / 23248 cartes
+  decks Archidekt (prix Scryfall) : cedh 98, budget 1971, premium 1965, pop 51
+  Game Changers « is:gamechanger » : 53 cartes (Ad Nauseam, Ancient Tomb, Aura Shards, Biorhythm, Bolas's Citadel, Braids, Cabal Minion…)
+3154 commandants, 6084 decks (dont 4085 Archidekt), 21986 prix → /home/runner/work/mtgcardshop/mtgcardshop/pwa/edh.bin.gz (1.35 Mo)
