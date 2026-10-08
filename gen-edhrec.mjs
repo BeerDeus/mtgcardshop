@@ -278,7 +278,8 @@ export function loadPrev(file) {
 /** Commandants traités cette fois qui avaient au moins un deck Archidekt (hors cEDH) dans le fichier précédent : base du garde-fou « forte baisse » (un top plus court que la dernière fois n'est pas une baisse ; compter les commandants et non les decks : un seul deck « Populaire » au lieu de Budget + Premium n'en est pas une non plus). */
 export const prevArch = (prev, cmds) => cmds.reduce((a, c) => a + ((prev.get(c.slug) || []).some(d => d.k !== 'cedh') ? 1 : 0), 0);
 /** Decks réels Archidekt pour les ARCH_TOP premiers commandants, mis à jour depuis moins de RECENT_DAYS jours :
- *  - Budget et Premium : parmi les ARCH_CAND decks récents les plus vus, le moins cher et le plus cher (prix Cardmarket d'après Archidekt) ;
+ *  - Budget et Premium : parmi les ARCH_CAND decks récents les plus vus, le moins cher et le plus cher (prix Scryfall de chaque carte, comme dans l'appli : le choix
+ *    se fait dans main, après la lecture des prix ; ceux d'Archidekt ne sont pas fiables : annonces aberrantes, un deck à 50 € y valait 190 000 €) ;
  *    un seul deck récent, ou moins de 25 % d'écart de prix → un seul deck « Populaire » (le plus vu) ; aucun deck récent → le plus vu, même ancien (« Populaire », sa date le dit).
  *  - cEDH : pour les commandants les plus joués en tournoi (EDHTop16, 6 derniers mois), le deck bracket 5 récent le plus vu.
  *  Incrémental : les decks du fichier précédent sont gardés ; un commandant n'est cherché de nouveau que s'il n'a rien, s'il n'a qu'un deck d'avant Budget / Premium,
@@ -293,6 +294,17 @@ export function pickBudget(valid) {
   if (valid.length === 1 || !(lo.p > 0) || hi.p < lo.p * 1.25) return [{ ...valid[0], k: 'pop' }];
   return [{ ...lo, k: 'budget' }, { ...hi, k: 'premium' }];
 }
+/** Prix Scryfall (centimes) de chaque deck Archidekt, commandant compris ; Budget / Premium choisis pour les commandants cherchés (pending : [{ c, valid }]) ;
+ *  un couple gardé d'un passage précédent (choisi sur les prix d'Archidekt) dont le Budget coûte plus que le Premium est inversé. Retourne une ligne de journal. */
+export function priceArchidekt(decks, pending, cmds, price) {
+  const bySlug = new Map(cmds.map(c => [c.slug, c])), eur = (d, c) => { let t = 0; for (const [n, q] of d.cards) t += (price.get(normKey(n)) || 0) * q; for (const n of (c ? c.names : [])) t += price.get(normKey(n)) || 0; return t; };
+  for (const { c, valid } of pending) { for (const d of valid) d.p = eur(d, c); decks.push(...pickBudget(valid)); }
+  const pair = new Map(); let swapped = 0;
+  for (const d of decks) if (d.src === 'archidekt') { d.p = eur(d, bySlug.get(d.slug)); if (d.k === 'budget' || d.k === 'premium') { if (!pair.has(d.slug)) pair.set(d.slug, {}); pair.get(d.slug)[d.k] = d; } }
+  for (const { budget: b, premium: p } of pair.values()) if (b && p && b.p > p.p) { b.k = 'premium'; p.k = 'budget'; swapped++; }
+  const kinds = {}; for (const d of decks) if (d.src === 'archidekt') kinds[d.k || 'ancien'] = (kinds[d.k || 'ancien'] || 0) + 1;
+  return `decks Archidekt (prix Scryfall) : ${Object.entries(kinds).map(([k, n]) => k + ' ' + n).join(', ')}${swapped ? ` · ${swapped} Budget / Premium inversés` : ''}`;
+}
 /** Commandants cEDH : les plus joués en tournoi sur 6 mois (EDHTop16, au moins CEDH_MIN participations), retrouvés dans la liste (paire comprise). [] si EDHTop16 ne répond pas. */
 async function cedhCommanders(all) {
   if (!CEDH_TOP) return [];
@@ -305,7 +317,7 @@ async function cedhCommanders(all) {
     log(`  cEDH (EDHTop16, 6 derniers mois) : ${names.length} commandants, ${out.length} retrouvés dans la liste`); return out;
   } catch (e) { log('  cEDH : EDHTop16 indisponible (' + e.message + ')'); return []; }
 }
-async function archidekt(cmds, decks, prev = new Map(), all = cmds) {
+async function archidekt(cmds, decks, prev = new Map(), all = cmds, pending = []) {
   if (!ARCH) return 0;
   const AR = ARCH_BASE, hd = { Accept: 'application/json' }, period = Math.floor(Date.now() / ARCH_PERIOD), rot = c => ARCH_ROT <= 1 || (hash32(c.slug) + period) % ARCH_ROT === 0;
   const until = Math.min(Date.now() + ARCH_MS, T0 + BUDGET_MS), st = { fresh: 0, reused: 0, fails: 0, tried: 0, off: 0, rejected: 0, renamed: 0 }, kinds = {};
@@ -364,15 +376,15 @@ async function archidekt(cmds, decks, prev = new Map(), all = cmds) {
     try {
       const cs = await candidates(c, {}, ARCH_CAND, cedhSet.has(c.slug)), valid = [];
       for (const cand of cs.rec) { const r = await read(c, cand); if (r) valid.push(r); }
-      if (valid.length) got = pickBudget(valid);
+      if (valid.length) { pending.push({ c, valid }); got = null; }      // Budget / Premium choisis après les prix Scryfall (main)
       else for (const cand of cs.old) { const r = await read(c, cand); if (r) { got = [{ ...r, k: 'pop' }]; break; } }      // aucun deck récent : le plus vu, même ancien
     } catch (e) { fail(c, e); got = []; }
-    put(got.length ? got : have);
+    if (got) put(got.length ? got : have);
     if (abort) { i++; break; }
-    if (st.tried % 100 === 0) log(`  Archidekt : ${st.tried} commandants cherchés, ${Object.entries(kinds).map(([k, n]) => k + ' ' + n).join(', ')}`);
+    if (st.tried % 100 === 0) log(`  Archidekt : ${st.tried} commandants cherchés, ${pending.length} avec des decks récents, ${Object.entries(kinds).map(([k, n]) => k + ' ' + n).join(', ')}`);
   }
   for (let j = i; j < todo.length; j++) put(todo[j][1]);
-  log(`  decks Archidekt : ${Object.entries(kinds).map(([k, n]) => k + ' ' + n).join(', ') || 'aucun'} · ${st.fresh} lus, ${st.reused} déjà connus (${st.tried} commandants cherchés, ${st.renamed} noms à deux faces corrigés, ${st.fails} erreurs, ${st.rejected} écartés pour leur taille)`);
+  log(`  decks Archidekt : ${pending.length} commandants à départager (Budget / Premium), déjà placés : ${Object.entries(kinds).map(([k, n]) => k + ' ' + n).join(', ') || 'aucun'} · ${st.fresh} lus, ${st.reused} déjà connus (${st.tried} commandants cherchés, ${st.renamed} noms à deux faces corrigés, ${st.fails} erreurs, ${st.rejected} écartés pour leur taille)`);
   return st.fresh + st.reused;
 }
 const nf = n => Number(n).toLocaleString('fr-FR');
@@ -461,11 +473,12 @@ async function main() {
   const top = cmds.slice(0, TOP);
   log(`${cmds.length} commandants au total ; decks moyens pour les ${top.length} premiers`);
   const { decks, kept } = await avgDecks(top);
-  await archidekt(kept, decks, prev, cmds);
+  const pending = []; await archidekt(kept, decks, prev, cmds, pending);
   const prevCmds = prevArch(prev, kept.slice(0, ARCH_TOP));
-  const names = new Set(); for (const c of cmds) for (const n of c.names) names.add(n); for (const d of decks) for (const [n] of d.cards) names.add(n);
+  const names = new Set(); for (const c of cmds) for (const n of c.names) names.add(n); for (const d of decks) for (const [n] of d.cards) names.add(n); for (const { valid } of pending) for (const d of valid) for (const [n] of d.cards) names.add(n);
   log(`Scryfall : prix de ${names.size} cartes`);
   const { price, meta } = await scryInfo([...names]);
+  if (pending.length || decks.some(d => d.src === 'archidekt')) log('  ' + priceArchidekt(decks, pending, cmds, price));
   const gc = await gameChangers();
   const img = new Map(), priceByName = new Map();
   for (const c of cmds) { const m = meta.get(normKey(c.names[0])); if (m) { if (m.img) img.set(c.slug, m.img); if (!c.ci && m.ci) c.ci = m.ci; } }

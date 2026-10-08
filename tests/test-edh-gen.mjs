@@ -105,6 +105,7 @@ function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN
       }
       if (u.pathname === '/scry/cards/search') { seen.search++; return send({ has_more: false, data: scryList ? NAMES.map(n => ({ name: n, color_identity: ['G'] })) : [] }); }
       // Archidekt : archN decks par commandant (ids 100 + i + 1000 j, du plus au moins vu, le j-ième coûte 1 + 2j € la carte) ; bracket 5 : un deck cEDH (id 20100 + i).
+      // Decks suivants (j ≥ 1) : une carte chère (Carte 3 : 9,99 € chez Scryfall) → Premium.
       // Le 3e commandant (carte à deux faces) n'est trouvé que sous son nom complet « Recto // Verso » ; oldArch : decks mis à jour il y a 2 ans.
       if (u.pathname === '/arch/decks/v3/') {
         seen.arch++; if (noArch) return send({ error: 'x' }, 500); let c = u.searchParams.get('commanderName'); assert.equal(u.searchParams.get('deckFormat'), '3'); (seen.archQ = seen.archQ || []).push(c);
@@ -117,7 +118,7 @@ function fake({ lists = true, scryList = false, noArch = false, gc = 'ok', archN
       if (u.pathname === '/scry/cards/named') return u.searchParams.get('exact') === NAMES[2] ? send({ name: NAMES[2] + ' // Verso' }) : send({ object: 'error' }, 404);
       if (u.pathname === '/top16/api/graphql' && req.method === 'POST') { seen.top16 = (seen.top16 || 0) + 1; assert.match(JSON.parse(body).query, /SIX_MONTHS/); return send({ data: { commanders: { edges: [{ node: { name: NAMES[0] } }, { node: { name: 'Inconnu / Personne' } }] } } }); }
       const a = /^\/arch\/decks\/(\d+)\/$/.exec(u.pathname);
-      if (a) { seen.archDeck++; const id = Number(a[1]), n = NAMES[(id - 100) % 1000], eur = id >= 20000 ? 9 : 1 + 2 * Math.floor(id / 1000), pr = { prices: { cm: eur } }, at = oldArch ? '2024-01-02T03:04:05Z' : REC; return send({ name: 'Deck ' + n, viewCount: 4200, updatedAt: at, cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: n }, ...pr } }, ...CARDS.slice(10, 80).map(c => ({ quantity: 1, categories: [], card: { oracleCard: { name: c }, ...pr } })), { quantity: id === 101 ? 80 : 25, categories: [], card: { oracleCard: { name: 'Forest' }, prices: { cm: 0.02 } } }] }); }      // 70 + 25 = 95 cartes ; le 1er deck du 2e commandant : 150 (écarté)
+      if (a) { seen.archDeck++; const id = Number(a[1]), n = NAMES[(id - 100) % 1000], eur = id >= 20000 ? 9 : 1 + 2 * Math.floor(id / 1000), pr = { prices: { cm: eur } }, at = oldArch ? '2024-01-02T03:04:05Z' : REC; return send({ name: 'Deck ' + n, viewCount: 4200, updatedAt: at, cards: [{ quantity: 1, categories: ['Commander'], card: { oracleCard: { name: n }, ...pr } }, ...CARDS.slice(10, 80).map((c, x) => ({ quantity: 1, categories: [], card: { oracleCard: { name: x === 0 && id >= 1000 && id < 20000 ? 'Carte 3' : c }, ...pr } })), { quantity: id === 101 ? 80 : 25, categories: [], card: { oracleCard: { name: 'Forest' }, prices: { cm: 0.02 } } }] }); }      // 70 + 25 = 95 cartes ; le 1er deck du 2e commandant : 150 (écarté)
       send({ error: 'nf' }, 404);
     });
   });
@@ -254,6 +255,15 @@ test('Archidekt : Budget / Premium / Populaire / cEDH, incrémental (decks connu
     const r = await run(g.base, env, out2); assert.equal(r.code, 0, r.o); assert.match(r.o, /abandon de cette source \(les anciens decks sont gardés\)/);
     assert.deepEqual(readBin(out2).decks.filter(d => d.src === 'archidekt').map(d => d.url + d.k).sort(), before, 'rien perdu');
   } finally { g.srv.close(); f2.srv.close(); rmSync(dir2, { recursive: true, force: true }); }
+});
+test('priceArchidekt : prix Scryfall des decks (commandant compris), Budget / Premium choisis dessus, couple hérité inversé si le Budget coûte plus', async () => {
+  const { priceArchidekt } = await import('../gen-edhrec.mjs'), price = new Map([['sol ring', 100], ['mox opal', 9000], ['cmd', 50]]), cmds = [{ slug: 'a', names: ['Cmd'] }, { slug: 'b', names: ['Cmd'] }];
+  const decks = [{ slug: 'b', src: 'archidekt', k: 'budget', cards: [['Mox Opal', 1]] }, { slug: 'b', src: 'archidekt', k: 'premium', cards: [['Sol Ring', 1]] }, { slug: 'b', src: 'edhrec', k: 'avg', cards: [['Mox Opal', 1]] }];
+  const pending = [{ c: cmds[0], valid: [{ id: 1, slug: 'a', src: 'archidekt', p: 99999999, cards: [['Sol Ring', 2]] }, { id: 2, slug: 'a', src: 'archidekt', p: 1, cards: [['Mox Opal', 1]] }] }];
+  const line = priceArchidekt(decks, pending, cmds, price);
+  const a = decks.filter(d => d.slug === 'a'); assert.deepEqual(a.map(d => [d.id, d.k, d.p]), [[1, 'budget', 250], [2, 'premium', 9050]], 'prix Archidekt ignorés : Scryfall');
+  assert.deepEqual(decks.filter(d => d.slug === 'b' && d.src === 'archidekt').map(d => [d.k, d.p]), [['premium', 9050], ['budget', 150]], 'couple hérité inversé'); assert.equal(decks[2].p, undefined, 'deck moyen : pas de prix stocké');
+  assert.match(line, /1 Budget \/ Premium inversés/);
 });
 test('pickBudget : le moins cher et le plus cher ; un seul, prix inconnu ou écart < 25 % → le plus vu, « Populaire »', async () => {
   const { pickBudget } = await import('../gen-edhrec.mjs'), d = (id, p) => ({ id, p });
