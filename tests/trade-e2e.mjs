@@ -101,13 +101,20 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   ok('lien créé (identifiant aléatoire), contenu complet (FR, image, type), réglages dans le compte, mise à jour automatique sans réécriture inutile');
 }
 const tradeId = [...shares.keys()][0];
+// profil : pseudo (nettoyé) et photo ajoutés au lien, qui est réécrit ; ni e-mail ni photo Google
+{ const w0 = shareWrites, PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  await p.evaluate(png => profSave({ name: '  Martin <b>  ', photo: png }), PNG);
+  for (let i = 0; i < 40 && shareWrites === w0; i++) await sleep(250);
+  const d = JSON.parse(shares.get(tradeId).d); assert.equal(d.by, 'Martin b'); assert.equal(d.bp, PNG); assert.ok(!/@/.test(shares.get(tradeId).d), 'aucun e-mail dans le lien');
+  assert.equal(await p.evaluate(() => [PROF.name, $('#btnAccount').dataset.img].join()), 'Martin b,1', 'avatar : la photo choisie remplace l\'initiale');
+  ok('profil : pseudo nettoyé et photo dans le lien partagé, avatar du compte'); }
 
 /* ── Visiteur : lien public de la liste d'échange ─────────────────────────────────────────────── */
 {
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);
   await routeRest(V.p);
   await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on');
-  assert.match(await txt(V.p, '.pubv .dv-title'), /Liste d'échange/);
+  assert.match(await txt(V.p, '.pubv .dv-title'), /Liste d'échange de Martin b/); assert.ok(await V.p.$('.pubv .pub-av'), 'photo du propriétaire');
   assert.equal(await txt(V.p, '#pubSub [data-v="have"] small'), '2'); assert.equal(await txt(V.p, '#pubSub [data-v="want"] small'), '5');
   const names = await V.p.$$eval('.pub-row', r => r.map(x => x.querySelector('.row-name').textContent + ' ' + x.querySelector('.tr-q b').textContent.trim()));
   assert.deepEqual(names, ['Llanowar Elves × 2', 'Anneau solaire × 4'], 'exemplaire FR sous son nom français'); await V.p.waitForTimeout(600); await V.p.screenshot({ path: 'shots/trade-4-visiteur.png' });
@@ -156,7 +163,7 @@ const tradeId = [...shares.keys()][0];
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);
   await routeRest(V.p);
   await V.p.goto(world.url + '?p=' + id); await V.p.waitForSelector('.dv.on .dv-sum');
-  assert.match(await txt(V.p, '.dv.on .dv-title'), /Edgar v2/); assert.match(await txt(V.p, '.dv.on .dv-title'), /partagé, lecture seule/);
+  assert.match(await txt(V.p, '.dv.on .dv-title'), /Edgar v2/); assert.match(await txt(V.p, '.dv.on .dv-title'), /partagé par Martin b/);
   assert.ok(!(await V.p.$('.dv.on [data-act="share"]')) && await V.p.$eval('.dv.on [data-act="edit"]', b => b.hidden), 'ni partage ni modification pour le visiteur');
   await V.p.waitForFunction(() => document.querySelectorAll('.dv.on .dvc').length >= 6, null, { timeout: 8000 }); await V.p.waitForTimeout(500); await V.p.screenshot({ path: 'shots/trade-6-deck-public.png' });
   await V.p.click('.dv.on [data-act="hand"]'); await V.p.waitForSelector('.hand-grid'); assert.equal(await V.p.$$eval('.hand-c', n => n.length), 7);

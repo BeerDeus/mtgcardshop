@@ -426,7 +426,7 @@ function dvFrame(snap) {
   const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ' · ' + T('réserve {n}', { n: sbN }) : '';
   const todo = ref ? items.reduce((a, i) => a + (i.s === 'basic' ? 0 : Math.max(0, i.q - (i.ow || 0))), 0) : 0;
   const cardsTxt = TN(copies, '{n} carte', '{n} cartes');
-  $('.dv-title span', el).textContent = DV.pub ? `${cardsTxt}${sbTxt} · ${T('partagé, lecture seule')}` : ref ? `${cardsTxt} · ${todo ? T('{n} à trouver', { n: todo }) : T('toutes possédées')}${none ? ' · ' + T('{n} sans prix', { n: none }) : ''}${sbTxt}`
+  $('.dv-title span', el).textContent = DV.pub ? `${cardsTxt}${sbTxt} · ${DV.by ? T('partagé par {name}', { name: DV.by }) : T('partagé, lecture seule')}` : ref ? `${cardsTxt} · ${todo ? T('{n} à trouver', { n: todo }) : T('toutes possédées')}${none ? ' · ' + T('{n} sans prix', { n: none }) : ''}${sbTxt}`
     : `${cardsTxt}${own ? ' · ' + TN(own, '{n} possédée', '{n} possédées') : ''}${miss ? ' · ' + TN(miss, '{n} introuvable', '{n} introuvables') : ''}${none ? ' · ' + T('{n} sans offre', { n: none }) : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
       <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}<span class="dv-amt">${esc(fmt(total))}</span>${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : T('Articles') + ' · '}${esc(crit)}</span></div>
@@ -499,10 +499,10 @@ function dvOpenCard(i) {
 function closeDeckViewer() { if (DV.el) DV.el.__close(); }
 /** Ouvre le viewer d'un deck enregistré ({ id }), de la recherche en cours ({ live: true }) ou d'une liste quelconque ({ text, name } : deck EDHREC ;
  *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil). */
-function openDeckViewer({ id, live, text, name, pub } = {}) {
+function openDeckViewer({ id, live, text, name, pub, by } = {}) {
   closeDeckViewer(); closeCardImage();
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
-  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
+  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.by = pub && by ? String(by) : ''; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
   DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
   DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : T('Liste en cours'));
   if (live && !DV.snap) { toast(T('Lance une recherche pour voir le deck')); return; }

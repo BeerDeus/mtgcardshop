@@ -190,7 +190,8 @@ Types de données à cocher :
 | Type (catégorie Play) | Collectée | Partagée | Facultative | Finalité | Détail |
 |---|---|---|---|---|---|
 | Infos personnelles › **Adresse e-mail** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli, gestion du compte | Firebase Authentication. |
-| Infos personnelles › **Nom** | Oui | Non | Oui (connexion Google) | Gestion du compte | Nom du profil Google, gardé par Firebase Authentication quand on se connecte avec Google. |
+| Infos personnelles › **Nom** | Oui | Non | Oui | Gestion du compte, fonctionnalités de l'appli | Nom du profil Google (Firebase Authentication, connexion Google) et pseudo choisi dans Compte › Modifier le profil (Firestore), affiché sur les liens partagés. |
+| Photos et vidéos › **Photos** | Oui | Non | Oui | Fonctionnalités de l'appli, gestion du compte | Photo de profil choisie par l'utilisateur (réduite à 128 px), gardée dans le compte et affichée sur ses liens partagés. |
 | Infos personnelles › **ID utilisateur** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli, gestion du compte | Identifiant Firebase du compte. |
 | Activité dans l'appli › **Autre contenu généré par l'utilisateur** | Oui | Non | Oui (compte) | Fonctionnalités de l'appli | Collection, decks, historique de valeur, liste d'échange, dans le compte (Firestore). Les liens publics sont créés par l'utilisateur lui-même : ce n'est pas un « partage » au sens de Google. |
 | Activité dans l'appli › **Autres actions** | Oui | Non | Oui | Fonctionnalités de l'appli | Alertes de prix : cartes surveillées, seuils et nom des decks concernés, gardés sur le serveur tant que l'alerte est active. |
@@ -200,9 +201,9 @@ Types de données à cocher :
 | Infos et performances de l'appli › **Journaux de plantage, Diagnostics, Autres données de performances** | Oui | **Oui** | Non | Statistiques, publicité, prévention des fraudes | SDK AdMob. |
 | Infos personnelles › **Autres infos** | Oui, **traitement éphémère** | Non | Oui | Fonctionnalités de l'appli | Avec un token CardTrader seulement : envoyé au serveur avec les seules recherches CardTrader (jamais les alertes ni l'import), utilisé en mémoire le temps de la recherche ; le serveur n'en garde qu'une empreinte SHA-256 pour espacer les requêtes et ne l'écrit jamais sur disque, dans les journaux ni dans le compte. Cas limite : un token n'est pas une donnée personnelle classique, mais le déclarer ne coûte rien. |
 
-Non collecté : photos et vidéos (le scan lit l'image sur le téléphone et ne l'envoie jamais), contacts, position précise, données financières, santé, messages, fichiers, historique de navigation.
+Non collecté : vidéos, photos du scan (lues sur le téléphone, jamais envoyées), contacts, position précise, données financières, santé, messages, fichiers, historique de navigation.
 
-Photo de profil Google : Firebase Authentication garde le lien de la photo du compte Google, que l'appli n'affiche ni ne télécharge. Le type « Photos » du formulaire vise les photos de l'utilisateur : laisse-le décoché (la politique de confidentialité la mentionne). Pour tout déclarer quand même : Photos et vidéos › Photos, collectée, non partagée, facultative, gestion du compte.
+Photo de profil : celle que l'utilisateur choisit (Compte › Modifier le profil) est gardée dans son compte, d'où la ligne « Photos » ci-dessus ; la photo Google (lien gardé par Firebase Authentication) s'affiche seulement sur le bouton Compte, sans être copiée.
 
 Avant d'envoyer le formulaire, compare avec les pages officielles (elles changent parfois) et ajoute ce qui manque :
 - AdMob : https://developers.google.com/admob/android/privacy/play-data-disclosure

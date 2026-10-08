@@ -47,6 +47,7 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 ## Confidentialité, compte, langues
 
 - Politique de confidentialité (FR + EN) : `pwa/privacy.html`, servie sur `/privacy` (lien de la fiche Google Play).
+- Profil : Compte › Modifier le profil : pseudo (30 caractères) et photo (recadrée en 128 px, gardée dans `users/{uid}/meta/profile`) ; l'avatar du bouton Compte prend cette photo, sinon celle du compte Google. Pseudo et photo choisis apparaissent sur les liens partagés (« Liste d'échange de … », « partagé par … »). **Règles Firestore à republier** (branche `profile`).
 - Suppression du compte : Compte › Supprimer mon compte, ou `/?delete-account` (lien web exigé par Google Play). Efface les liens publics, les decks, les documents annexes, puis le compte.
 - Réglages › Confidentialité : mentions (Fan Content Policy de Wizards of the Coast), sources, effacement des données de l'appareil.
 - Langues : français et anglais (langue du téléphone, puis Réglages › Langue). Textes écrits en français dans le code, `T('…')` / `TN(n, '…', '…')` ; dictionnaires `src/i18n/<langue>[.<partie>].json`, fusionnés par `build.mjs`. Ajouter une langue = un dictionnaire + une entrée dans `I18N_LANGS` (`src/core.js`).

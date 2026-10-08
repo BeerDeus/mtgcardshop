@@ -50,6 +50,11 @@ const use = C.deckUse(decks);
   assert.deepEqual(ok.have[1], { k: 'evil', n: 'Evil', q: 1 }, 'image hors Scryfall, langue et couleurs inconnues : ignorées');
   assert.equal(C.readShare('trade', JSON.stringify({ want: [{ n: 'Mana Crypt', q: 1, w: 'Eternal Masters · EMA 225' }] })).want[0].pw, 'Eternal Masters · EMA 225', 'libellé de l\'illustration recherchée');
   assert.equal(C.imgShort('https://cards.scryfall.io/small/front/6/d/6da0.jpg?1562404626'), 'small/front/6/d/6da0.jpg', 'adresse raccourcie'); assert.equal(C.imgShort('https://evil.example/x.jpg'), '');
+  { const r = C.readShare('trade', JSON.stringify({ have: [], want: [], by: ' <b>Martin</b>\u0007 ', bp: 'data:image/png;base64,AAAA' }));
+    assert.equal(r.by, 'bMartin/b', 'pseudo : sans balise ni caractère de contrôle'); assert.equal(r.bp, 'data:image/png;base64,AAAA');
+    const bad = C.readShare('deck', JSON.stringify({ text: '1 Sol Ring', by: 'x'.repeat(99), bp: 'https://evil.example/p.png' }));
+    assert.equal(bad.by.length, 30, 'pseudo tronqué'); assert.ok(!('bp' in bad), 'photo : jamais une adresse externe');
+    assert.ok(!('by' in C.readShare('trade', JSON.stringify({ have: [] }))), 'sans profil : rien'); }
   assert.equal(C.readShare('trade', JSON.stringify({ have: [{ n: 'Sol Ring', q: 1, i: 'small/front/6/d/6da0.jpg' }] })).have[0].im, 'https://cards.scryfall.io/small/front/6/d/6da0.jpg', 'adresse raccourcie relue en entier');
   assert.equal(C.readShare('trade', JSON.stringify({ have: [{ n: 'Sol Ring', q: 1, i: '//evil.example/x.jpg' }] })).have[0].im, undefined, 'jamais un autre domaine');
   assert.equal(C.readShare('trade', '{oops'), null); assert.equal(C.readShare('nope', '{}'), null);

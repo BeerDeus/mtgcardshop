@@ -1696,13 +1696,16 @@ function readShare(kind, d) {
   let o; try { o = typeof d === 'string' ? JSON.parse(d) : d; } catch (e) { return null; }
   if (!o || typeof o !== 'object') return null;
   const at = shNum(o.at, 0, 1e15) || 0;
+  // pseudo et photo du propriétaire (facultatifs) : texte court sans balise, image seulement en data:image (aucune adresse externe)
+  const by = shStr(o.by, 200).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30).trim(), bp = typeof o.bp === 'string' && o.bp.length <= 40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(o.bp) ? o.bp : '';
+  const who = { ...(by ? { by } : {}), ...(bp ? { bp } : {}) };
   if (kind === 'trade') {
     const list = a => (Array.isArray(a) ? a.slice(0, 20000).map(shareCard).filter(Boolean) : []);
-    return { kind, at, have: list(o.have), want: list(o.want), ...(o.cut ? { cut: true } : {}) };      // cut : liste tronquée par le propriétaire (trop longue)
+    return { kind, at, have: list(o.have), want: list(o.want), ...(o.cut ? { cut: true } : {}), ...who };      // cut : liste tronquée par le propriétaire (trop longue)
   }
   if (kind === 'deck') {
     const text = shStr(o.text, 60000), name = shStr(o.name, 120).trim() || 'Deck';
-    return parseDeck(text).cards.length || parseDeck(text).basics.length ? { kind, at, name, text } : null;
+    return parseDeck(text).cards.length || parseDeck(text).basics.length ? { kind, at, name, text, ...who } : null;
   }
   return null;
 }

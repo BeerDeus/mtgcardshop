@@ -202,9 +202,91 @@ function updateSaveButtons() {
   $$('.deck', DKS.el || document.createElement('div')).forEach(el => { el.dataset.active = el.dataset.id === S.deckId ? '1' : '0'; });
 }
 function renderAccountBtn() {
-  const b = $('#btnAccount'), l = D.user ? ((D.user.displayName || D.user.email || '?').trim()[0] || '?').toUpperCase() : (D.hint && !D.authReady ? D.hint.l : '');
+  const b = $('#btnAccount'), l = D.user ? ((PROF.name || D.user.displayName || D.user.email || '?').trim()[0] || '?').toUpperCase() : (D.hint && !D.authReady ? D.hint.l : '');
   b.dataset.in = l ? '1' : '0'; $('#avatarLetter').textContent = l;
-  b.setAttribute('aria-label', D.user ? T('Compte : {email}', { email: D.user.email || '' }) : T('Compte'));
+  profImg(b, D.user ? profAvatar() : '');
+  b.setAttribute('aria-label', D.user ? T('Compte : {email}', { email: PROF.name || D.user.email || '' }) : T('Compte'));
+}
+
+/* ── Profil : pseudo et photo (users/{uid}/meta/profile), affichés sur les liens partagés ──────────── */
+const PROF_KEY = 'deckdeal:profile:v1', PROF_NAME_MAX = 30, PROF_PHOTO_MAX = 40000;
+const PROF = { uid: '', name: '', photo: '', unsub: null };
+const profClean = s => String(s || '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, PROF_NAME_MAX);
+const profPhotoOk = s => typeof s === 'string' && s.length <= PROF_PHOTO_MAX && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
+/** Avatar : photo choisie, sinon celle du compte Google, sinon rien (l'initiale reste). */
+const profAvatar = () => PROF.photo || (D.user && typeof D.user.photoURL === 'string' && /^https:\/\//.test(D.user.photoURL) ? D.user.photoURL : '');
+/** Ce que voient les visiteurs d'un lien partagé : le pseudo et la photo choisis (jamais l'e-mail ni la photo Google). */
+const profShare = () => ({ ...(PROF.name ? { by: PROF.name } : {}), ...(PROF.photo ? { bp: PROF.photo } : {}) });
+/** Image d'avatar posée sur un élément (bouton du compte, en-tête de la feuille) ; image injoignable (hors ligne) : retour à l'initiale. */
+function profImg(el, src) {
+  let im = $('img.av-img', el);
+  if (!src) { if (im) im.remove(); el.dataset.img = '0'; return; }
+  if (!im) { im = document.createElement('img'); im.className = 'av-img'; im.alt = ''; im.referrerPolicy = 'no-referrer'; im.onerror = () => { im.remove(); el.dataset.img = '0'; }; el.appendChild(im); }
+  if (im.getAttribute('src') !== src) im.src = src;
+  el.dataset.img = '1';
+}
+function profLoad(uid) {
+  PROF.name = ''; PROF.photo = '';
+  try { const o = JSON.parse(localStorage.getItem(PROF_KEY) || 'null'); if (uid && o && o.uid === uid) { PROF.name = profClean(o.name); PROF.photo = profPhotoOk(o.photo) ? o.photo : ''; } } catch (e) { /* stockage indisponible */ }
+}
+function profStore() { try { if (PROF.uid) localStorage.setItem(PROF_KEY, JSON.stringify({ uid: PROF.uid, name: PROF.name, photo: PROF.photo })); else localStorage.removeItem(PROF_KEY); } catch (e) { /* ignore */ } }
+/** Changement de compte : profil de l'appareil, puis celui du compte (jamais renvoyé tout seul : écrit seulement quand on l'enregistre). */
+function profUser(user) {
+  if (PROF.unsub) { try { PROF.unsub(); } catch (e) { /* ignore */ } PROF.unsub = null; }
+  PROF.uid = user ? user.uid : ''; profLoad(PROF.uid); if (!user) profStore();
+  if (!user || !D.cloud || !D.cloud.watchMeta) return;
+  PROF.unsub = D.cloud.watchMeta(user.uid, 'profile', (data, pending, fromCache) => {
+    if (PROF.uid !== user.uid || (fromCache && !data)) return;
+    const name = data ? profClean(data.name) : '', photo = data && profPhotoOk(data.photo) ? data.photo : '';
+    if (name === PROF.name && photo === PROF.photo) return;
+    PROF.name = name; PROF.photo = photo; profStore(); renderAccountBtn(); paintAccount(); trSoon(1500);      // liens partagés mis à jour avec le nouveau nom
+  }, () => { /* règles pas encore publiées : le profil reste celui de l'appareil */ });
+}
+/** Enregistre le profil : appliqué tout de suite sur l'appareil, envoyé au compte (hors ligne : à la reconnexion ; règles refusées : signalé). */
+function profSave(patch) {
+  const u = D.user; if (!u || !cloudOn()) throw new Error('offline');
+  const name = 'name' in patch ? profClean(patch.name) : PROF.name, photo = 'photo' in patch && (patch.photo === '' || profPhotoOk(patch.photo)) ? patch.photo : PROF.photo;
+  Promise.resolve().then(() => D.cloud.saveMeta(u.uid, 'profile', { ...(name ? { name } : {}), ...(photo ? { photo } : {}), updatedAt: Date.now() }))
+    .catch(err => toast(err && err.code === 'permission-denied' ? T('Profil gardé sur cet appareil : règles Firestore à publier.') : T('Profil gardé sur cet appareil : envoi au compte impossible.')));
+  PROF.name = name; PROF.photo = photo; profStore(); renderAccountBtn(); paintAccount(); trSoon(1500);
+}
+/** Photo choisie → carré de 128 px recadré au centre, en JPEG (quelques Ko, gardé dans le compte). */
+async function profPhotoFrom(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const s = Math.min(img.naturalWidth, img.naturalHeight); if (!s) throw new Error('image');
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 128, 128);
+    for (const q of [0.82, 0.7, 0.55]) { const d = c.toDataURL('image/jpeg', q); if (profPhotoOk(d)) return d; }
+    throw new Error('image');
+  } finally { URL.revokeObjectURL(url); }
+}
+/** Compte › Modifier le profil : photo (choisie, ou celle de Google par défaut) et pseudo. */
+function openProfile() {
+  if (!D.user) return;
+  openSheet(T('Profil'), T('Affiché sur tes liens partagés'), api => {
+    const b = api.body; let photo = PROF.photo;
+    const paint = () => {
+      const av = photo || (D.user && D.user.photoURL) || '';
+      b.innerHTML = `<div class="prof-top"><span class="who-av prof-av" id="pfAv">${esc(((PROF.name || D.user.displayName || D.user.email || '?').trim()[0] || '?').toUpperCase())}</span>
+          <div class="prof-acts"><button class="btn ghost small" type="button" id="pfPick">${T(photo ? 'Changer la photo' : 'Choisir une photo')}</button>${photo ? `<button class="link-btn" type="button" id="pfDel">${T(D.user.photoURL ? 'Revenir à la photo Google' : 'Retirer la photo')}</button>` : ''}
+            <input type="file" id="pfFile" accept="image/*" hidden></div></div>
+        <div class="field-in"><label class="label" for="pfName">${T('Pseudo')}</label><input id="pfName" maxlength="${PROF_NAME_MAX}" autocomplete="nickname" spellcheck="false" value="${esc($('#pfName', b) ? $('#pfName', b).value : PROF.name)}" placeholder="${esc(T('Ton pseudo'))}">
+          <span class="hint">${T('Visible par les personnes qui ont un de tes liens : « Liste d\'échange de {name} ». Ton e-mail n\'y apparaît jamais.', { name: T('ton pseudo') })}</span></div>
+        <p class="hint" id="pfMsg" role="status"></p>`;
+      profImg($('#pfAv', b), av);
+      $('#pfPick', b).onclick = () => $('#pfFile', b).click();
+      $('#pfFile', b).onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; try { photo = await profPhotoFrom(f); paint(); } catch (x) { $('#pfMsg', b).textContent = T('Image illisible : choisis une photo JPEG ou PNG.'); } };
+      const del = $('#pfDel', b); if (del) del.onclick = () => { photo = ''; paint(); };
+    };
+    paint();
+    api.setFoot(`<button class="btn" type="button" id="pfSave">${T('Enregistrer')}</button>`);
+    $('#pfSave', api.foot).onclick = () => {
+      try { profSave({ name: $('#pfName', b).value, photo }); api.close(); toast(T('Profil enregistré')); }
+      catch (err) { $('#pfMsg', b).textContent = T('Enregistrement impossible : vérifie ta connexion.'); }
+    };
+  });
 }
 
 /* ── Feuille : enregistrer ────────────────────────────────────────────────────────────────── */
@@ -397,9 +479,11 @@ function paintAccountIn(api) {
   const u = D.user, b = api.body, local = importable().length;
   const n = D.list.length;
   const state = D.listErr ? D.listErr : D.pending ? T('Synchronisation…') : TN(n, 'Synchronisé · {n} deck', 'Synchronisé · {n} decks');
-  b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || T('Compte'))}</b><span id="acState">${esc(state)}</span></div></div>
+  b.innerHTML = `<div class="who"><span class="who-av" id="acAv">${esc(((PROF.name || u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(PROF.name || u.email || u.displayName || T('Compte'))}</b>${PROF.name && u.email ? `<span class="who-mail">${esc(u.email)}</span>` : ''}<span id="acState">${esc(state)}</span></div></div>
+    <button class="btn ghost small" type="button" id="acProfile" style="align-self:flex-start">${T('Modifier le profil')}</button>
     ${local ? `<div class="import-row"><span>${TN(local, '{n} deck sur cet appareil', '{n} decks sur cet appareil')}</span><button class="btn" type="button" id="acImport">${T('Importer')}</button></div>` : ''}
     <p class="hint">${T('Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.')}</p>`;      // identifiant du compte pour ALLOWED_UIDS : se lit dans la console Firebase (Authentication › Users), plus dans l'appli
+  profImg($('#acAv', b), profAvatar()); $('#acProfile', b).onclick = openProfile;
   b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">' + T('Supprimer mon compte') + '</button>');
   $('#acDel', b).onclick = () => { D.account.del = true; paintAccount(); };
   api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">' + T('Se déconnecter') + '</button>');
@@ -538,7 +622,7 @@ function onUser(user) {
     });
   }
   renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
-  collUser(user); xsUser(user); trUser(user);
+  collUser(user); xsUser(user); trUser(user); if (prev !== D.uid) profUser(user);
   if (prev !== D.uid && typeof checkServer === 'function') { CTX.serverOk = null; checkServer(); }      // autre compte : a-t-il droit au token du serveur ?
   if (!user && prev) updateHeroDelta();
 }

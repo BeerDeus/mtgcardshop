@@ -59,6 +59,7 @@ service cloud.firestore {
     //  · engaged    : cartes réservées par des decks « montés » ({ decks: { idDeck: { n, at, q: { carte: exemplaires } } } })
     //  · history    : valeur de la collection dans le temps ({ pts: [[t, centimes, cartes, exemplaires], …] }, un par jour, 420 au plus)
     //  · trade      : liste d'échange ({ keep: réserve, kept: [cartes gardées], wish: { carte: { n, q } }, share: id du lien, dsh: { deck: id du lien } })
+    //  · profile    : pseudo (30 caractères) et photo (data:image, ≤ 40 Ko), affichés sur les liens partagés
     match /users/{uid}/meta/{docId} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
@@ -86,6 +87,13 @@ service cloud.firestore {
             && request.resource.data.wish is map && request.resource.data.wish.size() <= 2000
             && request.resource.data.share is string && request.resource.data.share.size() <= 40
             && request.resource.data.dsh is map && request.resource.data.dsh.size() <= 200)
+          || (docId == 'profile'
+            && request.resource.data.keys().hasOnly(['name', 'photo', 'updatedAt'])
+            && (!('name' in request.resource.data)
+                || (request.resource.data.name is string && request.resource.data.name.size() <= 30))
+            && (!('photo' in request.resource.data)
+                || (request.resource.data.photo is string && request.resource.data.photo.size() <= 40000
+                    && request.resource.data.photo.matches('data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+'))))
         );
     }
 

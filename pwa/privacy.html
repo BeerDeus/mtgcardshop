@@ -44,13 +44,14 @@ ul{padding-left:20px}
 <p>Le compte sert à retrouver tes données sur tous tes appareils. Il repose sur Firebase Authentication et Cloud Firestore (Google). Sont enregistrés :</p>
 <ul>
 <li>ton adresse e-mail et ton mode de connexion (e-mail ou Google) ;</li>
-<li>avec Google, ton nom et ta photo de profil Google (gardés par Firebase Authentication) ;</li>
+<li>avec Google, ton nom et ta photo de profil Google (gardés par Firebase Authentication ; la photo s'affiche sur ton bouton Compte) ;</li>
+<li>si tu en choisis, ton pseudo et ta photo de profil (une image réduite à 128 pixels) ;</li>
 <li>tes decks, ta collection, l'historique de sa valeur et ta liste d'échange.</li>
 </ul>
 <p>Ces données sont gardées tant que le compte existe. Ton token CardTrader n'est jamais enregistré dans le compte.</p>
 
 <h2>Liens partagés</h2>
-<p>Quand tu partages ta liste d'échange ou un deck, son contenu est lisible par toute personne qui a le lien. Il ne contient ni ton e-mail ni l'identifiant de ton compte, seulement une empreinte (SHA-256) de cet identifiant, qui montre que le lien est à toi. Tu peux retirer un lien à tout moment.</p>
+<p>Quand tu partages ta liste d'échange ou un deck, son contenu est lisible par toute personne qui a le lien. Il ne contient ni ton e-mail ni l'identifiant de ton compte, seulement une empreinte (SHA-256) de cet identifiant, qui montre que le lien est à toi. Si tu as choisi un pseudo ou une photo de profil, ils y apparaissent aussi (« Liste d'échange de … ») ; ta photo Google, jamais. Tu peux retirer un lien à tout moment.</p>
 
 <h2>Notre serveur</h2>
 <p>Le serveur de Mana Orbit (hébergé par Hostinger) relaie les requêtes vers CardTrader, Scryfall et EDHREC et garde en cache des prix publics. Il lit aussi les liens que tu colles pour importer un deck (EDHREC, Archidekt, Moxfield…). Si tu les actives :</p>
@@ -104,13 +105,14 @@ ul{padding-left:20px}
 <p>An account lets you get your data back on all your devices. It relies on Firebase Authentication and Cloud Firestore (Google). We store:</p>
 <ul>
 <li>your email address and sign-in method (email or Google);</li>
-<li>with Google, your Google name and profile photo (kept by Firebase Authentication);</li>
+<li>with Google, your Google name and profile photo (kept by Firebase Authentication; the photo is shown on your Account button);</li>
+<li>if you set them, your nickname and profile photo (an image scaled down to 128 pixels);</li>
 <li>your decks, your collection, its value history and your trade list.</li>
 </ul>
 <p>This data is kept as long as the account exists. Your CardTrader token is never stored in the account.</p>
 
 <h2>Shared links</h2>
-<p>When you share your trade list or a deck, its content can be read by anyone who has the link. It contains neither your email nor your account ID, only a fingerprint (SHA-256) of that ID, which shows the link is yours. You can remove a link at any time.</p>
+<p>When you share your trade list or a deck, its content can be read by anyone who has the link. It contains neither your email nor your account ID, only a fingerprint (SHA-256) of that ID, which shows the link is yours. If you set a nickname or a profile photo, they appear there too (“…'s trade list”); your Google photo never does. You can remove a link at any time.</p>
 
 <h2>Our server</h2>
 <p>The Mana Orbit server (hosted by Hostinger) relays requests to CardTrader, Scryfall and EDHREC and caches public prices. It also fetches the links you paste to import a deck (EDHREC, Archidekt, Moxfield…). If you turn them on:</p>

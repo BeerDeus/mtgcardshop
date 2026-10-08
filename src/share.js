@@ -100,6 +100,7 @@ async function ownerTag(uid) {
   return ownerTags.get(uid);
 }
 async function trPut(id, kind, body) {
+  body = { ...body, ...profShare() };      // pseudo et photo du profil : le lien change quand le profil change
   const s = kind + ':' + hash32(JSON.stringify(body));
   if (TR.sig[id] === s) return;
   await D.cloud.saveShare(id, { o: await ownerTag(D.uid), kind, v: 1, updatedAt: Date.now(), d: JSON.stringify({ ...body, at: Date.now() }) });
@@ -265,7 +266,7 @@ function trClick(e) {
   else if (act === 'trnew') trShareOff(true);
   else if (act === 'trcopy') copyText(shareUrl(TR.share));
   else if (act === 'trsend') sendLink(shareUrl(TR.share), T('Ma liste d\'échange Magic'));
-  else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, at: Date.now() }), true); }
+  else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, ...profShare(), at: Date.now() }), true); }
   else if (act === 'trmore') { TR.shown += TR_PAGE; collPaintBody(true); }
   else if (act === 'tkeep' && k) { TR.kept.add(k); haptic('tap'); trChanged(); toast(T('Gardée : elle n\'est plus proposée'), { label: T('Annuler'), fn: () => { TR.kept.delete(k); trChanged(); } }); }
   else if (act === 'tunkeep' && k) { TR.kept.delete(k); haptic('tap'); trChanged(); }
@@ -322,7 +323,7 @@ async function openPublicLink(id) {
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
     return;
   }
-  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at }); else openPublicTrade(sh, false); }
+  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at, by: sh.by }); else openPublicTrade(sh, false); }
   catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
     console.error(e);
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${T('Ce partage n\'a pas pu s\'afficher. Recharge la page ; si ça recommence, signale ce message :')}</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
@@ -334,7 +335,7 @@ function openPublicTrade(sh, preview) {
   const P = TR.pub = { sh, sub: sh.have.length || !sh.want.length ? 'have' : 'want', f: newFilter(), shown: TR_PAGE, el: null };
   const wrap = document.createElement('div'); wrap.className = 'dv coll pubv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Liste d\'échange'));
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer')}"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>${T(preview ? 'Aperçu de ta liste' : 'Liste d\'échange')}</b><span>${sh.at ? T('Mise à jour {when}', { when: esc(relTime(sh.at)) }) : ''}</span></div></header>
+      ${sh.bp ? `<img class="pub-av" src="${sh.bp}" alt="">` : ''}<div class="dv-title"><b>${preview ? T('Aperçu de ta liste') : sh.by ? T('Liste d\'échange de {name}', { name: esc(sh.by) }) : T('Liste d\'échange')}</b><span>${sh.at ? T('Mise à jour {when}', { when: esc(relTime(sh.at)) }) : ''}</span></div></header>
     <div class="dv-scroll"><div class="dv-body coll-body">
       <p class="hint pub-note">${T(preview ? 'Ce que voient les personnes qui ont ton lien.' : 'Lecture seule. Touche une carte pour la voir en grand.')}${sh.cut ? ' ' + T('Liste trop longue : seule une partie est affichée.') : ''}</p>
       <div class="seg" id="pubSub" role="radiogroup" aria-label="${T('Liste')}"></div><div id="pubF"></div><div class="pub-main"></div></div></div>`;

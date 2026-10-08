@@ -228,9 +228,18 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.equal((await p.evaluate(() => findDeck(S.deckId).history)).length, 2); ok('liste modifiée non enregistrée : historique du deck intact');
   await p.click('#btnBack');
 
+  // profil : photo choisie (recadrée en carré de 128 px, JPEG) et pseudo → avatar du bouton Compte et nom du compte
+  await p.click('#btnAccount'); await sheetOpen(p); await p.click('#acProfile'); await p.waitForSelector('#pfName');
+  const PNG1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  await p.setInputFiles('#pfFile', { name: 'moi.png', mimeType: 'image/png', buffer: PNG1 }); await p.waitForSelector('#pfAv img');
+  await p.fill('#pfName', '  Beer  '); await p.click('#pfSave'); await p.waitForTimeout(600);
+  assert.equal(await p.$eval('#btnAccount', e => e.dataset.img), '1'); assert.match(await p.$eval('#btnAccount img', i => i.src), /^data:image\/jpeg;base64,/);
+  assert.match(await T(p, '.who-t b'), /^Beer$/); assert.match(await T(p, '.who-mail'), /beer@example.com/); await shot(p, 'B6b-profil');
+  ok('profil : photo recadrée et pseudo, avatar du bouton Compte, e-mail sous le pseudo');
+  await p.keyboard.press('Escape'); await sheetGone(p);
   // déconnexion
   await p.click('#btnAccount'); await sheetOpen(p); await p.waitForTimeout(400);
-  assert.match(await T(p, '.who-t b'), /beer@example.com/); await shot(p, 'B7-compte-connecte');
+  assert.match(await T(p, '.who-mail'), /beer@example.com/); await shot(p, 'B7-compte-connecte');
   await p.click('#acOut'); await sheetGone(p); await p.waitForTimeout(500);
   assert.equal(await p.$eval('#btnAccount', e => e.dataset.in), '0'); await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 0); await H(p); ok('déconnexion : retour au mode invité');
   // reconnexion : mauvais mot de passe puis bon

@@ -129,7 +129,7 @@ un(); unsub();
   const r = await c.wipe('u1', ['S3', 'S1', 'PARTI', 'REFUS', '']); await c.deleteUser();
   assert.deepEqual(r, { decks: 2, shares: 5, failed: 1 });
   assert.deepEqual([...store.keys()], ['shares/REFUS', 'shares/AUTRE'], 'tout le compte effacé (sauf le lien refusé), rien d\'autre');
-  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'del:shares/S3', 'del:shares/REFUS', 'batch:7', 'deleteUser:a@b.c']);
+  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'del:shares/S3', 'del:shares/REFUS', 'batch:8', 'deleteUser:a@b.c']);
   user.providerData = [{ providerId: 'google.com' }]; assert.equal(c.provider(), 'google'); await c.reauth(null); assert.equal(log.at(-1), 'popup');
   console.log('✓ suppression du compte : reconnexion, liens publics (compte + appareil, absents ignorés, échecs comptés), decks et documents annexes effacés, puis le compte');
 

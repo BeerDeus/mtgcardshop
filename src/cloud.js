@@ -135,7 +135,7 @@ function makeCloud(m) {
         catch (e) { if (e && e.code === 'not-found') continue; failed++; console.warn('Lien public non effacé :', id, e && e.code); }      // on continue : le reste du compte doit partir
       }
       const decks = await m.fs.getDocsFromServer(col(uid));
-      const refs = [...decks.docs.map(d => d.ref), ...['collection', 'engaged', 'history', 'trade'].map(id => ref('meta', id)), ref('binder', 'lands')];
+      const refs = [...decks.docs.map(d => d.ref), ...['collection', 'engaged', 'history', 'trade', 'profile'].map(id => ref('meta', id)), ref('binder', 'lands')];
       for (let i = 0; i < refs.length; i += 400) { const b = m.fs.writeBatch(db); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
       return { decks: decks.docs.length, shares: shares.length, failed };
     },
