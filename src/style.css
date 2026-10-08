@@ -589,7 +589,7 @@ button.sync:active{background:var(--surface-2)}
 @keyframes hmScan{0%,100%{top:12%}50%{top:80%}}
 @keyframes hmPulse{0%{box-shadow:0 0 0 0 rgba(79,209,161,.6)}100%{box-shadow:0 0 0 9px rgba(79,209,161,0)}}
 @keyframes hmGlint{0%{transform:translateX(-120%) skewX(-18deg)}60%,100%{transform:translateX(260%) skewX(-18deg)}}
-.hm-hero{display:flex;flex-direction:column;align-items:center;gap:4px}
+.hm-hero{display:flex;flex-direction:column;align-items:center;gap:4px;overflow-x:clip}      /* l'orbite qui tourne (carré tourné, terrains autour) élargissait la page : les panneaux fixes étaient coupés à droite */
 .hm-stage{position:relative;width:300px;height:272px;display:grid;place-items:center}
 .hm-orbit{position:absolute;width:222px;height:222px;left:39px;top:25px;animation:hmSpin 32s linear infinite}
 .hm-land{position:absolute;width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid var(--lc);box-shadow:0 0 18px var(--lg);background:var(--lb);animation:hmSpinR 32s linear infinite}
@@ -639,7 +639,8 @@ button.sync:active{background:var(--surface-2)}
 .hm-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .hm-top em{font-style:normal;font-family:var(--font-display);font-weight:800;font-size:15px;color:#c98a12}
 .hm-tt{display:flex;flex-direction:column;gap:2px;min-width:0}
-.hm-tt b{font-size:14px;line-height:1.15}
+.hm-tt b{font-size:14px;line-height:1.15;text-wrap:balance}
+@media (max-width:430px){.hm-tile{padding:12px 10px}.hm-tt b{font-size:13px;letter-spacing:-.01em}}      /* « Deck à monter » tient sur une ligne dès 390 px ; en dessous, deux lignes équilibrées */
 .hm-tt span{font-size:11px;line-height:1.25;color:var(--ink-3)}
 .hm-scanbox{position:absolute;right:10px;top:10px;width:30px;height:42px;border-radius:5px;border:2px dashed color-mix(in srgb,var(--ink-3) 55%,transparent)}
 .hm-scanbox i{position:absolute;left:8%;right:8%;height:2px;background:#4fd1a1;box-shadow:0 0 12px 2px rgba(79,209,161,.7);animation:hmScan 2.4s ease-in-out infinite}
@@ -1148,6 +1149,7 @@ button,.btn,select,summary{touch-action:manipulation}
 .buybar .ib-ico .i{width:20px;height:20px}
 .buybar .ib-txt b{color:var(--ink)}
 .buybar[hidden]{display:none}
+@media (max-width:420px){.buybar{display:grid;grid-template-columns:40px minmax(0,1fr) 34px;row-gap:10px}.buybar .btn{grid-column:2/-1;grid-row:2;justify-self:start}.buybar .ib-x{grid-column:3;grid-row:1;align-self:start}}      /* bouton sous le texte : à côté, il ne lui laissait que ~120 px (quatre lignes) */
 .buy-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
 .buy-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);transition:opacity .2s}
 .buy-row:first-child{border-top:0}
