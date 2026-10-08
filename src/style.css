@@ -138,6 +138,8 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .dock-sum{display:flex;flex-direction:column;min-width:0;flex:1}
 .dock-sum small{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dock-sum b{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.dock-sum{flex:1 0 auto}.dock-sum b{white-space:nowrap}      /* le total ne se coupe jamais : c'est le bouton qui se resserre (« Copier pour Cardmarket ») */
+#btnCart{min-width:0;flex:0 1 auto}#btnCartTxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 
 /* ── Résultats ────────────────────────────────────────── */
 .crumb{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -295,6 +297,7 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .prof-acts{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .pub-av{width:36px;height:36px;border-radius:12px;object-fit:cover;flex:none}
 .crumb-r{display:flex;align-items:center;gap:0}
+@media (max-width:379px){.crumb-r .link-btn{font-size:0;padding-inline:8px}.crumb-r .link-btn .i{width:20px;height:20px}}      /* petit écran : icônes seules (les libellés restent lus par les lecteurs d'écran), plus de défilement de côté */
 .link-btn.strong{font-weight:700}
 .link-btn[disabled]{opacity:.5;pointer-events:none}
 .link-btn.saved{color:var(--good)}

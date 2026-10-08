@@ -434,5 +434,6 @@
   "Les prix réels viennent des offres CardTrader : ajoute ton token CardTrader dans les réglages.": "Real prices come from CardTrader offers: add your CardTrader token in Settings.",
   "Ce compte n'a pas accès au CardTrader du serveur. Ajoute ton propre token CardTrader dans les réglages.": "This account has no access to the server's CardTrader. Add your own CardTrader token in Settings.",
   "commandants joués en tournoi cEDH (données TopDeck.gg)": "commanders played in cEDH tournaments (TopDeck.gg data)",
-  "résultats de tournois cEDH, via EDHTop16": "cEDH tournament results, via EDHTop16"
+  "résultats de tournois cEDH, via EDHTop16": "cEDH tournament results, via EDHTop16",
+  "Serveur injoignable : prix simulés pour l'instant.": "Server unreachable: simulated prices for now."
 }

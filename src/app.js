@@ -444,7 +444,9 @@ async function startRun(fresh) {
   const cards = S.deck.cards; if (!cards.length) return;
   if (!cards.some(c => c.need > 0)) { toast(T('Tout est déjà dans ta collection')); return; }
   if (!S.demo && !S.token && CTX.proxy && CTX.hasToken && CTX.needsLogin && CTX.serverOk == null && typeof D !== 'undefined' && D.user) await checkServer();      // compte tout juste connecté : a-t-il droit au token du serveur ?
+  if (S.demo && !CTX.proxy && typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) await detectProxy(4000);      // serveur pas encore trouvé : seconde chance avant de simuler
   const src = priceSrc();
+  if (src === 'demo') toast(T('Serveur injoignable : prix simulés pour l\'instant.'), { label: T('Réessayer'), fn: () => detectProxy().then(() => { if (CTX.proxy) startRun(); }) });
   if (COLL.pxRun) { COLL.pxRun.ctrl.abort(); toast(T('Lecture des prix réels interrompue : la recherche passe avant')); }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
   if (S.run && S.run.task) S.run.task.remove();
@@ -1136,10 +1138,11 @@ function initInstall() {
   $('#btnInstallBar').onclick = doInstall; $('#btnInstallX').onclick = PWA.snooze;
   PWA.on(paintInstallBar); paintInstallBar();
 }
-async function detectProxy() {
+/** Serveur Mana Orbit présent ? Délai large (démarrage à froid, réseau mobile lent) : sinon la session passait en démo, avec de faux prix. */
+async function detectProxy(ms = 5000) {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return;
   try {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), ms);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
     if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.fcm = j.fcm === true; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); }
@@ -1239,6 +1242,9 @@ function init() {
   });
   initInstall();
   detectProxy().then(() => { pushInit(); handleLaunch(); alSoon(); });
+  // serveur injoignable au lancement : nouvel essai au retour du réseau ou de l'appli au premier plan (au plus toutes les 30 s)
+  let pingAt = 0; const pingAgain = () => { if (CTX.proxy || document.hidden || Date.now() - pingAt < 30000) return; pingAt = Date.now(); detectProxy().then(() => { if (CTX.proxy) alSoon(); }); };
+  window.addEventListener('online', pingAgain); document.addEventListener('visibilitychange', pingAgain);
   keepStorage();
 }
 
