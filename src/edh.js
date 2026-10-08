@@ -222,8 +222,8 @@ function openEdhThemes() {
 }
 const edhPips = ci => manaHtml(ci ? '{' + ci.split('').join('}{') + '}' : '{C}');
 const edhSrcLabel = d => d.k === 'avg' ? T('EDHREC · deck moyen') : 'Archidekt · ' + (edhKindName(d.k) || T('deck réel'));
-/** Ligne du type de deck : « Premium · màj il y a 2 mois » (deck moyen : « Moyen »). */
-const edhKindLine = d => esc(edhKindName(d.k) || T('Deck')) + (d.k !== 'avg' && d.u ? ' · ' + T('màj {ago}', { ago: esc(agoDay(d.u)) }) : '');
+/** Étiquettes du type de deck : « Premium », puis « màj il y a 2 mois » à part (d'un seul tenant, elles ne tenaient pas sur une ligne à 360 px) ; deck moyen : « Moyen » seul. */
+const edhKindTags = d => `<span class="tag dk-kind k-${esc(d.k)}" title="${esc(T(EDH_KIND_HELP[d.k] || ''))}">${esc(edhKindName(d.k) || T('Deck'))}</span>` + (d.k !== 'avg' && d.u ? `<span class="tag">${T('màj {ago}', { ago: esc(agoDay(d.u)) })}</span>` : '');
 function edhPanelHtml() {
   if (!EDH.data) {
     return EDH.err ? `<div class="dv-empty"><b>${T('Decks indisponibles')}</b><p>${esc(EDH.err)}</p><div class="coll-cta"><button class="btn ghost" type="button" data-act="dretry">${T('Réessayer')}</button></div></div>`
@@ -270,7 +270,7 @@ function edhResHtml() {
 function edhRowHtml(r, i) {
   const c = r.cmd, name = c.names.join(' + '), img = (ownLangImg(c.keys[0]) || {}).src || c.img || (COLL.meta[c.keys[0]] && COLL.meta[c.keys[0]].im) || '', pct = Math.round(100 * (r.have - r.eng) / r.total), pe = Math.min(100 - pct, Math.round(100 * r.eng / r.total));      // bleu : possédées et libres · orange : possédées mais engagées dans un deck monté
   const mo = EDH.data && EDH.data.rk === 'month', d = r.deck, tags = [];
-  tags.push(`<span class="tag dk-kind k-${esc(d.k)}" title="${esc(EDH_KIND_HELP[d.k] || '')}">${edhKindLine(d)}</span>`);
+  tags.push(edhKindTags(d));
   if (r.gcn) tags.push(`<span class="tag warn" title="${T('Cartes de la liste Game Changers (brackets Commander) dans ce deck')}">${TN(r.gcn, '{n} Game Changer', '{n} Game Changers')}</span>`);
   if (r.mine) tags.push(`<span class="tag good">${T('Commandant possédé')}</span>`);
   const right = r.miss ? `<b>${nf0(r.miss)}</b><small>${T('à acheter')}</small><em>${r.cost ? '≈ ' + esc(fmt(r.cost, 'EUR')) : T('prix inconnu')}</em>${r.cost && r.unpriced ? `<small>${T('+ {n} sans prix', { n: nf0(r.unpriced) })}</small>` : ''}` : `<b class="ok">✓</b>${T('<small>complet</small>')}`;
@@ -344,7 +344,7 @@ function openEdhDeck(r) {
     };
     api.body.addEventListener('click', e => { const rw = e.target.closest('.crow[data-ik]'); if (rw) open(rw); });
     api.body.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.crow[data-ik]')) { e.preventDefault(); open(e.target); } });
-    api.setFoot(`${url ? `<a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(r.deck.src === 'edhrec' ? 'EDHREC' : T('Voir le deck'))} ↗</a>` : `<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>`}<button class="btn" type="button" id="dkGo">${r.miss ? T('Chercher les manquantes') : T('Charger le deck')}</button>`);
+    api.setFoot(`${url ? `<a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${r.deck.src === 'edhrec' ? 'EDHREC' : 'Archidekt'} ↗</a>` : `<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>`}<button class="btn" type="button" id="dkGo">${r.miss ? T('Chercher les manquantes') : T('Charger le deck')}</button>`);
     $('#dkGo', api.foot).onclick = () => { api.close(); edhUseDeck(r); };
   });
 }
