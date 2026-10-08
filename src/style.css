@@ -1459,3 +1459,8 @@ button,.btn,select,summary{touch-action:manipulation}
 .kv.about dd{font-family:var(--font-body);font-weight:400;text-align:left;color:var(--ink-2)}
 .kv.about a{color:var(--ink);font-weight:600}
 .link-btn.ac-del{align-self:flex-start;margin-top:14px;color:var(--bad)}
+/* Prix Cardmarket (sans token CardTrader) */
+.seg.dim{opacity:.45;pointer-events:none}
+.cm-price{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--surface-3);border:1px solid var(--line)}
+.cm-price b{font-family:var(--font-mono);font-size:26px;letter-spacing:-.02em}
+.cm-price span{color:var(--ink-2);font-size:13.5px}

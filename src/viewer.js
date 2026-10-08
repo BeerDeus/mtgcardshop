@@ -260,12 +260,12 @@ function buildSnap() {
     items.push(it);
   }
   for (const b of S.deck.basics || []) items.push({ k: b.key, n: b.name, q: b.qty, s: 'basic' });
-  const snap = { at, mode: S.opts.mode, lang: S.opts.lang, sig: curSig(), items };
+  const snap = { at, mode: isCm() ? 'cm' : S.opts.mode, lang: S.opts.lang, sig: curSig(), items };
   // Évolution : les prix unitaires du relevé précédent de ce deck (jamais celui de la même recherche : un deuxième « Enregistrer » ne doit pas effacer l'écart).
   const prev = snapOf(findDeck(S.deckId));
   if (prev) {
     if (prev.at === at) { if (prev.pv) { snap.pv = prev.pv; snap.pa = prev.pa; } }
-    else if (prev.at < at && prev.lang === snap.lang) { const pv = pvOf(prev); if (pv) { snap.pv = pv; snap.pa = prev.at; } }
+    else if (prev.at < at && prev.lang === snap.lang && (prev.mode === 'cm') === (snap.mode === 'cm')) { const pv = pvOf(prev); if (pv) { snap.pv = pv; snap.pa = prev.at; } }
   }
   return sanitizeSnap(snap);
 }
@@ -420,7 +420,7 @@ function dvFrame(snap) {
   const el = DV.el, items = snap.items, found = items.filter(i => i.s === 'ok'), total = found.reduce((a, i) => a + i.c, 0);
   const copies = items.reduce((a, i) => a + i.q, 0), miss = items.filter(i => i.s === 'nf').length, none = items.filter(i => i.s === 'none' || i.s === 'nohub').length, own = items.filter(i => i.s === 'own').length;
   const ref = !!snap.ref, old = !ref && !DV.live && snapAge(snap) === 'old';
-  const crit = ref ? 'Valeur estimée · prix tendance Cardmarket' + (items.some(i => i.ow) ? ' · ✓ dans ta collection' : '') : [LANGS[snap.lang] || snap.lang, snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
+  const crit = ref ? 'Valeur estimée · prix tendance Cardmarket' + (items.some(i => i.ow) ? ' · ✓ dans ta collection' : '') : [LANGS[snap.lang] || snap.lang, snap.mode === 'cm' ? 'Prix tendance Cardmarket' : snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
   const when = ref ? (DV.loading ? 'Lecture des cartes et des prix…' : 'Prix de référence, pas des offres') : DV.live ? 'Prix de la recherche en cours' : `Prix du ${dateShort(snap.at)} · ${relTime(snap.at)}`;
   DV.dl = snapDeltas(items, snap.pv);
   const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ` · réserve ${sbN}` : '';

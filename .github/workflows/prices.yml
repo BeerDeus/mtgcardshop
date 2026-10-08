@@ -1,0 +1,37 @@
+# Prix « à partir de » de chaque carte (tendance Cardmarket et TCGplayer, via le fichier complet de Scryfall), régénérés chaque jour.
+# Publiés sur la branche « data » en un seul commit réécrit à chaque fois : le dépôt ne grossit pas. Le serveur relit le fichier toutes les 6 h.
+# Lancement manuel : onglet Actions › Prix des cartes › Run workflow.
+name: Prix des cartes
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: prices
+  cancel-in-progress: false
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Générer prices.tsv.gz
+        run: mkdir -p out && node gen-prices.mjs out/prices.tsv.gz 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
+      - name: Erreur (dernières lignes du journal en annotation)
+        if: failure()
+        run: echo "::error title=gen-prices::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"
+      - name: Publier sur la branche data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q && git checkout -q -b data
+          git config user.name "deck-deal-bot"
+          git config user.email "deck-deal-bot@users.noreply.github.com"
+          git add prices.tsv.gz && git commit -qm "Prix des cartes : $(date -u +%F)"
+          for i in 1 2 3; do git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data && exit 0; sleep $((i * 10)); done; exit 1

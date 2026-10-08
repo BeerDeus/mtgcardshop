@@ -384,6 +384,7 @@ async function ct(path, { method = 'GET', params, body, signal, lim = limCT } = 
   const call = async force => {
     const headers = { Accept: 'application/json' };
     if (CTX.proxy) {
+      if (CTX.token) headers['x-ct-token'] = CTX.token;                                          // ton token : le serveur cherche avec ton compte CardTrader
       if (CTX.appKey) headers['x-app-key'] = CTX.appKey;
       if (CTX.needsLogin && CTX.idToken) { const t = await CTX.idToken(force); if (t) headers['x-firebase-token'] = t; } // jeton Firebase : le proxy vérifie que c'est bien ton compte
     } else headers.Authorization = 'Bearer ' + CTX.token;
@@ -666,6 +667,56 @@ async function runDemo(cards, opts, hooks, signal) {
     } else hooks.step('fallback', 'skip', 'Inutile');
   } else hooks.step('fallback', 'skip', 'Désactivé');
   hooks.progress(1);
+}
+
+/* ── Prix Cardmarket (sans token CardTrader) ──────────────────────────────────────────────────
+   Prix « à partir de » de chaque carte : tendance Cardmarket de l'impression papier la moins chère (et TCGplayer en dollars).
+   Le serveur sert un fichier généré chaque jour depuis Scryfall (prices.tsv, ≈ 400 Ko compressé), gardé 12 h sur l'appareil ;
+   sans serveur, ou pour une carte absente du fichier, Scryfall est interrogé directement (prix de l'impression par défaut). */
+const TAB_TTL = 12 * 3600e3;
+let PXT = null;
+/** Texte du fichier de prix → { at, map: ownKey → { e, u } } (centimes). */
+function pxParse(txt) {
+  const lines = String(txt || '').split('\n'), m = /^#MOPX1 (\S+)/.exec(lines[0] || ''); if (!m) return null;
+  const map = new Map();
+  for (let i = 1; i < lines.length; i++) {
+    const l = lines[i]; if (!l) continue; const a = l.split('\t'); if (a.length < 3) continue;
+    const k = ownKey(a[0]), e = Number(a[1]) || 0, u = Number(a[2]) || 0, cur = map.get(k);
+    if (!cur) map.set(k, { e, u }); else { if (e && (!cur.e || e < cur.e)) cur.e = e; if (u && (!cur.u || u < cur.u)) cur.u = u; }
+  }
+  return { at: m[1], map };
+}
+async function pxTable(signal) {
+  if (PXT && Date.now() - PXT.t < TAB_TTL) return PXT;
+  let txt = await Cache.get('px:tab', TAB_TTL);
+  if (!txt && CTX.proxy) {
+    try { const r = await fetch('prices.tsv', { signal }); if (r.ok) { txt = await r.text(); if (pxParse(txt.slice(0, 200))) await Cache.set('px:tab', txt); else txt = null; } }
+    catch (e) { if (e.name === 'AbortError') throw e; }
+  }
+  const t = txt && pxParse(txt); if (!t) return null;
+  PXT = { t: Date.now(), ...t }; return PXT;
+}
+/** Recherche au prix Cardmarket : une « offre » par carte, au prix tendance. Mêmes étapes et mêmes crochets que runLive. */
+async function runCm(cards, opts, hooks, signal) {
+  const skip = opts.skip || new Set(), todo = cards.filter(c => !skip.has(c.key)), price = new Map(), notFound = new Set();
+  hooks.step('prints', 'run', 'Relevé du jour…'); hooks.progress(0.05);
+  const tab = await pxTable(signal);
+  if (tab) for (const c of todo) { const p = tab.map.get(ownKey(c.name)); if (p && p.e) price.set(c.key, p.e); }
+  hooks.step('prints', tab ? 'done' : 'skip', tab ? new Date(tab.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Indisponible'); hooks.progress(0.15);
+  const miss = todo.filter(c => !price.has(c.key));
+  if (miss.length) {
+    hooks.step('catalog', 'run', '0 / ' + miss.length);
+    const got = await scryCollection(miss.map(c => c.name), signal, (d, t) => { hooks.step('catalog', 'run', d + ' / ' + t); hooks.progress(0.15 + 0.75 * d / t); hooks.rate(0, Math.ceil(d / 75)); });
+    for (const c of miss) { const m = got.get(ownKey(c.name)); if (m && m.eu) price.set(c.key, m.eu); else if (!m) notFound.add(c.key); }
+    hooks.step('catalog', 'done', miss.length + ' carte' + (miss.length > 1 ? 's' : ''));
+  } else hooks.step('catalog', 'skip', 'Inutile');
+  hooks.step('offers', 'run', '');
+  for (const c of cards) {
+    if (skip.has(c.key)) hooks.card(c.key, { offers: [], bps: [], img: null, skipped: true });
+    else if (price.has(c.key)) hooks.card(c.key, { offers: [cmOffer(c, price.get(c.key), opts)], bps: [], img: null });
+    else hooks.card(c.key, { offers: [], bps: [], img: null, notFound: notFound.has(c.key) });
+  }
+  hooks.step('offers', 'done', price.size + ' prix'); hooks.step('fallback', 'skip', 'Inutile'); hooks.progress(1);
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */

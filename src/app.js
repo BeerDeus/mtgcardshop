@@ -105,7 +105,7 @@ const SAMPLE = `1 Cloud, Midgar Mercenary
 
 /* ── État ─────────────────────────────────────────────────────────────────────────────────── */
 const S = {
-  demo: true, demoPref: null, proxy: false, token: '', appKey: '', theme: 'auto', draft: null,
+  demo: true, demoPref: null, src: 'auto', proxy: false, token: '', appKey: '', theme: 'auto', draft: null,
   opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'home', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
@@ -122,7 +122,7 @@ const deckLabel = () => { const d = findDeck(S.deckId); return d ? d.name : sugg
 function loadStore() { try { return JSON.parse(localStorage.getItem('deckdeal:v1') || '{}'); } catch (e) { return {}; } }
 function saveStore() {
   try {
-    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, token: S.token, appKey: S.appKey, theme: S.theme, haptic: S.haptic, sort: S.sort, useColl: S.useColl, push: S.push, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
+    localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: S.opts, src: S.src, token: S.token, appKey: S.appKey, theme: S.theme, haptic: S.haptic, sort: S.sort, useColl: S.useColl, push: S.push, demoPref: S.demoPref, draft: S.isSample ? null : $('#deckText').value }));
   } catch (e) { /* stockage indisponible */ }
 }
 
@@ -306,9 +306,11 @@ function showView(v) {
 
 /* ── Recherche ────────────────────────────────────────────────────────────────────────────── */
 const STEP_DEFS = [['prints', 'Lecture des impressions'], ['catalog', 'Catalogue CardTrader'], ['offers', 'Offres'], ['fallback', 'Repli en anglais']];
+const STEP_CM = [['prints', 'Relevé Cardmarket du jour'], ['catalog', 'Cartes hors relevé (Scryfall)'], ['offers', 'Prix par carte']];
 function buildSteps() {
-  $('#steps').innerHTML = STEP_DEFS.map(([id, t]) =>
-    `<li class="step" data-id="${id}" data-state="idle"><span class="st-ico"></span><span>${id === 'offers' ? `Offres en ${esc(LANGS[S.opts.lang] || S.opts.lang)}` : esc(t)}</span><span class="det"></span></li>`).join('');
+  const cm = S.run && S.run.src === 'cm';
+  $('#steps').innerHTML = (cm ? STEP_CM : STEP_DEFS).map(([id, t]) =>
+    `<li class="step" data-id="${id}" data-state="idle"><span class="st-ico"></span><span>${id === 'offers' && !cm ? `Offres en ${esc(LANGS[S.opts.lang] || S.opts.lang)}` : esc(t)}</span><span class="det"></span></li>`).join('');
 }
 function setStep(id, state, detail) {
   const li = $(`.step[data-id="${id}"]`); if (!li) return;
@@ -440,23 +442,24 @@ async function startRun(fresh) {
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
   if (!cards.some(c => c.need > 0)) { toast('Tout est déjà dans ta collection'); return; }
-  if (!S.demo && !CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
-  if (!S.demo && CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast('Connecte-toi pour lancer la recherche'); openAccount(); return; }
+  if (!S.demo && !S.token && CTX.proxy && CTX.hasToken && CTX.needsLogin && CTX.serverOk == null && typeof D !== 'undefined' && D.user) await checkServer();      // compte tout juste connecté : a-t-il droit au token du serveur ?
+  const src = priceSrc();
   if (COLL.pxRun) { COLL.pxRun.ctrl.abort(); toast('Lecture des prix réels interrompue : la recherche passe avant'); }
   if (S.run && S.run.ctrl) S.run.ctrl.abort();
   if (S.run && S.run.task) S.run.task.remove();
   if (S.enCtrl) S.enCtrl.abort(); S.enBusy = null;
   saveStore();
-  const run = { id: ++runSeq, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: !S.demo, sig: curSig(), crit: critSig() };
+  const run = { id: ++runSeq, src, status: 'running', ctrl: new AbortController(), cards: {}, error: null, t0: performance.now(), text: $('#deckText').value, live: src !== 'demo', sig: curSig(), crit: critSig() };
   for (const c of cards) run.cards[c.key] = { fetched: false, offers: [], notFound: false, fellBack: false, bps: [], img: null };
   S.run = run; S.overrides = {}; S.gone = new Set(); S.cur = 'EUR'; S.fo = {}; S.tab = 'cards'; S.runDelta = null; S.removed = []; S.filter = 'all'; paintUndo();
   run.frac = 0; run.step = ''; run.cacheAge = 0;
   watchSeen($('#progressCard'));
-  run.task = floatTask(S.demo ? 'Recherche simulée' : 'Recherche des offres', { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
+  const title = src === 'demo' ? 'Recherche simulée' : src === 'cm' ? 'Prix Cardmarket' : 'Recherche des offres';
+  run.task = floatTask(title, { total: 100, sub: 'Démarrage…' }, () => sheets.length > 0 || !isSeen($('#progressCard')));
   S.res = { zero: optimize([], {}, { mode: 'zero' }), direct: optimize([], {}, { mode: 'direct' }) };
   $('#segTab').setValue('cards'); $('#list').hidden = false; $('#cardsPane').hidden = false; $('#sellers').hidden = true;
   $('#progressWrap').classList.remove('closed'); $('#heroPartial').hidden = false; $('#btnCancel').hidden = false;
-  $('#progTitle').textContent = S.demo ? 'Recherche simulée' : 'Recherche des offres';
+  $('#progTitle').textContent = title;
   $('#alerts').innerHTML = ''; $('#alerts')._sig = '';
   buildSteps(); setProgress(0); $('#progRate').textContent = 'Démarrage…'; $('#progHint').hidden = true; $('#btnViewer').disabled = true;
   syncSegDeliv(); buildList(); updateHero(); updateDock();
@@ -464,9 +467,9 @@ async function startRun(fresh) {
 
   const alive = () => !run.ctrl.signal.aborted && S.run === run;
   const skip = new Set(cards.filter(c => c.need === 0).map(c => c.key));              // cartes possédées en totalité : pas d'offres à lire
-  const push = await pushPayload(deckLabel());                                         // notification de fin si tu quittes l'app (null si désactivée)
+  const push = src === 'ct' ? await pushPayload(deckLabel()) : null;                  // notification de fin si tu quittes l'app (null si désactivée ; seulement pour une recherche CardTrader, qui peut durer)
   if (S.run !== run) return;
-  pendingSave(push && !S.demo ? { text: run.text, opts: { ...S.opts }, deckId: S.deckId, at: Date.now() } : null);   // pour reprendre depuis la notification si l'app est fermée entre-temps
+  pendingSave(push ? { text: run.text, opts: { ...S.opts }, deckId: S.deckId, at: Date.now() } : null);   // pour reprendre depuis la notification si l'app est fermée entre-temps
   const hooks = {
     step: (id, st, d) => { if (alive()) setStep(id, st, d); },
     progress: f => { if (alive()) setProgress(f); },
@@ -483,7 +486,7 @@ async function startRun(fresh) {
     needsEn: key => { const st = run.cards[key]; return !!st && needsEnglish(st.offers, S.opts); },
   };
   try {
-    await (S.demo ? runDemo : runLive)(cards, { ...S.opts, fresh, skip, push }, hooks, run.ctrl.signal);
+    await (src === 'demo' ? runDemo : src === 'cm' ? runCm : runLive)(cards, { ...S.opts, fresh, skip, push }, hooks, run.ctrl.signal);
     if (S.run === run) run.status = 'done';
   } catch (e) {
     if (S.run !== run) return;
@@ -506,14 +509,14 @@ async function startRun(fresh) {
       $('#heroPartial').hidden = true; $('#btnCancel').hidden = true; $('#progHint').hidden = true;
       $('#btnViewer').disabled = run.status !== 'done' || !run.live;
       if (run.status === 'done') {
-        setProgress(1); $('#progTitle').textContent = 'Recherche terminée';
+        setProgress(1); $('#progTitle').textContent = src === 'cm' ? 'Prix Cardmarket' : 'Recherche terminée';
         { const h = $('#hero'); h.classList.remove('shine'); void h.offsetWidth; h.classList.add('shine'); }      // un reflet passe sur le total, une fois
         setTimeout(() => { if (S.run === run) $('#progressWrap').classList.add('closed'); }, reduceMotion() ? 0 : 900);
       } else { $('#progTitle').textContent = run.status === 'cancelled' ? 'Recherche arrêtée' : 'Recherche interrompue'; }
       updateAlerts(); updateDock();
       haptic(run.status === 'done' ? (S.deck.cards.some(c => /^(none|nohub|notfound)$/.test(cardView(c).s)) ? 'warn' : 'ok') : run.status === 'error' ? 'bad' : 'tap');
       const t = run.task;
-      if (run.status === 'done') { const n = S.deck.cards.filter(c => c.need > 0).length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish('Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} avec offre`); }
+      if (run.status === 'done') { const n = S.deck.cards.filter(c => c.need > 0).length, ok = S.deck.cards.filter(c => cardView(c).s === 'ok').length; t.finish(src === 'cm' ? 'Prix Cardmarket lus' : 'Recherche terminée', ok === n ? 'ok' : 'warn', `${ok} / ${n} carte${n > 1 ? 's' : ''} ${src === 'cm' ? 'avec un prix' : 'avec offre'}`); }
       else if (run.status === 'cancelled') t.remove();
       else t.finish('Recherche interrompue', 'bad', run.error ? run.error.msg : '');
     }
@@ -546,13 +549,30 @@ function recompute() {
   if (S.tab === 'sellers') renderSellers(false);
 }
 
+/* ── Source des prix ──────────────────────────────────────────────────────────────────────────
+   demo : prix simulés · ct : offres réelles CardTrader (ton token, ou celui du serveur si ton compte y a droit) · cm : prix tendance Cardmarket, sans token. */
+function ctReady() { return !!S.token || (CTX.proxy && CTX.hasToken && ((!CTX.needsLogin && !CTX.needsKey) || CTX.serverOk === true || (CTX.needsKey && !!CTX.appKey))); }
+function priceSrc() { return S.demo ? 'demo' : S.src !== 'cm' && ctReady() ? 'ct' : 'cm'; }
+const isCm = () => !!S.run && S.run.src === 'cm';
+/** Ce compte peut-il chercher avec le token du serveur ? (réservé à ALLOWED_UIDS) Revérifié à chaque changement de compte. */
+async function checkServer() {
+  if (!CTX.proxy || !CTX.hasToken || !CTX.needsLogin) return;
+  try {
+    const t = CTX.idToken ? await CTX.idToken() : ''; if (!t) { CTX.serverOk = false; modeLabel(); return; }
+    const r = await fetch('__me', { headers: { 'x-firebase-token': t }, cache: 'no-store' }); const j = r.ok ? await r.json() : null;
+    CTX.serverOk = !!(j && j.server);
+  } catch (e) { CTX.serverOk = false; }
+  modeLabel();
+}
+
 /* ── Rendu : résumé ───────────────────────────────────────────────────────────────────────── */
-function curRes() { return S.res[S.opts.mode]; }
-function totalOf(r) { return S.opts.mode === 'direct' ? r.total : r.items; }
+function curRes() { return S.res[isCm() ? 'zero' : S.opts.mode]; }
+function totalOf(r) { return S.opts.mode === 'direct' && !isCm() ? r.total : r.items; }
 function foundCount(r) { return S.deck.cards.filter(c => { const p = r.picks[c.key]; return p && p.parts.length; }).length; }
 
 function syncSegDeliv() {
-  const seg = $('#segDeliv');
+  const seg = $('#segDeliv'), cm = isCm();
+  seg.hidden = cm; $('#segTab').closest('.toolbar').hidden = cm;           // prix Cardmarket : ni livraison ni vendeurs
   if (!seg._init) { mountSeg(seg, [{ v: 'zero', label: 'Zero · 1 colis', sub: '—' }, { v: 'direct', label: 'Direct · —', sub: '—' }], S.opts.mode, v => { S.opts.mode = v; $('#segMode').setValue(v); syncShip(); modeHint(); saveStore(); recompute(); }); seg._init = true; }
   seg.setValue(S.opts.mode);
 }
@@ -560,10 +580,11 @@ function updateHero() {
   const r = curRes(), z = S.res.zero, d = S.res.direct;
   const running = S.run && S.run.status === 'running';
   tween($('#heroAmt'), totalOf(r));
-  $('#heroLabel').textContent = S.opts.mode === 'zero' ? 'Total articles' : 'Total estimé, port inclus';
+  const cm = isCm();
+  $('#heroLabel').textContent = cm ? 'Prix Cardmarket, à partir de' : S.opts.mode === 'zero' ? 'Total articles' : 'Total estimé, port inclus';
   $('#heroCount').textContent = `${foundCount(r)} / ${S.deck.cards.filter(c => c.need > 0).length} cartes`;
-  $('#heroSellers').textContent = S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
-  const sv = $('#heroSave'), diff = S.opts.mode === 'direct' ? r.baseline.total - r.total : 0;
+  $('#heroSellers').textContent = cm ? 'Prix tendance, hors port' : S.opts.mode === 'zero' ? 'Un colis via Zero' : `${r.sellerCount} vendeur${r.sellerCount > 1 ? 's' : ''}`;
+  const sv = $('#heroSave'), diff = S.opts.mode === 'direct' && !cm ? r.baseline.total - r.total : 0;
   sv.hidden = !(diff >= 1 && !running) ; if (!sv.hidden) sv.textContent = `Économie de ${fmt(diff)} avec le regroupement`;
   updateHeroDelta(); updateRecap();
   const seg = $('#segDeliv');
@@ -571,9 +592,11 @@ function updateHero() {
 }
 function updateDock() {
   const r = curRes(); const running = S.run && S.run.status === 'running';
-  $('#dockSmall').textContent = (S.opts.mode === 'zero' ? 'Articles · Zero' : 'Port inclus · Direct') + (running ? ' · en cours' : '');
+  const cm = isCm();
+  $('#dockSmall').textContent = (cm ? 'Prix Cardmarket' : S.opts.mode === 'zero' ? 'Articles · Zero' : 'Port inclus · Direct') + (running ? ' · en cours' : '');
   tween($('#dockTotal'), totalOf(r));
   $('#btnCart').disabled = running || !foundCount(r);
+  $('#btnCartTxt').textContent = cm ? 'Copier pour Cardmarket' : 'Remplir le panier';
 }
 
 /* ── Rendu : lignes ───────────────────────────────────────────────────────────────────────── */
@@ -614,6 +637,9 @@ function updateRow(el, c, v, st) {
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
   } else if (v.s === 'own') {
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">Dans ta collection</span></span></span><span class="row-price"><span class="tag good">Possédée</span></span>`;
+  } else if (v.s === 'ok' && top.cm) {
+    const n = pick.parts.reduce((a, p) => a + p.n, 0);
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}<span class="tag">Cardmarket</span></span><span class="row-seller">Tendance${n > 1 ? ' · ' + n + ' × ' + fmt(top.price) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost)}</b></span>`;
   } else if (v.s === 'ok') {
     const tags = [];
     tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
@@ -628,6 +654,7 @@ function updateRow(el, c, v, st) {
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
     const msg = v.s === 'notfound' ? 'Nom introuvable, vérifie l\'orthographe'
+      : v.s === 'none' && isCm() ? 'Pas de prix Cardmarket connu'
       : v.s === 'stale' ? 'Collection modifiée : relance la recherche'
       : v.s === 'nohub' ? 'Aucune offre compatible Zero'
         : (st && st.fellBack ? 'Aucune offre, même en anglais' : `Aucune offre en ${langName}`);
@@ -664,7 +691,8 @@ function updateAlerts() {
     const enBtn = n => n ? ' <button type="button" data-act="en-all">Trouver en anglais</button>' : '';
     if (stale) items.push({ k: '', html: `${stale} carte${stale > 1 ? 's' : ''} ${stale > 1 ? 'ne sont plus' : 'n\'est plus'} dans ta collection : prix à chercher. <button type="button" data-act="rerun">Relancer la recherche</button>` });
     if (S.enBusy) items.push({ k: '', html: `Recherche en anglais · ${S.enBusy.done} / ${S.enBusy.total}…` });
-    if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>${enBtn(enNone)}` });
+    if (none && isCm()) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans prix Cardmarket connu. <button type="button" data-act="goto">Voir</button>` });
+    else if (none) items.push({ k: '', html: `${none} carte${none > 1 ? 's' : ''} sans offre en ${esc(ln)}${en}. <button type="button" data-act="goto">Voir</button>${enBtn(enNone)}` });
     if (nohub) items.push({ k: '', html: `${nohub} carte${nohub > 1 ? 's' : ''} sans offre compatible Zero. <button type="button" data-act="direct">Passer en Direct</button>${enBtn(enHub)}` });
     if (nf.length) items.push({ k: 'bad', html: `Nom introuvable : ${esc(nf.slice(0, 3).join(', '))}${nf.length > 3 ? '…' : ''}` });
     if (short) items.push({ k: '', html: `${short} carte${short > 1 ? 's' : ''} en quantité insuffisante.` });
@@ -725,8 +753,8 @@ function updateRecap() {
   if (r.notfound) chips.push(chip('bad', `<b>${r.notfound}</b> introuvable${r.notfound > 1 ? 's' : ''}`));
   if (r.loading) chips.push(chip('', `<b>${r.loading}</b> en cours`));
   const foil = S.opts.foil === 'no' ? 'non-foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non';
-  const crit = [LANGS[S.opts.lang] || S.opts.lang, 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), foil, S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
-  if (S.opts.fallbackEn && S.opts.lang !== 'en') crit.push('repli anglais');
+  const crit = isCm() ? ['prix tendance Cardmarket', 'impression la moins chère', 'hors port'] : [LANGS[S.opts.lang] || S.opts.lang, 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), foil, S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
+  if (!isCm() && S.opts.fallbackEn && S.opts.lang !== 'en') crit.push('repli anglais');
   const html = `<div class="recap-top"><b>${r.found}</b><span> / ${r.total} cartes trouvées</span><i></i><span>${r.copies} exemplaire${r.copies > 1 ? 's' : ''}</span></div>`
     + (chips.length ? `<div class="recap-chips">${chips.join('')}</div>` : '')
     + `<div class="recap-crit">${esc(crit.join(' · ').replace(/^./, m => m.toUpperCase()))}</div>`;
@@ -749,6 +777,16 @@ function openCardSheet(key) {
     b.onclick = () => { collBump(ownKey(c.name), c.name, need0); api.close(); haptic('ok'); scheduleRecompute(true); toast(`${c.name} ajoutée à ta collection`, { label: 'Annuler', fn: () => { collBump(ownKey(c.name), c.name, -need0); scheduleRecompute(true); } }); };
     api.body.appendChild(b);
   };
+  if (isCm()) {
+    openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
+      const o = (S.fo[key] || [])[0];
+      api.body.innerHTML = `${o ? `<div class="cm-price"><b>${fmt(o.price)}</b><span>Prix tendance Cardmarket de l'impression la moins chère, par exemplaire.</span></div>` : `<p class="hint">${st.notFound ? 'Scryfall ne connaît pas ce nom. Corrige-le dans la liste.' : 'Aucun prix Cardmarket connu pour cette carte.'}</p>`}
+        <a class="btn ghost small" href="${esc(cmUrl(c.name, S.opts.lang))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">Voir sur Cardmarket ↗</a>
+        <p class="hint">Les offres réelles des vendeurs, leur port et le remplissage du panier demandent ton token CardTrader (Réglages › Prix).</p>`;
+      ownBtn(api); alWatchBtn(api, c.name);
+    });
+    return;
+  }
   openSheet(c.name, c.qty > 1 ? `${c.qty} exemplaires` : null, api => {
     if (!list.length) {
       const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
@@ -790,6 +828,9 @@ function openCardSheet(key) {
     }
   });
 }
+
+/** Prix Cardmarket : copie les cartes à acheter pour une Wants list Cardmarket (Shopping Wizard). */
+function cmCopyRun() { cmCopy(S.deck.cards.filter(c => c.need > 0).map(c => ({ n: c.name, q: c.need })), 'tout est déjà dans ta collection'); }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
 function cartParts() {
@@ -895,9 +936,9 @@ const cartErrText = e => e.code === 'auth' ? authHint(e).msg : e.code === 'netwo
 
 /* ── Réglages ─────────────────────────────────────────────────────────────────────────────── */
 function modeLabel() {
-  const live = !S.demo; const chip = $('#modeChip');
-  chip.dataset.live = live ? '1' : '0';
-  $('#modeLabel').textContent = live ? 'Live' : 'Démo';
+  const src = priceSrc(), chip = $('#modeChip');
+  chip.dataset.live = src === 'demo' ? '0' : '1';
+  $('#modeLabel').textContent = src === 'demo' ? 'Démo' : src === 'ct' ? 'CardTrader' : 'Cardmarket';
 }
 function applyTheme() {
   const r = document.documentElement;
@@ -905,14 +946,17 @@ function applyTheme() {
 }
 function syncCTX() { CTX.token = S.token; CTX.appKey = S.appKey; }
 function openSettings() {
-  openSheet('Réglages', 'Connexion et affichage', api => {
+  openSheet('Réglages', 'Prix, compte et affichage', api => {
     api.body.innerHTML = `
-      <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Données simulées, aucune requête envoyée.</span></span>
-        <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
+      <div class="sec-title">Prix</div>
+      <div class="seg" id="segSrc" role="radiogroup" aria-label="Source des prix"></div>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
-      <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Utilisé seulement sans proxy" value="${esc(S.token)}"><span class="hint">Avec le proxy local, le token reste dans son environnement et n'est pas nécessaire ici.</span></div>
+      <div class="field-in" id="boxToken"><label class="label" for="setToken">Token CardTrader (facultatif)</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="Colle ton token API" value="${esc(S.token)}">
+        <span class="hint">Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Il reste sur cet appareil et ne sert qu'à interroger CardTrader avec ton compte.</span></div>
       <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">Clé du proxy</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? '<span class="hint">Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.</span>' : ''}</div>
-      <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester la connexion</button>
+      <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">Tester CardTrader</button>
+      <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Prix simulés, aucune requête envoyée.</span></span>
+        <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
       <div class="sec-title">Affichage</div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
       <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
@@ -958,18 +1002,26 @@ function openSettings() {
     };
     paintWipe(false);
     paintPushBox($('#pushBox', b)); alPaintBox($('#alertBox', b));
+    const seg = $('#segSrc', b);
     const status = () => {
-      const st = $('#connStatus', b), m = $('#connMsg', b);
-      if (S.demo) { st.dataset.ok = '0'; m.textContent = 'Démo active. Désactive-la pour chercher de vraies offres.'; }
-      else if (CTX.proxy && CTX.needsLogin) { const on = !!(typeof D !== 'undefined' && D.user); st.dataset.ok = on ? '1' : '0'; m.textContent = on ? 'Serveur détecté, réservé à ton compte : connecté, le token CardTrader reste côté serveur.' : 'Serveur réservé à ton compte : connecte-toi (icône en haut) pour lancer des recherches.'; }
-      else if (CTX.proxy) { st.dataset.ok = '1'; m.textContent = 'Proxy local détecté. Le token reste côté proxy.'; }
-      else if (S.token) { st.dataset.ok = '1'; m.textContent = 'Connexion directe avec ton token. Le navigateur peut la bloquer, le proxy est plus fiable.'; }
-      else { st.dataset.ok = '0'; m.textContent = 'Aucun proxy détecté et aucun token saisi.'; }
-      $('#boxToken', b).hidden = CTX.proxy;
+      const st = $('#connStatus', b), m = $('#connMsg', b), src = priceSrc(), mine = !!S.token;
+      const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };
+      if (src === 'demo') say(false, 'Démo active : prix simulés. Désactive-la pour de vrais prix.');
+      else if (src === 'ct') say(true, mine ? 'CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.' : 'CardTrader via le serveur (compte autorisé) : offres réelles et panier.');
+      else if (ctReady()) say(true, 'Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles.');
+      else say(true, 'Prix tendance Cardmarket, relevés chaque jour (impression la moins chère, hors port). Ajoute ton token CardTrader pour les offres réelles et le panier.');
+      if (seg.setValue) seg.setValue(src === 'ct' ? 'ct' : 'cm');
+      seg.classList.toggle('dim', src === 'demo');
+      $('#btnTest', b).hidden = !mine && !(CTX.proxy && CTX.hasToken);
+      modeLabel();
     };
+    mountSeg(seg, [{ v: 'cm', label: 'Cardmarket' }, { v: 'ct', label: 'CardTrader' }], priceSrc() === 'ct' ? 'ct' : 'cm', v => {
+      if (v === 'ct' && !ctReady()) { toast('Ajoute d\'abord ton token CardTrader'); $('#setToken', b).focus(); setTimeout(status, 0); return; }
+      S.src = v === 'cm' ? 'cm' : 'auto'; saveStore(); status();
+    });
     status();
-    $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; modeLabel(); status(); saveStore(); };
-    $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); syncCTX(); status(); saveStore(); };
+    $('#setDemo', b).onchange = e => { S.demo = e.target.checked; S.demoPref = S.demo; status(); saveStore(); };
+    $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); if (S.token) S.src = 'auto'; syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
     mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
     $('#setHaptic', b).onchange = e => { S.haptic = e.target.checked; saveStore(); haptic('ok'); };
@@ -1020,8 +1072,8 @@ function openSettings() {
       const btn = e.target; btn.disabled = true; btn.textContent = 'Test…';
       const st = $('#connStatus', b), m = $('#connMsg', b);
       try { const j = await ct('info'); st.dataset.ok = '1'; m.textContent = 'Connexion réussie' + (j && j.name ? ' (app « ' + j.name + ' »)' : '') + '.'; }
-      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? authHint(err).msg : 'CardTrader est injoignable depuis ce navigateur.'; }
-      btn.disabled = false; btn.textContent = 'Tester la connexion';
+      catch (err) { st.dataset.ok = '0'; m.textContent = err.code === 'notoken' ? 'Token manquant.' : err.code === 'auth' ? (S.token ? 'CardTrader refuse ce token : vérifie-le (Paramètres › API sur CardTrader).' : authHint(err).msg) : 'CardTrader est injoignable depuis ce navigateur.'; }
+      btn.disabled = false; btn.textContent = 'Tester CardTrader';
     };
   });
 }
@@ -1064,7 +1116,7 @@ async function detectProxy() {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; S.proxy = true; if (S.demoPref == null) S.demo = false; }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
@@ -1089,7 +1141,7 @@ function init() {
   const saved = loadStore();
   if (saved.opts) Object.assign(S.opts, saved.opts);
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.theme = saved.theme || 'auto';
-  S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null;
+  S.demoPref = typeof saved.demoPref === 'boolean' ? saved.demoPref : null; S.src = saved.src === 'cm' ? 'cm' : 'auto';
   S.useColl = saved.useColl !== false; S.push = saved.push === true;
   S.haptic = saved.haptic !== false; S.sort = ['deck', 'price-desc', 'price-asc', 'name'].includes(saved.sort) ? saved.sort : 'deck';
   S.demo = S.demoPref == null ? !S.token : S.demoPref;
@@ -1128,7 +1180,7 @@ function init() {
   $('#btnBack').onclick = () => { if (S.run && S.run.status === 'running') S.run.ctrl.abort(); showView('input'); };
   $('#btnCancel').onclick = () => { if (S.run) S.run.ctrl.abort(); };
   $('#btnCopy').onclick = () => { if (S.run) copyText(recapText()); };
-  $('#btnCart').onclick = openCartSheet;
+  $('#btnCart').onclick = () => isCm() ? cmCopyRun() : openCartSheet();
   $('#btnSettings').onclick = openSettings; $('#modeChip').onclick = openSettings;
   { const bar = $('.bar'); let sy = -1; const sync = () => { sy = -1; bar.classList.toggle('scrolled', window.scrollY > 4); }; window.addEventListener('scroll', () => { if (sy < 0) sy = requestAnimationFrame(sync); }, { passive: true }); sync(); }      // filet sous la barre seulement quand le contenu passe dessous
   $('#list').addEventListener('click', e => {

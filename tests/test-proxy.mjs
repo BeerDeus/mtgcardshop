@@ -31,7 +31,7 @@ const j = async (url, init) => { const r = await fetch(url, init); const t = awa
 // 1) sans clé
 let p = await start({ CARDTRADER_TOKEN: 'tok123' }, 18787);
 let B = 'http://127.0.0.1:18787';
-let r = await j(B + '/__ping'); assert.deepEqual(r.o, { ok: true, app: 'deckdeal', needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '' }); console.log('✓ ping');
+let r = await j(B + '/__ping'); assert.deepEqual(r.o, { ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '' }); console.log('✓ ping');
 r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Mana Orbit<\/title>/); console.log('✓ page servie');
 r = await j(B + '/api/cart/purchase', { method: 'POST', body: '{}' }); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (POST)');
 r = await j(B + '/api/cart/purchase'); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (GET)');
@@ -142,6 +142,23 @@ p.kill();
   console.log('✓ ' + Object.keys(bad).length + ' jetons falsifiés ou invalides refusés (aud, iss, none, HS256, charge modifiée, autre clé, kid, iat, sub, junk)');
   r = await j(BA + '/api/info', { headers: { 'x-firebase-token': mkTok(), 'x-app-key': 'nimportequoi' } }); assert.equal(r.s, 200); console.log('✓ APP_KEY non configurée : ignorée, le jeton suffit');
   r = await j(BA + '/api/cart/purchase', { method: 'POST', ...hdr(mkTok()) }); assert.equal(r.s, 403); console.log('✓ achat toujours bloqué, même authentifié');
+  // token CardTrader de l'utilisateur : pas besoin d'être autorisé, la requête part avec SON token (jamais celui du serveur)
+  const UT = 'utilisateur-token-abcdef123456';
+  seen.length = 0; r = await j(BA + '/api/info', { headers: { 'x-ct-token': UT } }); assert.equal(r.s, 200); assert.equal(seen.at(-1).auth, 'Bearer ' + UT);
+  r = await j(BA + '/api/cart/add', { method: 'POST', headers: { 'x-ct-token': UT, 'content-type': 'application/json' }, body: '{"product_id":1,"quantity":1}' }); assert.equal(r.s, 200); assert.equal(seen.at(-1).auth, 'Bearer ' + UT);
+  r = await j(BA + '/api/cart/purchase', { method: 'POST', headers: { 'x-ct-token': UT } }); assert.equal(r.s, 403);
+  r = await j(BA + '/api/info', { headers: { 'x-ct-token': 'court' } }); assert.equal(r.s, 401, 'token mal formé : ignoré, accès refusé comme sans token');
+  console.log('✓ X-CT-Token : sans compte autorisé, relayé avec le token de l\'utilisateur ; achat toujours bloqué ; token mal formé ignoré');
+  // __me : droit au token du serveur, sans pénalité
+  r = await j(BA + '/__me', hdr(mkTok())); assert.deepEqual(r.o, { server: true });
+  r = await j(BA + '/__me', hdr(mkTok({ sub: 'uid-intrus', user_id: 'uid-intrus' }))); assert.deepEqual(r.o, { server: false });
+  r = await j(BA + '/__me'); assert.deepEqual(r.o, { server: false });
+  for (let i = 0; i < 20; i++) await j(BA + '/__me', { headers: { 'x-firebase-token': 'a.b.c', 'x-forwarded-for': '7.7.7.7' } });
+  r = await j(BA + '/api/info', { headers: { ...hdr(mkTok())['headers'], 'x-forwarded-for': '7.7.7.7' } }); assert.equal(r.s, 200, '__me ne bloque jamais une IP');
+  console.log('✓ __me : compte autorisé → server:true, sinon false, jamais de blocage');
+  // import et alertes : ouverts à tous (pas de token CardTrader en jeu)
+  r = await j(BA + '/api/import'); assert.notEqual(r.s, 401); r = await j(BA + '/api/alerts/x'); assert.notEqual(r.s, 401);
+  console.log('✓ import et alertes ouverts sans compte');
   // rotation de clés : nouveau kid publié → une seule relecture, limitée à 1 / minute
   keys = [jwkOf(kp, 'k1'), jwkOf(kp2, 'k2')]; const h1 = jwksHits;
   r = await j(BA + '/api/info', hdr(mkTok({}, { key: kp2.privateKey, kid: 'k2' }))); assert.ok([200, 401].includes(r.s));
@@ -215,10 +232,14 @@ slowInfo = false; p.kill();
 p = await start({ CARDTRADER_TOKEN: '' }, 18789); B = 'http://127.0.0.1:18789';
 r = await j(B + '/__ping'); assert.equal(r.o.hasToken, false);
 r = await j(B + '/api/info'); assert.equal(r.s, 401); assert.equal(r.o.error, 'no_token'); console.log('✓ sans token → 401 no_token');
+seen.length = 0; r = await j(B + '/api/info', { headers: { 'x-ct-token': 'utilisateur-token-abcdef123456' } }); assert.equal(r.s, 200); assert.equal(seen.at(-1).auth, 'Bearer utilisateur-token-abcdef123456'); console.log('✓ serveur sans token : le token de l\'utilisateur suffit');
+r = await j(B + '/prices.tsv'); assert.equal(r.s, 404); console.log('✓ prix pas encore récupérés : /prices.tsv → 404 (l\'appli interroge Scryfall)');
 p.kill();
 
 // 4) HOST ouvert sans clé → refus
 await assert.rejects(start({ CARDTRADER_TOKEN: 'x', HOST: '0.0.0.0' }, 18790), /exit 1/); console.log('✓ HOST=0.0.0.0 sans APP_KEY refusé');
+{ const po = await start({ CARDTRADER_TOKEN: '', HOST: '127.0.0.1' }, 18790); po.kill(); }
+{ const po = await start({ CARDTRADER_TOKEN: '', HOST: '0.0.0.0' }, 18790); po.kill(); console.log('✓ HOST=0.0.0.0 sans token serveur : démarre (chacun cherche avec son propre token)'); }
 
 // 4b) récupération automatique d'edh.bin.gz depuis le dépôt (faux GitHub : ETag / 304, fichier invalide, maigre, plus ancien, panne)
 {
@@ -276,6 +297,25 @@ await assert.rejects(start({ CARDTRADER_TOKEN: 'x', HOST: '0.0.0.0' }, 18790), /
   // désactivé : aucun appel, 404 propre
   const pd = await start({ CARDTRADER_TOKEN: 'x' }, 18797); B = 'http://127.0.0.1:18797'; await new Promise(r => setTimeout(r, 300)); o = await st(); assert.equal(o.source, ''); assert.equal(o.from, 'none'); assert.equal((await j(B + '/edh.bin.gz')).s, 404); pd.kill();
   console.log('✓ EDH_SOURCE_URL vide : récupération désactivée');
+}
+
+// 4c) prix « à partir de » (prices.tsv.gz de la branche data) : relus, validés, servis compressés
+{
+  const { gzipSync, gunzipSync } = await import('node:zlib'), { mkdtempSync, rmSync, existsSync } = await import('node:fs'), { tmpdir } = await import('node:os'), { join } = await import('node:path');
+  const mk = (at, n) => gzipSync(Buffer.from(`#MOPX1 ${at} ${n}\n` + Array.from({ length: n }, (_, i) => `Carte ${i}\t${100 + i}\t${120 + i}`).join('\n') + '\n'));
+  let file = mk('2026-10-08T09:00:00Z', 16000), hits = 0;
+  const gh = http.createServer((q, r) => { hits++; r.writeHead(200, { 'Content-Type': 'application/octet-stream' }); r.end(file); }); await new Promise(r => gh.listen(0, '127.0.0.1', r));
+  const dir = mkdtempSync(join(tmpdir(), 'px-'));
+  const px = await start({ CARDTRADER_TOKEN: '', PRICES_SOURCE_URL: `http://127.0.0.1:${gh.address().port}/prices.tsv.gz`, EDH_SYNC_MS: '400', EDH_SYNC_FIRST_MS: '10', EDH_DATA_DIR: dir }, 18799); B = 'http://127.0.0.1:18799';
+  await new Promise(r => setTimeout(r, 2600));
+  r = await j(B + '/__prices'); assert.equal(r.o.cards, 16000); assert.equal(r.o.at, '2026-10-08T09:00:00Z');
+  r = await j(B + '/__ping'); assert.equal(r.o.prices, true);
+  const g = await fetch(B + '/prices.tsv', { headers: { 'accept-encoding': 'identity' } }); const txt = await g.text(); assert.equal(g.status, 200); assert.match(txt, /^#MOPX1 /); assert.match(txt, /Carte 5\t105\t125/);
+  assert.ok(existsSync(join(dir, 'prices.tsv.gz')), 'copie gardée dans .data');
+  file = Buffer.from('pas du gzip'); await new Promise(r => setTimeout(r, 900)); r = await j(B + '/__prices'); assert.equal(r.o.cards, 16000); assert.match(r.o.err, /.+/);
+  file = mk('2026-10-09T09:00:00Z', 120); await new Promise(r => setTimeout(r, 900)); r = await j(B + '/__prices'); assert.equal(r.o.cards, 16000, 'fichier trop maigre ignoré');
+  px.kill(); gh.close(); rmSync(dir, { recursive: true, force: true });
+  console.log('✓ prix des cartes : relus depuis la branche data, servis sur /prices.tsv, copie gardée ; fichier illisible ou maigre ignoré');
 }
 
 // 5) amont HS → 502

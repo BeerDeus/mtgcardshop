@@ -263,6 +263,15 @@ const DEMO_BASE = { 'sol ring': 1.6, 'swords to plowshares': 2.4, 'path to exile
   'ephemerate': 0.9, 'monumental henge': 2.6, 'minas tirith': 2.1, 'emeria the sky ruin': 1.3, 'cloister gargoyle': 0.4, 'felidar guardian': 0.5 };
 
 /** Offres simulées pour une carte. lang='fr' : ~8 % des cartes n'en ont aucune (sert à tester le repli EN). */
+/** Offre « prix Cardmarket » (sans token CardTrader) : une seule par carte, au prix tendance, qui passe tous les filtres (langue, état, Zero). */
+function cmOffer(card, cents, opts) {
+  const id = 'cm:' + card.key;
+  return { id, productId: id, bpId: null, sellerId: 'cm', seller: 'Cardmarket', country: '', hub: true, type: 'cm', cm: true,
+    price: cents, cur: 'EUR', qty: 999, cond: opts.cond === 'Mint' ? 'Mint' : 'Near Mint', foil: opts.foil === 'yes', lang: opts.lang,
+    signed: false, altered: false, graded: false, vac: false, bundle: 1, set: '', setName: '', num: '', img: null, ref: null };
+}
+/** Lien de recherche Cardmarket d'une carte (langue du site : fr ou en). */
+const cmUrl = (name, lang) => `https://www.cardmarket.com/${lang === 'fr' ? 'fr' : 'en'}/Magic/Products/Search?searchString=${encodeURIComponent(String(name || '').split('//')[0].trim())}`;
 function makeDemoOffers(card, lang) {
   const key = card.key;
   const r = mulberry32(hash32(key + '|' + lang));
@@ -293,7 +302,7 @@ function makeDemoOffers(card, lang) {
 const HISTORY_MAX = 40, NAME_MAX = 120, TEXT_MAX = 60000;
 const OPT_LANGS = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
 const OPT_FOIL = ['no', 'any', 'yes'];
-const OPT_MODE = ['zero', 'direct'];
+const OPT_MODE = ['zero', 'direct', 'cm'];
 
 /** Options de recherche : on ne garde que des valeurs connues (le document est lu depuis le cloud). */
 function sanitizeOpts(o) {
@@ -1659,7 +1668,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
