@@ -1643,6 +1643,31 @@ function tradeWant(coll, use, wish) {
   }
   return [...out.values()].sort((a, b) => a.n.localeCompare(b.n, 'en'));
 }
+/**
+ * Échange possible avec la liste partagée d'un autre joueur (côté visiteur) : ce qu'il a et que je cherche, ce qu'il cherche et que j'ai EN TROP.
+ * sh : readShare('trade', …) · want : mes cartes recherchées (tradeWant) · spare : mes doublons échangeables (tradeLists(…).have, jamais le brut possédé : mes decks gardent leurs cartes)
+ * · price(k) : prix unitaire en centimes, ou null. Retourne { get, give, sum: { get, give }, n } :
+ *   get  : [{ k, n, q (min de ses exemplaires et de ma recherche), has (ses exemplaires), it (sa carte, avec image si possible), ls (ses langues), w (ma ligne de tradeWant), u, v }]
+ *   give : [{ k, n, q (min de sa recherche et de mes doublons), it (sa carte recherchée : illustration voulue…), s (ma ligne de tradeLists), u, v }]
+ *   u : prix unitaire, v : u × q (null sans prix) ; triées par valeur puis par nom. sum : { n cartes, q exemplaires, v centimes (cartes chiffrées), nv cartes sans prix }.
+ */
+function tradeMatch(sh, want, spare, price) {
+  const wm = new Map(), sm = new Map(), g = new Map(), give = [];
+  for (const x of want || []) if (x && x.q > 0) wm.set(x.k, x);
+  for (const x of spare || []) if (x && x.q > 0) sm.set(x.k, x);
+  for (const it of (sh && sh.have) || []) {      // une ligne par langue chez lui : additionnées
+    const w = it && wm.get(it.k); if (!w) continue;
+    let e = g.get(it.k); if (!e) g.set(it.k, e = { k: it.k, n: it.n, has: 0, it, ls: [], w });
+    e.has += it.q; if (it.l && !e.ls.includes(it.l)) e.ls.push(it.l); if (!e.it.im && it.im) e.it = it;
+  }
+  for (const it of (sh && sh.want) || []) { const s = it && sm.get(it.k); if (s && !give.some(x => x.k === it.k)) give.push({ k: it.k, n: it.n, q: Math.min(it.q, s.q), it, s }); }
+  const priced = x => { const c = price ? Number(price(x.k)) : 0, u = c > 0 ? Math.round(c) : null; return Object.assign(x, { u, v: u == null ? null : u * x.q }); };
+  const by = (a, b) => (b.v || 0) - (a.v || 0) || a.n.localeCompare(b.n, 'en');
+  const sum = list => list.reduce((t, x) => { t.n++; t.q += x.q; if (x.v == null) t.nv++; else t.v += x.v; return t; }, { n: 0, q: 0, v: 0, nv: 0 });
+  const get = [...g.values()].map(e => priced({ ...e, q: Math.min(e.has, e.w.q) })).sort(by);
+  give.forEach(priced); give.sort(by);
+  return { get, give, sum: { get: sum(get), give: sum(give) }, n: get.length + give.length };
+}
 
 /* ── Export Cardmarket : une ligne « 2 Sol Ring » par carte (noms anglais), à coller dans une Wants list (Shopping Wizard) ── */
 /** items : [{ n, q }] → texte ; cartes additionnées par nom, terrains de base exclus, quantités ≤ 0 ignorées. */
@@ -1734,7 +1759,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, tradeMatch, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
