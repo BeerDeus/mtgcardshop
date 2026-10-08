@@ -127,7 +127,9 @@ function homeInit() {
   };
   $('#btnTrade').onclick = () => { haptic('tap'); openCollection('trade'); };
   const draft = () => !S.isSample && S.deck && S.deck.cards.length;
-  $('#btnNew').onclick = () => { haptic('tap'); showView('input'); if (!draft()) $('#btnPaste').click(); };
+  // « Coller une liste » sans liste en cours : le champ est vidé d'abord (sinon l'exemple de 100 cartes restait, presse-papiers refusé dans la WebView) ;
+  // presse-papiers vide ou refusé : champ vide, curseur dedans (le collage le remplit)
+  $('#btnNew').onclick = () => { haptic('tap'); showView('input'); if (!draft()) { $('#btnClear').click(); $('#btnPaste').click(); } };
   $('#btnNew2').onclick = () => { haptic('tap'); const dr = draft(); showView('input'); if (dr) $('#btnPaste').click(); else $('#btnSample').click(); };
   $('#btnHome').onclick = () => { haptic('tap'); showView('home'); };
   $('#btnHelp').onclick = () => { haptic('tap'); openHelp(); };
