@@ -1729,7 +1729,7 @@ button,.btn,select,summary{touch-action:manipulation}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tasks" id="tasks" aria-live="polite"></div>
 <script>
-const DD_BUILD = '42a75146';
+const DD_BUILD = 'e63eaa1b';
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
@@ -10045,7 +10045,8 @@ function homeLands() {
   }
   if (miss && !HM.lands) {
     HM.lands = true;
-    setTimeout(async () => { try { await dmLoad(); if (await dmFetch(HM_LANDS.map(([, key, name]) => ({ key, name })), true)) homeSoon(); else if (HM_LANDS.some(([, k]) => !(dmOf(k) || {}).im)) HM.lands = false; } catch (e) { HM.lands = false; } }, 3000);
+    setTimeout(async () => { if (S.view !== 'home' || document.querySelector('body > .dv.on, .sheet-wrap.open')) { HM.lands = false; return; }      // seulement quand l'accueil est vraiment à l'écran : jamais pendant la collection, un scan ou une feuille
+      try { await dmLoad(); if (await dmFetch(HM_LANDS.map(([, key, name]) => ({ key, name })), true)) homeSoon(); else if (HM_LANDS.some(([, k]) => !(dmOf(k) || {}).im)) HM.lands = false; } catch (e) { HM.lands = false; } }, 3000);
   }
 }
 /** Cartes de présentation pas encore lues : lues en arrière-plan, puis l'éventail est repeint. */

@@ -272,7 +272,7 @@ const rowsOf = pg => pg.$$eval('#list .row', rs => rs.map(r => r.innerText.repla
   prodDelay = 1200;      // la recherche doit rester en cours pendant les défilements et l'ouverture des réglages (sinon, machine chargée, elle finit avant)
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const pg = await c.newPage(); const errs2 = []; pg.on('pageerror', e => errs2.push(e.message));
-  await pg.route('https://api.scryfall.com/**', async route => { await new Promise(r => setTimeout(r, 650)); const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
+  await pg.route('https://api.scryfall.com/**', async route => { await new Promise(r => setTimeout(r, 1600));      /* lent : la recherche dure pendant toute la séquence (les offres CardTrader, déjà en cache côté proxy, reviennent vite) */ const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
   await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await pg.goto('http://127.0.0.1:18800/'); await pg.waitForTimeout(800);
   await toInput(pg); await pg.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God'); await pg.waitForTimeout(300);
