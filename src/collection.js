@@ -106,14 +106,16 @@ function collPushSoon() {
 function collRetry(ms) { clearTimeout(COLL.retryT); COLL.retryT = setTimeout(() => { if (collUnsynced()) collPush(); else collPull(); }, ms); }
 async function collPush() {
   clearTimeout(COLL.pushT); clearTimeout(COLL.retryT); COLL.pushT = COLL.retryT = 0;
-  if (!cloudOn() || !D.cloud.txColl) return;
+  if (!cloudOn() || !D.cloud.txColl || acctHeld(D.user.uid)) return;                  // compte en cours de suppression (ici ou ailleurs) : rien ne part
   if (COLL.pushing) { COLL.again = true; return; }
   if (collOffline()) { COLL.cloud = 'offline'; collPaintHead(); return; }
   const uid = D.user.uid, id = ++COLL.runId;
-  let used = null, merged = null, wrote = null;
+  let used = null, merged = null, wrote = null, had = false;
   COLL.pushing = id; COLL.again = false; COLL.cloud = 'sync'; COLL.err = ''; collPaintHead();
   try {
     await D.cloud.txColl(uid, rdoc => {
+      if (acctHeld(uid) || (!rdoc && acctLost('collection', uid))) throw Object.assign(new Error('compte effacé ?'), { code: 'held' });      // effacé entre-temps : on ne le recrée pas
+      had = !!rdoc;
       const remote = rdoc && typeof rdoc.text === 'string' ? collFromText(rdoc.text) : {};
       used = collClone(COLL.map);
       merged = merge3(rdoc && COLL.s === uid ? COLL.base : null, used, remote);
@@ -123,6 +125,7 @@ async function collPush() {
       return wrote;
     });
     if (D.uid !== uid) return;
+    if (had || wrote) acctSaw('collection', uid);
     if (wrote) COLL.ru = Math.max(COLL.ru, wrote.updatedAt);
     const before = COLL.map, next = merge3(used, before, merged);                                                       // + ce qui a été touché ici pendant l'envoi
     COLL.s = uid; COLL.base = merged; COLL.map = next; COLL.cloud = 'ok'; COLL.err = ''; COLL.live = true; collWrite();
@@ -131,6 +134,7 @@ async function collPush() {
   } catch (err) {
     if (D.uid !== uid) return;
     const c = err && err.code;
+    if (c === 'held') return;                                             // decks.js vérifie le compte, puis déconnecte ou relance la synchro
     if (c === 'permission-denied') { COLL.cloud = 'error'; COLL.err = T('Règles Firestore à publier pour la collection'); }
     else if (c === 'too-big') { COLL.cloud = 'error'; COLL.err = T('Collection trop grosse pour le compte'); }
     else if (c === 'unavailable' || collOffline()) { COLL.cloud = 'offline'; collRetry(COLL_RETRY.off); }
@@ -173,12 +177,14 @@ function collFromCloud(uid, data, pending, fromCache, pulled) {
   if (data && ru < COLL.ru) return;                                       // version plus ancienne que ce qu'on connaît (réponse arrivée en retard)
   COLL.live = true; COLL.cloud = 'ok'; COLL.err = '';
   if (data && typeof data.text === 'string') {
+    acctSaw('collection', uid);
     const remote = collFromText(data.text), first = COLL.s !== uid, known = !first && !!COLL.base, before = COLL.map;
     const next = merge3(first ? null : COLL.base, before, remote);
     COLL.ru = Math.max(COLL.ru, ru); COLL.s = uid; COLL.base = remote; COLL.map = next; collWrite();
     if (!sameColl(before, next)) collRemoteApplied(before, next, { first: first || !known, had: Object.keys(before).length });
     if (!sameColl(next, remote)) collPushSoon();                          // il reste ici des changements pas encore dans le compte
-  } else if (collCount()) { COLL.base = null; collPush(); }               // pas de document : on y envoie la collection de l'appareil
+  } else if (!data && acctLost('collection', uid)) { /* vu ici puis disparu : compte supprimé ailleurs ? rien n'est renvoyé (decks.js vérifie) */ }
+  else if (collCount()) { COLL.base = null; collPush(); }                 // pas de document : on y envoie la collection de l'appareil
   else { COLL.s = uid; COLL.base = {}; collWrite(); }
   collPaintHead();
 }

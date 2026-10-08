@@ -143,6 +143,7 @@ function xsUser(user) {
 function xsRemote(id, uid, data, pending, fromCache) {
   if (pending || fromCache || D.uid !== uid) return;                      // écho d'une écriture en cours ou copie locale du SDK : on attend le serveur
   const d = XS.docs[id]; d.state = 'ok';
+  if (data) acctSaw(id, uid); else if (acctLost(id, uid)) return;         // vu ici puis disparu : compte supprimé ailleurs ? rien n'est renvoyé (decks.js vérifie)
   if (id === 'engaged') {
     const remote = data ? engClean(data.decks) : {}, merged = engMerge(XS.eng, remote);
     if (!engSame(merged, XS.eng)) { XS.eng = merged; engWrite(); engApplied(); }
@@ -155,10 +156,10 @@ function xsRemote(id, uid, data, pending, fromCache) {
 }
 function xsPushSoon(id) { const d = XS.docs[id]; if (!d || !d.uid) return; clearTimeout(d.pushT); d.pushT = setTimeout(() => xsPush(id), 900); }
 async function xsPush(id) {
-  const d = XS.docs[id]; if (!d || !d.uid || d.uid !== D.uid || !cloudOn() || !D.cloud.saveMeta) return;
+  const d = XS.docs[id]; if (!d || !d.uid || acctHeld(d.uid) || !cloudOn() || !D.cloud.saveMeta) return;      // autre compte, ou compte en cours de suppression
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
   const doc = id === 'engaged' ? { decks: XS.eng, updatedAt: Date.now() } : { pts: VAL.hist.map(h => [h.t, h.v, h.n | 0, h.q | 0]), updatedAt: Date.now() };
-  try { await D.cloud.saveMeta(d.uid, id, doc); d.state = 'ok'; } catch (err) { xsFail(id, err); }
+  try { await D.cloud.saveMeta(d.uid, id, doc); d.state = 'ok'; acctSaw(id, d.uid); } catch (err) { xsFail(id, err); }
 }
 
 function xsInit() {

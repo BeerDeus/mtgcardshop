@@ -4,7 +4,7 @@
 const LOCAL_KEY = 'deckdeal:decks:v1', ACCT_KEY = 'deckdeal:acct';
 const D = {
   list: [], localList: [], user: null, uid: null, cloud: null, state: 'idle', err: '',
-  unsub: null, pending: false, listErr: '', authReady: false, hint: null, seen: new Set(), account: null, importing: new Set(),
+  unsub: null, pending: false, listErr: '', authReady: false, hint: null, seen: new Set(), account: null, importing: new Set(), hold: null, checking: null,
 };
 
 /* ── Stockage local ───────────────────────────────────────────────────────────────────────── */
@@ -467,12 +467,53 @@ function importLocal() {
   }).catch(err => { items.forEach(x => D.importing.delete(x.localId)); renderDecks(); paintAccount(); toast(deckErr(err)); });
 }
 
+/* ── Compte supprimé depuis un autre appareil ─────────────────────────────────────────────────
+   Après une suppression, le jeton d'un appareil resté connecté vaut encore jusqu'à 1 h et les règles Firestore ne vérifient que l'uid : sa synchro
+   recréerait pour toujours les documents effacés. Chaque synchro note donc les documents du compte vus sur le serveur (acctSaw) ; si l'un d'eux
+   disparaît (acctLost), plus rien ne part vers le compte (acctHeld) et on demande à Firebase s'il existe encore (acctCheck). */
+const SEEN_KEY = 'deckdeal:seen:v1', ACCT_CHECK = { wait: 6000 }, ACCT_GONE = /^auth\/(user-not-found|user-disabled|user-token-expired|invalid-user-token)$/;
+const acctSeen = () => { try { const o = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
+const acctSeenSet = o => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(o)); } catch (e) { /* stockage indisponible */ } };
+/** Le document id (collection, engaged, history, trade) du compte uid existe sur le serveur : lu ou écrit par cet appareil. */
+function acctSaw(id, uid) { const o = acctSeen(); if (o[id] !== uid) { o[id] = uid; acctSeenSet(o); } }
+/** Le serveur dit le document absent. Déjà vu ici pour ce compte : effacé (compte supprimé ailleurs ?) → true, l'appelant n'envoie rien.
+ *  Jamais vu : vraie première synchro → false, l'appelant envoie ce que l'appareil a, comme avant. */
+function acctLost(id, uid) {
+  if (acctSeen()[id] !== uid) return false;
+  D.hold = uid; acctCheck(uid); return true;
+}
+/** Rien ne doit partir vers ce compte : ce n'est plus le compte connecté (suppression en cours ici : D.uid vidé), ou un document a disparu. */
+const acctHeld = uid => !uid || uid !== D.uid || D.hold === uid;
+async function acctCheck(uid) {
+  if (D.checking === uid) return; D.checking = uid;
+  try {
+    // deux « le compte existe » à quelques secondes d'écart : l'autre appareil efface les données AVANT le compte
+    let alive = 0;
+    for (let i = 0; i < 4 && alive < 2; i++) {
+      if (i) await sleep(ACCT_CHECK.wait);
+      if (D.uid !== uid || !D.user) return;
+      try { await D.user.reload(); alive++; }
+      catch (e) { if (ACCT_GONE.test((e && e.code) || '')) { acctOut(uid); return; } }      // réseau : on ne sait pas encore, on réessaie
+    }
+    if (alive < 2 || D.uid !== uid) return;            // pas de réponse sûre : rien ne repart vers le compte pendant cette session
+    // compte bien là (document effacé à la main dans la console, suppression interrompue) : première synchro, l'appareil le reconstitue
+    const o = acctSeen(); for (const k in o) if (o[k] === uid) delete o[k]; acctSeenSet(o);
+    D.hold = null; collUser(D.user); xsUser(D.user); trUser(D.user);
+  } finally { if (D.checking === uid) D.checking = null; }
+}
+/** Compte supprimé ou désactivé : synchro arrêtée tout de suite, puis déconnexion (appli : compte Google du téléphone oublié aussi). */
+function acctOut(uid) {
+  if (D.uid === uid) { if (D.unsub) { try { D.unsub(); } catch (e) { /* ignore */ } D.unsub = null; } collUser(null); xsUser(null); trUser(null); }
+  Promise.resolve().then(() => D.cloud.signOut()).catch(() => {});
+  toast(T('Ce compte a été supprimé ou désactivé : tu es déconnecté.'));
+}
+
 /* ── Connexion au cloud ───────────────────────────────────────────────────────────────────── */
 function onUser(user) {
   const prev = D.uid;
   if (D.unsub) { try { D.unsub(); } catch (e) { /* ignore */ } D.unsub = null; }
   D.user = user; D.uid = user ? user.uid : null; D.list = []; D.pending = false; D.listErr = ''; D.authReady = true;
-  if (prev !== D.uid) { S.deckId = null; S.runDelta = null; D.seen.clear(); }
+  if (prev !== D.uid) { S.deckId = null; S.runDelta = null; D.seen.clear(); D.hold = null; }
   try {
     if (user) localStorage.setItem(ACCT_KEY, JSON.stringify({ l: ((user.displayName || user.email || '?').trim()[0] || '?').toUpperCase() }));
     else localStorage.removeItem(ACCT_KEY);

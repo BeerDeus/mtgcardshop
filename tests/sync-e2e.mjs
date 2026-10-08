@@ -8,9 +8,10 @@ const world = await startWorld({ port: 18940 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* ── faux serveur Firestore (un document users/u1/meta/collection) ───────────────────────────────── */
-const server = { doc: null, ver: 0, writes: 0, conflicts: 0, lat: 40, txDelay: 0, off: new Set(), subs: new Map() };
+/* ── faux serveur Firestore (users/u1/meta/collection, + engaged, history, trade) et compte Firebase (supprimable) ─────────────── */
+const server = { doc: null, ver: 0, writes: 0, conflicts: 0, lat: 40, txDelay: 0, off: new Set(), subs: new Map(), meta: { engaged: null, history: null, trade: null }, metaWrites: 0, deleted: false, wipeStopped: null };
 const broadcast = () => { for (const [n, pg] of server.subs) if (!server.off.has(n)) setTimeout(() => pg.evaluate(d => window.__snap && window.__snap(d), server.doc).catch(() => {}), server.lat); };
+const broadcastMeta = id => { for (const [n, pg] of server.subs) if (!server.off.has(n)) setTimeout(() => pg.evaluate(([id, d]) => window.__metaCb && window.__metaCb[id] && window.__metaCb[id](d, false, false), [id, server.meta[id]]).catch(() => {}), server.lat); };
 const serverText = () => (server.doc ? server.doc.text : null);
 const serverSet = text => { server.doc = { text, count: text ? text.split('\n').length : 0, updatedAt: (server.doc ? server.doc.updatedAt : 0) + 1 }; server.ver++; broadcast(); };
 
@@ -24,6 +25,12 @@ async function phone(name, opts = {}) {
     server.doc = doc; server.ver++; server.writes++; broadcast(); return { ok: 1 };
   });
   await p.exposeFunction('__fsSub', () => { server.subs.set(name, p); });
+  await p.exposeFunction('__fsMeta', async id => { await sleep(server.lat); if (server.off.has(name)) return { err: 1 }; return { data: server.meta[id] }; });
+  await p.exposeFunction('__fsSaveMeta', async (id, doc) => { await sleep(server.lat); if (server.off.has(name)) return { err: 1 }; server.meta[id] = doc; server.metaWrites++; broadcastMeta(id); return { ok: 1 }; });
+  await p.exposeFunction('__fsUser', async () => { await sleep(server.lat); return { gone: server.deleted }; });
+  // suppression du compte depuis ce téléphone : les données d'abord (tout d'un coup, comme le lot Firestore), le compte un peu après
+  await p.exposeFunction('__fsWipe', async stopped => { await sleep(server.lat); server.wipeStopped = stopped; server.doc = null; server.ver++; for (const id in server.meta) server.meta[id] = null; broadcast(); for (const id in server.meta) broadcastMeta(id); });
+  await p.exposeFunction('__fsDelUser', async () => { await sleep(500); server.deleted = true; });
   await p.goto(world.url); await p.waitForFunction(() => D.authReady, null, { timeout: 15000 });
   const page = { name, p, ctx, errs, signed: false };
   if (opts.signIn !== false) await signIn(page);
@@ -45,9 +52,18 @@ async function signIn(P) {
         throw Object.assign(new Error('aborted'), { code: 'aborted' });
       },
       pullColl: async () => { const r = await window.__fsRead(); if (r.err) throw unav(); return { data: r.data }; },
+      watchMeta(uid, id, cb) {
+        window.__metaCb = window.__metaCb || {}; window.__metaCb[id] = cb; window.__fsSub(); cb(null, false, true);
+        window.__fsMeta(id).then(r => { if (!r.err && window.__metaCb[id] === cb) cb(r.data, false, false); }); return () => { if (window.__metaCb[id] === cb) delete window.__metaCb[id]; };
+      },
+      saveMeta: async (uid, id, doc) => { const r = await window.__fsSaveMeta(id, JSON.parse(JSON.stringify(doc))); if (r.err) throw unav(); },
+      signOut: async () => { onUser(null); },
+      provider: () => 'password', reauth: async () => {}, deleteUser: () => window.__fsDelUser(),
+      async wipe() { await window.__fsWipe(!window.__cb && !COLL.unsub && !XS.docs.engaged.unsub && !XS.docs.history.unsub && !TR.doc.unsub && !D.unsub); return { decks: 0, shares: 0, failed: 0 }; },      // plus aucune écoute pendant l'effacement
     };
-    D.state = 'ready'; D.err = ''; COLL_RETRY.off = 600; COLL_RETRY.err = 600;
-    onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer' });
+    D.state = 'ready'; D.err = ''; COLL_RETRY.off = 600; COLL_RETRY.err = 600; ACCT_CHECK.wait = 1500;
+    const reload = async () => { const r = await window.__fsUser(); if (r.gone) throw Object.assign(new Error('compte supprimé'), { code: 'auth/user-not-found' }); };
+    onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer', reload });
   });
   P.signed = true;
 }
@@ -143,8 +159,10 @@ ok('snapshot de cache vide ou arrivé en retard : ignoré (rien d\'effacé, rien
 
 /* 8) le document du compte disparaît (supprimé à la main dans la console) : les cartes ne sont pas perdues */
 const full = await mapOf(A); server.doc = null; server.ver++; broadcast();
+await sleep(400); assert.equal(serverText(), null, 'déjà vu par les téléphones : pas renvoyé avant de savoir si le compte existe encore');
 await sleep(2500); await quiet(); assert.deepEqual(await mapOf(A), full); assert.deepEqual(await mapOf(B), full); assert.deepEqual(textOf().length, Object.keys(full).length, 'compte reconstitué');
-ok('document du compte supprimé : reconstitué depuis les téléphones, rien d\'effacé');
+assert.equal(await A.p.evaluate(() => !!D.user && D.hold === null), true, 'compte toujours là : connecté, synchro reprise');
+ok('document du compte supprimé à la main : le compte existe encore (vérifié 2 fois) → reconstitué depuis les téléphones, rien d\'effacé');
 
 /* 9) compte vidé d'un coup (autre appareil / erreur) : annulable */
 const bulk = []; for (let i = 1; i <= 12; i++) bulk.push({ k: 'carte ' + i, n: 'Carte ' + i, q: 1 });
@@ -207,5 +225,28 @@ await Promise.all([expectMap(A, final, 'A après union C'), expectMap(B, final, 
 ok('3e téléphone avec cartes locales : union (plus grande quantité) avec le compte, propagée aux 2 autres');
 await quiet(); for (const P of [A, B, C]) noErrs(P);
 ok('aucune erreur JS, synchro stable (plus aucune écriture une fois les téléphones d\'accord)');
+
+/* 14) compte supprimé depuis A pendant que B et C restent connectés : rien n'est recréé (collection, decks complets, échange), B et C sont déconnectés */
+await B.p.evaluate(() => { TR.wish = { ...TR.wish, 'time walk': { n: 'Time Walk', q: 1 } }; trChanged(); });
+await A.p.evaluate(() => { XS.eng = { ...XS.eng, deckM: { n: 'Deck monté', at: Date.now(), q: { 'sol ring': 1 } } }; engSaved(); });
+const seenAll = P => P.p.waitForFunction(() => { const o = JSON.parse(localStorage.getItem('deckdeal:seen:v1') || '{}'); return o.collection === 'u1' && o.engaged === 'u1' && o.trade === 'u1'; }, null, { timeout: 8000 });
+await Promise.all([A, B, C].map(seenAll)); await quiet();
+assert.ok(server.doc && server.meta.engaged && server.meta.trade, 'collection, decks complets et échange dans le compte');
+await A.p.evaluate(() => { openAccount('delete'); });
+await A.p.waitForSelector('#acDelGo'); await A.p.fill('#acDelPw', 'secret12'); await A.p.evaluate(() => { document.querySelector('#acWipeLocal').checked = false; });
+const w14 = server.writes, m14 = server.metaWrites;
+await A.p.click('#acDelGo');
+// B voit le compte vidé AVANT que le compte soit supprimé (Firebase répond encore « il existe ») et continue à tout modifier
+await B.p.waitForFunction(() => D.hold === 'u1', null, { timeout: 5000 });
+assert.equal(await B.p.evaluate(() => { collAdd([{ k: 'black lotus', n: 'Black Lotus', q: 1 }], 'add'); TR.wish = { ...TR.wish, 'ancestral recall': { n: 'Ancestral Recall', q: 1 } }; trChanged(); XS.eng = { ...XS.eng, deckB: { n: 'Deck B', at: Date.now(), q: { 'sol ring': 2 } } }; engSaved(); return !!D.user; }), true, 'B encore connecté pendant la vérification');
+await Promise.all([B, C].map(P => P.p.waitForFunction(() => !D.user, null, { timeout: 8000 })));
+await sleep(2500);
+assert.equal(server.doc, null, 'collection pas recréée'); assert.deepEqual(server.meta, { engaged: null, history: null, trade: null }, 'documents annexes pas recréés');
+assert.equal(server.writes, w14); assert.equal(server.metaWrites, m14, 'aucune écriture après l\'effacement');
+assert.equal(server.wipeStopped, true, 'A : plus aucune écoute ni synchro pendant l\'effacement');
+assert.match(await txt(B.p, '#toast'), /Ce compte a été supprimé ou désactivé : tu es déconnecté/);
+assert.equal((await mapOf(B))['black lotus'], '1', 'B garde ses cartes sur le téléphone');
+ok('compte supprimé sur A : B et C (restés connectés) ne recréent ni collection, ni decks complets, ni liste d\'échange, même en modifiant pendant la vérification ; déconnectés avec un message');
+for (const P of [A, B, C]) noErrs(P);
 
 await browser.close(); world.stop(); console.log("\nSYNC E2E OK"); process.exit(0);

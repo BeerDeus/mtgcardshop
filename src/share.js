@@ -50,6 +50,7 @@ function trUser(user) {
   d.uid = user.uid;
   d.unsub = D.cloud.watchMeta(user.uid, 'trade', (data, pending, fromCache) => {
     if (pending || fromCache || D.uid !== user.uid) return;
+    if (data) acctSaw('trade', user.uid); else if (acctLost('trade', user.uid)) return;      // vu ici puis disparu : compte supprimé ailleurs ? ni réglages ni liens renvoyés (decks.js vérifie)
     const ru = Number(data && data.updatedAt) || 0;
     if (data && ru > TR.u) { const sig = TR.sig; trApply(data); TR.sig = sig; trWrite(); trRepaint(); trSoon(); }
     else if (TR.u > ru) trPushSoon();
@@ -58,8 +59,8 @@ function trUser(user) {
 }
 function trPushSoon() { const d = TR.doc; if (!d.uid) return; clearTimeout(d.pushT); d.pushT = setTimeout(trPush, 900); }
 async function trPush() {
-  const d = TR.doc; if (!d.uid || d.uid !== D.uid || !cloudOn() || !D.cloud.saveMeta) return;
-  try { await D.cloud.saveMeta(d.uid, 'trade', trDoc()); if (TR.err === 'rules') { TR.err = ''; trRepaint(); } }
+  const d = TR.doc; if (!d.uid || acctHeld(d.uid) || !cloudOn() || !D.cloud.saveMeta) return;      // autre compte, ou compte en cours de suppression
+  try { await D.cloud.saveMeta(d.uid, 'trade', trDoc()); acctSaw('trade', d.uid); if (TR.err === 'rules') { TR.err = ''; trRepaint(); } }
   catch (err) { if (err && err.code === 'permission-denied') { TR.err = 'rules'; trRepaint(); } }
 }
 
@@ -114,7 +115,7 @@ async function trPrep() {
 /** Met à jour les partages de ce compte (liste d'échange, decks enregistrés partagés). Les cartes recherchées sans fiche Scryfall sont lues d'abord (images). */
 async function trSync() {
   clearTimeout(TR.syncT);
-  if (!cloudOn() || !D.cloud.saveShare || trOffline()) return;
+  if (!cloudOn() || !D.cloud.saveShare || trOffline() || acctHeld(D.uid)) return;      // compte en cours de suppression : les liens effacés ne sont pas recréés
   if (TR.busy) { TR.again = true; return; }
   TR.busy = true; TR.again = false;
   try {
