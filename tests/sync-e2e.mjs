@@ -232,9 +232,10 @@ await A.p.evaluate(() => { XS.eng = { ...XS.eng, deckM: { n: 'Deck monté', at: 
 const seenAll = P => P.p.waitForFunction(() => { const o = JSON.parse(localStorage.getItem('deckdeal:seen:v1') || '{}'); return o.collection === 'u1' && o.engaged === 'u1' && o.trade === 'u1'; }, null, { timeout: 8000 });
 await Promise.all([A, B, C].map(seenAll)); await quiet();
 assert.ok(server.doc && server.meta.engaged && server.meta.trade, 'collection, decks complets et échange dans le compte');
-await A.p.evaluate(() => { openAccount('delete'); });
+const notes = []; await A.p.exposeFunction('__note', n => notes.push(n));
+await A.p.evaluate(() => { const al = alDisable, pd = pushDisable; alDisable = async () => { window.__note('alDisable'); return al(); }; pushDisable = async () => { window.__note('pushDisable'); return pd(); }; openAccount('delete'); });
 await A.p.waitForSelector('#acDelGo'); await A.p.fill('#acDelPw', 'secret12'); await A.p.evaluate(() => { document.querySelector('#acWipeLocal').checked = false; });
-const w14 = server.writes, m14 = server.metaWrites;
+const w14 = server.writes, m14 = server.metaWrites, reloaded = A.p.waitForEvent('load', { timeout: 20000 });
 await A.p.click('#acDelGo');
 // B voit le compte vidé AVANT que le compte soit supprimé (Firebase répond encore « il existe ») et continue à tout modifier
 await B.p.waitForFunction(() => D.hold === 'u1', null, { timeout: 5000 });
@@ -246,6 +247,7 @@ assert.equal(server.writes, w14); assert.equal(server.metaWrites, m14, 'aucune �
 assert.equal(server.wipeStopped, true, 'A : plus aucune écoute ni synchro pendant l\'effacement');
 assert.match(await txt(B.p, '#toast'), /Ce compte a été supprimé ou désactivé : tu es déconnecté/);
 assert.equal((await mapOf(B))['black lotus'], '1', 'B garde ses cartes sur le téléphone');
+await reloaded; assert.ok(notes.includes('alDisable') && notes.includes('pushDisable'), 'A : alertes de prix et notifications coupées');
 ok('compte supprimé sur A : B et C (restés connectés) ne recréent ni collection, ni decks complets, ni liste d\'échange, même en modifiant pendant la vérification ; déconnectés avec un message');
 for (const P of [A, B, C]) noErrs(P);
 

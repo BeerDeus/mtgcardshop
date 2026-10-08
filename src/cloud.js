@@ -106,18 +106,27 @@ function makeCloud(m) {
       if (pw == null) { const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.reauthenticateWithPopup(u, p); }
       return m.auth.reauthenticateWithCredential(u, m.auth.EmailAuthProvider.credential(u.email, pw));
     },
-    /** Efface tout ce que le compte a en ligne : liens publics (liste d'échange, decks partagés), decks, documents annexes. Exige le réseau. */
-    async wipe(uid) {
+    /** Efface tout ce que le compte a en ligne : liens publics (liste d'échange, decks partagés), decks, documents annexes. Exige le réseau.
+     *  local : liens connus de cet appareil (créés ici, peut-être jamais arrivés dans le document « trade » du compte). */
+    async wipe(uid, local = []) {
       const ref = (...p) => m.fs.doc(db, 'users', uid, ...p);
       const tr = await m.fs.getDocFromServer(ref('meta', 'trade')).catch(() => null), td = tr && tr.exists() ? tr.data() : {};
-      const shares = [td.share, ...Object.values(td.dsh || {})].filter(x => typeof x === 'string' && x);
-      for (const id of shares) await m.fs.deleteDoc(m.fs.doc(db, 'shares', id)).catch(() => {});      // lien déjà retiré : rien à faire
+      const shares = [...new Set([td.share, ...Object.values(td.dsh || {}), ...local].filter(x => typeof x === 'string' && x))];
+      let failed = 0;
+      for (const id of shares) {
+        const s = m.fs.doc(db, 'shares', id);
+        // lien absent (déjà retiré, jamais créé) : rien à faire, et la règle refuserait de l'effacer (aucun propriétaire à comparer)
+        try { if ((await m.fs.getDocFromServer(s)).exists()) await m.fs.deleteDoc(s); }
+        catch (e) { if (e && e.code === 'not-found') continue; failed++; console.warn('Lien public non effacé :', id, e && e.code); }      // on continue : le reste du compte doit partir
+      }
       const decks = await m.fs.getDocsFromServer(col(uid));
       const refs = [...decks.docs.map(d => d.ref), ...['collection', 'engaged', 'history', 'trade'].map(id => ref('meta', id)), ref('binder', 'lands')];
       for (let i = 0; i < refs.length; i += 400) { const b = m.fs.writeBatch(db); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
-      return { decks: decks.docs.length, shares: shares.length };
+      return { decks: decks.docs.length, shares: shares.length, failed };
     },
     deleteUser: () => m.auth.deleteUser(auth.currentUser),
+    /** Cache hors ligne de Firestore (decks, collection… du compte) : arrêt du client, puis effacement. Ensuite plus rien ne marche sans recharger la page. */
+    clearLocal: async () => { await m.fs.terminate(db); await m.fs.clearIndexedDbPersistence(db); },
     shareId: () => m.fs.doc(m.fs.collection(db, 'shares')).id,
     saveShare: (id, data) => m.fs.setDoc(m.fs.doc(db, 'shares', id), data),
     dropShare: id => m.fs.deleteDoc(m.fs.doc(db, 'shares', id)),
@@ -139,6 +148,20 @@ function loadCloud() {
   return cloudP;
 }
 
+/** Efface le cache Firestore de cet appareil (suppression du compte, effacement de l'appareil) : par le SDK s'il est chargé ; sinon, ou en échec
+ *  (autre onglet ouvert…), en supprimant les bases IndexedDB « firestore/… ». Jamais bloquant : chaque étape a un délai. */
+async function cloudClearLocal(c) {
+  const late = (ms, v) => new Promise(r => setTimeout(() => r(v), ms)), within = (p, ms) => Promise.race([Promise.resolve(p).then(() => true, () => false), late(ms, false)]);
+  if (c && c.clearLocal && await within(c.clearLocal(), 4000)) return true;
+  try {
+    if (typeof indexedDB === 'undefined' || !indexedDB.databases) return false;
+    for (const d of (await Promise.race([indexedDB.databases(), late(2000, [])])) || []) {
+      if (d && typeof d.name === 'string' && d.name.startsWith('firestore/')) await within(new Promise((res, rej) => { const q = indexedDB.deleteDatabase(d.name); q.onsuccess = res; q.onerror = q.onblocked = rej; }), 2000);
+    }
+  } catch (e) { /* navigateur sans indexedDB.databases() : rien de plus à faire */ }
+  return false;
+}
+
 /** Partage public lu sans SDK ni compte (API REST Firestore) : { kind, at, … } (readShare), ou lève une erreur { code: 'gone' | 'denied' | 'net' | 'bad' }. */
 const SHARE_ID_RE = /^[A-Za-z0-9]{12,40}$/;
 async function shareFetch(id, fetchFn) {
@@ -155,4 +178,4 @@ async function shareFetch(id, fetchFn) {
   return out;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud, shareFetch, SHARE_ID_RE };
+if (typeof module !== 'undefined' && module.exports) module.exports = { FIREBASE_CONFIG, authMessage, makeCloud, shareFetch, SHARE_ID_RE, cloudClearLocal };

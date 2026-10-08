@@ -36,7 +36,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const app = await import('firebase/app'), auth = await import('firebase/auth'), fs = await import('firebase/firestore');
-const { makeCloud } = require('../src/cloud.js');
+const { makeCloud, cloudClearLocal } = require('../src/cloud.js');
 const cloud = makeCloud({ app, auth, fs });
 console.log('✓ makeCloud avec le vrai SDK (repli getFirestore sans IndexedDB)');
 
@@ -103,7 +103,7 @@ assert.deepEqual(states.at(-1).names, ['Imp 2', 'Imp 1', 'Alpha 2']); console.lo
 un(); unsub();
 
 { // Suppression du compte (faux SDK : le vrai Firestore hors ligne ne lit pas le serveur) : liens publics, decks, documents annexes, puis le compte
-  const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/AUTRE', {}]]);
+  const log = [], store = new Map([['users/u1/decks/d1', {}], ['users/u1/decks/d2', {}], ['users/u1/meta/trade', { share: 'S1', dsh: { d1: 'S2', d2: '' } }], ['users/u1/meta/collection', {}], ['shares/S1', {}], ['shares/S2', {}], ['shares/S3', {}], ['shares/REFUS', {}], ['shares/AUTRE', {}]]);
   const ref = (...p) => ({ path: p.slice(1).join('/') });
   const user = { email: 'a@b.c', providerData: [{ providerId: 'password' }] };
   const m = {
@@ -114,19 +114,31 @@ un(); unsub();
     fs: { initializeFirestore: () => ({}), persistentLocalCache: () => ({}), persistentMultipleTabManager: () => ({}), collection: (...p) => ({ path: p.slice(1).join('/') }), doc: (...p) => p.length === 1 ? { id: 'n' } : ref(...p),
       getDocFromServer: async r => ({ exists: () => store.has(r.path), data: () => store.get(r.path) }),
       getDocsFromServer: async c => ({ docs: [...store.keys()].filter(k => k.startsWith(c.path + '/')).map(k => ({ ref: { path: k } })) }),
-      deleteDoc: async r => { log.push('del:' + r.path); store.delete(r.path); },
-      writeBatch: () => { const ops = []; return { delete: r => ops.push(r.path), commit: async () => { log.push('batch:' + ops.length); ops.forEach(k => store.delete(k)); } }; } },
+      deleteDoc: async r => { log.push('del:' + r.path); if (r.path === 'shares/REFUS') throw Object.assign(new Error('refusé'), { code: 'permission-denied' }); store.delete(r.path); },
+      writeBatch: () => { const ops = []; return { delete: r => ops.push(r.path), commit: async () => { log.push('batch:' + ops.length); ops.forEach(k => store.delete(k)); } }; },
+      terminate: async () => { log.push('terminate'); }, clearIndexedDbPersistence: async () => { log.push('clearPersistence'); } },
   };
   const c = makeCloud(m);
   assert.equal(c.provider(), 'password');
   await assert.rejects(c.reauth('mauvais'), e => e.code === 'auth/invalid-credential');
   await c.reauth('ok');
-  const r = await c.wipe('u1'); await c.deleteUser();
-  assert.deepEqual(r, { decks: 2, shares: 2 });
-  assert.deepEqual([...store.keys()], ['shares/AUTRE'], 'tout le compte effacé, rien d\'autre');
-  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'batch:7', 'deleteUser:a@b.c']);
+  // liens connus de l'appareil seulement (S3), déjà retiré (PARTI : pas de suppression tentée), doublon (S1), refusé (REFUS : compté, on continue)
+  const r = await c.wipe('u1', ['S3', 'S1', 'PARTI', 'REFUS', '']); await c.deleteUser();
+  assert.deepEqual(r, { decks: 2, shares: 5, failed: 1 });
+  assert.deepEqual([...store.keys()], ['shares/REFUS', 'shares/AUTRE'], 'tout le compte effacé (sauf le lien refusé), rien d\'autre');
+  assert.deepEqual(log, ['reauth:mauvais', 'reauth:ok', 'del:shares/S1', 'del:shares/S2', 'del:shares/S3', 'del:shares/REFUS', 'batch:7', 'deleteUser:a@b.c']);
   user.providerData = [{ providerId: 'google.com' }]; assert.equal(c.provider(), 'google'); await c.reauth(null); assert.equal(log.at(-1), 'popup');
-  console.log('✓ suppression du compte : reconnexion, liens publics, decks et documents annexes effacés, puis le compte');
+  console.log('✓ suppression du compte : reconnexion, liens publics (compte + appareil, absents ignorés, échecs comptés), decks et documents annexes effacés, puis le compte');
+
+  // cache Firestore de l'appareil : par le SDK (arrêt puis effacement), sinon bases IndexedDB « firestore/… »
+  log.length = 0; assert.equal(await cloudClearLocal(c), true); assert.deepEqual(log, ['terminate', 'clearPersistence']);
+  const gone = []; globalThis.indexedDB = { databases: async () => [{ name: 'firestore/[DEFAULT]/m2s-mtg/main' }, { name: 'firebaseLocalStorageDb' }, { name: 'deckdeal' }], deleteDatabase: n => { gone.push(n); const q = {}; setTimeout(() => q.onsuccess && q.onsuccess()); return q; } };
+  assert.equal(await cloudClearLocal(null), false); assert.deepEqual(gone, ['firestore/[DEFAULT]/m2s-mtg/main'], 'sans SDK : seules les bases Firestore');
+  gone.length = 0; assert.equal(await cloudClearLocal({ clearLocal: async () => { throw Object.assign(new Error('autre onglet'), { code: 'failed-precondition' }); } }), false); assert.deepEqual(gone, ['firestore/[DEFAULT]/m2s-mtg/main'], 'SDK en échec : repli');
+  globalThis.indexedDB = { databases: () => new Promise(() => {}) }; const t0 = Date.now(); await cloudClearLocal({ clearLocal: () => new Promise(() => {}) });
+  assert.ok(Date.now() - t0 < 9000, 'jamais bloquant'); delete globalThis.indexedDB;
+  console.log('✓ cache Firestore effacé : SDK (terminate + clearIndexedDbPersistence), repli IndexedDB, jamais bloquant');
+
 }
 console.log('\nCLOUD OK');
 process.exit(0);

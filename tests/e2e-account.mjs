@@ -307,6 +307,13 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
     await r.waitForFunction(() => /Suppression impossible/.test(document.querySelector('#acMsg').textContent), null, { timeout: 20000 });
     assert.equal(await r.evaluate(() => D.uid), 'uid-allowed'); assert.equal(await r.$eval('#acDelGo', e => e.disabled), false); assert.ok(!idLog.includes('accounts:delete'), 'le compte n\'est pas supprimé tant que ses données ne le sont pas'); ok('serveur injoignable : message, compte et synchronisation intacts, le compte n\'est pas supprimé avant ses données');
     await r.click('#acDelNo'); await r.waitForSelector('#acDel'); ok('Annuler : retour à la fiche du compte');
+    // cache Firestore de l'appareil (vrai SDK, comme après une suppression ou « Effacer les données ») : arrêt du client puis effacement des bases « firestore/… »
+    const fsdb = await r.evaluate(async () => {
+      await D.cloud.signOut(); const names = async () => (await indexedDB.databases()).map(d => d.name).filter(n => n.startsWith('firestore/'));
+      const before = await names(), done = await cloudClearLocal(D.cloud); return { before, done, after: await names() };
+    });
+    assert.ok(fsdb.before.length > 0, 'cache Firestore présent avant'); assert.equal(fsdb.done, true, 'effacé par le SDK'); assert.deepEqual(fsdb.after, []);
+    ok('cache Firestore de l\'appareil effacé par le SDK (terminate + clearIndexedDbPersistence)');
     await cx.close(); }
 
   // appli Android : connexion Google native (plugin) → session Firebase ouverte par le SDK web avec le jeton Google ; annulation silencieuse ; déconnexion native aussi

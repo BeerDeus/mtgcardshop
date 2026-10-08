@@ -433,7 +433,8 @@ function paintAccountDelete(api) {
     // Plus aucune synchronisation pendant l'effacement : sinon une copie locale pourrait être renvoyée dans le compte.
     if (D.unsub) { try { D.unsub(); } catch (x) { /* ignore */ } D.unsub = null; }
     collUser(null); xsUser(null); trUser(null); D.uid = null;
-    try { await D.cloud.wipe(uid); await D.cloud.deleteUser(); }
+    // liens créés ici mais peut-être jamais arrivés dans le document « trade » du compte : effacés aussi
+    try { await D.cloud.wipe(uid, TR.who === uid ? [TR.share, ...Object.values(TR.dsh)] : []); await D.cloud.deleteUser(); }
     catch (err) {
       D.uid = uid; onUser(D.user);      // rien de cassé : on reprend la synchronisation
       btn.disabled = false; btn.textContent = T('Supprimer définitivement');
@@ -441,11 +442,21 @@ function paintAccountDelete(api) {
       return;
     }
     api.close();
-    if (local) wipeDevice(); else toast(T('Compte supprimé'));
+    Promise.resolve().then(() => D.cloud.signOut()).catch(() => {});      // appli : oublie aussi le compte Google choisi sur le téléphone
+    if (local) wipeDevice();
+    else { await deviceForget(); toast(T('Compte supprimé')); setTimeout(() => location.reload(), 700); }      // client Firestore arrêté : on repart d'une page neuve
   };
+}
+/** Ce que l'appareil garde du compte hors de ses données : abonnement aux alertes de prix sur le serveur (sinon il notifierait encore, sans moyen
+ *  de couper), notifications, cache Firestore. Après une suppression de compte et dans wipeDevice ; jamais bloquant (réseau absent : on passe). */
+async function deviceForget() {
+  const within = (f, ms) => Promise.race([Promise.resolve().then(f).catch(() => {}), sleep(ms)]);
+  await within(alDisable, 5000); await within(pushDisable, 3000);
+  await cloudClearLocal(D.cloud);
 }
 /** Efface tout ce que l'appli garde sur cet appareil (réglages, collection, decks, caches), puis recharge. */
 async function wipeDevice() {
+  await deviceForget();
   try { Object.keys(localStorage).filter(k => /^deckdeal[:-]/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
   try { await Cache.clear(); } catch (e) { /* ignore */ }
   try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith('deckdeal-')) await caches.delete(k); } catch (e) { /* ignore */ }
