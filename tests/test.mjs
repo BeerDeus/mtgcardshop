@@ -1229,6 +1229,20 @@ test('export CSV de la collection (format Moxfield) : relu par l\'import, une li
   assert.equal(back.items.find(i => /Krenko/.test(i.n)).n, 'Krenko, "Tin" Lord');
   assert.equal(C.parseCollection('Quantity,Product Name,Set\n2,Sol Ring,CMM\n').items[0].q, 2, 'TCGplayer : « Product Name »');
 });
+test('export CSV : un nom qui ressemble à une formule (Excel, LibreOffice) est neutralisé, les vrais noms « +2 Mace » restent intacts', () => {
+  const row = n => C.collToCsv({ k: { n, q: 2 } }).trim().split('\n')[1];
+  assert.equal(row('=HYPERLINK("http://x","clic")'), '2,0,"\'=HYPERLINK(""http://x"",""clic"")",,Near Mint,,');
+  assert.equal(row('@SUM(A1)'), "2,0,'@SUM(A1),,Near Mint,,");
+  assert.equal(row('-2+3+cmd|\' /C calc\'!A0'), "2,0,'-2+3+cmd|' /C calc'!A0,,Near Mint,,", 'DDE : signe suivi d\'une formule');
+  assert.equal(row('+1'), "2,0,'+1,,Near Mint,,", 'signe et chiffres seuls : formule');
+  assert.equal(row('\tSol Ring'), "2,0,'\tSol Ring,,Near Mint,,");
+  assert.equal(row('\rSol Ring'), '2,0,"\'\rSol Ring",,Near Mint,,');
+  assert.equal(row('+2 Mace'), '2,0,+2 Mace,,Near Mint,,', 'vrai nom de carte : intact');
+  assert.equal(row('-1 Kobold\'s Lance, Hunter'), '2,0,"-1 Kobold\'s Lance, Hunter",,Near Mint,,', 'signe, chiffres, espace, mots : intact');
+  assert.equal(row('Sol Ring'), '2,0,Sol Ring,,Near Mint,,');
+  assert.equal(row('Fire // Ice'), '2,0,Fire // Ice,,Near Mint,,');
+  assert.match(C.collToCsv({ k: { n: 'Sol Ring', q: 3 } }), /\n3,0,Sol Ring,/, 'colonnes de nombres jamais touchées');
+});
 
 test('i18n : T, TN, choix de la langue', () => {
   const { T, TN, I18N, i18nPick } = C;

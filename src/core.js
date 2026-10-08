@@ -905,7 +905,13 @@ function parseCollection(text, o) {
 /** Export CSV au format Moxfield (« Count,Tradelist Count,Name,Edition,Condition,Language,Foil ») : relu par Moxfield, ManaBox, Archidekt, Deckbox… et par cette appli.
  *  Une ligne par langue ; langue non précisée : colonne vide. */
 const CSV_LANG = { fr: 'French', en: 'English', de: 'German', es: 'Spanish', it: 'Italian', pt: 'Portuguese', jp: 'Japanese', 'zh-CN': 'Chinese Simplified', ko: 'Korean', ru: 'Russian' };
-const csvCell = v => /[",\r\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+/** Cellule texte : un nom venu d'une liste importée ou partagée qui commence par = + - @ (ou tabulation, retour) serait lu comme une formule par Excel ou LibreOffice → préfixé d'une apostrophe.
+ *  Sauf « +2 Mace » et ses pareils (signe, chiffres, espace, puis des mots) : vrais noms de cartes, aucune formule possible. */
+const csvCell = v => {
+  let s = String(v);
+  if (typeof v === 'string' && (/^[=@\t\r]/.test(s) || (/^[+-]/.test(s) && !/^[+-]\d+ [\p{L}' ,-]+$/u.test(s)))) s = "'" + s;
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
 function collToCsv(map) {
   const rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil'];
   for (const x of Object.values(map || {}).filter(x => x && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')))
