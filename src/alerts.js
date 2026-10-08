@@ -27,6 +27,7 @@ function alParseEuros(s) {
   return Number.isFinite(n) && n > 0 && n < 10000 ? Math.round(n * 100) : 0;
 }
 
+const AL_BODY_MAX = 56000;                                                                    // marge sous la limite de 64 Ko du serveur (abonnement et seuil en plus)
 /** Cartes à surveiller : suivies à la main (avec prix cible éventuel) puis manquantes des decks enregistrés ; [{ k, n, t?, d? }]. */
 function alItems() {
   const out = new Map();
@@ -46,7 +47,12 @@ function alItems() {
       }
     }
   }
-  return [...out.values()].slice(0, 400).map(x => { const o = { k: x.k, n: x.n }; if (x.t) o.t = x.t; if (x.d.length) o.d = x.d; if (x.hand) o.h = 1; return o; });
+  // Tailles alignées sur le serveur (nom 150, deck 40, envoi ≤ 64 Ko) : trop de decks aux noms longs → un seul deck par carte, puis moins de cartes.
+  const items = [...out.values()].slice(0, 400).map(x => { const o = { k: x.k, n: String(x.n).slice(0, 150) }; if (x.t) o.t = x.t; if (x.d.length) o.d = x.d.map(d => String(d).slice(0, 40)); if (x.hand) o.h = 1; return o; });
+  const size = () => new TextEncoder().encode(JSON.stringify(items)).length;
+  if (size() > AL_BODY_MAX) items.forEach(o => { if (o.d) o.d = o.d.slice(0, 1); });
+  while (items.length && size() > AL_BODY_MAX) items.splice(-Math.max(1, items.length >> 4));
+  return items;
 }
 
 /** Abonnement push de cet appareil, ou { fcm: jeton } dans l'appli Android (null si les notifications ne sont pas actives). */
