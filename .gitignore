@@ -9,3 +9,4 @@ tests/.tmp/
 tests/logs/
 tests/run-tests.out
 shots/
+.claude/worktrees/
