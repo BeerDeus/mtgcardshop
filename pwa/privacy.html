@@ -34,29 +34,33 @@ ul{padding-left:20px}
 <h2>Politique de confidentialité</h2>
 <p class="mute">Dernière mise à jour : 8 octobre 2026</p>
 <p>Mana Orbit est une application gratuite pour suivre sa collection de cartes Magic, ses decks et leurs prix. Elle collecte le moins de données possible et n'en vend aucune.</p>
+<p><b>Responsable du traitement :</b> le développeur de Mana Orbit (particulier, France). Contact : <a href="mailto:martin.stuis11@gmail.com">martin.stuis11@gmail.com</a>.</p>
 
 <h2>Sans compte : tout reste sur ton appareil</h2>
-<p>Ta collection, tes decks, tes réglages et, si tu en saisis un, ton token CardTrader sont enregistrés dans le stockage de ton navigateur ou de l'application, sur ton appareil. Nous n'y avons pas accès.</p>
-<p>Le scan de cartes utilise l'appareil photo uniquement quand tu l'ouvres. Les images sont analysées sur ton appareil et ne sont jamais envoyées.</p>
+<p>Ta collection, tes decks et tes réglages sont enregistrés dans le stockage de ton navigateur ou de l'application, sur ton appareil. Nous n'y avons pas accès. Si tu saisis un token CardTrader, il est gardé au même endroit et n'est envoyé à notre serveur qu'avec tes recherches CardTrader (voir « Notre serveur »). Les données de l'appli Android sont exclues de la sauvegarde Android (Google).</p>
+<p>Le scan de cartes utilise l'appareil photo uniquement quand tu l'ouvres. Les images sont analysées sur ton appareil et ne sont jamais envoyées. Dans l'appli Android, la lecture passe par Google ML Kit, sur le téléphone ; les services Google Play peuvent envoyer à Google des diagnostics anonymes, selon les conditions de ML Kit.</p>
 
 <h2>Avec un compte (facultatif)</h2>
 <p>Le compte sert à retrouver tes données sur tous tes appareils. Il repose sur Firebase Authentication et Cloud Firestore (Google). Sont enregistrés :</p>
 <ul>
 <li>ton adresse e-mail et ton mode de connexion (e-mail ou Google) ;</li>
+<li>avec Google, ton nom et ta photo de profil Google (gardés par Firebase Authentication) ;</li>
 <li>tes decks, ta collection, l'historique de sa valeur et ta liste d'échange.</li>
 </ul>
 <p>Ces données sont gardées tant que le compte existe. Ton token CardTrader n'est jamais enregistré dans le compte.</p>
 
 <h2>Liens partagés</h2>
-<p>Quand tu partages ta liste d'échange ou un deck, son contenu est lisible par toute personne qui a le lien. Il ne contient ni ton e-mail ni ton identifiant. Tu peux retirer un lien à tout moment.</p>
+<p>Quand tu partages ta liste d'échange ou un deck, son contenu est lisible par toute personne qui a le lien. Il ne contient ni ton e-mail ni l'identifiant de ton compte, seulement une empreinte (SHA-256) de cet identifiant, qui montre que le lien est à toi. Tu peux retirer un lien à tout moment.</p>
 
 <h2>Notre serveur</h2>
-<p>Le serveur de Mana Orbit (hébergé par Hostinger) relaie les requêtes vers CardTrader, Scryfall et EDHREC et garde en cache des prix publics. Si tu les actives :</p>
+<p>Le serveur de Mana Orbit (hébergé par Hostinger) relaie les requêtes vers CardTrader, Scryfall et EDHREC et garde en cache des prix publics. Il lit aussi les liens que tu colles pour importer un deck (EDHREC, Archidekt, Moxfield…). Si tu les actives :</p>
 <ul>
-<li><b>notifications</b> : l'adresse technique d'abonnement fournie par ton navigateur ;</li>
-<li><b>alertes de prix</b> : la liste des cartes surveillées et tes seuils.</li>
+<li><b>notifications</b> : l'adresse d'abonnement de ton navigateur ou, dans l'appli Android, le jeton Firebase Cloud Messaging ;</li>
+<li><b>alertes de prix</b> : les cartes surveillées, tes seuils et le nom des decks concernés.</li>
 </ul>
-<p>Elles sont supprimées quand tu les désactives. L'hébergeur peut tenir des journaux techniques (adresse IP, date, page demandée) pour la sécurité.</p>
+<p>Elles sont supprimées quand tu les désactives ou supprimes ton compte. Le texte des notifications (noms de cartes et de decks) passe par le service d'envoi de Google ou de l'éditeur de ton navigateur.</p>
+<p><b>Token CardTrader :</b> il n'accompagne que tes recherches CardTrader (jamais les alertes ni l'import). Le serveur s'en sert pour interroger CardTrader avec ton compte et le garde en mémoire le temps de la recherche ; il n'en conserve qu'une empreinte (SHA-256) pour espacer les requêtes. Il ne l'écrit jamais sur disque ni dans ses journaux, ni dans ton compte.</p>
+<p>Connecté, l'appli lui présente une preuve de connexion Firebase pour savoir si ton compte a des droits particuliers ; il la vérifie sans l'enregistrer. Pour limiter les abus, il compte en mémoire les requêtes par adresse IP. L'hébergeur peut tenir des journaux techniques (adresse IP, date, page demandée) pour la sécurité ; il les garde un temps limité, selon sa propre politique.</p>
 
 <h2>Services tiers</h2>
 <p>Ton appareil contacte directement : Scryfall (images et données des cartes, prix tendance), Google Fonts (polices), Google (SDK Firebase) et jsDelivr (moteur de reconnaissance du scan). Comme pour tout site web, ces services reçoivent ton adresse IP. Si tu saisis ton token CardTrader, tes recherches et ton panier passent par CardTrader avec ton propre compte.</p>
@@ -67,10 +71,20 @@ ul{padding-left:20px}
 <p><b>Version web</b> (navigateur, ou appli installée depuis le site) : aucune publicité.</p>
 <p>Mana Orbit ne mesure pas l'audience : aucun outil de statistiques.</p>
 
+<h2>Bases légales</h2>
+<ul>
+<li><b>exécution du service</b> : le compte, la synchronisation, les liens partagés et l'import ;</li>
+<li><b>consentement</b> : la publicité (formulaire de Google) et les notifications, alertes de prix comprises ; tu peux le retirer à tout moment ;</li>
+<li><b>intérêt légitime</b> : les journaux de sécurité, la limite de requêtes et le cache des prix.</li>
+</ul>
+
+<h2>Hors de l'Union européenne</h2>
+<p>Google (Firebase, AdMob, Firebase Cloud Messaging, ML Kit via les services Google Play) et Scryfall sont établis aux États-Unis : ce qu'ils reçoivent peut y être traité. Google indique encadrer ces transferts par le Data Privacy Framework UE–États-Unis et par des clauses contractuelles types. Scryfall, contacté comme n'importe quel site, ne reçoit que ton adresse IP et les cartes demandées.</p>
+
 <h2>Tes droits</h2>
 <p>Tu peux à tout moment accéder à tes données, les exporter, les corriger ou les supprimer (RGPD). Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).</p>
-<p><b>Supprimer ton compte :</b> dans l'application, Compte › Supprimer mon compte, ou directement sur <a href="./?delete-account">cette page</a>. Tout ce que le compte a en ligne est effacé : decks, collection, historique, liste d'échange et liens partagés. Les données de ton appareil peuvent être effacées en même temps, ou à part depuis Réglages › Confidentialité.</p>
-<p>Pour toute question, écris à l'adresse e-mail du développeur indiquée sur la fiche Google Play de l'application.</p>
+<p><b>Supprimer ton compte :</b> dans l'application, Compte › Supprimer mon compte, ou directement sur <a href="./?delete-account">cette page</a>. Tout ce que le compte a en ligne est effacé : decks, collection, historique, liste d'échange et liens partagés. Tes alertes de prix et notifications sont aussi arrêtées sur le serveur, et la copie du compte gardée sur l'appareil est effacée. Les données de ton appareil peuvent être effacées en même temps, ou à part depuis Réglages › Confidentialité.</p>
+<p>Pour toute question ou pour exercer tes droits, écris à <a href="mailto:martin.stuis11@gmail.com">martin.stuis11@gmail.com</a>.</p>
 
 <h2>Contenu de fan</h2>
 <p class="mute">Mana Orbit est un contenu de fan non officiel autorisé par la Fan Content Policy. Il n'est ni approuvé ni soutenu par Wizards of the Coast. Certains éléments utilisés sont la propriété de Wizards of the Coast. ©Wizards of the Coast LLC.</p>
@@ -80,29 +94,33 @@ ul{padding-left:20px}
 <h2>Privacy policy</h2>
 <p class="mute">Last updated: October 8, 2026</p>
 <p>Mana Orbit is a free app to track your Magic card collection, your decks and their prices. It collects as little data as possible and never sells any.</p>
+<p><b>Data controller:</b> the developer of Mana Orbit (private individual, France). Contact: <a href="mailto:martin.stuis11@gmail.com">martin.stuis11@gmail.com</a>.</p>
 
 <h2>Without an account: everything stays on your device</h2>
-<p>Your collection, decks, settings and, if you enter one, your CardTrader token are stored in your browser's or the app's storage, on your device. We cannot access them.</p>
-<p>Card scanning uses the camera only while you have it open. Images are analysed on your device and are never uploaded.</p>
+<p>Your collection, decks and settings are stored in your browser's or the app's storage, on your device. We cannot access them. If you enter a CardTrader token, it is kept in the same place and only sent to our server with your CardTrader searches (see "Our server"). The Android app's data is excluded from Android (Google) backup.</p>
+<p>Card scanning uses the camera only while you have it open. Images are analysed on your device and are never uploaded. In the Android app, recognition uses Google ML Kit, on the phone; Google Play services may send Google anonymous diagnostics, under the ML Kit terms.</p>
 
 <h2>With an account (optional)</h2>
 <p>An account lets you get your data back on all your devices. It relies on Firebase Authentication and Cloud Firestore (Google). We store:</p>
 <ul>
 <li>your email address and sign-in method (email or Google);</li>
+<li>with Google, your Google name and profile photo (kept by Firebase Authentication);</li>
 <li>your decks, your collection, its value history and your trade list.</li>
 </ul>
 <p>This data is kept as long as the account exists. Your CardTrader token is never stored in the account.</p>
 
 <h2>Shared links</h2>
-<p>When you share your trade list or a deck, its content can be read by anyone who has the link. It contains neither your email nor your user ID. You can remove a link at any time.</p>
+<p>When you share your trade list or a deck, its content can be read by anyone who has the link. It contains neither your email nor your account ID, only a fingerprint (SHA-256) of that ID, which shows the link is yours. You can remove a link at any time.</p>
 
 <h2>Our server</h2>
-<p>The Mana Orbit server (hosted by Hostinger) relays requests to CardTrader, Scryfall and EDHREC and caches public prices. If you turn them on:</p>
+<p>The Mana Orbit server (hosted by Hostinger) relays requests to CardTrader, Scryfall and EDHREC and caches public prices. It also fetches the links you paste to import a deck (EDHREC, Archidekt, Moxfield…). If you turn them on:</p>
 <ul>
-<li><b>notifications</b>: the technical subscription address provided by your browser;</li>
-<li><b>price alerts</b>: the list of watched cards and your thresholds.</li>
+<li><b>notifications</b>: your browser's subscription address or, in the Android app, the Firebase Cloud Messaging token;</li>
+<li><b>price alerts</b>: the watched cards, your thresholds and the names of the decks concerned.</li>
 </ul>
-<p>They are deleted when you turn them off. The host may keep technical logs (IP address, date, requested page) for security.</p>
+<p>They are deleted when you turn them off or delete your account. Notification text (card and deck names) goes through Google's or your browser vendor's push service.</p>
+<p><b>CardTrader token:</b> it only goes with your CardTrader searches (never with alerts or imports). The server uses it to query CardTrader with your account and keeps it in memory for the duration of the search; it only keeps a fingerprint (SHA-256) of it to pace requests. It never writes it to disk or to its logs, nor to your account.</p>
+<p>When you are signed in, the app shows it a Firebase sign-in proof to check whether your account has special rights; the server verifies it without storing it. To limit abuse, it counts requests per IP address in memory. The host may keep technical logs (IP address, date, requested page) for security; it keeps them for a limited time, under its own policy.</p>
 
 <h2>Third-party services</h2>
 <p>Your device contacts directly: Scryfall (card images and data, trend prices), Google Fonts (fonts), Google (Firebase SDK) and jsDelivr (scan recognition engine). As with any website, these services receive your IP address. If you enter your CardTrader token, your searches and cart go through CardTrader with your own account.</p>
@@ -113,10 +131,20 @@ ul{padding-left:20px}
 <p><b>Web version</b> (browser, or app installed from the website): no ads.</p>
 <p>Mana Orbit runs no analytics.</p>
 
+<h2>Legal bases</h2>
+<ul>
+<li><b>performance of the service</b>: the account, sync, shared links and imports;</li>
+<li><b>consent</b>: ads (Google's form) and notifications, price alerts included; you can withdraw it at any time;</li>
+<li><b>legitimate interest</b>: security logs, request limits and the price cache.</li>
+</ul>
+
+<h2>Outside the European Union</h2>
+<p>Google (Firebase, AdMob, Firebase Cloud Messaging, ML Kit via Google Play services) and Scryfall are based in the United States: what they receive may be processed there. Google states that it covers these transfers with the EU-US Data Privacy Framework and standard contractual clauses. Scryfall, reached like any website, only receives your IP address and the cards requested.</p>
+
 <h2>Your rights</h2>
 <p>You can access, export, correct or delete your data at any time (GDPR). You can also lodge a complaint with your data protection authority.</p>
-<p><b>Delete your account:</b> in the app, Account › Delete my account, or directly from <a href="./?delete-account">this page</a>. Everything the account holds online is erased: decks, collection, history, trade list and shared links. Data on your device can be erased at the same time, or separately from Settings › Privacy.</p>
-<p>For any question, write to the developer email address shown on the app's Google Play listing.</p>
+<p><b>Delete your account:</b> in the app, Account › Delete my account, or directly from <a href="./?delete-account">this page</a>. Everything the account holds online is erased: decks, collection, history, trade list and shared links. Your price alerts and notifications are also stopped on the server, and the copy of the account kept on the device is erased. Data on your device can be erased at the same time, or separately from Settings › Privacy.</p>
+<p>For any question or to exercise your rights, write to <a href="mailto:martin.stuis11@gmail.com">martin.stuis11@gmail.com</a>.</p>
 
 <h2>Fan content</h2>
 <p class="mute">Mana Orbit is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>
