@@ -63,9 +63,9 @@ ok('« à actualiser » / « toutes », puis sans langue (langue de la recherche
 /* 4) valeur, tri et « les plus chères » sur le prix réel */
 await p.selectOption('#collSort', 'price');
 assert.deepEqual(await p.$$eval('.crow .row-name', n => n.map(x => x.textContent)), ['Craterhoof Behemoth', 'Edgar Markov', 'Swords to Plowshares', 'Sol Ring', "Ranger's Hawk", 'Plains'], 'tri par prix (source CM par défaut : 9,00 · 5,00 · 1,90 · 1,50 · 0,05 · sans prix)');
-// onglet Cartes : CM au-dessus, CT en dessous, juste à gauche de la quantité, lisibles
-{ const g = await p.$eval('.crow[data-k="sol ring"]', r => { const q = r.querySelector('.qstep').getBoundingClientRect(), px = r.querySelector('.row-px').getBoundingClientRect(), [a, b] = [...r.querySelectorAll('.px')].map(e => e.getBoundingClientRect()); return { adjacent: q.left - px.right < 14 && q.left >= px.right, stacked: b.top >= a.bottom - 1, qw: Math.round(q.width), fs: parseFloat(getComputedStyle(r.querySelector('.px b')).fontSize) }; });
-  assert.deepEqual([g.adjacent, g.stacked], [true, true], 'prix à gauche de la quantité, CM puis CT en dessous'); assert.ok(g.fs >= 14, 'prix lisible'); assert.ok(g.qw <= 90, 'quantité compacte (' + g.qw + ' px)'); }
+// onglet Cartes : CM au-dessus, CT en dessous, juste au-dessus de la quantité (même colonne : le nom garde la largeur), lisibles
+{ const g = await p.$eval('.crow[data-k="sol ring"]', r => { const q = r.querySelector('.qstep').getBoundingClientRect(), px = r.querySelector('.row-px').getBoundingClientRect(), [a, b] = [...r.querySelectorAll('.px')].map(e => e.getBoundingClientRect()); return { adjacent: q.top >= px.bottom - 1 && q.top - px.bottom < 14 && px.left < q.right && px.right > q.left, stacked: b.top >= a.bottom - 1, qw: Math.round(q.width), fs: parseFloat(getComputedStyle(r.querySelector('.px b')).fontSize) }; });
+  assert.deepEqual([g.adjacent, g.stacked], [true, true], 'prix juste au-dessus de la quantité, CM puis CT en dessous'); assert.ok(g.fs >= 14, 'prix lisible'); assert.ok(g.qw <= 90, 'quantité compacte (' + g.qw + ' px)'); }
 await p.click('#collSeg [data-v="stats"]'); await p.waitForSelector('.cs-tiles');
 const val = async () => (await p.$eval('.cs-val b', b => b.textContent)).replace(/\s+/g, ' ');
 assert.equal(await p.$$eval('.cs-tiles > div b', b => b.map(x => x.textContent.replace(/\s+/g, ' ')).join('|')), '6|16|18,95 €', 'défaut : tendance Cardmarket');   // 2 × 1,50 + 1,90 + 9,00 + 0,05 + 5,00
