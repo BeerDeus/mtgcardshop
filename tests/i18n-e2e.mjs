@@ -20,7 +20,7 @@ const { p, errs } = await newPage(browser, world, { goto: false });
 await p.goto(world.url + '?lang=en'); await p.waitForTimeout(800);
 assert.equal(await p.evaluate(() => [I18N.lang, document.documentElement.lang, localStorage.getItem('deckdeal:lang')].join()), 'en,en,en');
 assert.equal(await p.evaluate(() => location.search), '', 'adresse nettoyée');
-assert.match(await txt(p, '#btnDecks'), /My decks/); assert.match(await txt(p, '#hmNew'), /New cart/i); assert.match(await txt(p, '#modeLabel'), /Cardmarket/);
+assert.match(await txt(p, '#btnDecks'), /My decks/); assert.match(await txt(p, '#hmNew'), /New cart/i); assert.equal(await p.evaluate(() => priceSrc()), 'cm');
 const home = await leftovers(p); console.log('  accueil, encore en français :', home.length ? home : 'rien');
 ok('?lang=en : langue gardée, accueil en anglais');
 

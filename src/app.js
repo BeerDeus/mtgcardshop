@@ -270,7 +270,7 @@ function refreshDeck() {
   if (d.ignored) chips.push(`<span class="stat warn">${TN(d.ignored, '<b>{n}</b> ligne ignorée', '<b>{n}</b> lignes ignorées')}</span>`);
   $('#deckStats').innerHTML = chips.join('');
   const n = d.cards.length;
-  $('#btnRunLabel').textContent = !n ? T('Colle une liste pour commencer') : buy ? TN(buy, 'Chercher les offres · {n} carte', 'Chercher les offres · {n} cartes') : T('Tout est dans ta collection');
+  $('#btnRunLabel').textContent = !n ? T('Colle une liste pour commencer') : !buy ? T('Tout est dans ta collection') : priceSrc() === 'cm' ? TN(buy, 'Voir les prix · {n} carte', 'Voir les prix · {n} cartes') : TN(buy, 'Chercher les offres · {n} carte', 'Chercher les offres · {n} cartes');
   $('#btnRun').disabled = !buy;
   paintCollSwitch();
   updateSaveButtons();
@@ -943,10 +943,16 @@ const cartErrText = e => e.code === 'auth' ? authHint(e).msg : e.code === 'netwo
 const cartPlural = (n, w) => w === 'ligne' ? TN(n, '{n} ligne', '{n} lignes') : w === 'offre' ? TN(n, '{n} offre', '{n} offres') : TN(n, '{n} exemplaire', '{n} exemplaires');
 
 /* ── Réglages ─────────────────────────────────────────────────────────────────────────────── */
+/** « Nouveau panier » : choix Cardmarket / CardTrader (seulement si CardTrader est disponible), critères propres à CardTrader masqués en Cardmarket.
+ *  Appelée à chaque changement de token, de compte ou de serveur (ancien nom gardé : modeLabel). */
 function modeLabel() {
-  const src = priceSrc(), chip = $('#modeChip');
-  chip.dataset.live = src === 'demo' ? '0' : '1';
-  $('#modeLabel').textContent = src === 'demo' ? T('Démo') : src === 'ct' ? 'CardTrader' : 'Cardmarket';
+  const src = priceSrc(), f = $('#srcField'), seg = $('#segSrcRun'); if (!f) return;
+  $('#viewInput').dataset.src = src === 'ct' ? 'ct' : 'cm';
+  f.hidden = src === 'demo' || !ctReady();
+  if (!seg._init) { seg._init = true; mountSeg(seg, [{ v: 'cm', label: 'Cardmarket' }, { v: 'ct', label: 'CardTrader' }], src === 'ct' ? 'ct' : 'cm', v => { S.src = v === 'cm' ? 'cm' : 'auto'; saveStore(); modeLabel(); }); }
+  else seg.setValue(src === 'ct' ? 'ct' : 'cm');
+  $('#srcHint').textContent = src === 'ct' ? T('Vraies offres des vendeurs (état, langue, port) et panier le moins cher, rempli sur CardTrader.') : T('Prix tendance de chaque carte, tout de suite, et liste à copier pour Cardmarket.');
+  if (typeof refreshDeck === 'function' && $('#deckText')) refreshDeck();
 }
 function applyTheme() {
   const r = document.documentElement;
@@ -965,8 +971,7 @@ function openSettings() {
   openSheet(T('Réglages'), T('Prix, compte et affichage'), api => {
     api.body.innerHTML = `
       <div class="sec-title">${T('Prix')}</div>
-      <div class="seg" id="segSrc" role="radiogroup" aria-label="${esc(T('Source des prix'))}"></div>
-      <p class="hint">${T('<b>Cardmarket</b> : prix tendance relevés chaque jour, gratuits et sans compte, pour estimer ta collection et tes decks. <b>CardTrader</b> : offres réelles des vendeurs, frais de port optimisés et remplissage de ton panier.')}</p>
+      <p class="hint">${T('<b>Cardmarket</b> : prix tendance relevés chaque jour, gratuits et sans compte, pour estimer ta collection et tes decks.<br><b>CardTrader</b> : offres réelles des vendeurs, frais de port optimisés et remplissage de ton panier.')}</p>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
       <div class="field-in" id="boxToken"><label class="label" for="setToken">${T('Token CardTrader (facultatif)')}</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="${esc(T('Colle ton token API'))}" value="${esc(S.token)}">
         <span class="hint">${T('Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Gardé sur cet appareil, il passe par notre serveur seulement pour interroger CardTrader avec ton compte, sans jamais y être enregistré.')}</span></div>
@@ -1020,23 +1025,16 @@ function openSettings() {
     };
     paintWipe(false);
     $('#btnNotif', b).onclick = openNotifSettings;
-    const seg = $('#segSrc', b);
     const status = () => {
       const st = $('#connStatus', b), m = $('#connMsg', b), src = priceSrc(), mine = !!S.token;
-      const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };
+      const say = (ok, t) => { st.dataset.ok = ok ? '1' : '0'; m.textContent = t; };      // le choix Cardmarket / CardTrader se fait sur « Nouveau panier » : ici, seulement ce qui est disponible
       if (src === 'demo') say(false, T('Serveur injoignable : prix simulés en attendant.'));
-      else if (src === 'ct') say(true, mine ? T('CardTrader avec ton token : offres réelles, port optimisé et remplissage de ton panier.') : T('CardTrader avec le compte du serveur : ton compte Mana Orbit y est autorisé, aucun token à saisir.'));
-      else if (ctReady()) say(true, T('Prix tendance Cardmarket. CardTrader est disponible : choisis-le pour les offres réelles et le panier.'));
-      else say(true, T('Prix tendance Cardmarket (impression la moins chère, hors port). Pour CardTrader, ajoute ton token ci-dessous.'));
-      if (seg.setValue) seg.setValue(src === 'ct' ? 'ct' : 'cm');
-      seg.classList.toggle('dim', src === 'demo');
+      else if (mine) say(true, T('CardTrader actif avec ton token : choisis « CardTrader » sur Nouveau panier pour les offres réelles et le panier.'));
+      else if (ctReady()) say(true, T('CardTrader disponible avec le compte du serveur (ton compte Mana Orbit y est autorisé) : aucun token à saisir.'));
+      else say(true, T('Sans token, les prix viennent de Cardmarket. Ajoute ton token CardTrader pour les offres réelles et le panier.'));
       $('#btnTest', b).hidden = !mine && !(CTX.proxy && CTX.hasToken);
       modeLabel();
     };
-    mountSeg(seg, [{ v: 'cm', label: 'Cardmarket' }, { v: 'ct', label: 'CardTrader' }], priceSrc() === 'ct' ? 'ct' : 'cm', v => {
-      if (v === 'ct' && !ctReady()) { toast(T('Ajoute d\'abord ton token CardTrader')); $('#setToken', b).focus(); setTimeout(status, 0); return; }
-      S.src = v === 'cm' ? 'cm' : 'auto'; saveStore(); status();
-    });
     status();
     $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); if (S.token) S.src = 'auto'; syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
@@ -1205,7 +1203,7 @@ function init() {
   $('#btnCancel').onclick = () => { if (S.run) S.run.ctrl.abort(); };
   $('#btnCopy').onclick = () => { if (S.run) copyText(recapText()); };
   $('#btnCart').onclick = () => isCm() ? cmCopyRun() : openCartSheet();
-  $('#btnSettings').onclick = openSettings; $('#modeChip').onclick = openSettings;
+  $('#btnSettings').onclick = openSettings;
   { const bar = $('.bar'); let sy = -1; const sync = () => { sy = -1; bar.classList.toggle('scrolled', window.scrollY > 4); }; window.addEventListener('scroll', () => { if (sy < 0) sy = requestAnimationFrame(sync); }, { passive: true }); sync(); }      // filet sous la barre seulement quand le contenu passe dessous
   $('#list').addEventListener('click', e => {
     const x = e.target.closest('.rx'); if (x) return removeCard(x.dataset.key);

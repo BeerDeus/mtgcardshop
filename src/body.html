@@ -39,7 +39,6 @@
     <div class="bar-in">
       <div class="brand"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="word">Mana Orbit</span></div>
       <div class="bar-right">
-        <button class="chip" id="modeChip" type="button" data-live="0" aria-label="Mode de connexion"><span class="dot"></span><span id="modeLabel">Démo</span></button>
         <button class="icon-btn avatar" id="btnAccount" type="button" aria-label="Compte" data-in="0"><svg class="i"><use href="#i-user"/></svg><span id="avatarLetter" aria-hidden="true"></span></button>
         <button class="icon-btn" id="btnSettings" type="button" aria-label="Réglages"><svg class="i"><use href="#i-settings"/></svg></button>
       </div>
@@ -141,6 +140,11 @@
       <div class="panel">
         <h2>Critères</h2>
         <div class="grid2">
+          <div class="ctl span2" id="srcField" hidden>
+            <span class="label" id="lblSrc">Prix</span>
+            <div class="seg" id="segSrcRun" role="radiogroup" aria-labelledby="lblSrc"></div>
+            <p class="hint" id="srcHint"></p>
+          </div>
           <div class="ctl">
             <label class="label" for="optLang">Langue</label>
             <div class="sel"><select id="optLang">
@@ -148,7 +152,7 @@
               <option value="es">Espagnol</option><option value="it">Italien</option><option value="pt">Portugais</option><option value="jp">Japonais</option><option value="zh-CN">Chinois</option>
             </select></div>
           </div>
-          <div class="ctl">
+          <div class="ctl ct-only">
             <label class="label" for="optCond">État minimum</label>
             <div class="sel"><select id="optCond">
               <option value="Mint">Mint</option>
@@ -158,21 +162,21 @@
               <option value="Played">Played</option>
             </select></div>
           </div>
-          <div class="ctl span2">
+          <div class="ctl span2 ct-only">
             <span class="label" id="lblFoil">Foil</span>
             <div class="seg" id="segFoil" role="radiogroup" aria-labelledby="lblFoil"></div>
           </div>
-          <div class="ctl span2">
+          <div class="ctl span2 ct-only">
             <span class="label" id="lblMode">Livraison</span>
             <div class="seg" id="segMode" role="radiogroup" aria-labelledby="lblMode"></div>
             <p class="hint" id="modeHint"></p>
           </div>
-          <div class="ctl" id="shipField" hidden>
+          <div class="ctl ct-only" id="shipField" hidden>
             <label class="label" for="optShip">Port par vendeur</label>
             <div class="num"><input id="optShip" inputmode="decimal" autocomplete="off" value="2,80"><span>€</span></div>
           </div>
         </div>
-        <label class="switch-row" for="optFallback">
+        <label class="switch-row ct-only" for="optFallback">
           <span class="t"><b>Compléter en anglais</b><span class="hint">Si une carte n'a aucune offre dans la langue choisie.</span></span>
           <span class="switch"><input type="checkbox" id="optFallback" checked><i></i></span>
         </label>

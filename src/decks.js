@@ -399,16 +399,12 @@ function paintAccountIn(api) {
   const state = D.listErr ? D.listErr : D.pending ? T('Synchronisation…') : TN(n, 'Synchronisé · {n} deck', 'Synchronisé · {n} decks');
   b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || T('Compte'))}</b><span id="acState">${esc(state)}</span></div></div>
     ${local ? `<div class="import-row"><span>${TN(local, '{n} deck sur cet appareil', '{n} decks sur cet appareil')}</span><button class="btn" type="button" id="acImport">${T('Importer')}</button></div>` : ''}
-    <p class="hint">${T('Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.')}</p>
-    ${CTX.proxy ? `<div class="sec-title">${T('Accès au serveur')}</div>
-      ${CTX.needsLogin ? '<div class="status" data-ok="1"><span class="dot"></span><span>' + T('Le serveur est réservé aux comptes autorisés : plus de clé à saisir.') + '</span></div>' : '<p class="hint">' + T('Pour réserver ce serveur à ton compte (et supprimer la clé APP_KEY), ajoute cet identifiant dans les variables d\'environnement Hostinger sous le nom <b>ALLOWED_UIDS</b>, puis redéploie.') + '</p>'}
-      <div class="uid-row"><code id="acUid">${esc(u.uid)}</code><button class="btn ghost small" type="button" id="acCopyUid">${T('Copier')}</button></div>` : ''}`;
+    <p class="hint">${T('Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.')}</p>`;      // identifiant du compte pour ALLOWED_UIDS : se lit dans la console Firebase (Authentication › Users), plus dans l'appli
   b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">' + T('Supprimer mon compte') + '</button>');
   $('#acDel', b).onclick = () => { D.account.del = true; paintAccount(); };
   api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">' + T('Se déconnecter') + '</button>');
   $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast(T('Déconnecté')); } catch (err) { e.target.disabled = false; toast(T('Déconnexion impossible')); } };
   const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
-  const cu = $('#acCopyUid', b); if (cu) cu.onclick = () => copyText(u.uid);
 }
 
 /** Suppression définitive du compte (exigée par Google Play) : reconnexion, effacement des données en ligne, puis du compte. */

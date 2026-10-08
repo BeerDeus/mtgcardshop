@@ -30,7 +30,7 @@ const ok = (c, m) => { if (!c) { errors.push('ASSERT: ' + m); console.log('✗',
 
 await sleep(300);
 ok(!errors.length, 'chargement sans erreur ' + JSON.stringify(errors));
-ok($('#modeLabel').textContent.trim().length > 0, 'chip mode : ' + $('#modeLabel').textContent);
+ok(!$('#modeChip') && !!$('#srcField'), 'source des prix : choix sur « Nouveau panier », plus de pastille');
 
 click($('#btnSample'));
 await sleep(100);

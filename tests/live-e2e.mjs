@@ -82,7 +82,7 @@ await routeFonts(p);
 
 await p.goto('http://127.0.0.1:18800/'); await p.waitForTimeout(800);
 await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
-const chip = await p.textContent('#modeLabel'); console.log('mode :', chip.trim()); assert.notEqual(chip.trim(), 'Démo', 'proxy détecté → mode live');
+const src0 = await p.evaluate(() => priceSrc()); console.log('mode :', src0); assert.notEqual(src0, 'demo', 'proxy détecté → mode live');
 await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom Card\n5 Plains');
 await p.waitForTimeout(300);
 console.log('stats :', (await p.textContent('#deckStats')).replace(/\s+/g, ' ').trim());

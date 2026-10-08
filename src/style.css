@@ -1478,6 +1478,7 @@ button,.btn,select,summary{touch-action:manipulation}
 .cm-price{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--surface-3);border:1px solid var(--line)}
 .cm-price b{font-family:var(--font-mono);font-size:26px;letter-spacing:-.02em}
 .cm-price span{color:var(--ink-2);font-size:13.5px}
+#viewInput[data-src="cm"] .ct-only{display:none}      /* prix Cardmarket : état, foil, livraison et repli anglais ne s'appliquent pas */
 /* ── Premier lancement (onboard.js) ── */
 .ob{position:fixed;inset:0;z-index:60;background:radial-gradient(120% 80% at 20% 0%,#1d2552 0%,#0b0f1c 62%);color:#eaeefb;display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity .35s ease;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 .ob.on{opacity:1}

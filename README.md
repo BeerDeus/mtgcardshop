@@ -58,7 +58,7 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 Le navigateur envoie son jeton Firebase (`X-Firebase-Token`) ; le proxy vérifie la signature (clés publiques Google), l'audience, l'émetteur et l'expiration, puis compare l'UID à `ALLOWED_UIDS`.
 
 1. Déployer, ouvrir le site, se connecter (icône compte).
-2. Compte › « Accès au serveur » › copier ton identifiant (UID).
+2. Console Firebase › Authentication › Users : copier l'**User UID** du compte (un par personne autorisée).
 3. Hostinger › variables d'environnement › `ALLOWED_UIDS=<ton uid>` › redéployer.
 4. Vérifier que la recherche marche une fois connecté, puis supprimer `APP_KEY` et redéployer.
 

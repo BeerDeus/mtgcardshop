@@ -14,7 +14,7 @@ const run = async p => { await toInput(p); await p.fill('#deckText', DECK); awai
 { // 1) sans relevé du serveur : Scryfall (prix de l'impression par défaut)
   const { p, errs } = await newPage(browser, world);
   await p.goto(world.url); await p.waitForTimeout(700);
-  assert.equal(await p.evaluate(() => priceSrc()), 'cm'); assert.equal(await txt(p, '#modeLabel'), 'Cardmarket'); ok('serveur sans token, aucun token perso : prix Cardmarket par défaut (puce « Cardmarket »)');
+  assert.equal(await p.evaluate(() => priceSrc()), 'cm'); assert.equal(await p.$eval('#srcField', e => e.hidden), true); assert.equal(await p.$('#modeChip'), null); ok('serveur sans token, aucun token perso : prix Cardmarket par défaut, pas de choix de source (CardTrader indisponible), plus de pastille');
   await run(p);
   assert.equal(await p.evaluate(() => S.run.status), 'done');
   assert.equal(await txt(p, '#progTitle'), 'Prix Cardmarket');
@@ -51,21 +51,23 @@ const run = async p => { await toInput(p); await p.fill('#deckText', DECK); awai
 
   // réglages : source des prix + token perso
   const ctHdr = []; p.on('request', r => { if (/\/api\/(marketplace|blueprints|expansions|info|jobs)/.test(r.url())) ctHdr.push(r.headers()['x-ct-token'] || ''); });
-  await p.click('#btnSettings'); await p.waitForSelector('#segSrc');
-  assert.equal(await p.$eval('#segSrc', e => e._v), 'cm'); assert.match(await txt(p, '#connMsg'), /Prix tendance Cardmarket.*ajoute ton token/);
-  await p.click('#segSrc [data-v="ct"]'); await p.waitForTimeout(200); assert.equal(await p.$eval('#segSrc', e => e._v), 'cm', 'CardTrader sans token : refusé'); assert.match(await txt(p, '#toast'), /token CardTrader/);
+  await p.click('#btnSettings'); await p.waitForSelector('#setToken');
+  assert.equal(await p.$('#segSrc'), null, 'plus de choix de source dans les réglages'); assert.match(await txt(p, '#connMsg'), /Sans token.*Ajoute ton token/);
   await p.fill('#setToken', 'mon-token-cardtrader-1234567890'); await p.waitForTimeout(150);
-  assert.equal(await p.$eval('#segSrc', e => e._v), 'ct'); assert.match(await txt(p, '#connMsg'), /CardTrader avec ton token/); assert.equal(await txt(p, '#modeLabel'), 'CardTrader');
-  ok('réglages : Cardmarket par défaut, CardTrader seulement avec un token, statut et puce à jour');
+  assert.match(await txt(p, '#connMsg'), /CardTrader actif avec ton token/);
+  ok('réglages : token CardTrader et statut à jour (le choix de la source est sur « Nouveau panier »)');
   await p.keyboard.press('Escape'); await p.waitForTimeout(400);
-  await p.click('#btnBack'); await p.click('#btnRun'); await settle(p);
+  await p.click('#btnBack'); await p.waitForSelector('#srcField:not([hidden])');
+  assert.equal(await p.$eval('#segSrcRun', e => e._v), 'ct', 'token ajouté : CardTrader choisi'); assert.match(await txt(p, '#btnRunLabel'), /Chercher les offres/); assert.equal(await p.$eval('#optCond', e => e.offsetParent !== null), true, 'critères CardTrader visibles');
+  await p.click('#btnRun'); await settle(p);
   assert.equal(await p.evaluate(() => S.run.src), 'ct'); assert.ok(world.reqs() > 0, 'offres CardTrader lues');
   assert.ok(ctHdr.length && ctHdr.every(h => h === 'mon-token-cardtrader-1234567890'), 'chaque requête CardTrader porte le token de l\'utilisateur');
   assert.equal(await p.$eval('#segDeliv', e => e.hidden), false); assert.equal(await txt(p, '#btnCartTxt'), 'Remplir le panier');
   ok('token perso : recherche CardTrader via le serveur avec ce token (X-CT-Token), livraison et panier de retour');
-  await p.click('#btnSettings'); await p.waitForSelector('#segSrc'); await p.click('#segSrc [data-v="cm"]'); await p.waitForTimeout(150);
+  await p.click('#btnBack'); await p.waitForSelector('#segSrcRun'); await p.click('#segSrcRun [data-v="cm"]'); await p.waitForTimeout(150);
   assert.equal(await p.evaluate(() => [S.src, priceSrc()].join()), 'cm,cm'); assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1')).src), 'cm');
-  ok('choix « Cardmarket » gardé même avec un token');
+  assert.match(await txt(p, '#btnRunLabel'), /Voir les prix/); assert.equal(await p.$eval('#optCond', e => e.offsetParent), null, 'Cardmarket : critères CardTrader masqués');
+  ok('« Nouveau panier » : choix Cardmarket gardé même avec un token, critères CardTrader masqués');
   assert.deepEqual(errs, []); await p.context().close();
 }
 

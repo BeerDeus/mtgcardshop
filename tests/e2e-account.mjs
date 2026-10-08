@@ -110,7 +110,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.match(await T(p, '#decksSub'), /Crée un deck/); await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 0); assert.ok(await p.$('#btnNewDeck')); await H(p); ok('invité sans deck : bouton « Mes decks », écran avec le + et aucune carte de deck');
   assert.equal(await p.$eval('#btnAccount', e => e.dataset.in), '0'); ok('avatar : icône invité');
   await toInput(p); await p.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n25 Plains');
-  await toInput(p); await p.selectOption('#optLang', 'en'); await p.click('#segMode .seg-opt[data-v="direct"]'); await p.waitForTimeout(200);
+  await toInput(p); await p.selectOption('#optLang', 'en'); await p.$eval('#segMode .seg-opt[data-v="direct"]', e => e.click()); await p.waitForTimeout(200);      // critère CardTrader (masqué en Cardmarket) : gardé avec le deck quand même
   await toInput(p); await p.click('#btnSave'); await sheetOpen(p);
   assert.equal(await p.inputValue('#svName'), 'Sol Ring'); ok('nom proposé = première carte');
   assert.match(await T(p, '#svWhere'), /cet appareil/); assert.ok(await p.$('#svLogin')); ok('invité : indication + lien « Connecte-toi »');
@@ -162,7 +162,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
 {
   const ctx = await newCtx(); await wireFirebase(ctx); const p = await ctx.newPage(); watch(p, 'B');
   await p.goto('http://127.0.0.1:18800/'); await p.waitForTimeout(900);
-  assert.notEqual((await T(p, '#modeLabel')), 'Démo'); ok('B : mode live via proxy');
+  assert.notEqual(await p.evaluate(() => priceSrc()), 'demo'); ok('B : mode live via proxy');
   await toInput(p); await p.fill('#deckText', DECK4);
   await toInput(p); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck local'); await p.click('#svGo'); await sheetGone(p);
   await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 1); await H(p); ok('B : deck local créé avant connexion');
@@ -288,10 +288,10 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.ok(apiReq.every(r => !r.h['x-app-key']), 'aucune clé partagée envoyée');
   assert.match(await T(p, '#heroCount'), /3 \/ 4 cartes/); ok('E : recherche complète avec le compte autorisé (' + apiReq.length + ' requêtes, toutes avec jeton)');
   await p.click('#btnSettings'); await sheetOpen(p); await p.waitForTimeout(600);
-  assert.match(await T(p, '#connStatus'), /CardTrader avec le compte du serveur/); assert.equal(await p.$eval('#boxKey', e => e.hidden), true); ok('E : réglages — statut « connecté », pas de champ de clé');
+  assert.match(await T(p, '#connStatus'), /CardTrader disponible avec le compte du serveur/); assert.equal(await p.$eval('#boxKey', e => e.hidden), true); ok('E : réglages — statut « connecté », pas de champ de clé');
   await p.keyboard.press('Escape'); await sheetGone(p);
-  await p.click('#btnAccount'); await sheetOpen(p); await p.waitForSelector('#acUid');
-  assert.equal(await T(p, '#acUid'), 'uid-allowed'); assert.match(await T(p, '.sheet-body'), /réservé aux comptes autorisés/); await p.waitForTimeout(500); await shot(p, 'E1-compte-uid'); ok('E : Compte affiche l\'identifiant (UID) et l\'état du serveur');
+  await p.click('#btnAccount'); await sheetOpen(p); await p.waitForSelector('#acOut');
+  assert.equal(await p.$('#acUid'), null); assert.doesNotMatch(await T(p, '.sheet-body'), /Accès au serveur|ALLOWED_UIDS/); await p.waitForTimeout(500); await shot(p, 'E1-compte'); ok('E : Compte sans rubrique « Accès au serveur » (identifiant lu dans la console Firebase)');
   await p.keyboard.press('Escape'); await sheetGone(p);
   await ctx.close();
 
@@ -380,9 +380,9 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await q.goto('http://127.0.0.1:18820/'); await q.waitForTimeout(1000); await login(q, 'intrus@test.dev');
   await toInput(q); await q.fill('#deckText', DECK4); await q.waitForTimeout(250); await toInput(q); await q.click('#btnRun');
   await q.waitForFunction(() => S.run && S.run.status === 'done', null, { timeout: 15000 });
-  assert.equal(await q.evaluate(() => [S.run.src, CTX.serverOk].join()), 'cm,false'); assert.equal(await T(q, '#modeLabel'), 'Cardmarket'); assert.equal(qReq.length, 0);
+  assert.equal(await q.evaluate(() => [S.run.src, CTX.serverOk].join()), 'cm,false'); assert.equal(await q.$eval('#srcField', e => e.hidden), true, 'pas de choix CardTrader'); assert.equal(qReq.length, 0);
   ok('E : compte non autorisé → prix Cardmarket (jamais le token du serveur), aucune requête CardTrader');
-  await q.click('#btnAccount'); await sheetOpen(q); await q.waitForSelector('#acUid'); assert.equal(await T(q, '#acUid'), 'uid-intrus'); ok('E : Compte affiche l\'UID à copier');
+  await q.click('#btnAccount'); await sheetOpen(q); await q.waitForSelector('#acOut'); assert.doesNotMatch(await T(q, '.sheet-body'), /ALLOWED_UIDS|uid-intrus/); ok('E : compte non autorisé : aucune consigne serveur ni identifiant affichés');
   await ctx2.close();
 
   // jeton falsifié envoyé à la main : refusé par le proxy
