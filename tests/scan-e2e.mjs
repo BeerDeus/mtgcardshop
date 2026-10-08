@@ -36,7 +36,7 @@ const { ctx, p, errs } = await newPage(browser, world, { goto: false });
 await routeCdn(ctx); await p.goto(world.url); await p.waitForTimeout(700);
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('.coll-tools [data-act="scan"]'); await p.waitForSelector('.scan.on');
 await p.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'no', null, { timeout: 5000 });
-assert.match(await txt(p, '.sc-hint'), /Aucun appareil photo/); assert.equal(await p.$eval('#scFile', i => i.multiple), true);
+assert.match(await txt(p, '.sc-nocam'), /Aucun appareil photo/); assert.equal(await p.$eval('.sc-hint', h => h.hidden), true, 'un seul message : la vraie cause, à la place du message générique'); assert.equal(await p.$eval('#scFile', i => i.multiple), true);
 await p.screenshot({ path: 'shots/scan-0-ouverture.png' }); assert.equal(await p.getAttribute('#scCam', 'capture'), 'environment', '« Appareil » : ouvre l\'appareil photo du téléphone'); assert.match(await p.getAttribute('#scCam', 'accept'), /image/);
 assert.equal(await p.$('#scLang'), null, 'plus de choix de langue'); assert.equal(await p.$('#scMode'), null, 'plus de mode « plusieurs cartes »'); assert.equal(await p.$('#scAuto'), null, 'plus de lecture automatique');
 ok('écran de scan : sans appareil photo, message clair, « Photos » et « Appareil » disponibles, plus de langue ni de mode multiple');
@@ -361,10 +361,39 @@ await camN.close();
   console.log('  DEBUG', JSON.stringify(await np.evaluate(() => ({ miss: SC.miss.length, items: SC.items.size, ocr: window.__nat.ocr, cap: SC.cap, hint: (document.querySelector('.sc-hint') || {}).textContent }))));
   assert.deepEqual((await items(np)).map(x => x.name), ['Sol Ring']); assert.ok((await np.evaluate(() => window.__nat.ocr.length)) >= 1, 'texte lu par ML Kit');
   assert.equal(cdnHits.slice(hits0).filter(h => /tesseract/.test(h)).length, 0, 'aucun téléchargement de Tesseract dans l\'appli');
+  // image de l'aperçu (sceau.jpg, portrait) redressée seulement si elle est couchée par rapport à l'ÉCRAN : fenêtre portrait ici, écran simulé portrait, paysage, puis sans screen.orientation (largeur/hauteur de l'écran)
+  const rot = await np.evaluate(async () => {
+    const r0 = CanvasRenderingContext2D.prototype.rotate, out = []; let n = 0; CanvasRenderingContext2D.prototype.rotate = function (...a) { n++; return r0.apply(this, a); };
+    const def = (k, v) => Object.defineProperty(screen, k, { configurable: true, get: () => v });
+    for (const [o, w, h] of [[{ type: 'portrait-primary' }, 390, 844], [{ type: 'landscape-primary' }, 390, 844], [undefined, 844, 390]]) { def('orientation', o); def('width', w); def('height', h); n = 0; await natCapture(); out.push(n); }
+    for (const k of ['orientation', 'width', 'height']) delete screen[k]; CanvasRenderingContext2D.prototype.rotate = r0; return out;
+  });
+  assert.deepEqual(rot, [0, 1, 1], 'rotation décidée par l\'écran (écran partagé : fenêtre plus large que haute), repli sur screen.width/height');
   await np.click('.scan [data-act="close"]'); await np.waitForTimeout(400);
   assert.equal(await np.evaluate(() => [window.__nat.stops, document.documentElement.classList.contains('nat-cam')].join()), '1,false');
-  assert.deepEqual(nat.errs, []); await nat.ctx.close(); await bN.close();
-  ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), caméra rendue à la fermeture');
+  assert.deepEqual(nat.errs, []); await nat.ctx.close();
+  ok('appli Android : caméra native derrière la page, bande recadrée, ML Kit (sans Tesseract), rotation selon l\'écran, caméra rendue à la fermeture');
+
+  // démarrage natif raté : caméra native arrêtée (sinon « caméra déjà démarrée » au suivant), page de nouveau opaque, repli sur la caméra du navigateur ; puis la réouverture la redémarre
+  const nf = await newPage(bN, world, { goto: false }), fp = nf.p;
+  await nf.ctx.addInitScript(() => {
+    window.__nat = { starts: 0, stops: 0, fail: 1 };
+    window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: () => true, Plugins: {
+      CameraPreview: { start: async () => { window.__nat.starts++; if (window.__nat.fail-- > 0) throw new Error('camera failed to open'); return {}; }, stop: async () => { window.__nat.stops++; return {}; }, captureSample: async () => ({ value: '' }) },
+      CapacitorPluginMlKitTextRecognition: { detectText: async () => ({ text: '', blocks: [] }) } } };
+  });
+  await routeCdn(nf.ctx); await fp.goto(world.url); await fp.waitForTimeout(700);
+  await toHome(fp); await fp.click('#btnColl'); await fp.waitForSelector('.coll.on'); await fp.click('.coll-tools [data-act="scan"]'); await fp.waitForSelector('.scan.on');
+  await fp.waitForFunction(() => document.querySelector('.sc-stage').dataset.cam === 'no', null, { timeout: 5000 });
+  assert.deepEqual(await fp.evaluate(() => [window.__nat.starts, window.__nat.stops, document.documentElement.classList.contains('nat-cam'), NAT.on, document.querySelector('.sc-stage').dataset.native || '']), [1, 1, false, false, ''], 'démarrage raté : arrêt demandé, page opaque');
+  assert.match(await txt(fp, '.sc-nocam'), /Aucun appareil photo/, 'repli : caméra du navigateur (absente ici)');
+  await fp.click('.scan [data-act="close"]'); await fp.waitForTimeout(400);
+  await fp.click('.coll-tools [data-act="scan"]'); await fp.waitForSelector('.scan.on');
+  await fp.waitForFunction(() => document.querySelector('.sc-stage').dataset.native === '1', null, { timeout: 5000 });
+  assert.equal(await fp.evaluate(() => [window.__nat.starts, document.documentElement.classList.contains('nat-cam')].join()), '2,true', 'réouverture : caméra native redémarrée');
+  await fp.click('.scan [data-act="close"]'); await fp.waitForTimeout(400);
+  assert.deepEqual(nf.errs, []); await nf.ctx.close(); await bN.close();
+  ok('appli Android : démarrage natif raté → caméra arrêtée, repli web, et la réouverture redémarre la caméra native');
 }
 
 world.stop(); console.log('\nSCAN E2E OK'); process.exit(0);

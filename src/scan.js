@@ -436,6 +436,8 @@ function scanCapture() {
   scanEnqueue({ label: T('Carte {n}', { n: ++SC.cap }), src: c, strip: true, thumb: thumbOf(c) });
 }
 function scanFail(msg) { scanHint(msg, 'bad'); }
+/** Pas d'aperçu : la vraie cause remplace le message générique au centre de la zone, et rien dans la bande d'aide (deux messages qui se contredisaient). */
+function scanNoCam(stage, msg) { stage.dataset.cam = 'no'; const p = $('.sc-nocam', stage); if (p) p.textContent = msg; scanHint('', ''); }
 /** Aperçu qui rame (caméra du navigateur qui s'essouffle) : on la redémarre (2 fois), puis 2 fois en qualité réduite (720p), puis conseil « Appareil » (l'appareil photo du téléphone). Le compteur repart à zéro après 20 s d'aperçu fluide.
  *  Pendant une lecture (OCR) et 3,5 s après, le téléphone est occupé : ça ne compte pas, la caméra n'y est pour rien. */
 function scanWatch(v) {
@@ -472,7 +474,7 @@ async function camRefresh() {
     SC.stream = s; SC.restarts++; v.srcObject = s; await v.play().catch(() => {});
     scanHint(CAM_HINT, ''); scanWatch(v);
   } catch (e) {
-    if (SC.el === el) { stage.dataset.cam = 'no'; scanHint(T('La caméra n\'a pas pu redémarrer. Utilise « Appareil » ou « Photos ».'), 'bad'); }
+    if (SC.el === el) scanNoCam(stage, T('La caméra n\'a pas pu redémarrer. Utilise « Appareil » ou « Photos ».'));
   } finally { SC.rbusy = false; }
 }
 /** Écran de diagnostic (5 appuis sur le titre) : fluidité de l'aperçu, résolution réelle, durée de la dernière lecture, tâches longues du navigateur. */
@@ -507,7 +509,7 @@ async function scanWarm() {
   finally { SC.warm = false; SC.workEnd = performance.now(); }
 }
 const CAM_HINT = T('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner');
-/* — Appli Android (Capacitor) : appareil photo natif, comme les applis photo (aperçu CameraX placé derrière la page, sous la bande du guide),
+/* — Appli Android (Capacitor) : appareil photo natif, comme les applis photo (aperçu Camera1 du plugin camera-preview placé derrière la page, sous la bande du guide),
    et lecture du texte par ML Kit sur le téléphone. Dans un navigateur ou la PWA : getUserMedia + Tesseract, inchangés. — */
 const NAT = { on: false };
 function capPlugin(n) {
@@ -528,7 +530,7 @@ async function natStart() {
     await NAT.p;
     if (SC.el !== el) { await natHalt(); return true; }      // scan fermé pendant le démarrage : la caméra ne doit pas rester allumée
     NAT.on = true; stage.dataset.cam = 'on'; stage.dataset.native = '1'; return true;
-  } catch (e) { document.documentElement.classList.remove('nat-cam'); return false; }
+  } catch (e) { await natHalt(); return false; }      // démarrage raté : aperçu, page transparente et orientation verrouillée défaits, sinon le repli web et le prochain start (« caméra déjà démarrée ») échouent
   finally { NAT.p = null; }
 }
 /** Arrêt de la caméra native, que l'aperçu soit déjà affiché ou encore en train de démarrer. */
@@ -544,8 +546,9 @@ async function natCapture() {
   const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('Image illisible')); i.src = 'data:image/jpeg;base64,' + res.value; });
   const stage = $('.sc-stage', SC.el), s = stage.getBoundingClientRect(), g = $('.sc-guide', SC.el).getBoundingClientRect();
   let src = img, W = img.naturalWidth, H = img.naturalHeight;
-  // Le plugin rend l'image déjà tournée comme l'écran (portrait en portrait). Seulement si elle arrivait encore couchée par rapport à l'ÉCRAN (pas à la bande, toujours plus large que haute), on la redresse.
-  if ((W > H) !== (window.innerWidth > window.innerHeight)) {
+  // Le plugin rend l'image déjà tournée comme l'écran (portrait en portrait). Seulement si elle arrivait encore couchée par rapport à l'ÉCRAN (ni à la bande, toujours plus large que haute, ni à la fenêtre, plus large que haute en écran partagé haut/bas), on la redresse.
+  const so = screen.orientation && screen.orientation.type, land = so ? so.startsWith('landscape') : screen.width > screen.height;
+  if ((W > H) !== land) {
     const c = document.createElement('canvas'); c.width = H; c.height = W; const x = c.getContext('2d'); x.translate(H, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0); src = c; W = c.width; H = c.height;
   }
   const box = coverMap(s.width, s.height, W, H, { x: g.left - s.left, y: g.top - s.top, w: g.width, h: g.height });
@@ -563,15 +566,14 @@ async function natLines(canvas) {
 async function scanCamera() {
   const stage = $('.sc-stage', SC.el);
   if (natCam() && await natStart()) { if (SC.el) scanHint(CAM_HINT, ''); return; }      // appli Android : caméra native
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint(T('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».'), 'bad'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { scanNoCam(stage, T('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».')); return; }
   try {
     SC.stream = await camOpen(camSlow());      // appareil déjà repéré comme lent : on repart en 720p
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
     const v = $('.sc-video', SC.el); v.srcObject = SC.stream; await v.play().catch(() => {});
     stage.dataset.cam = 'on'; scanHint(CAM_HINT, ''); scanWatch(v);      // aucun calcul pendant l'aperçu : le moteur de lecture ne démarre qu'au premier appui
   } catch (e) {
-    stage.dataset.cam = 'no';
-    scanHint(e && e.name === 'NotAllowedError' ? T('Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».') : e && e.name === 'NotFoundError' ? T('Aucun appareil photo trouvé. Utilise « Photos ».') : T('Appareil photo indisponible. Utilise « Photos ».'), 'bad');
+    scanNoCam(stage, e && e.name === 'NotAllowedError' ? T('Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».') : e && e.name === 'NotFoundError' ? T('Aucun appareil photo trouvé. Utilise « Photos ».') : T('Appareil photo indisponible. Utilise « Photos ».'));
   }
 }
 
