@@ -137,7 +137,7 @@ function haptic(kind = 'tap') {
 const fmtCache = {};
 function fmt(c, cur) {
   cur = cur || S.cur || 'EUR';
-  const f = fmtCache[cur] || (fmtCache[cur] = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }));
+  const f = fmtCache[cur] || (fmtCache[cur] = new Intl.NumberFormat(LOC(), { style: 'currency', currency: cur }));
   return f.format(c / 100);
 }
 function tween(el, to) {
@@ -958,6 +958,7 @@ function openSettings() {
       <div class="switch-row"><span class="t"><b>Mode démo</b><span class="hint">Prix simulés, aucune requête envoyée.</span></span>
         <label class="switch"><input type="checkbox" id="setDemo" ${S.demo ? 'checked' : ''}><i></i></label></div>
       <div class="sec-title">Affichage</div>
+      <div class="field-in"><label class="label" for="setLang">Langue</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="Thème"></div>
       <div class="switch-row"><span class="t"><b>Vibrations</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? 'Un petit retour au toucher et à la fin des tâches.' : 'Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).'}</span></span>
         <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
@@ -1024,6 +1025,7 @@ function openSettings() {
     $('#setToken', b).oninput = e => { S.token = e.target.value.trim(); if (S.token) S.src = 'auto'; syncCTX(); status(); saveStore(); };
     $('#setKey', b).oninput = e => { S.appKey = e.target.value.trim(); syncCTX(); saveStore(); };
     mountSeg($('#segTheme', b), [{ v: 'auto', label: 'Auto' }, { v: 'light', label: 'Clair' }, { v: 'dark', label: 'Sombre' }], S.theme, v => { S.theme = v; applyTheme(); saveStore(); });
+    $('#setLang', b).onchange = e => { try { localStorage.setItem('deckdeal:lang', e.target.value); } catch (x) { /* ignore */ } location.reload(); };
     $('#setHaptic', b).onchange = e => { S.haptic = e.target.checked; saveStore(); haptic('ok'); };
     $('#btnCache', b).onclick = async () => { await Cache.clear(); toast('Cache vidé'); };
     // Vider le panier CardTrader : lecture, confirmation en deux temps (jamais de confirm() natif), suppression ligne par ligne, vérification.
@@ -1138,6 +1140,7 @@ function recapText() {
 
 /* ── Branchements ─────────────────────────────────────────────────────────────────────────── */
 function init() {
+  i18nDom(document.body);                                        // textes fixes de la page dans la langue choisie
   const saved = loadStore();
   if (saved.opts) Object.assign(S.opts, saved.opts);
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.theme = saved.theme || 'auto';
@@ -1172,6 +1175,7 @@ function init() {
   initDecks();
   refreshDeck();
   homeInit();
+  setTimeout(obMaybe, 400);      // premier lancement sur un appareil vierge
   $('#optColl').onchange = e => { S.useColl = e.target.checked; saveStore(); haptic('tap'); refreshDeck(); };
   $('#btnColl').onclick = () => openCollection();
   $('#btnQuick').onclick = () => { haptic('tap'); openScan(); scanPriceMode(true); };      // accueil : scan directement en « prix rapide »

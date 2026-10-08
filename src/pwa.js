@@ -31,7 +31,7 @@ const PWA = (() => {
 
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; emit(); });
-    window.addEventListener('appinstalled', () => { installed = true; deferred = null; emit(); try { toast('Mana Orbit est installée'); } catch (e) { /* ignore */ } });
+    window.addEventListener('appinstalled', () => { installed = true; deferred = null; emit(); try { toast(T('Mana Orbit est installée')); } catch (e) { /* ignore */ } });
     try { matchMedia('(display-mode: standalone)').addEventListener('change', emit); } catch (e) { /* ignore */ }
     // Service worker : seulement en http(s) (pas depuis un fichier local ni un aperçu) ; une erreur ici ne doit jamais gêner l'app.
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {

@@ -39,7 +39,7 @@ async function pushPayload(label) {
     if (await pushState() !== 'on') return null;
     const sub = (await (await pushReg()).pushManager.getSubscription()).toJSON();
     if (!sub || !sub.endpoint || !sub.keys) return null;
-    return { sub: { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }, title: 'Recherche terminée', body: `Les offres de « ${String(label || 'ta liste').slice(0, 60)} » sont prêtes.`, url: './?resume=1' };
+    return { sub: { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }, title: T('Recherche terminée'), body: T('Les offres de « {name} » sont prêtes.', { name: String(label || T('ta liste')).slice(0, 60) }), url: './?resume=1' };
   } catch (e) { return null; }
 }
 function pushInit() {
@@ -52,24 +52,24 @@ async function paintPushBox(box) {
   const st = await pushState(); if (!box.isConnected) return;
   const note = (ok, t) => `<div class="status" data-ok="${ok ? 1 : 0}"><span class="dot"></span><span>${t}</span></div>`;
   if (st === 'on' || st === 'off') {
-    box.innerHTML = `<label class="switch-row" for="setPush"><span class="t"><b>Prévenir quand la recherche est finie</b><span class="hint">Si tu quittes l'app pendant la lecture des offres, une notification arrive à la fin (le serveur continue sans toi).</span></span><span class="switch"><input type="checkbox" id="setPush" ${S.push && st === 'on' ? 'checked' : ''}><i></i></span></label><p class="hint" id="pushMsg" hidden></p>`;
+    box.innerHTML = `<label class="switch-row" for="setPush"><span class="t"><b>${T('Prévenir quand la recherche est finie')}</b><span class="hint">${T('Si tu quittes l\'app pendant la lecture des offres, une notification arrive à la fin (le serveur continue sans toi).')}</span></span><span class="switch"><input type="checkbox" id="setPush" ${S.push && st === 'on' ? 'checked' : ''}><i></i></span></label><p class="hint" id="pushMsg" hidden></p>`;
     const cb = $('#setPush', box), msg = $('#pushMsg', box);
     cb.onchange = async () => {
       msg.hidden = true;
       if (cb.checked) {
         cb.disabled = true; const r = await pushEnable(); cb.disabled = false;
-        if (r.ok) { S.push = true; saveStore(); haptic('ok'); toast('Notifications activées'); }
-        else { cb.checked = false; S.push = false; saveStore(); msg.hidden = false; msg.textContent = r.why === 'denied' ? 'Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.' : r.why === 'dismissed' ? 'Autorisation non accordée.' : 'Activation impossible' + (r.msg ? ' : ' + r.msg : '') + '.'; }
+        if (r.ok) { S.push = true; saveStore(); haptic('ok'); toast(T('Notifications activées')); }
+        else { cb.checked = false; S.push = false; saveStore(); msg.hidden = false; msg.textContent = r.why === 'denied' ? T('Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.') : r.why === 'dismissed' ? T('Autorisation non accordée.') : r.msg ? T('Activation impossible : {msg}.', { msg: r.msg }) : T('Activation impossible.'); }
       } else { S.push = false; saveStore(); if (!(typeof AC !== 'undefined' && AC.on)) await pushDisable(); }   // l'abonnement reste tant que les alertes de prix s'en servent
     };
     return;
   }
   box.innerHTML = {
-    noproxy: '<p class="hint">Les notifications demandent le serveur Mana Orbit (la recherche y continue quand tu quittes l\'app).</p>',
-    novapid: note(0, 'Le serveur n\'a pas de clés de notification. Ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT dans les variables d\'environnement (voir README).'),
-    denied: note(0, 'Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur, puis reviens ici.'),
-    ios: '<p class="hint">Sur iPhone et iPad, les notifications ne marchent que si Mana Orbit est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.</p>',
-    unsupported: '<p class="hint">Ce navigateur ne gère pas les notifications push.</p>',
-    nosw: '<p class="hint">Le service worker n\'est pas actif (ouvre l\'app en https, puis recharge).</p>',
+    noproxy: '<p class="hint">' + T('Les notifications demandent le serveur Mana Orbit (la recherche y continue quand tu quittes l\'app).') + '</p>',
+    novapid: note(0, T('Le serveur n\'a pas de clés de notification. Ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT dans les variables d\'environnement (voir README).')),
+    denied: note(0, T('Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur, puis reviens ici.')),
+    ios: '<p class="hint">' + T('Sur iPhone et iPad, les notifications ne marchent que si Mana Orbit est installée sur l\'écran d\'accueil (iOS 16.4 ou plus) : bouton Partager, « Sur l\'écran d\'accueil », puis ouvre l\'app depuis son icône.') + '</p>',
+    unsupported: '<p class="hint">' + T('Ce navigateur ne gère pas les notifications push.') + '</p>',
+    nosw: '<p class="hint">' + T('Le service worker n\'est pas actif (ouvre l\'app en https, puis recharge).') + '</p>',
   }[st] || '';
 }

@@ -95,7 +95,7 @@ function scanAdd(m, d, maybe, shot) {
 function scanViewItem(e) {
   const l = e.l || 'en', u = scanThumb(e), lang = l !== 'en' && COLL.li[liKey(l, e.key)] ? l : 'en';
   return { key: e.key, lid: e.id || e.key, name: e.name, wl: l !== 'en' && lang === 'en' ? l : '', small: u, big: lang === 'en' ? 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(e.name) + '&format=image&version=large' : '', lang, plain: true, shot: e.maybe ? e.shot || '' : '',
-    extra: `${e.q} exemplaire${e.q > 1 ? 's' : ''}${e.maybe ? ' · à vérifier' : ''}${l !== 'en' && lang === 'en' ? ' · image anglaise (pas encore d\'image ' + (LANGS[l] || l) + ')' : ''}${e.raw && e.score < 0.97 ? ' · lu « ' + e.raw + ' »' : ''}` };
+    extra: TN(e.q, '{n} exemplaire', '{n} exemplaires') + (e.maybe ? ' · ' + T('à vérifier') : '') + (l !== 'en' && lang === 'en' ? ' · ' + T('image anglaise (pas encore d\'image {lang})', { lang: LANGS[l] || l }) : '') + (e.raw && e.score < 0.97 ? ' · ' + T('lu « {raw} »', { raw: e.raw }) : '') };
 }
 /** Miniature d'une carte du scan : dans sa langue si Scryfall l'a donnée, sinon l'image anglaise. */
 function scanThumb(e) { const u = e.l && e.l !== 'en' ? COLL.li[liKey(e.l, e.key)] : ''; return u || scImg(e.name); }
@@ -104,26 +104,26 @@ function scanPaintList() {
   const list = $('.sc-list', el), arr = [...SC.items.values()].reverse(), t = scanTotals();
   if (document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && list.contains(document.activeElement)) { SC.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas, la liste se met à jour après
   const th = u => (u ? `<img class="sc-th" alt="" src="${esc(u)}">` : '<span class="sc-th"></span>');
-  const pend = SC.pend.map((p, k) => `<div class="sc-item pend" data-p="${p.id}">${th(p.thumb)}<span class="sc-n"><b>Lecture…</b><small>${esc(p.label)}${k ? ` · ${k} avant` : ''}</small></span><span class="sc-spin" aria-hidden="true"></span></div>`).join('');
-  const pic = u => (u ? `<span class="sc-pic"><img alt="Ta photo" src="${esc(u)}"><i>Ta photo</i></span>` : '');
-  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${pic(m.shot)}${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>Nom non reconnu</small></span><button type="button" class="btn ghost small" data-a="type">Saisir</button><button type="button" class="sc-x" data-a="rm" aria-label="Ignorer ${esc(m.label)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
+  const pend = SC.pend.map((p, k) => `<div class="sc-item pend" data-p="${p.id}">${th(p.thumb)}<span class="sc-n"><b>${T('Lecture…')}</b><small>${esc(p.label)}${k ? ' · ' + T('{n} avant', { n: k }) : ''}</small></span><span class="sc-spin" aria-hidden="true"></span></div>`).join('');
+  const pic = u => (u ? `<span class="sc-pic"><img alt="${T('Ta photo')}" src="${esc(u)}"><i>${T('Ta photo')}</i></span>` : '');
+  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${pic(m.shot)}${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>${T('Nom non reconnu')}</small></span><button type="button" class="btn ghost small" data-a="type">${T('Saisir')}</button><button type="button" class="sc-x" data-a="rm" aria-label="${T('Ignorer {name}', { name: esc(m.label) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
   if (SC.pm) {      // prix rapide : la liste montre des prix, rien à ajouter
-    list.innerHTML = pend + miss + (SC.pq.length ? SC.pq.map(scanPriceRow).join('') : pend || miss ? '' : '<p class="hint sc-empty">Prix rapide : cadre une carte et appuie sur le cercle. Tu vois sa tendance Cardmarket et l\'offre CardTrader la moins chère ; rien n\'est ajouté à ta collection (le bouton + le fait si tu la gardes).</p>');
-    const go = $('.dv-foot [data-act="done"]', el); go.hidden = true; $('.dv-foot [data-act="close"]', el).textContent = 'Fermer';
-    $('.sc-sub', el).textContent = SC.pq.length ? `Prix rapide · ${nf0(SC.pq.length)} carte${SC.pq.length > 1 ? 's' : ''} lue${SC.pq.length > 1 ? 's' : ''}` : 'Prix rapide · rien n\'est ajouté';
+    list.innerHTML = pend + miss + (SC.pq.length ? SC.pq.map(scanPriceRow).join('') : pend || miss ? '' : '<p class="hint sc-empty">' + T('Prix rapide : cadre une carte et appuie sur le cercle. Tu vois sa tendance Cardmarket et l\'offre CardTrader la moins chère ; rien n\'est ajouté à ta collection (le bouton + le fait si tu la gardes).') + '</p>');
+    const go = $('.dv-foot [data-act="done"]', el); go.hidden = true; $('.dv-foot [data-act="close"]', el).textContent = T('Fermer');
+    $('.sc-sub', el).textContent = SC.pq.length ? TN(SC.pq.length, 'Prix rapide · {n} carte lue', 'Prix rapide · {n} cartes lues') : T('Prix rapide · rien n\'est ajouté');
     const tot = $('.sc-total', el); tot.hidden = !SC.pq.length; if (SC.pq.length) tot.innerHTML = scanLotHtml(scanLot());
-    const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = `Lecture : ${SC.pend.length} en attente`;
+    const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = T('Lecture : {n} en attente', { n: SC.pend.length });
     return;
   }
-  { const go = $('.dv-foot [data-act="done"]', el); go.hidden = false; $('.dv-foot [data-act="close"]', el).textContent = 'Annuler'; $('.sc-total', el).hidden = true; }
-  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}" data-id="${esc(e.id)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>À vérifier : ${e.shot ? 'ta photo ci-dessus' : 'ta carte'} est-elle bien celle-ci ? · lu « ${esc(e.raw || '')} »</small>` : e.score < 0.97 && e.raw ? `<small>lu « ${esc(e.raw)} »</small>` : ''}</span>
-      ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="Confirmer ${esc(e.name)}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="Retirer un exemplaire">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="Ajouter un exemplaire">+</button></span>`}
-      <button type="button" class="sc-x" data-a="del" aria-label="Retirer ${esc(e.name)}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
-    : pend || miss ? '' : '<p class="hint sc-empty">Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.</p>');
+  { const go = $('.dv-foot [data-act="done"]', el); go.hidden = false; $('.dv-foot [data-act="close"]', el).textContent = T('Annuler'); $('.sc-total', el).hidden = true; }
+  list.innerHTML = pend + miss + (arr.length ? arr.map(e => `<div class="sc-item${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}" data-id="${esc(e.id)}">${e.maybe ? pic(e.shot) : ''}<img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(scanThumb(e))}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${langChip(e.key, e.l || '', e.name)}</span>${e.maybe ? `<small>${T(e.shot ? 'À vérifier : ta photo ci-dessus est-elle bien celle-ci ?' : 'À vérifier : ta carte est-elle bien celle-ci ?')} · ${T('lu « {raw} »', { raw: esc(e.raw || '') })}</small>` : e.score < 0.97 && e.raw ? `<small>${T('lu « {raw} »', { raw: esc(e.raw) })}</small>` : ''}</span>
+      ${e.maybe ? `<button type="button" class="sc-ok" data-a="ok" aria-label="${T('Confirmer {name}', { name: esc(e.name) })}"><svg class="i"><use href="#i-check"/></svg></button>` : `<span class="qstep"><button type="button" data-a="dec" aria-label="${T('Retirer un exemplaire')}">−</button><b>${e.q}</b><button type="button" data-a="inc" aria-label="${T('Ajouter un exemplaire')}">+</button></span>`}
+      <button type="button" class="sc-x" data-a="del" aria-label="${T('Retirer {name}', { name: esc(e.name) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('')
+    : pend || miss ? '' : '<p class="hint sc-empty">' + T('Les cartes reconnues apparaîtront ici avec leur miniature Scryfall. Tu peux corriger les quantités avant d\'ajouter.') + '</p>');
   const go = $('.dv-foot [data-act="done"]', el);
-  go.disabled = !t.n; go.textContent = t.n ? `Ajouter ${nf0(t.n)} carte${t.n > 1 ? 's' : ''}` : 'Ajouter';
-  $('.sc-sub', el).textContent = SC.items.size ? `${nf0(t.n)} reconnue${t.n > 1 ? 's' : ''}${t.maybe ? ` · ${t.maybe} à vérifier` : ''}` : 'Nom et mana dans la bande';
-  const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = `Lecture : ${SC.pend.length} en attente`;
+  go.disabled = !t.n; go.textContent = t.n ? TN(t.n, 'Ajouter {n} carte', 'Ajouter {n} cartes') : T('Ajouter');
+  $('.sc-sub', el).textContent = SC.items.size ? TN(t.n, '{n} reconnue', '{n} reconnues') + (t.maybe ? ' · ' + T('{n} à vérifier', { n: t.maybe }) : '') : T('Nom et mana dans la bande');
+  const prog = $('.sc-prog', el); prog.hidden = !SC.pend.length; prog.textContent = T('Lecture : {n} en attente', { n: SC.pend.length });
   if (SC.recap) SC.recap();
 }
 /** Fiche récap au tap sur « Ajouter » : exemplaires, valeur estimée Cardmarket, les plus chères, nouvelles / déjà possédées, langues. Suit la liste du scan en direct ; « Ajouter » dans la fiche fait l'ajout. Les prix des cartes pas encore lues par Scryfall sont lus ici (un lot). */
@@ -132,8 +132,7 @@ function scanRecap() {
   if (!live().length || sheets.some(x => x.wrap.classList.contains('rc-sheet'))) return;
   const asked = new Set(), got = new Map(); let err = '', busy = false;
   const info = k => (got.has(k) ? got.get(k) : COLL.meta[k]);      // undefined : pas encore lu · null : inconnue de Scryfall · objet { eu, … }
-  const api = openSheet('Ajouter', '', a => { a.wrap.classList.add('rc-sheet'); a.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true); });      // les miniatures n'apparaissent qu'une fois chargées (classe ok)
-  const plural = (n, w) => nf0(n) + ' ' + w + (n > 1 ? 's' : '');
+  const api = openSheet(T('Ajouter'), '', a => { a.wrap.classList.add('rc-sheet'); a.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true); });      // les miniatures n'apparaissent qu'une fois chargées (classe ok)
   const paint = () => {
     if (!sheets.includes(api)) { if (SC.recap === hook) SC.recap = null; return; }
     const items = live(); if (!items.length) { api.close(); return; }
@@ -148,25 +147,25 @@ function scanRecap() {
     const uniq = new Set(items.map(x => x.k)), haveK = new Set([...uniq].filter(k => collQty(k) > 0)), have = items.filter(x => haveK.has(x.k)), haveN = have.reduce((a, x) => a + x.q, 0), langs = new Map();
     for (const x of items) langs.set(x.l, (langs.get(x.l) || 0) + x.q);
     rows.sort((a, b) => b.eu - a.eu || byName(a.x, b.x));
-    $('h2', api.wrap).textContent = 'Ajouter ' + plural(n, 'carte'); let sub = $('.sheet-head p', api.wrap);
-    if (!sub) { sub = document.createElement('p'); $('.sheet-head > div', api.wrap).appendChild(sub); } sub.textContent = plural(uniq.size, 'carte') + ' différente' + (uniq.size > 1 ? 's' : '');
-    const note = wait ? 'Lecture des prix…' : !nopx ? '' : err ? (priced ? 'Valeur partielle : ' : 'Prix indisponibles : ') + err + '.' : plural(nopx, 'exemplaire') + ' sans prix Cardmarket, non comptés.';
-    api.body.innerHTML = `<div class="rc"><div class="cs-tiles"><div><b>${nf0(uniq.size)}</b><span>carte${uniq.size > 1 ? 's' : ''} différente${uniq.size > 1 ? 's' : ''}</span></div><div><b>${nf0(n)}</b><span>exemplaire${n > 1 ? 's' : ''}</span></div><div class="rc-val"><b>${wait || (!priced && err) ? (wait ? '…' : '—') : priced ? esc(fmt(val, 'EUR')) : '—'}</b><span>valeur estimée · tendance Cardmarket</span></div></div>
+    $('h2', api.wrap).textContent = TN(n, 'Ajouter {n} carte', 'Ajouter {n} cartes'); let sub = $('.sheet-head p', api.wrap);
+    if (!sub) { sub = document.createElement('p'); $('.sheet-head > div', api.wrap).appendChild(sub); } sub.textContent = TN(uniq.size, '{n} carte différente', '{n} cartes différentes');
+    const note = wait ? T('Lecture des prix…') : !nopx ? '' : err ? T(priced ? 'Valeur partielle : {err}.' : 'Prix indisponibles : {err}.', { err }) : TN(nopx, '{n} exemplaire sans prix Cardmarket, non comptés.', '{n} exemplaires sans prix Cardmarket, non comptés.');
+    api.body.innerHTML = `<div class="rc"><div class="cs-tiles"><div><b>${nf0(uniq.size)}</b><span>${TN(uniq.size, 'carte différente', 'cartes différentes')}</span></div><div><b>${nf0(n)}</b><span>${TN(n, 'exemplaire', 'exemplaires')}</span></div><div class="rc-val"><b>${wait || (!priced && err) ? (wait ? '…' : '—') : priced ? esc(fmt(val, 'EUR')) : '—'}</b><span>${T('valeur estimée · tendance Cardmarket')}</span></div></div>
       ${note ? `<p class="hint rc-note">${esc(note)}</p>` : ''}
-      ${rows.length && !wait ? `<h3 class="cs-h">Les plus chères</h3><div class="cs-top">${rows.slice(0, 3).map(({ x, eu }) => `<div class="crow ro"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}<img alt="" loading="lazy" decoding="async" src="${esc(scanThumb({ key: x.k, name: x.n, l: x.l }))}"></span><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta">${x.q > 1 ? `<span class="tag accent">× ${nf0(x.q)}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(eu, 'EUR'))}</b>${x.q > 1 ? `<small>${esc(fmt(eu * x.q, 'EUR'))} le lot</small>` : ''}</span></div>`).join('')}</div>` : ''}
-      <dl class="rc-facts"><div><dt>Nouvelles dans ta collection</dt><dd>${plural(uniq.size - haveK.size, 'carte')}</dd></div>
-        <div><dt>Déjà possédées</dt><dd>${haveK.size ? `${plural(haveK.size, 'carte')} · +${nf0(haveN)} ex.` : 'aucune'}</dd></div>
-        <div><dt>Langues</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(langCode(l)) : 'Langue ?'} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
-    api.setFoot(`<button class="btn ghost" type="button" data-close>Retour</button><button class="btn" type="button" data-rc="go">Ajouter ${plural(n, 'carte')}</button>`);
+      ${rows.length && !wait ? `<h3 class="cs-h">${T('Les plus chères')}</h3><div class="cs-top">${rows.slice(0, 3).map(({ x, eu }) => `<div class="crow ro"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}<img alt="" loading="lazy" decoding="async" src="${esc(scanThumb({ key: x.k, name: x.n, l: x.l }))}"></span><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta">${x.q > 1 ? `<span class="tag accent">× ${nf0(x.q)}</span>` : ''}</span></span><span class="row-price"><b>${esc(fmt(eu, 'EUR'))}</b>${x.q > 1 ? `<small>${T('{p} le lot', { p: esc(fmt(eu * x.q, 'EUR')) })}</small>` : ''}</span></div>`).join('')}</div>` : ''}
+      <dl class="rc-facts"><div><dt>${T('Nouvelles dans ta collection')}</dt><dd>${TN(uniq.size - haveK.size, '{n} carte', '{n} cartes')}</dd></div>
+        <div><dt>${T('Déjà possédées')}</dt><dd>${haveK.size ? TN(haveK.size, '{n} carte', '{n} cartes') + ' · ' + T('+{n} ex.', { n: nf0(haveN) }) : T('aucune')}</dd></div>
+        <div><dt>${T('Langues')}</dt><dd>${[...langs].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l ? esc(langCode(l)) : T('Langue ?')} × ${nf0(c)}`).join(' · ')}</dd></div></dl></div>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Retour')}</button><button class="btn" type="button" data-rc="go">${TN(n, 'Ajouter {n} carte', 'Ajouter {n} cartes')}</button>`);
   };
   const ask = async () => {
     if (busy || !sheets.includes(api)) return;
     const seen = new Set(), todo = live().filter(x => info(x.k) === undefined && !asked.has(x.k) && !seen.has(x.k) && seen.add(x.k)); if (!todo.length) return;
     todo.forEach(x => asked.add(x.k));
-    if (scryLeft() > 0) { err = 'Scryfall demande une pause'; paint(); return; }
+    if (scryLeft() > 0) { err = T('Scryfall demande une pause'); paint(); return; }
     busy = true;
     try { const r = await scryCollection(todo.map(x => x.n)); for (const x of todo) got.set(x.k, r.get(x.k) || null); err = ''; }
-    catch (e) { err = 'Scryfall injoignable'; }
+    catch (e) { err = T('Scryfall injoignable'); }
     busy = false; paint(); ask();
   };
   const hook = () => { paint(); ask(); };
@@ -175,7 +174,7 @@ function scanRecap() {
     const items = live(); if (!items.length) return;
     const before = COLL.map, n = items.reduce((a, x) => a + x.q, 0);
     collAdd(items, 'add'); api.close(); SC.recap = null; if (SC.el) SC.el.__close(); haptic('ok');
-    toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+    toast(TN(n, '{n} carte ajoutée à ta collection', '{n} cartes ajoutées à ta collection'), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); } });
     collEnrich();
   });
   SC.recap = hook; hook();
@@ -202,9 +201,9 @@ function scanLot() {
   return t;
 }
 function scanLotHtml(t) {
-  const note = [`${nf0(t.n)} carte${t.n > 1 ? 's' : ''}`, t.wait ? 'calcul…' : '', !t.wait && t.noCm ? `${t.noCm} sans prix CM` : '', !t.wait && t.ctOn && t.noCt ? `${t.noCt} sans offre CT` : ''].filter(Boolean).join(' · ');
+  const note = [TN(t.n, '{n} carte', '{n} cartes'), t.wait ? T('calcul…') : '', !t.wait && t.noCm ? T('{n} sans prix CM', { n: t.noCm }) : '', !t.wait && t.ctOn && t.noCt ? T('{n} sans offre CT', { n: t.noCt }) : ''].filter(Boolean).join(' · ');
   const part = (l, v, n) => `<span class="px ${l.toLowerCase()}"><i>${l}</i> <b>${n ? esc(fmt(v, 'EUR')) : '—'}</b></span>`;
-  return `<small>Lot : ${esc(note)}</small><span class="lot-v">${part('CM', t.cm, t.cmN)}${t.ctOn ? part('CT', t.ct, t.ctN) : ''}</span>`;
+  return `<small>${T('Lot : {note}', { note: esc(note) })}</small><span class="lot-v">${part('CM', t.cm, t.cmN)}${t.ctOn ? part('CT', t.ct, t.ctN) : ''}</span>`;
 }
 function scanPriceAdd(m) {
   const l = m.card || 'en'; let e = SC.pq.find(x => x.key === m.key);
@@ -244,12 +243,12 @@ function scanCtPrice(e) {
 const scanShown = e => frName(e.key, e.l) || e.name;
 function scanPriceRow(e) {
   const th = scanThumb({ key: e.key, name: e.name, l: e.l }), own = collQty(e.key);
-  const cm = e.cm === 'wait' || e.cm === undefined ? '<span class="px cm wait"><i>CM</i> <b>…</b></span>' : Number.isFinite(e.cm) ? `<span class="px cm"><i>CM</i> <b>${esc(fmt(e.cm, 'EUR'))}</b></span>` : e.cm === 'err' ? '<span class="px cm none"><i>CM</i> <b>indisponible</b></span>' : '<span class="px cm none"><i>CM</i> <b>sans prix</b></span>';
+  const cm = e.cm === 'wait' || e.cm === undefined ? '<span class="px cm wait"><i>CM</i> <b>…</b></span>' : Number.isFinite(e.cm) ? `<span class="px cm"><i>CM</i> <b>${esc(fmt(e.cm, 'EUR'))}</b></span>` : e.cm === 'err' ? '<span class="px cm none"><i>CM</i> <b>' + T('indisponible') + '</b></span>' : '<span class="px cm none"><i>CM</i> <b>' + T('sans prix') + '</b></span>';
   const ct = e.ct === 'wait' || e.ct === undefined ? '<span class="px ct wait"><i>CT</i> <b>…</b></span>' : e.ct && e.ct.p != null ? `<span class="px ct"><i>CT</i> <b>${esc(fmt(e.ct.p, e.ct.c || 'EUR'))}</b></span>`
-    : e.ct === 'off' ? '' : e.ct === 'busy' ? '<span class="px ct none"><i>CT</i> <b>recherche en cours</b></span>' : e.ct === 'auth' ? '<span class="px ct none"><i>CT</i> <b>connexion requise</b></span>' : e.ct === 'err' ? '<span class="px ct none"><i>CT</i> <b>indisponible</b></span>' : '<span class="px ct none"><i>CT</i> <b>aucune offre</b></span>';
-  return `<div class="sc-item pr${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(th)}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${e.l ? flag(e.l) : ''}</span>${own || e.n > 1 ? `<span class="sc-meta">${e.n > 1 ? `<button type="button" class="tag accent sc-cnt" data-a="pdec" aria-label="Ce lot compte ${e.n} exemplaires de ${esc(e.name)} : en retirer un">× ${e.n} <span aria-hidden="true">−</span></button>` : ''}${own ? `<span class="tag good">${own > 1 ? '× ' + nf0(own) + ' ' : ''}possédée</span>` : ''}</span>` : ''}${e.maybe ? `<small>À vérifier · lu « ${esc(e.raw || '')} »</small>` : ''}</span>
+    : e.ct === 'off' ? '' : e.ct === 'busy' ? '<span class="px ct none"><i>CT</i> <b>' + T('recherche en cours') + '</b></span>' : e.ct === 'auth' ? '<span class="px ct none"><i>CT</i> <b>' + T('connexion requise') + '</b></span>' : e.ct === 'err' ? '<span class="px ct none"><i>CT</i> <b>' + T('indisponible') + '</b></span>' : '<span class="px ct none"><i>CT</i> <b>' + T('aucune offre') + '</b></span>';
+  return `<div class="sc-item pr${e.maybe ? ' maybe' : ''}" data-k="${esc(e.key)}"><img class="sc-th" alt="" loading="lazy" decoding="async" src="${esc(th)}"><span class="sc-n"><span class="sc-top"><b>${esc(scanShown(e))}</b>${e.l ? flag(e.l) : ''}</span>${own || e.n > 1 ? `<span class="sc-meta">${e.n > 1 ? `<button type="button" class="tag accent sc-cnt" data-a="pdec" aria-label="${T('Ce lot compte {n} exemplaires de {name} : en retirer un', { n: e.n, name: esc(e.name) })}">× ${e.n} <span aria-hidden="true">−</span></button>` : ''}${own ? `<span class="tag good">${own > 1 ? T('× {n} possédée', { n: nf0(own) }) : T('possédée')}</span>` : ''}</span>` : ''}${e.maybe ? `<small>${T('À vérifier')} · ${T('lu « {raw} »', { raw: esc(e.raw || '') })}</small>` : ''}</span>
     <span class="row-px">${cm}${ct}</span>
-    <button type="button" class="btn ghost small sc-keep" data-a="padd" aria-label="Ajouter ${esc(e.name)} à ma collection">+</button><button type="button" class="sc-x" data-a="prm" aria-label="Retirer ${esc(e.name)} de la liste"><svg class="i"><use href="#i-close"/></svg></button></div>`;
+    <button type="button" class="btn ghost small sc-keep" data-a="padd" aria-label="${T('Ajouter {name} à ma collection', { name: esc(e.name) })}">+</button><button type="button" class="sc-x" data-a="prm" aria-label="${T('Retirer {name} de la liste', { name: esc(e.name) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`;
 }
 function scanHint(t, kind) {
   const h = $('.sc-hint', SC.el); if (!h) return; clearTimeout(SC.hintT);
@@ -271,23 +270,23 @@ async function frcWarm() {
 function frcNames() { if (SC.el && FRC.cat && FRC.cat.fr && FRC.cat.fr.size) scanPaintList(); }
 function frcStart(force) {
   if (FRC.p) return FRC.p;
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = 'Hors ligne'; frcPaint(); return null; }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = T('Hors ligne'); frcPaint(); return null; }
   FRC.state = 'run'; FRC.err = ''; FRC.done = 0; FRC.total = 0; frcPaint();
   FRC.p = (async () => {
     if (!FRC.cat) { const st = await scryFrStatic().catch(() => null); if (st) { FRC.cat = frCatalog(st.rows); FRC.at = st.at; FRC.state = 'ready'; return; } }      // fichier du site : petit, pas de question même en 4G
     if (!force && !FRC.cat && frcMetered()) { FRC.state = 'ask'; return; }
     const rec = await scryFrCatalog(null, (d, t) => { FRC.done = d; FRC.total = t; frcPaint(); });
     FRC.cat = frCatalog(rec.rows); FRC.at = rec.at; FRC.state = 'ready';
-  })().catch(e => { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? 'Scryfall demande une pause' : 'Téléchargement interrompu'; })
+  })().catch(e => { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? T('Scryfall demande une pause') : T('Téléchargement interrompu'); })
     .finally(() => { FRC.p = null; frcPaint(); frcNames(); });
   return FRC.p;
 }
 function frcPaint() {
   const el = SC.el && $('.sc-cat', SC.el); if (!el) return;
   const s = FRC.state, pct = FRC.total ? Math.min(99, Math.round(100 * FRC.done / FRC.total)) : 0;
-  if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>Catalogue des noms français : ${pct} % · la lecture marche déjà, elle sera plus sûre ensuite</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
-  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).</span><button class="link-btn" type="button" data-act="frc">Télécharger</button>'; }
-  else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${esc(FRC.err || 'Catalogue indisponible')}. Les cartes françaises restent lues, moins sûrement.</span><button class="link-btn" type="button" data-act="frc">Réessayer</button>`; }
+  if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>${T('Catalogue des noms français : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite', { pct })}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
+  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>' + T('Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).') + '</span><button class="link-btn" type="button" data-act="frc">' + T('Télécharger') + '</button>'; }
+  else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${T('{err}. Les cartes françaises restent lues, moins sûrement.', { err: esc(FRC.err || T('Catalogue indisponible')) })}</span><button class="link-btn" type="button" data-act="frc">${T('Réessayer')}</button>`; }
   else el.hidden = true;
 }
 
@@ -401,11 +400,11 @@ async function scanWork() {
         if (!job.src && job.file) { const img = await loadImage(job.file); job.src = img; job.thumb = thumbOf(img, thirdBox(img)); }
         m = await readCard(job.src, await collCatalog(), job.strip);
         if (!m || m.score < 0.84) job.shot = shotOf(job.src, job.strip ? null : titleBox(job.src));      // lecture douteuse : on garde une photo lisible de la zone pour comparer
-      } catch (e) { fail = e && e.code === 'cdn' ? 'Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.' : e && e.code === 'rate' ? 'Scryfall demande une pause…' : ''; }
+      } catch (e) { fail = e && e.code === 'cdn' ? T('Le module de lecture (OCR) n\'a pas pu être téléchargé. Vérifie ta connexion.') : e && e.code === 'rate' ? T('Scryfall demande une pause…') : ''; }
       scanFree(job.src); job.src = null; job.file = null;
       if (!SC.el || job.s !== SC.session) continue;
       SC.ms = performance.now() - t0; SC.pend = SC.pend.filter(p => p.id !== job.id);
-      if (m && m.score >= 0.72) { if (SC.pm) scanPriceAdd(m); else scanAdd(m, 1, m.score < 0.84, job.shot); haptic('ok'); scanHint((m.score >= 0.84 ? '✓ ' : 'À vérifier : ') + m.name, m.score >= 0.84 ? 'ok' : 'busy'); }
+      if (m && m.score >= 0.72) { if (SC.pm) scanPriceAdd(m); else scanAdd(m, 1, m.score < 0.84, job.shot); haptic('ok'); scanHint(m.score >= 0.84 ? '✓ ' + m.name : T('À vérifier : {name}', { name: m.name }), m.score >= 0.84 ? 'ok' : 'busy'); }
       else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '', shot: job.shot || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
     }
   } finally { SC.working = false; SC.workEnd = performance.now(); }
@@ -421,13 +420,13 @@ function scanGuideBox() {
 }
 function scanCapture() {
   if (!SC.el) return;
-  const box = scanGuideBox(); if (!box) { toast('L\'appareil photo n\'est pas prêt : utilise « Photos » ou « Appareil »'); return; }
-  if (SC.rbusy) { toast('La caméra redémarre, une seconde…'); return; }
-  if (SC.queue.length >= 12) { toast('Patiente un instant : 12 cartes sont déjà en attente de lecture'); return; }
+  const box = scanGuideBox(); if (!box) { toast(T('L\'appareil photo n\'est pas prêt : utilise « Photos » ou « Appareil »')); return; }
+  if (SC.rbusy) { toast(T('La caméra redémarre, une seconde…')); return; }
+  if (SC.queue.length >= 12) { toast(T('Patiente un instant : 12 cartes sont déjà en attente de lecture')); return; }
   const c = document.createElement('canvas'); c.width = box.w; c.height = box.h;
   c.getContext('2d').drawImage($('.sc-video', SC.el), box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
   haptic('tap'); scanFlash(); scanHint('', '');
-  scanEnqueue({ label: `Carte ${++SC.cap}`, src: c, strip: true, thumb: thumbOf(c) });
+  scanEnqueue({ label: T('Carte {n}', { n: ++SC.cap }), src: c, strip: true, thumb: thumbOf(c) });
 }
 function scanFail(msg) { scanHint(msg, 'bad'); }
 /** Aperçu qui rame (caméra du navigateur qui s'essouffle) : on la redémarre (2 fois), puis 2 fois en qualité réduite (720p), puis conseil « Appareil » (l'appareil photo du téléphone). Le compteur repart à zéro après 20 s d'aperçu fluide.
@@ -448,10 +447,10 @@ async function scanSlow() {
   if (!SC.el || SC.rbusy) return;
   const rf = SC.rf, now = performance.now(); if (now - rf.at > 20000) rf.n = 0;      // l'aperçu est resté fluide un moment : on repart de zéro
   rf.n++; rf.at = now; SC.slowN++;
-  if (rf.n <= 4) { if (rf.n === 3) camSetSlow(true); scanHint(rf.n === 3 ? 'Caméra lente : redémarrage en qualité réduite…' : 'Aperçu qui rame : la caméra redémarre…', 'busy'); await camRefresh(); }      // 2 redémarrages normaux, puis 2 en 720p
+  if (rf.n <= 4) { if (rf.n === 3) camSetSlow(true); scanHint(rf.n === 3 ? T('Caméra lente : redémarrage en qualité réduite…') : T('Aperçu qui rame : la caméra redémarre…'), 'busy'); await camRefresh(); }      // 2 redémarrages normaux, puis 2 en 720p
   else {
     const n = $('.sc-native', SC.el); if (n) n.classList.add('hot');
-    scanHint('La caméra du navigateur est lente sur cet appareil : utilise « Appareil » (appareil photo du téléphone)', 'bad');
+    scanHint(T('La caméra du navigateur est lente sur cet appareil : utilise « Appareil » (appareil photo du téléphone)'), 'bad');
   }
 }
 /** Redémarre la caméra (arrêt complet puis réouverture, résolution lue dans l'indicateur « lent ») : remet à zéro un flux qui s'est dégradé. */
@@ -466,7 +465,7 @@ async function camRefresh() {
     SC.stream = s; SC.restarts++; v.srcObject = s; await v.play().catch(() => {});
     scanHint(CAM_HINT, ''); scanWatch(v);
   } catch (e) {
-    if (SC.el === el) { stage.dataset.cam = 'no'; scanHint('La caméra n\'a pas pu redémarrer. Utilise « Appareil » ou « Photos ».', 'bad'); }
+    if (SC.el === el) { stage.dataset.cam = 'no'; scanHint(T('La caméra n\'a pas pu redémarrer. Utilise « Appareil » ou « Photos ».'), 'bad'); }
   } finally { SC.rbusy = false; }
 }
 /** Écran de diagnostic (5 appuis sur le titre) : fluidité de l'aperçu, résolution réelle, durée de la dernière lecture, tâches longues du navigateur. */
@@ -475,7 +474,7 @@ function scanDiag(on) {
   if (!SC.ltObs && typeof PerformanceObserver !== 'undefined') { try { SC.ltObs = new PerformanceObserver(l => { for (const e of l.getEntries()) SC.lt.push(performance.now()); }); SC.ltObs.observe({ type: 'longtask', buffered: false }); } catch (e) { SC.ltObs = null; } }
   const paint = () => {
     const tr = SC.stream && SC.stream.getVideoTracks()[0], st = (tr && tr.getSettings && tr.getSettings()) || {}, now = performance.now(); SC.lt = SC.lt.filter(t => now - t < 10000);
-    box.textContent = [`aperçu ${SC.fps ? SC.fps.toFixed(0) : '–'} i/s`, `${st.width || '?'}×${st.height || '?'}${st.frameRate ? ' @' + Math.round(st.frameRate) : ''}`, SC.fixed ? 'plancher 24 i/s' : 'i/s libre', `redémarrages ${SC.restarts}`, `dernière lecture ${SC.ms ? Math.round(SC.ms) : '–'} ms`, `tâches longues ${SC.lt.length}/10 s`, camSlow() ? 'mode lent (toucher ici : retour au mode normal)' : '', tr && tr.label ? tr.label : ''].filter(Boolean).join(' · ');
+    box.textContent = [T('aperçu {n} i/s', { n: SC.fps ? SC.fps.toFixed(0) : '–' }), `${st.width || '?'}×${st.height || '?'}${st.frameRate ? ' @' + Math.round(st.frameRate) : ''}`, SC.fixed ? T('plancher 24 i/s') : T('i/s libre'), T('redémarrages {n}', { n: SC.restarts }), T('dernière lecture {n} ms', { n: SC.ms ? Math.round(SC.ms) : '–' }), T('tâches longues {n}/10 s', { n: SC.lt.length }), camSlow() ? T('mode lent (toucher ici : retour au mode normal)') : '', tr && tr.label ? tr.label : ''].filter(Boolean).join(' · ');
   };
   box.onclick = () => { camSetSlow(false); paint(); };
   paint(); SC.diagT = setInterval(paint, 500);
@@ -500,10 +499,10 @@ async function scanWarm() {
   } catch (e) { /* hors ligne ou CDN bloqué : le premier appui retentera et dira pourquoi */ }
   finally { SC.warm = false; SC.workEnd = performance.now(); }
 }
-const CAM_HINT = 'Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner';
+const CAM_HINT = T('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner');
 async function scanCamera() {
   const stage = $('.sc-stage', SC.el);
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».', 'bad'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || (typeof isSecureContext !== 'undefined' && !isSecureContext)) { stage.dataset.cam = 'no'; scanHint(T('Appareil photo indisponible ici (il demande https). Utilise « Photos » ou « Appareil ».'), 'bad'); return; }
   try {
     SC.stream = await camOpen(camSlow());      // appareil déjà repéré comme lent : on repart en 720p
     if (!SC.el) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; return; }
@@ -511,7 +510,7 @@ async function scanCamera() {
     stage.dataset.cam = 'on'; scanHint(CAM_HINT, ''); scanWatch(v);      // aucun calcul pendant l'aperçu : le moteur de lecture ne démarre qu'au premier appui
   } catch (e) {
     stage.dataset.cam = 'no';
-    scanHint(e && e.name === 'NotAllowedError' ? 'Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».' : e && e.name === 'NotFoundError' ? 'Aucun appareil photo trouvé. Utilise « Photos ».' : 'Appareil photo indisponible. Utilise « Photos ».', 'bad');
+    scanHint(e && e.name === 'NotAllowedError' ? T('Accès à l\'appareil photo refusé : autorise-le dans les réglages du navigateur, ou utilise « Photos ».') : e && e.name === 'NotFoundError' ? T('Aucun appareil photo trouvé. Utilise « Photos ».') : T('Appareil photo indisponible. Utilise « Photos ».'), 'bad');
   }
 }
 
@@ -527,29 +526,29 @@ function loadImage(file) {
 /** Photos prises avec « Appareil » (cam : appareil photo du téléphone) ou choisies dans la galerie : une carte par photo, lues l'une après l'autre en arrière-plan. */
 function scanPhotos(files, cam) {
   const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
-  if (cam && SC.queue.length + list.length > 12) { toast('Patiente un instant : 12 cartes sont déjà en attente de lecture'); return; }
-  list.forEach((f, i) => scanEnqueue({ label: cam ? `Carte ${++SC.cap}` : `Photo ${i + 1}${f.name && f.name.length <= 24 ? ' · ' + f.name : ''}`, file: f }));
+  if (cam && SC.queue.length + list.length > 12) { toast(T('Patiente un instant : 12 cartes sont déjà en attente de lecture')); return; }
+  list.forEach((f, i) => scanEnqueue({ label: cam ? T('Carte {n}', { n: ++SC.cap }) : T('Photo {n}', { n: i + 1 }) + (f.name && f.name.length <= 24 ? ' · ' + f.name : ''), file: f }));
 }
 
 function closeScan() { if (SC.el) SC.el.__close(); }
 function openScan() {
   closeScan();
-  const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Scanner des cartes');
-  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le scan"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>Scanner des cartes</b><span class="sc-sub">Nom et mana dans la bande</span></div><button class="icon-btn sc-pmode" type="button" data-act="pmode" aria-label="Prix rapide : lire une carte sans l'ajouter" aria-pressed="false">€</button><button class="icon-btn sc-help" type="button" data-act="note" aria-label="Afficher l'aide" aria-pressed="false">?</button></header>
+  const wrap = document.createElement('div'); wrap.className = 'dv scan'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Scanner des cartes'));
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer le scan')}"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${T('Scanner des cartes')}</b><span class="sc-sub">${T('Nom et mana dans la bande')}</span></div><button class="icon-btn sc-pmode" type="button" data-act="pmode" aria-label="${T('Prix rapide : lire une carte sans l\'ajouter')}" aria-pressed="false">€</button><button class="icon-btn sc-help" type="button" data-act="note" aria-label="${T('Afficher l\'aide')}" aria-pressed="false">?</button></header>
     <div class="sc-stage" data-cam="wait"><video class="sc-video" playsinline muted autoplay></video>
-      <div class="sc-guide" aria-hidden="true"><span class="sc-cap">Nom · mana</span></div>
+      <div class="sc-guide" aria-hidden="true"><span class="sc-cap">${T('Nom · mana')}</span></div>
       <div class="sc-flash"></div>
       <p class="sc-hint" hidden></p><p class="sc-prog" hidden></p><p class="sc-diag" hidden></p>
-      <p class="sc-nocam">Pas d'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.</p></div>
-    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">Annuler</button><div class="sc-total" aria-live="polite" hidden></div><button class="btn" type="button" data-act="done" disabled>Ajouter</button></footer>
+      <p class="sc-nocam">${T('Pas d\'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.')}</p></div>
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">${T('Annuler')}</button><div class="sc-total" aria-live="polite" hidden></div><button class="btn" type="button" data-act="done" disabled>${T('Ajouter')}</button></footer>
     <div class="sc-cat coll-status" hidden></div>
-    <div class="sc-note"><p class="hint">Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.</p><button class="sc-x" type="button" data-act="note" aria-label="Fermer l'aide"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="sc-note"><p class="hint">${T('Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d\'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l\'appareil photo du téléphone (si l\'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l\'image (le reste n\'est pas lu) ; « Photos » : ta galerie.')}</p><button class="sc-x" type="button" data-act="note" aria-label="${T('Fermer l\'aide')}"><svg class="i"><use href="#i-close"/></svg></button></div>
     <div class="dv-scroll sc-list"></div>
     <div class="sc-bar">
-      <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>Photos<input type="file" id="scFile" accept="image/*" multiple></label>
-      <button class="sc-shot" type="button" data-act="shot" aria-label="Prendre la photo de la carte"><i></i></button>
-      <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>Appareil<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>`;
+      <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>${T('Photos')}<input type="file" id="scFile" accept="image/*" multiple></label>
+      <button class="sc-shot" type="button" data-act="shot" aria-label="${T('Prendre la photo de la carte')}"><i></i></button>
+      <label class="btn ghost small sc-native"><svg class="i"><use href="#i-camera"/></svg>${T('Appareil')}<input type="file" id="scCam" accept="image/*" capture="environment"></label></div>`;
   SC.recap = null; SC.el = wrap; SC.pm = false; SC.pq = []; SC.items = new Map(); SC.miss = []; SC.pend = []; SC.queue = []; SC.cap = 0; SC.session++; SC.slowN = 0; SC.restarts = 0; SC.rf = { n: 0, at: 0 }; SC.alive = true; SC.warm = false; try { localStorage.removeItem('deckdeal:scpref'); } catch (e) { /* ignore */ } const prevFocus = document.activeElement;
   const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } };
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
@@ -592,7 +591,7 @@ function openScan() {
       const a = e.target.closest('[data-a]'), k = a.closest('.sc-item').dataset.k, it = SC.pq.find(x => x.key === k); if (!it) return;
       haptic('tap');
       if (a.dataset.a === 'pdec') { it.n = Math.max(1, (it.n || 1) - 1); scanPaintList(); }
-      else if (a.dataset.a === 'padd') { const nn = it.n || 1, lang = it.l || ''; collBump(k, it.name, nn, { lang }); collEnrich(); toast(`${nn > 1 ? nn + ' × ' : ''}${it.name} ajoutée${nn > 1 ? 's' : ''} à ta collection`, { label: 'Annuler', fn: () => collBump(k, it.name, -nn, { lang }) }); scanPaintList(); }
+      else if (a.dataset.a === 'padd') { const nn = it.n || 1, lang = it.l || ''; collBump(k, it.name, nn, { lang }); collEnrich(); toast(nn > 1 ? T('{n} × {name} ajoutées à ta collection', { n: nn, name: it.name }) : T('{name} ajoutée à ta collection', { name: it.name }), { label: T('Annuler'), fn: () => collBump(k, it.name, -nn, { lang }) }); scanPaintList(); }
       else { SC.pq = SC.pq.filter(x => x !== it); scanPaintList(); }
       return;
     }

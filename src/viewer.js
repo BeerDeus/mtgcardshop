@@ -84,11 +84,11 @@ function openCardViewer(items, index) {
   closeCardImage();
   const wrap = document.createElement('div'); wrap.className = 'imgv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
   const multi = items.length > 1;
-  wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="Fermer"><svg class="i"><use href="#i-close"/></svg></button>
-    ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="Carte précédente"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="Carte suivante"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
+  wrap.innerHTML = `<button class="icon-btn imgv-x" type="button" aria-label="${T('Fermer')}"><svg class="i"><use href="#i-close"/></svg></button>
+    ${multi ? '<span class="imgv-count" aria-live="polite"></span><button class="imgv-nav prev" type="button" aria-label="' + T('Carte précédente') + '"><svg class="i"><use href="#i-back"/></svg></button><button class="imgv-nav next" type="button" aria-label="' + T('Carte suivante') + '"><svg class="i"><use href="#i-back"/></svg></button>' : ''}
     <div class="imgv-card tilt" data-busy="1"><img class="imgv-ph" alt="" hidden><img class="imgv-img" alt="" hidden><span class="imgv-spin"></span></div>
-    <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="Ta photo" hidden></div>
-    <div class="imgv-acts"><button class="btn ghost small imgv-wish" type="button" hidden aria-pressed="false"></button><button class="btn ghost small imgv-flip" type="button" hidden>Retourner la carte</button><button class="imgv-art" type="button" hidden aria-expanded="false">Illustrations</button></div>
+    <div class="imgv-cap"><b></b><span class="imgv-sub"></span><span class="imgv-extra" hidden></span><img class="imgv-shot" alt="${T('Ta photo')}" hidden></div>
+    <div class="imgv-acts"><button class="btn ghost small imgv-wish" type="button" hidden aria-pressed="false"></button><button class="btn ghost small imgv-flip" type="button" hidden>${T('Retourner la carte')}</button><button class="imgv-art" type="button" hidden aria-expanded="false">${T('Illustrations')}</button></div>
     <div class="imgv-vars" hidden><div class="imgv-vh" aria-live="polite"></div><div class="imgv-vl"></div></div>`;
   const card = $('.imgv-card', wrap), img = $('.imgv-img', wrap), ph = $('.imgv-ph', wrap), sub = $('.imgv-sub', wrap), flipB = $('.imgv-flip', wrap), title = $('.imgv-cap b', wrap), extra = $('.imgv-extra', wrap), shotEl = $('.imgv-shot', wrap);
   const countEl = $('.imgv-count', wrap), prevB = $('.imgv-nav.prev', wrap), nextB = $('.imgv-nav.next', wrap);
@@ -114,23 +114,23 @@ function openCardViewer(items, index) {
     const k = wishKey(), img = urls[0] || ''; wishB.hidden = !k || !img || typeof TR === 'undefined'; if (wishB.hidden) return;
     const w = TR.wish[k], same = !!w && !!w.i && samePrint(w.i, img);
     wishB.classList.toggle('on', same); wishB.setAttribute('aria-pressed', String(same));
-    wishB.textContent = same ? '★ Dans ta liste de souhaits' : w ? '☆ Souhaiter cette illustration' : '☆ Liste de souhaits';
+    wishB.textContent = same ? T('★ Dans ta liste de souhaits') : w ? T('☆ Souhaiter cette illustration') : T('☆ Liste de souhaits');
   };
   wishB.onclick = () => {
     const k = wishKey(), img = urls[0]; if (!k || !img) return;
     const name = it.ln || it.name, was = TR.wish[k], same = !!was && !!was.i && samePrint(was.i, img);
     haptic(same ? 'tap' : 'ok');
-    if (same) { delete TR.wish[k]; toast(name + ' retirée de ta liste de souhaits', { label: 'Annuler', fn: () => { TR.wish[k] = was; trChanged(); wishPaint(); } }); }
+    if (same) { delete TR.wish[k]; toast(T('{name} retirée de ta liste de souhaits', { name }), { label: T('Annuler'), fn: () => { TR.wish[k] = was; trChanged(); wishPaint(); } }); }
     else {
       TR.wish[k] = { n: name, q: was ? was.q : 1, i: img.replace(/\/(large|png|border_crop)\//, '/normal/'), ...(where ? { w: where.slice(0, 90) } : {}), ...(shown && shown !== 'en' ? { l: shown } : {}) };
-      toast(was ? 'Illustration mise à jour dans ta liste de souhaits' : name + ' ajoutée à ta liste de souhaits' + (where ? ' (' + where + ')' : ''), { label: 'Annuler', fn: () => { if (was) TR.wish[k] = was; else delete TR.wish[k]; trChanged(); wishPaint(); } });
+      toast(was ? T('Illustration mise à jour dans ta liste de souhaits') : where ? T('{name} ajoutée à ta liste de souhaits ({where})', { name, where }) : T('{name} ajoutée à ta liste de souhaits', { name }), { label: T('Annuler'), fn: () => { if (was) TR.wish[k] = was; else delete TR.wish[k]; trChanged(); wishPaint(); } });
     }
     trChanged(); wishPaint();
   };
   const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
     face = i; wishPaint(); const probe = new Image(), mine = it;
     probe.onload = () => { if (imgView !== api || it !== mine) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
-    probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); show(0); flipB.hidden = true; } };
+    probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : T('Image française indisponible : version anglaise')); show(0); flipB.hidden = true; } };
     img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
   };
   const go = n => {
@@ -139,7 +139,7 @@ function openCardViewer(items, index) {
     where = [it.setName, it.set && it.num ? String(it.set).toUpperCase() + ' ' + it.num : ''].filter(Boolean).join(' · ');
     wrap.setAttribute('aria-label', it.name); title.textContent = it.name;
     ph.src = it.small; ph.hidden = false; img.hidden = true; img.classList.remove('ok'); img.removeAttribute('src'); card.dataset.busy = '1'; img.alt = it.name;
-    caption(lang, ''); flipB.hidden = true; flipB.textContent = 'Retourner la carte';
+    caption(lang, ''); flipB.hidden = true; flipB.textContent = T('Retourner la carte');
     clearTimeout(varT); vars = []; canSave = false; pickAt = -1; artB.hidden = true; artB.setAttribute('aria-expanded', 'false'); if (!wantOpen) { varsEl.hidden = true; wrap.classList.remove('has-vars'); } else { varsL.innerHTML = ''; varsH.textContent = ''; }
     extra.textContent = it.extra || ''; extra.hidden = !it.extra;
     if (it.shot) shotEl.src = it.shot; else shotEl.removeAttribute('src'); shotEl.hidden = !it.shot; wrap.classList.toggle('has-shot', !!it.shot);      // photo prise au scan (cartes à vérifier) : sous la carte, pour comparer
@@ -152,14 +152,14 @@ function openCardViewer(items, index) {
       if (it.wl && ((it.plain && lang === 'en') || (r && r.missing && r.urls.length < 2))) { wu = await langvGet(it.ln || it.name, it.wl); if (imgView !== api || it !== mine) return; }
       if (wu) { urls = [wu.replace('/small/', '/large/')]; lang = it.wl; caption(lang, ''); flipB.hidden = true; }
       else if (r && r.urls.length) {
-        urls = r.urls; caption(r.lang || lang, r.missing ? 'Pas d\'image française sur Scryfall : version anglaise' : '');
-        flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte';
-      } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? 'Pas d\'image française sur Scryfall : version anglaise' : ''); }                                // image seule : la langue est celle de l'image fournie
-      else { urls = [enBig]; caption('en', lang === 'en' ? '' : 'Image française indisponible : version anglaise'); }
+        urls = r.urls; caption(r.lang || lang, r.missing ? T('Pas d\'image française sur Scryfall : version anglaise') : '');
+        flipB.hidden = urls.length < 2; flipB.textContent = T('Retourner la carte');
+      } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? T('Pas d\'image française sur Scryfall : version anglaise') : ''); }                                // image seule : la langue est celle de l'image fournie
+      else { urls = [enBig]; caption('en', lang === 'en' ? '' : T('Image française indisponible : version anglaise')); }
       canSave = !!(it.plain || wu);      // l'aperçu d'une offre garde l'impression de l'offre : on peut feuilleter les illustrations, pas les retenir
       vl = shown;      // langue de la vue : les illustrations retenues lui sont rattachées, même une impression anglaise (promo…)
       const pf = canSave ? artGet(vl, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
-      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(pf.il || shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; }
+      if (pf) { urls = pf.u.slice(); where = pf.w || ''; caption(pf.il || shown, ''); flipB.hidden = urls.length < 2; flipB.textContent = T('Retourner la carte'); }
       show(0);
       varT = setTimeout(() => loadVars(mine, my), wantOpen ? 120 : 320);      // pas de requête pendant un glissé rapide d'une carte à l'autre
     })();
@@ -171,17 +171,17 @@ function openCardViewer(items, index) {
     if (imgView !== api || it !== mine) return;
     vars = list;
     if (list.length < 2) { varsEl.hidden = true; wrap.classList.remove('has-vars'); return; }
-    artB.hidden = false; artB.textContent = 'Illustrations · ' + list.length;
+    artB.hidden = false; artB.textContent = T('Illustrations · {n}', { n: list.length });
     if (wantOpen) varsOpen(true);      // la liste ouverte reste ouverte d'une carte à l'autre (sauf carte à une seule impression)
   };
   const baseOf = u => String(u || '').split('?')[0];
   const varsPaint = () => {
     const cur = baseOf(urls[0]), sel = vars.findIndex(p => baseOf(p.urls[0]) === cur), pf = canSave && artGet(vl, it.ln || it.name);
     pickAt = sel;
-    varsL.innerHTML = (pf ? '<button type="button" class="imgv-v def" data-i="-1" aria-label="Revenir à l\'illustration par défaut"><i>Par défaut</i></button>' : '')
+    varsL.innerHTML = (pf ? '<button type="button" class="imgv-v def" data-i="-1" aria-label="' + T('Revenir à l\'illustration par défaut') + '"><i>' + T('Par défaut') + '</i></button>' : '')
       + vars.map((p, i) => `<button type="button" class="imgv-v" data-i="${i}" aria-pressed="${i === sel}" aria-label="${esc(p.sn)} ${esc(String(p.set).toUpperCase())} ${esc(p.num)}${p.fx.length ? ', ' + esc(p.fx.join(', ')) : ''}"><img alt="" loading="lazy" decoding="async" src="${esc(p.th)}"><span>${esc(String(p.set).toUpperCase())} ${esc(p.num)}</span><small>${esc(p.y)}${p.fx.length ? ' · ' + esc(p.fx.join(', ')) : ''}</small></button>`).join('');
     const p = sel >= 0 ? vars[sel] : null;
-    varsH.textContent = p ? `${p.sn} · ${canSave ? 'retenue pour cette carte' : 'aperçu seulement : l\'offre garde son impression'}` : (pf ? 'Illustration par défaut' : 'Touche une illustration' + (canSave ? '' : ' · aperçu seulement'));
+    varsH.textContent = p ? `${p.sn} · ${canSave ? T('retenue pour cette carte') : T('aperçu seulement : l\'offre garde son impression')}` : (pf ? T('Illustration par défaut') : canSave ? T('Touche une illustration') : T('Touche une illustration · aperçu seulement'));
     const on = varsL.querySelector('[aria-pressed="true"]'); if (on && on.scrollIntoView) on.scrollIntoView({ inline: 'center', block: 'nearest' });
   };
   const varsOpen = on => {
@@ -195,7 +195,7 @@ function openCardViewer(items, index) {
     if (i < 0) { artDrop(vl, name); go(idx); return; }      // « Par défaut » : l'aperçu repart de l'image d'origine
     const p = vars[i]; if (!p) return;
     urls = p.urls.slice(); face = 0; where = [p.sn, String(p.set).toUpperCase() + ' ' + p.num].filter(Boolean).join(' · ');
-    caption(p.l || vl, ''); flipB.hidden = urls.length < 2; flipB.textContent = 'Retourner la carte'; show(0);
+    caption(p.l || vl, ''); flipB.hidden = urls.length < 2; flipB.textContent = T('Retourner la carte'); show(0);
     if (canSave) artSet(vl, name, urls.slice(), where, p.l);
     varsPaint();
   });
@@ -210,7 +210,7 @@ function openCardViewer(items, index) {
     if (e.target === wrap || e.target.closest('.imgv-x')) return api.close();
     if (e.target.closest('.imgv-nav.prev')) step(-1); else if (e.target.closest('.imgv-nav.next')) step(1);
   });
-  flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? 'Retourner la carte' : 'Voir le recto'; };
+  flipB.onclick = () => { haptic('tap'); show((face + 1) % urls.length); flipB.textContent = face === 0 ? T('Retourner la carte') : T('Voir le recto'); };
   let sx = null, sy = 0, st = 0, onCard = false;                 // glissement horizontal : carte suivante / précédente
   wrap.addEventListener('touchstart', e => { const t = e.touches[0]; sx = e.touches.length === 1 && !e.target.closest('.imgv-vars') ? t.clientX : null; sy = t.clientY; st = e.timeStamp; onCard = !!e.target.closest('.imgv-card'); }, { passive: true });
   wrap.addEventListener('touchend', e => {
@@ -375,28 +375,28 @@ function dvTile(it, i, snap, dl) {
   const hue = hash32(it.k) % 360, art = dvImg(it), d = dl && dl.get(it.k), mv = dvMoved(d) ? `<em class="${d.diff < 0 ? 'dn' : 'up'}" aria-hidden="true">${d.diff < 0 ? '▼' : '▲'}</em>` : '';
   const ref = !!snap.ref || !!it.sb, full = ref && it.ow >= it.q;
   const tag = it.s === 'ok' ? `<span class="dvc-p">${esc(fmt(it.c))}${mv}</span>`
-    : it.s === 'own' ? '<span class="dvc-p own">Possédée</span>'
-    : it.s === 'nf' ? '<span class="dvc-p bad">Introuvable</span>' : it.s === 'basic' ? '' : `<span class="dvc-p warn">${ref ? 'Prix inconnu' : 'Aucune offre'}</span>`;
+    : it.s === 'own' ? '<span class="dvc-p own">' + T('Possédée') + '</span>'
+    : it.s === 'nf' ? '<span class="dvc-p bad">' + T('Introuvable') + '</span>' : it.s === 'basic' ? '' : `<span class="dvc-p warn">${ref ? T('Prix inconnu') : T('Aucune offre')}</span>`;
   const en = ref ? (it.ow ? `<span class="dvc-l${full ? ' own' : ''}">${full ? '✓' : it.ow + '/' + it.q}</span>` : '')
     : it.s === 'ok' && it.l && snap.lang && it.l !== snap.lang ? `<span class="dvc-l">${esc(it.l.toUpperCase())}</span>` : '';
   const q = it.q > 1 ? `<span class="dvc-q">×${it.q}</span>` : '';
-  const label = `${it.n}${it.q > 1 ? ', ×' + it.q : ''}${it.s === 'ok' ? ', ' + fmt(it.c) : it.s === 'own' ? ', dans ta collection' : it.s === 'nf' ? ', introuvable' : it.s === 'basic' ? '' : ref ? ', prix inconnu' : ', aucune offre'}${it.sb ? ', réserve' : ''}${ref && it.ow ? (full ? ', possédée' : `, ${it.ow} possédée${it.ow > 1 ? 's' : ''}`) : ''}${d && dvMoved(d) ? (d.diff < 0 ? ', en baisse' : ', en hausse') : ''}`;
+  const label = `${it.n}${it.q > 1 ? ', ×' + it.q : ''}${it.s === 'ok' ? ', ' + fmt(it.c) : it.s === 'own' ? ', ' + T('dans ta collection') : it.s === 'nf' ? ', ' + T('introuvable') : it.s === 'basic' ? '' : ref ? ', ' + T('prix inconnu') : ', ' + T('aucune offre')}${it.sb ? ', ' + T('réserve') : ''}${ref && it.ow ? (full ? ', ' + T('possédée') : ', ' + TN(it.ow, '{n} possédée', '{n} possédées')) : ''}${d && dvMoved(d) ? (d.diff < 0 ? ', ' + T('en baisse') : ', ' + T('en hausse')) : ''}`;
   return `<button type="button" class="dvc" data-s="${it.s}" data-i="${i}" aria-label="${esc(label)}"><span class="dvc-art" style="--h:${hue}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>${q}${en}${tag}</button>`;
 }
 /** Courbe de mana : c = exemplaires par coût (0 à 7+). interactive : barres cliquables (le viewer saute au groupe). */
 function curveBars(c, interactive) {
   const max = Math.max(1, ...c), tag = interactive ? 'button type="button"' : 'div', end = interactive ? 'button' : 'div';
-  return `<div class="dv-curve" role="img" aria-label="Courbe de mana : ${c.map((n, m) => n + ' carte' + (n > 1 ? 's' : '') + ' à ' + (m === 7 ? '7 et plus' : m)).join(', ')}">${c.map((n, m) => `<${tag} class="dv-bar" data-m="${m}" ${interactive && !n ? 'disabled' : ''} ${interactive ? `aria-label="Coût ${m === 7 ? '7 et plus' : m} : ${n}"` : ''}><span class="dv-n">${n || ''}</span><span class="dv-col"><i style="height:${Math.round(n / max * 100)}%"></i></span><span class="dv-x">${m === 7 ? '7+' : m}</span></${end}>`).join('')}</div>`;
+  return `<div class="dv-curve" role="img" aria-label="${T('Courbe de mana : {list}', { list: c.map((n, m) => (m === 7 ? TN(n, '{n} carte à 7 et plus', '{n} cartes à 7 et plus') : TN(n, '{n} carte à {m}', '{n} cartes à {m}', { m }))).join(', ') })}">${c.map((n, m) => `<${tag} class="dv-bar" data-m="${m}" ${interactive && !n ? 'disabled' : ''} ${interactive ? `aria-label="${m === 7 ? T('Coût 7 et plus : {n}', { n }) : T('Coût {m} : {n}', { m, n })}"` : ''}><span class="dv-n">${n || ''}</span><span class="dv-col"><i style="height:${Math.round(n / max * 100)}%"></i></span><span class="dv-x">${m === 7 ? '7+' : m}</span></${end}>`).join('')}</div>`;
 }
 const dvCurve = items => curveBars(curveOf(items), true);
 
 /** Commandant mis en avant : grande carte, coût de mana, prix. */
 function dvHero(it, idx, snap, dl) {
   const art = dvImg(it), hue = hash32(it.k) % 360, d = dl && dl.get(it.k);
-  const price = it.s === 'ok' ? `<b>${esc(fmt(it.c))}</b>${it.rf ? `<span class="cmd-ref">Réf. Cardmarket ${esc(fmt(it.rf))}</span>` : ''}${snap.ref && it.ow ? `<span class="cmd-ref">${it.ow >= it.q ? 'Dans ta collection' : 'Possédé en ' + it.ow + ' ex.'}</span>` : ''}${d && dvMoved(d) ? `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(d.tot)))}</span>` : ''}`
-    : it.s === 'own' ? '<b class="own">Dans ta collection</b>' : it.s === 'nf' ? '<b class="bad">Introuvable</b>' : `<b class="warn">${snap.ref ? 'Prix inconnu' : 'Aucune offre'}</b>`;
-  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="Commandant : ${esc(it.n)}"><span class="dvc-art tilt" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
-    <span class="cmd-t"><small>${/planeswalker/i.test(it.tl || '') ? 'Planeswalker commandant' : 'Commandant'}</small><strong>${esc(it.n)}</strong>${it.tl ? `<span class="cmd-tl">${esc(it.tl)}</span>` : ''}${it.mc ? `<span class="cmd-mc">${manaHtml(it.mc)}</span>` : ''}<span class="cmd-p">${price}</span></span></button>`;
+  const price = it.s === 'ok' ? `<b>${esc(fmt(it.c))}</b>${it.rf ? `<span class="cmd-ref">${T('Réf. Cardmarket {price}', { price: esc(fmt(it.rf)) })}</span>` : ''}${snap.ref && it.ow ? `<span class="cmd-ref">${it.ow >= it.q ? T('Dans ta collection') : T('Possédé en {n} ex.', { n: it.ow })}</span>` : ''}${d && dvMoved(d) ? `<span class="delta ${d.diff < 0 ? 'down' : 'up'}">${d.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(d.tot)))}</span>` : ''}`
+    : it.s === 'own' ? '<b class="own">' + T('Dans ta collection') + '</b>' : it.s === 'nf' ? '<b class="bad">' + T('Introuvable') + '</b>' : `<b class="warn">${snap.ref ? T('Prix inconnu') : T('Aucune offre')}</b>`;
+  return `<button type="button" class="dv-cmd" data-i="${idx}" aria-label="${T('Commandant : {name}', { name: esc(it.n) })}"><span class="dvc-art tilt" style="--h:${hue}"><b>${dvLetter(it)}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}</span>
+    <span class="cmd-t"><small>${/planeswalker/i.test(it.tl || '') ? T('Planeswalker commandant') : T('Commandant')}</small><strong>${esc(it.n)}</strong>${it.tl ? `<span class="cmd-tl">${esc(it.tl)}</span>` : ''}${it.mc ? `<span class="cmd-mc">${manaHtml(it.mc)}</span>` : ''}<span class="cmd-p">${price}</span></span></button>`;
 }
 
 /** Évolution depuis le relevé précédent : écart total et plus fortes variations. */
@@ -405,14 +405,14 @@ function dvEvolution(snap, dl) {
   let total = 0; for (const d of dl.values()) total += d.tot;
   const mv = topMovers(snap.items, dl, 3), same = new Date(snap.pa).toDateString() === new Date(snap.at).toDateString();
   const row = (x, cls) => `<button type="button" class="mv ${cls}" data-k="${esc(x.item.k)}"><span>${esc(x.item.n)}</span><i>${esc(fmt(x.prev))} → ${esc(fmt(x.unit))}</i><b>${x.diff < 0 ? '−' : '+'}${esc(fmt(Math.abs(x.tot)))}</b></button>`;
-  return `<div class="dv-evo"><div class="dv-evo-h"><span>Depuis ${same ? 'la recherche de ' + new Date(snap.pa).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'le ' + esc(dateShort(snap.pa))}</span><b class="${total === 0 ? 'flat' : total < 0 ? 'down' : 'up'}">${total === 0 ? 'Inchangé' : (total < 0 ? '▼ −' : '▲ +') + esc(fmt(Math.abs(total)))}</b></div>
+  return `<div class="dv-evo"><div class="dv-evo-h"><span>${same ? T('Depuis la recherche de {time}', { time: new Date(snap.pa).toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit' }) }) : T('Depuis le {date}', { date: esc(dateShort(snap.pa)) })}</span><b class="${total === 0 ? 'flat' : total < 0 ? 'down' : 'up'}">${total === 0 ? T('Inchangé') : (total < 0 ? '▼ −' : '▲ +') + esc(fmt(Math.abs(total)))}</b></div>
     ${mv.down.length || mv.up.length ? `<div class="dv-mv">${mv.down.map(x => row(x, 'down')).join('')}${mv.up.map(x => row(x, 'up')).join('')}</div>` : ''}</div>`;
 }
 /** Total payé face au prix de référence Cardmarket des mêmes cartes. */
 function dvRefLine(items) {
   const t = refTotals(items); if (t.cards < 3) return '';
   const lvl = t.pct <= 5 ? 'good' : t.pct >= 40 ? 'warn' : '';
-  return `<div class="dv-ref ${lvl}"><span>Réf. Cardmarket pour les mêmes cartes : <b>${esc(fmt(t.ref))}</b></span><b>${t.pct === 0 ? 'identique' : (t.pct < 0 ? '−' : '+') + Math.abs(t.pct) + ' %'}</b></div>`;
+  return `<div class="dv-ref ${lvl}"><span>${T('Réf. Cardmarket pour les mêmes cartes : <b>{price}</b>', { price: esc(fmt(t.ref)) })}</span><b>${t.pct === 0 ? T('identique') : (t.pct < 0 ? '−' : '+') + Math.abs(t.pct) + ' %'}</b></div>`;
 }
 
 /** Cadre du viewer : résumé, bascule de tri, filtres. Reconstruit seulement quand le relevé change (la saisie ne doit pas perdre le focus). */
@@ -420,31 +420,32 @@ function dvFrame(snap) {
   const el = DV.el, items = snap.items, found = items.filter(i => i.s === 'ok'), total = found.reduce((a, i) => a + i.c, 0);
   const copies = items.reduce((a, i) => a + i.q, 0), miss = items.filter(i => i.s === 'nf').length, none = items.filter(i => i.s === 'none' || i.s === 'nohub').length, own = items.filter(i => i.s === 'own').length;
   const ref = !!snap.ref, old = !ref && !DV.live && snapAge(snap) === 'old';
-  const crit = ref ? 'Valeur estimée · prix tendance Cardmarket' + (items.some(i => i.ow) ? ' · ✓ dans ta collection' : '') : [LANGS[snap.lang] || snap.lang, snap.mode === 'cm' ? 'Prix tendance Cardmarket' : snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
-  const when = ref ? (DV.loading ? 'Lecture des cartes et des prix…' : 'Prix de référence, pas des offres') : DV.live ? 'Prix de la recherche en cours' : `Prix du ${dateShort(snap.at)} · ${relTime(snap.at)}`;
+  const crit = ref ? T('Valeur estimée · prix tendance Cardmarket') + (items.some(i => i.ow) ? ' · ✓ ' + T('dans ta collection') : '') : [LANGS[snap.lang] || snap.lang, snap.mode === 'cm' ? T('Prix tendance Cardmarket') : snap.mode === 'zero' ? 'CardTrader Zero' : 'Direct'].filter(Boolean).join(' · ');
+  const when = ref ? (DV.loading ? T('Lecture des cartes et des prix…') : T('Prix de référence, pas des offres')) : DV.live ? T('Prix de la recherche en cours') : T('Prix du {date} · {ago}', { date: dateShort(snap.at), ago: relTime(snap.at) });
   DV.dl = snapDeltas(items, snap.pv);
-  const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ` · réserve ${sbN}` : '';
+  const sbN = DV.sb.reduce((a, i) => a + i.q, 0), sbTxt = sbN ? ' · ' + T('réserve {n}', { n: sbN }) : '';
   const todo = ref ? items.reduce((a, i) => a + (i.s === 'basic' ? 0 : Math.max(0, i.q - (i.ow || 0))), 0) : 0;
-  $('.dv-title span', el).textContent = DV.pub ? `${copies} carte${copies > 1 ? 's' : ''}${sbTxt} · partagé, lecture seule` : ref ? `${copies} carte${copies > 1 ? 's' : ''} · ${todo ? todo + ' à trouver' : 'toutes possédées'}${none ? ' · ' + none + ' sans prix' : ''}${sbTxt}`
-    : `${copies} carte${copies > 1 ? 's' : ''}${own ? ' · ' + own + ' possédée' + (own > 1 ? 's' : '') : ''}${miss ? ' · ' + miss + ' introuvable' + (miss > 1 ? 's' : '') : ''}${none ? ' · ' + none + ' sans offre' : ''}${sbTxt}`;
+  const cardsTxt = TN(copies, '{n} carte', '{n} cartes');
+  $('.dv-title span', el).textContent = DV.pub ? `${cardsTxt}${sbTxt} · ${T('partagé, lecture seule')}` : ref ? `${cardsTxt} · ${todo ? T('{n} à trouver', { n: todo }) : T('toutes possédées')}${none ? ' · ' + T('{n} sans prix', { n: none }) : ''}${sbTxt}`
+    : `${cardsTxt}${own ? ' · ' + TN(own, '{n} possédée', '{n} possédées') : ''}${miss ? ' · ' + TN(miss, '{n} introuvable', '{n} introuvables') : ''}${none ? ' · ' + T('{n} sans offre', { n: none }) : ''}${sbTxt}`;
   $('.dv-body', el).innerHTML = `<section class="dv-sum">
-      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}<span class="dv-amt">${esc(fmt(total))}</span>${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : 'Articles · '}${esc(crit)}</span></div>
-      <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">Actualiser</button>'}</div>
+      <div class="dv-total"><span class="dv-eur">${ref ? '≈ ' : ''}<span class="dv-amt">${esc(fmt(total))}</span>${ref && none ? '+' : ''}</span><span class="dv-crit">${ref ? '' : T('Articles') + ' · '}${esc(crit)}</span></div>
+      <div class="dv-age" data-age="${old ? 'old' : 'fresh'}"><span>${esc(when)}</span>${DV.live || ref ? '' : '<button class="link-btn" type="button" data-act="refresh">' + T('Actualiser') + '</button>'}</div>
       ${dvEvolution(snap, DV.dl)}${dvRefLine(items)}
       ${dvCurve(items)}
-      <div class="tr-acts dv-acts"><button class="btn ghost dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>Main de départ</button>${dvMissing().length ? `<button class="btn ghost" type="button" data-act="cm" title="Les cartes qui manquent, une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket"><svg class="i"><use href="#i-copy"/></svg>${DV.pub ? 'Copier pour Cardmarket' : 'Manquantes · Cardmarket'}</button>` : ''}</div>
+      <div class="tr-acts dv-acts"><button class="btn ghost dv-hand" type="button" data-act="hand"><svg class="i"><use href="#i-stack"/></svg>${T('Main de départ')}</button>${dvMissing().length ? `<button class="btn ghost" type="button" data-act="cm" title="${T('Les cartes qui manquent, une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket')}"><svg class="i"><use href="#i-copy"/></svg>${DV.pub ? T('Copier pour Cardmarket') : T('Manquantes · Cardmarket')}</button>` : ''}</div>
     </section>
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
     <div id="dvF"></div>
     <div class="dv-groups"></div>`;
-  mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: 'Prix' }, { v: 'type', label: 'Type' }], DV.sort, v => {
+  mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: T('Prix') }, { v: 'type', label: 'Type' }], DV.sort, v => {
     DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); DV.anim = true; dvGroups();
     const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
   });
   $('#dvSeg', el).setValue(DV.sort);
   { const a = $('.dv-amt', el); a._v = DV.shownTotal == null ? 0 : DV.shownTotal; DV.shownTotal = total; tween(a, total); }      // le total défile depuis 0 à l'ouverture, puis d'une valeur à l'autre
-  DV.fb = mountFilters($('#dvF', el), DV.f, () => dvGroups(), { placeholder: 'Rechercher dans le deck' });
+  DV.fb = mountFilters($('#dvF', el), DV.f, () => dvGroups(), { placeholder: T('Rechercher dans le deck') });
 }
 /** Commandant + groupes de cartes, d'après le tri et les filtres. */
 function dvGroups() {
@@ -457,9 +458,9 @@ function dvGroups() {
   $('#dvCmd', el).innerHTML = cmds.length ? `<div class="dv-cmds">${cmds.map(c => dvHero(c, flat(c), snap, dl)).join('')}</div>` : '';
   const groups = groupSnap(rest, DV.sort, !!snap.ref); let n = DV.flat.length;
   const hidden = (DV.f.colors.size || DV.f.type || DV.f.cmc !== '') ? all.filter(i => !hasMeta(i)).length : 0;
-  $('.dv-groups', el).innerHTML = (act ? `<p class="hint dv-fcount">${filtered.length} carte${filtered.length > 1 ? 's' : ''} sur ${all.length}${hidden ? ` · ${hidden} sans infos de type ou de coût ${snap.ref ? '(pas encore lues)' : '(prix gardés avant cette version) : relance la recherche'}` : ''}</p>` : '')
-    + (groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? 'Coût ' + esc(g.label) : esc(g.label)}</span><small>${g.count} carte${g.count > 1 ? 's' : ''}${g.cost ? ' · ' + (g.id === 'sb' ? '≈ ' : '') + esc(fmt(g.cost)) : ''}${g.id === 'sb' ? ' · prix tendance' : ''}</small></h3><div class="dv-grid">${g.items.map(it => { flat(it); return dvTile(it, n++, snap, dl); }).join('')}</div></section>`).join('')
-      || (cmds.length ? '' : '<p class="hint listempty">Aucune carte ne correspond.</p>'));
+  $('.dv-groups', el).innerHTML = (act ? `<p class="hint dv-fcount">${TN(filtered.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: all.length })}${hidden ? ' · ' + (snap.ref ? T('{n} sans infos de type ou de coût (pas encore lues)', { n: hidden }) : T('{n} sans infos de type ou de coût (prix gardés avant cette version) : relance la recherche', { n: hidden })) : ''}</p>` : '')
+    + (groups.map(g => `<section class="dv-g" data-g="${esc(g.id)}"><h3><span>${/^m\d$/.test(g.id) ? T('Coût {m}', { m: esc(T(g.label)) }) : esc(T(g.label))}</span><small>${TN(g.count, '{n} carte', '{n} cartes')}${g.cost ? ' · ' + (g.id === 'sb' ? '≈ ' : '') + esc(fmt(g.cost)) : ''}${g.id === 'sb' ? ' · ' + T('prix tendance') : ''}</small></h3><div class="dv-grid">${g.items.map(it => { flat(it); return dvTile(it, n++, snap, dl); }).join('')}</div></section>`).join('')
+      || (cmds.length ? '' : '<p class="hint listempty">' + T('Aucune carte ne correspond.') + '</p>'));
   if (sc) sc.scrollTop = keep;
   if (DV.anim) { DV.anim = false; stagger($$('.dv-grid', el), $('.dv-cmds', el)); }
 }
@@ -468,25 +469,25 @@ function dvRender() {
   const foot = $('.dv-foot', el), edit = $('[data-act="edit"]', foot), refresh = $('[data-act="refresh"]', foot), close = $('[data-act="close"]', foot);
   if (!snap) {
     DV.framed = null;
-    $('.dv-body', el).innerHTML = '<div class="dv-empty"><b>Ce deck est vide</b><p>Ajoute des cartes à la liste pour les voir ici.</p></div>';
+    $('.dv-body', el).innerHTML = '<div class="dv-empty"><b>' + T('Ce deck est vide') + '</b><p>' + T('Ajoute des cartes à la liste pour les voir ici.') + '</p></div>';
     $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live && !DV.adhoc; return;
   }
   if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
   dvGroups();
   // relevé de référence : « Chercher les offres » seulement s'il reste des cartes à acheter (tout possédé : rien à chercher)
   const ref = !!snap.ref, todo = ref && snap.items.some(i => i.s !== 'basic' && i.q > (i.ow || 0));
-  refresh.textContent = ref ? 'Chercher les offres' : 'Actualiser';
+  refresh.textContent = ref ? T('Chercher les offres') : T('Actualiser');
   foot.hidden = false; edit.hidden = DV.live || !DV.deckId; refresh.hidden = DV.live || !DV.deckId || (ref && !todo);
   close.hidden = !DV.live && !DV.adhoc;
 }
 function dvItemFor(it) {
   if (it.s === 'nf' || !it.im) return null;
-  const dl = DV.dl && DV.dl.get(it.k), mv = dl && dvMoved(dl) ? ` · ${dl.diff < 0 ? '▼ −' : '▲ +'}${fmt(Math.abs(dl.diff))} par exemplaire` : '';
-  const ref = it.rf ? ` · réf. Cardmarket ${fmt(it.rf)}` : '';
-  const own = it.ow ? (it.ow >= it.q ? 'dans ta collection' : `${it.ow} possédée${it.ow > 1 ? 's' : ''} sur ${it.q}`) : '';
+  const dl = DV.dl && DV.dl.get(it.k), mv = dl && dvMoved(dl) ? ' · ' + T('{delta} par exemplaire', { delta: (dl.diff < 0 ? '▼ −' : '▲ +') + fmt(Math.abs(dl.diff)) }) : '';
+  const ref = it.rf ? ' · ' + T('réf. Cardmarket {price}', { price: fmt(it.rf) }) : '';
+  const own = it.ow ? (it.ow >= it.q ? T('dans ta collection') : TN(it.ow, '{n} possédée sur {total}', '{n} possédées sur {total}', { total: it.q })) : '';
   const rf2 = (DV.snap && DV.snap.ref) || it.sb;
-  const extra = it.s === 'basic' ? 'Terrain de base' : rf2 ? [it.sb ? 'Réserve' : '', it.s === 'ok' ? fmt(it.c) + (it.q > 1 ? ' pour ' + it.q : '') + ' · prix tendance Cardmarket' : 'Prix inconnu', own].filter(Boolean).join(' · ') : it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' pour ' + (it.q - (it.ow || 0)) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ` · ${it.sh} manquante${it.sh > 1 ? 's' : ''}` : '') + (it.ow ? ` · ${it.ow} possédée${it.ow > 1 ? 's' : ''}` : '') + ref + mv
-    : it.s === 'own' ? 'Dans ta collection' : 'Aucune offre avec tes critères';
+  const extra = it.s === 'basic' ? T('Terrain de base') : rf2 ? [it.sb ? T('Réserve') : '', it.s === 'ok' ? fmt(it.c) + (it.q > 1 ? ' ' + T('pour {n}', { n: it.q }) : '') + ' · ' + T('prix tendance Cardmarket') : T('Prix inconnu'), own].filter(Boolean).join(' · ') : it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' ' + T('pour {n}', { n: it.q - (it.ow || 0) }) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ' · ' + TN(it.sh, '{n} manquante', '{n} manquantes') : '') + (it.ow ? ' · ' + TN(it.ow, '{n} possédée', '{n} possédées') : '') + ref + mv
+    : it.s === 'own' ? T('Dans ta collection') : T('Aucune offre avec tes critères');
   const ol = !!it.ol;      // image de ta propre carte (sa langue) : pas la version de l'offre, donc ni extension ni numéro à relire sur Scryfall
   return { key: it.k, name: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: it.im, lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
 }
@@ -503,17 +504,17 @@ function openDeckViewer({ id, live, text, name, pub } = {}) {
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
   DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
   DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
-  DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : 'Liste en cours');
-  if (live && !DV.snap) { toast('Lance une recherche pour voir le deck'); return; }
+  DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : T('Liste en cours'));
+  if (live && !DV.snap) { toast(T('Lance une recherche pour voir le deck')); return; }
   // Pas de prix gardé (ou tout est possédé, donc rien à chiffrer) : même viewer, avec la valeur estimée du deck au prix tendance Cardmarket
   DV.text = adhoc ? text : live ? S.run.text : d ? d.text : ''; DV.loading = false;
   if (!DV.snap || snapNothingToBuy(DV.snap)) DV.snap = refSnapOf(DV.text, DV.deckId, DV.pub);
   dvRebuild();
-  const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Deck viewer · ' + DV.name);
-  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer le viewer"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div>${DV.pub ? '' : '<button class="icon-btn" type="button" data-act="share" aria-label="Partager ce deck (lien en lecture seule)" title="Partager"><svg class="i"><use href="#i-share"/></svg></button>'}</header>
+  const wrap = document.createElement('div'); wrap.className = 'dv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Deck viewer · {name}', { name: DV.name }));
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer le viewer')}"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div>${DV.pub ? '' : '<button class="icon-btn" type="button" data-act="share" aria-label="' + T('Partager ce deck (lien en lecture seule)') + '" title="' + T('Partager') + '"><svg class="i"><use href="#i-share"/></svg></button>'}</header>
     <div class="dv-scroll"><div class="dv-body"></div></div>
-    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">Modifier la liste</button><button class="btn" type="button" data-act="refresh">Actualiser</button><button class="btn" type="button" data-act="close">Fermer</button></footer>`;
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">${T('Modifier la liste')}</button><button class="btn" type="button" data-act="refresh">${T('Actualiser')}</button><button class="btn" type="button" data-act="close">${T('Fermer')}</button></footer>`;
   DV.el = wrap; DV.prevFocus = document.activeElement;
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
@@ -553,7 +554,7 @@ async function refreshDeckPrices(id) {
   loadDeck(id, true);
   await startRun(true);
   const cur = findDeck(id), now = snapOf(cur);
-  if (S.run && S.run.status === 'done' && now && now.at > before) toast('Prix actualisés', { label: 'Voir le deck', fn: () => openDeckViewer({ id }) });
+  if (S.run && S.run.status === 'done' && now && now.at > before) toast(T('Prix actualisés'), { label: T('Voir le deck'), fn: () => openDeckViewer({ id }) });
 }
 
 /** Cartes qui manquent au deck affiché (deck + réserve − collection libre ; deck public : tout le deck, la collection du visiteur n'est pas lue ici). */
@@ -564,20 +565,20 @@ const pctTxt = p => (p >= 0.995 ? '100' : p < 0.005 && p > 0 ? '< 1' : String(Ma
 function openHand() {
   const snap = DV.snap; if (!snap) return;
   const lib = libraryOf(snap.items), isLand = it => it.s === 'basic' || isLandType(it.tl);
-  if (lib.length < 7) { toast('Il faut au moins 7 cartes dans le deck'); return; }
+  if (lib.length < 7) { toast(T('Il faut au moins 7 cartes dans le deck')); return; }
   const L = lib.filter(isLand).length, unknown = new Set(lib.filter(it => it.s !== 'basic' && it.tl == null).map(it => it.k)).size, odds = handLandOdds(lib.length, L, 7);
-  openSheet('Main de départ', `${lib.length} cartes dans la bibliothèque · ${L} terrain${L > 1 ? 's' : ''}`, api => {
+  openSheet(T('Main de départ'), TN(lib.length, '{n} carte dans la bibliothèque', '{n} cartes dans la bibliothèque') + ' · ' + TN(L, '{n} terrain', '{n} terrains'), api => {
     let hand = [];
     const paint = () => {
       const lands = hand.filter(isLand).length, max = Math.max(...odds);
       api.body.innerHTML = `<div class="hand-grid">${hand.map((it, i) => `<button type="button" class="dvc hand-c" data-i="${i}" aria-label="${esc(it.n)}"><span class="dvc-art" style="--h:${hash32(it.k) % 360}"><b>${dvLetter(it)}</b><i>${esc(it.n)}</i>${dvImg(it) ? `<img alt="" decoding="async" src="${esc(dvImg(it))}">` : ''}</span></button>`).join('')}</div>
-        <p class="hand-sum"><b>${lands} terrain${lands > 1 ? 's' : ''}</b> · ${7 - lands} sort${7 - lands > 1 ? 's' : ''}</p>
-        <h3 class="cs-h">Terrains en main de départ <small>sur 7 cartes</small></h3>
-        <div class="odds" role="img" aria-label="${odds.map((p, k) => k + ' terrain' + (k > 1 ? 's' : '') + ' : ' + pctTxt(p)).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
-        <p class="hint">Entre 2 et 4 terrains : ${pctTxt(odds[2] + odds[3] + (odds[4] || 0))} des mains.${unknown ? ` ${unknown} carte${unknown > 1 ? 's' : ''} au type pas encore lu, comptée${unknown > 1 ? 's' : ''} comme sort${unknown > 1 ? 's' : ''}.` : ''}</p>`;
+        <p class="hand-sum"><b>${TN(lands, '{n} terrain', '{n} terrains')}</b> · ${TN(7 - lands, '{n} sort', '{n} sorts')}</p>
+        <h3 class="cs-h">${T('Terrains en main de départ')} <small>${T('sur 7 cartes')}</small></h3>
+        <div class="odds" role="img" aria-label="${odds.map((p, k) => TN(k, '{n} terrain : {p}', '{n} terrains : {p}', { p: pctTxt(p) })).join(', ')}">${odds.map((p, k) => `<div class="odd${k === lands ? ' on' : ''}"><span>${k}</span><i style="--w:${(p / max * 100).toFixed(1)}%"></i><b>${pctTxt(p)}</b></div>`).join('')}</div>
+        <p class="hint">${T('Entre 2 et 4 terrains : {p} des mains.', { p: pctTxt(odds[2] + odds[3] + (odds[4] || 0)) })}${unknown ? ' ' + TN(unknown, '{n} carte au type pas encore lu, comptée comme sort.', '{n} cartes au type pas encore lu, comptées comme sorts.') : ''}</p>`;
     };
     const deal = () => { hand = drawHand(lib, 7); paint(); stagger($('.hand-grid', api.body)); };
-    api.setFoot('<button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" data-act="redeal">Nouvelle main</button>');
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button><button class="btn" type="button" data-act="redeal">${T('Nouvelle main')}</button>`);
     api.foot.addEventListener('click', e => { if (e.target.closest('[data-act="redeal"]')) { haptic('tap'); deal(); } });
     api.body.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
     api.body.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
@@ -585,7 +586,7 @@ function openHand() {
       const c = e.target.closest('.hand-c'); if (!c) return;
       const list = [], at = new Map();
       hand.forEach((it, i) => { const v = dvItemFor(it); if (v) { at.set(i, list.length); list.push(v); } });
-      const i = Number(c.dataset.i); if (at.has(i)) openCardViewer(list, at.get(i)); else toast('Pas d\'aperçu pour cette carte');
+      const i = Number(c.dataset.i); if (at.has(i)) openCardViewer(list, at.get(i)); else toast(T('Pas d\'aperçu pour cette carte'));
     });
     deal();
   });

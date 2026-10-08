@@ -1,5 +1,5 @@
 /* ── filters.js : recherche + filtres couleur / famille / coût (deck viewer et collection) ───────────────────── */
-const COLOR_DEF = [['W', 'Blanc'], ['U', 'Bleu'], ['B', 'Noir'], ['R', 'Rouge'], ['G', 'Vert'], ['C', 'Incolore']];
+const COLOR_DEF = [['W', T('Blanc')], ['U', T('Bleu')], ['B', T('Noir')], ['R', T('Rouge')], ['G', T('Vert')], ['C', T('Incolore')]];      // noms traduits (affichage seulement : la lettre sert de valeur)
 const newFilter = () => ({ q: '', colors: new Set(), type: '', cmc: '', cmdr: '' });
 const filterCount = f => (f.colors.size ? 1 : 0) + (f.type ? 1 : 0) + (f.cmc !== '' && f.cmc != null ? 1 : 0) + (f.cmdr ? 1 : 0);
 
@@ -21,14 +21,14 @@ function manaHtml(mc) {
 function mountFilters(root, f, onChange, opts = {}) {
   root.className = 'fbar';
   root.innerHTML = `<div class="fbar-row">
-      <label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(opts.placeholder || 'Rechercher une carte')}" aria-label="Rechercher une carte"><button type="button" class="fclear" aria-label="Effacer la recherche" hidden><svg class="i"><use href="#i-close"/></svg></button></label>
-      <button class="fbtn" type="button" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg><span>Filtres</span><b hidden></b></button></div>
+      <label class="fsearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(opts.placeholder || T('Rechercher une carte'))}" aria-label="${T('Rechercher une carte')}"><button type="button" class="fclear" aria-label="${T('Effacer la recherche')}" hidden><svg class="i"><use href="#i-close"/></svg></button></label>
+      <button class="fbtn" type="button" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg><span>${T('Filtres')}</span><b hidden></b></button></div>
     <div class="fpanel" hidden>
-      ${opts.commander ? `<div class="fgrp"><span class="fgl">Commander</span><div class="fopts" role="group" aria-label="Commander"><button type="button" class="fopt" data-x="can" aria-pressed="false">Peuvent l'être</button><button type="button" class="fopt" data-x="played" aria-pressed="false">Joués en commandant</button></div></div>` : ''}
-      <div class="fgrp"><span class="fgl">Couleur</span><div class="fcols" role="group" aria-label="Couleurs">${COLOR_DEF.map(([c, n]) => `<button type="button" class="fcol mc-${c.toLowerCase()}" data-c="${c}" aria-pressed="false" aria-label="${n}" title="${n}">${c}</button>`).join('')}</div></div>
-      <div class="fgrp"><span class="fgl">Famille</span><div class="fopts" role="group" aria-label="Familles">${TYPE_ORDER.map(t => `<button type="button" class="fopt" data-t="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join('')}</div></div>
-      <div class="fgrp"><span class="fgl">Coût de mana</span><div class="fopts cmcs" role="group" aria-label="Coût converti">${[0, 1, 2, 3, 4, 5, 6, 7].map(m => `<button type="button" class="fopt" data-m="${m}" aria-pressed="false">${m === 7 ? '7+' : m}</button>`).join('')}</div></div>
-      <button class="link-btn link-inline freset" type="button">Effacer les filtres</button></div>`;
+      ${opts.commander ? `<div class="fgrp"><span class="fgl">Commander</span><div class="fopts" role="group" aria-label="Commander"><button type="button" class="fopt" data-x="can" aria-pressed="false">${T('Peuvent l\'être')}</button><button type="button" class="fopt" data-x="played" aria-pressed="false">${T('Joués en commandant')}</button></div></div>` : ''}
+      <div class="fgrp"><span class="fgl">${T('Couleur')}</span><div class="fcols" role="group" aria-label="${T('Couleurs')}">${COLOR_DEF.map(([c, n]) => `<button type="button" class="fcol mc-${c.toLowerCase()}" data-c="${c}" aria-pressed="false" aria-label="${n}" title="${n}">${c}</button>`).join('')}</div></div>
+      <div class="fgrp"><span class="fgl">${T('Famille')}</span><div class="fopts" role="group" aria-label="${T('Familles')}">${TYPE_ORDER.map(t => `<button type="button" class="fopt" data-t="${esc(t)}" aria-pressed="false">${esc(T(t))}</button>`).join('')}</div></div>
+      <div class="fgrp"><span class="fgl">${T('Coût de mana')}</span><div class="fopts cmcs" role="group" aria-label="${T('Coût converti')}">${[0, 1, 2, 3, 4, 5, 6, 7].map(m => `<button type="button" class="fopt" data-m="${m}" aria-pressed="false">${m === 7 ? '7+' : m}</button>`).join('')}</div></div>
+      <button class="link-btn link-inline freset" type="button">${T('Effacer les filtres')}</button></div>`;
   const inp = root.querySelector('input'), clr = root.querySelector('.fclear'), btn = root.querySelector('.fbtn'), panel = root.querySelector('.fpanel'), badge = btn.querySelector('b');
   let t = 0;
   const paint = () => {

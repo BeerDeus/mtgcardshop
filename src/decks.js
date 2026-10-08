@@ -16,7 +16,7 @@ function localRead() {
 }
 function localWrite(list) {
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); return true; }
-  catch (e) { toast('Stockage local indisponible : le deck ne sera pas conservé'); return false; }
+  catch (e) { toast(T('Stockage local indisponible : le deck ne sera pas conservé')); return false; }
 }
 const stripDeck = d => ({ name: d.name, text: d.text, opts: d.opts, cards: d.cards, history: d.history, createdAt: d.createdAt, updatedAt: d.updatedAt });   // les prix gardés (snap) restent dans snapsRead() pour les decks locaux
 const allDecks = () => (D.user ? D.list : D.localList);
@@ -27,10 +27,10 @@ const importable = () => (D.user ? D.localList.filter(d => !D.importing.has(d.id
 
 function deckErr(err) {
   const c = (err && err.code) || '';
-  if (c === 'permission-denied') return 'Accès refusé : publie les règles Firestore pour users/{uid}/decks.';
-  if (c === 'unavailable') return 'Hors ligne : la modification sera envoyée au retour du réseau.';
-  if (c === 'resource-exhausted') return 'Quota Firestore dépassé.';
-  return 'Opération impossible' + (c ? ' (' + c + ')' : '') + '.';
+  if (c === 'permission-denied') return T('Accès refusé : publie les règles Firestore pour users/{uid}/decks.');
+  if (c === 'unavailable') return T('Hors ligne : la modification sera envoyée au retour du réseau.');
+  if (c === 'resource-exhausted') return T('Quota Firestore dépassé.');
+  return c ? T('Opération impossible ({code}).', { code: c }) : T('Opération impossible.');
 }
 
 /* ── Écriture ─────────────────────────────────────────────────────────────────────────────── */
@@ -104,7 +104,7 @@ function recordRun() {
   S.runDelta = deltaFor(history); updateHeroDelta();
 }
 
-const dateShort = ts => new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+const dateShort = ts => new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' });
 function updateHeroDelta() {
   const el = $('#heroDelta'), dl = S.runDelta;
   const show = !!(dl && dl.mode === S.opts.mode && S.run && S.run.status === 'done' && !S.demo && !S.removed.length); // liste modifiée : l'écart ne porte plus sur la même liste
@@ -112,8 +112,9 @@ function updateHeroDelta() {
   const flat = dl.diff === 0, down = dl.diff < 0;
   el.className = 'delta-line ' + (flat ? 'flat' : down ? 'down' : 'up');
   const same = new Date(dl.prevAt).toDateString() === new Date(dl.at).toDateString();
-  const since = same ? 'la dernière recherche' : 'le ' + dateShort(dl.prevAt);
-  el.textContent = flat ? `Prix inchangé depuis ${since}` : `${down ? '▼' : '▲'} ${fmt(Math.abs(dl.diff))} depuis ${since}`;
+  const date = dateShort(dl.prevAt), amount = fmt(Math.abs(dl.diff)), arrow = down ? '▼' : '▲';
+  el.textContent = flat ? (same ? T('Prix inchangé depuis la dernière recherche') : T('Prix inchangé depuis le {date}', { date }))
+    : same ? T('{arrow} {amount} depuis la dernière recherche', { arrow, amount }) : T('{arrow} {amount} depuis le {date}', { arrow, amount, date });
 }
 
 /* ── Chargement d'un deck dans la saisie ──────────────────────────────────────────────────── */
@@ -134,7 +135,7 @@ function loadDeck(id, quiet) {
   refreshDeck(); updateSaveButtons();
   if (quiet) return;
   window.scrollTo({ top: $('.field').offsetTop - 70, behavior: reduceMotion() ? 'auto' : 'smooth' });
-  toast('Deck chargé');
+  toast(T('Deck chargé'));
 }
 function detachDeck() { S.deckId = null; S.runDelta = null; refreshDeck(); updateSaveButtons(); updateHeroDelta(); }
 
@@ -145,7 +146,7 @@ function deltaChip(h) {
 }
 const COLOR_NAMES = { W: 'blanc', U: 'bleu', B: 'noir', R: 'rouge', G: 'vert' };
 /** Pastilles de couleur d'un deck (d'après ses terrains de base). */
-function pips(text) { const c = dkColors(text); return c ? `<span class="deck-pips" role="img" aria-label="Couleurs : ${[...c].map(x => COLOR_NAMES[x]).join(', ')}" title="Couleurs d'après les terrains de base">${[...c].map(x => `<i class="pip ${x}"></i>`).join('')}</span>` : ''; }
+function pips(text) { const c = dkColors(text); return c ? `<span class="deck-pips" role="img" aria-label="${T('Couleurs : {list}', { list: [...c].map(x => T(COLOR_NAMES[x])).join(', ') })}" title="${T('Couleurs d\'après les terrains de base')}">${[...c].map(x => `<i class="pip ${x}"></i>`).join('')}</span>` : ''; }
 const deckFmt = d => dkFmtOf(d.text);
 /** Image de la carte de présentation d'un deck (grande taille), '' tant que sa fiche n'est pas lue. */
 const coverImg = c => { if (!c) return ''; const o = ownLangImg(c.key), m = dmOf(c.key); return o ? o.src : (m && m.im) || ''; };      // carte possédée : dans la langue de l'exemplaire
@@ -157,15 +158,15 @@ function deckCard(d, i) {
     <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art tilt" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
       <span class="deck-top"><span class="deck-name">${esc(d.name)}</span></span>
       <span class="deck-tags">${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span>
-      <span class="deck-meta"><span class="deck-line">${d.cards} carte${d.cards > 1 ? 's' : ''}${vt ? ' · <span title="Valeur estimée : prix tendance Cardmarket">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">complet</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
-    <button class="deck-more" type="button" data-act="more" aria-label="Options de ${esc(d.name)}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
+      <span class="deck-meta"><span class="deck-line">${TN(d.cards, '{n} carte', '{n} cartes')}${vt ? ' · <span title="' + T('Valeur estimée : prix tendance Cardmarket') + '">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">' + T('complet') + '</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
+    <button class="deck-more" type="button" data-act="more" aria-label="${T('Options de {name}', { name: esc(d.name) })}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
 }
 /** Bouton « Mes decks » de l'accueil + écran des decks s'il est ouvert. */
 function renderDecks() {
   alSoon(); trSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
-  $('#decksSub').textContent = loading ? 'Chargement…' : list.length ? `${list.length} deck${list.length > 1 ? 's' : ''}${mounted ? ' · ' + mounted + ' complet' + (mounted > 1 ? 's' : '') : ''}` : 'Crée un deck ou colle une liste puis « Enregistrer ».';
+  $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} complet', '{n} complets') : ''}` : T('Crée un deck ou colle une liste puis « Enregistrer ».');
   dksPaint();
   paintSync(); updateSaveButtons(); homeSoon();
 }
@@ -183,45 +184,46 @@ function dvSoon(decks, delay) {
 }
 function paintSync() {
   const el = $('#decksSync'), t = $('#decksSyncTxt'); if (!el || !t) return;      // l'écran « Mes decks » n'est pas ouvert
-  let s = 'local', txt = 'Sur cet appareil · se connecter';
+  let s = 'local', txt = T('Sur cet appareil · se connecter');
   if (D.user) {
     if (D.listErr) { s = 'error'; txt = D.listErr; }
-    else if (D.pending) { s = 'pending'; txt = 'Synchronisation…'; }
-    else { s = 'synced'; txt = 'Synchronisé'; }
-  } else if (D.state === 'unavailable') txt = 'Sur cet appareil';
+    else if (D.pending) { s = 'pending'; txt = T('Synchronisation…'); }
+    else { s = 'synced'; txt = T('Synchronisé'); }
+  } else if (D.state === 'unavailable') txt = T('Sur cet appareil');
   el.dataset.s = s; t.textContent = txt;
   el.disabled = !D.user && D.state === 'unavailable';
 }
 function updateSaveButtons() {
   const has = S.deck && S.deck.cards.length > 0, d = findDeck(S.deckId);
-  const b1 = $('#btnSave'); b1.disabled = !has; b1.title = d ? 'Mettre à jour « ' + d.name + ' »' : 'Enregistrer comme nouveau deck';
+  const b1 = $('#btnSave'); b1.disabled = !has; b1.title = d ? T('Mettre à jour « {name} »', { name: d.name }) : T('Enregistrer comme nouveau deck');
   const b2 = $('#btnSave2'); b2.classList.toggle('saved', !!d);
-  $('#btnSave2Txt').textContent = d ? 'Enregistré' : 'Enregistrer';
+  $('#btnSave2Txt').textContent = d ? T('Enregistré') : T('Enregistrer');
   $('use', b2).setAttribute('href', d ? '#i-check' : '#i-bookmark');
   $$('.deck', DKS.el || document.createElement('div')).forEach(el => { el.dataset.active = el.dataset.id === S.deckId ? '1' : '0'; });
 }
 function renderAccountBtn() {
   const b = $('#btnAccount'), l = D.user ? ((D.user.displayName || D.user.email || '?').trim()[0] || '?').toUpperCase() : (D.hint && !D.authReady ? D.hint.l : '');
   b.dataset.in = l ? '1' : '0'; $('#avatarLetter').textContent = l;
-  b.setAttribute('aria-label', D.user ? 'Compte : ' + (D.user.email || '') : 'Compte');
+  b.setAttribute('aria-label', D.user ? T('Compte : {email}', { email: D.user.email || '' }) : T('Compte'));
 }
 
 /* ── Feuille : enregistrer ────────────────────────────────────────────────────────────────── */
 function openSaveSheet() {
   const text = $('#deckText').value, n = parseDeck(text).cards.length;
-  if (!n) { toast('Colle d\'abord une liste'); return; }
+  if (!n) { toast(T('Colle d\'abord une liste')); return; }
   readOpts();
   const modeName = S.opts.mode === 'zero' ? 'Zero' : 'Direct';
-  openSheet('Enregistrer le deck', null, api => {
-    const where = D.user ? `Enregistré sur ton compte (${esc(D.user.email || '')}).`
-      : `Enregistré sur cet appareil.${D.state !== 'unavailable' ? ' <button class="link-btn link-inline" type="button" id="svLogin">Connecte-toi</button> pour le retrouver partout.' : ''}`;
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="svName">Nom</label><input type="text" id="svName" maxlength="120" autocomplete="off" value="${esc(suggestName(text))}"></div>
-      <p class="hint">${n} cartes · ${esc(LANGS[S.opts.lang] || S.opts.lang)} · ${esc(COND_SHORT[S.opts.cond] || S.opts.cond)} min · ${modeName}. Les critères sont enregistrés avec la liste.</p>
+  openSheet(T('Enregistrer le deck'), null, api => {
+    const where = D.user ? T('Enregistré sur ton compte ({email}).', { email: esc(D.user.email || '') })
+      : T('Enregistré sur cet appareil.') + (D.state !== 'unavailable' ? ' ' + T('{login} pour le retrouver partout.', { login: `<button class="link-btn link-inline" type="button" id="svLogin">${T('Connecte-toi')}</button>` }) : '');
+    const cardsTxt = n === 1 && I18N.lang !== 'fr' ? T('{n} carte', { n }) : T('{n} cartes', { n });      // le français dit toujours « cartes » ici
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="svName">${T('Nom')}</label><input type="text" id="svName" maxlength="120" autocomplete="off" value="${esc(suggestName(text))}"></div>
+      <p class="hint">${cardsTxt} · ${esc(LANGS[S.opts.lang] || S.opts.lang)} · ${esc(COND_SHORT[S.opts.cond] || S.opts.cond)} min · ${modeName}. ${T('Les critères sont enregistrés avec la liste.')}</p>
       <p class="hint" id="svWhere">${where}</p>`;
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="svGo">Enregistrer</button>');
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="svGo">${T('Enregistrer')}</button>`);
     const input = $('#svName', api.body), go = $('#svGo', api.foot);
     const sync = () => { go.disabled = !input.value.trim(); }; input.oninput = sync;
-    const run = () => { if (go.disabled) return; saveCurrent(input.value.trim()); api.close(); toast(cloudOn() ? 'Deck enregistré sur ton compte' : 'Deck enregistré'); };
+    const run = () => { if (go.disabled) return; saveCurrent(input.value.trim()); api.close(); toast(cloudOn() ? T('Deck enregistré sur ton compte') : T('Deck enregistré')); };
     go.onclick = run; input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); run(); } };
     const lg = $('#svLogin', api.body); if (lg) lg.onclick = () => { api.close(); setTimeout(openAccount, 120); };
   });
@@ -235,39 +237,39 @@ function chartSvg(values, w) {
   const y = v => max === min ? h / 2 : h - pad - (h - 2 * pad) * ((v - min) / span);
   const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
   const last = values.length - 1;
-  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Évolution du prix"><polygon class="ar" points="${pad},${h} ${pts.join(' ')} ${(w - pad).toFixed(1)},${h}" opacity=".55"/><polyline class="ln" points="${pts.join(' ')}"/><circle class="dt" cx="${x(last).toFixed(1)}" cy="${y(values[last]).toFixed(1)}" r="4.5"/></svg>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${T('Évolution du prix')}"><polygon class="ar" points="${pad},${h} ${pts.join(' ')} ${(w - pad).toFixed(1)},${h}" opacity=".55"/><polyline class="ln" points="${pts.join(' ')}"/><circle class="dt" cx="${x(last).toFixed(1)}" cy="${y(values[last]).toFixed(1)}" r="4.5"/></svg>`;
 }
 function openDeckSheet(id) {
   const d = findDeck(id); if (!d) return;
-  openSheet(d.name, `${d.cards} carte${d.cards > 1 ? 's' : ''} · modifié ${relTime(d.updatedAt)}`, api => {
+  openSheet(d.name, TN(d.cards, '{n} carte · modifié {ago}', '{n} cartes · modifié {ago}', { ago: relTime(d.updatedAt) }), api => {
     const series = priceSeries(d.history), lastE = d.history[d.history.length - 1], same = lastE ? d.history.filter(e => sameKind(e, lastE)) : [];
     const rows = d.history.slice().reverse().slice(0, 14).map((e, i, arr) => {
       const p = arr.slice(i + 1).find(x => sameKind(x, e)); const df = p ? e.total - p.total : null;
-      const when = new Date(e.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const when = new Date(e.at).toLocaleString(LOC(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       return `<span class="d">${esc(when)} · ${e.mode === 'cm' ? 'Cardmarket' : e.mode === 'zero' ? 'Zero' : 'Direct'}</span><span class="delta ${df == null || df === 0 ? 'flat' : df < 0 ? 'down' : 'up'}">${df == null || df === 0 ? '' : (df < 0 ? '−' : '+') + fmt(Math.abs(df))}</span><span class="t">${fmt(e.total)}</span>`;
     }).join('');
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">Nom</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
-      <button class="coll-open dk-cover" type="button" id="dkCover"><span class="cover-th" aria-hidden="true"></span><span class="coll-t"><b>Image du deck</b><span id="dkCoverSub"></span></span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button>
-      <label class="switch-row" for="dkMount"><span class="t"><b>Deck complet</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">${T('Nom')}</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
+      <button class="coll-open dk-cover" type="button" id="dkCover"><span class="cover-th" aria-hidden="true"></span><span class="coll-t"><b>${T('Image du deck')}</b><span id="dkCoverSub"></span></span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button>
+      <label class="switch-row" for="dkMount"><span class="t"><b>${T('Deck complet')}</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
       <div class="dk-val" id="dkVal"></div>
-      <div class="sec-title">Historique des prix</div>
-      ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${series.length} relevés · de ${esc(fmt(Math.min(...series)))} à ${esc(fmt(Math.max(...series)))}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
-      ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.</p>'}
-      <button class="link-btn link-inline" type="button" id="dkEdit">Modifier les cartes (éditeur)</button>
-      <button class="link-btn link-inline" type="button" id="dkDup">Dupliquer ce deck</button>
-      <button class="link-btn link-inline" type="button" id="dkOwn">Ajouter ses cartes à ma collection</button>`;
-    api.setFoot('<button class="btn ghost-danger" type="button" id="dkDel">Supprimer</button><button class="btn" type="button" id="dkOpen">Ouvrir</button>');
+      <div class="sec-title">${T('Historique des prix')}</div>
+      ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${T('{n} relevés · de {min} à {max}', { n: series.length, min: esc(fmt(Math.min(...series))), max: esc(fmt(Math.max(...series))) })}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
+      ${rows ? `<div class="hist">${rows}</div>` : '<p class="hint">' + T('Aucun relevé. Lance une recherche avec ce deck chargé, en mode live : le prix est enregistré à chaque fois.') + '</p>'}
+      <button class="link-btn link-inline" type="button" id="dkEdit">${T('Modifier les cartes (éditeur)')}</button>
+      <button class="link-btn link-inline" type="button" id="dkDup">${T('Dupliquer ce deck')}</button>
+      <button class="link-btn link-inline" type="button" id="dkOwn">${T('Ajouter ses cartes à ma collection')}</button>`;
+    api.setFoot(`<button class="btn ghost-danger" type="button" id="dkDel">${T('Supprimer')}</button><button class="btn" type="button" id="dkOpen">${T('Ouvrir')}</button>`);
     const name = $('#dkName', api.body);
     name.onchange = () => {
       const v = name.value.trim(); if (!v) { name.value = d.name; return; }
-      if (v !== d.name) { const cur = findDeck(id); if (cur) { putDeck(id, deckDoc({ ...cur, name: v })); $('.sheet-head h2', api.wrap).textContent = v; toast('Deck renommé'); } }
+      if (v !== d.name) { const cur = findDeck(id); if (cur) { putDeck(id, deckDoc({ ...cur, name: v })); $('.sheet-head h2', api.wrap).textContent = v; toast(T('Deck renommé')); } }
     };
     name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } };
     $('#dkOpen', api.foot).onclick = () => { api.close(); loadDeck(id); };
     const paintCover = () => {      // carte de présentation : celle choisie, sinon le commandant, sinon la plus chère
       const cur = findDeck(id) || d, cv = dkCoverCard(cur.text, dmOf), im = coverUrl(cv).replace('/normal/', '/small/');
       $('.cover-th', api.body).innerHTML = im ? `<img alt="" src="${esc(im)}">` : `<b>${esc((cur.name.trim()[0] || '?').toUpperCase())}</b>`;
-      $('#dkCoverSub', api.body).textContent = cv ? `${cv.name} · ${cv.auto ? 'automatique' : 'choisie'}` : 'Aucune carte';
+      $('#dkCoverSub', api.body).textContent = cv ? `${cv.name} · ${cv.auto ? T('automatique') : T('choisie')}` : T('Aucune carte');
     };
     paintCover(); $('#dkCover', api.body).onclick = () => openCoverPicker(id, paintCover);
     dmLoad().then(() => dmFetch([dkCoverCard((findDeck(id) || d).text, dmOf)].filter(Boolean))).then(ok => ok && paintCover());
@@ -275,27 +277,27 @@ function openDeckSheet(id) {
     const valEl = $('#dkVal', api.body);      // valeur estimée du deck (Cardmarket), même monté : pas besoin de chercher des offres
     const paintVal = fetched => {
       const cur = findDeck(id) || d, v = dkValue(cur.text, dmOf), fk = deckFmt(cur);
-      valEl.innerHTML = v.known ? `<b>${esc(dkValueText(v))}</b><span>valeur estimée${fk ? ' · ' + DK_FORMATS[fk].label : ''} · prix tendance Cardmarket de ${v.known} carte${v.known > 1 ? 's' : ''} sur ${v.total} (terrains de base exclus, cartes possédées comprises)</span>`
-        : v.missing.length && !fetched ? '<span>Estimation de la valeur du deck…</span>' : '<span>Valeur estimée indisponible (prix des cartes non lus : réessaie en ligne).</span>';
+      valEl.innerHTML = v.known ? `<b>${esc(dkValueText(v))}</b><span>${T('valeur estimée')}${fk ? ' · ' + DK_FORMATS[fk].label : ''} · ${TN(v.known, 'prix tendance Cardmarket de {n} carte sur {total} (terrains de base exclus, cartes possédées comprises)', 'prix tendance Cardmarket de {n} cartes sur {total} (terrains de base exclus, cartes possédées comprises)', { total: v.total })}</span>`
+        : v.missing.length && !fetched ? '<span>' + T('Estimation de la valeur du deck…') + '</span>' : '<span>' + T('Valeur estimée indisponible (prix des cartes non lus : réessaie en ligne).') + '</span>';
     };
     paintVal(false); dmLoad().then(() => { paintVal(false); return dmFetch(dkValue((findDeck(id) || d).text, dmOf).missing); }).then(() => paintVal(true));
     $('#dkOwn', api.body).onclick = () => {
       const cur = findDeck(id) || d, cards = parseDeck(cur.text).cards; if (!cards.length) return;
       const before = COLL.map, n = cards.reduce((a, c) => a + c.qty, 0);
       collAdd(cards.map(c => ({ k: ownKey(c.name), n: c.name, q: c.qty })), 'add'); api.close(); haptic('ok');
-      toast(`${nf0(n)} carte${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à ta collection (terrains de base exclus)`, { label: 'Annuler', fn: () => { COLL.map = before; collChanged(); } });
+      toast(TN(n, '{n} carte ajoutée à ta collection (terrains de base exclus)', '{n} cartes ajoutées à ta collection (terrains de base exclus)'), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); } });
       collEnrich();
     };
     $('#dkEdit', api.body).onclick = () => { api.close(); setTimeout(() => openBuilder({ id }), 200); };
     $('#dkDup', api.body).onclick = () => {
       const cur = findDeck(id) || d, nid = newIdFor();
-      putDeck(nid, deckDoc({ ...cur, name: (cur.name + ' (copie)').slice(0, 120), history: [], createdAt: Date.now() }));
-      api.close(); toast('Deck dupliqué');
+      putDeck(nid, deckDoc({ ...cur, name: (cur.name + ' ' + T('(copie)')).slice(0, 120), history: [], createdAt: Date.now() }));
+      api.close(); toast(T('Deck dupliqué'));
     };
     const del = $('#dkDel', api.foot); let armed = 0;
     del.onclick = () => {
-      if (!armed) { armed = setTimeout(() => { armed = 0; del.textContent = 'Supprimer'; del.className = 'btn ghost-danger'; }, 4000); del.textContent = 'Confirmer'; del.className = 'btn danger'; return; }
-      clearTimeout(armed); removeDeck(id); api.close(); toast('Deck supprimé');
+      if (!armed) { armed = setTimeout(() => { armed = 0; del.textContent = T('Supprimer'); del.className = 'btn ghost-danger'; }, 4000); del.textContent = T('Confirmer'); del.className = 'btn danger'; return; }
+      clearTimeout(armed); removeDeck(id); api.close(); toast(T('Deck supprimé'));
     };
   });
 }
@@ -310,9 +312,9 @@ function setDeckCover(id, name) {
 /** Feuille : toutes les cartes du deck (commandant d'abord, puis les plus chères) ; toucher une carte la choisit. done : rappelé après le choix. */
 function openCoverPicker(id, done) {
   const d0 = findDeck(id); if (!d0) return;
-  openSheet('Image du deck', 'Touche la carte qui illustrera ce deck', api => {
-    api.body.innerHTML = '<div class="field-in"><label class="label" for="cvQ">Chercher dans le deck</label><input type="search" id="cvQ" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Nom de la carte"></div><div class="cv-grid" id="cvGrid"></div>';
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn ghost" type="button" id="cvAuto">Automatique</button>');
+  openSheet(T('Image du deck'), T('Touche la carte qui illustrera ce deck'), api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="cvQ">${T('Chercher dans le deck')}</label><input type="search" id="cvQ" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${T('Nom de la carte')}"></div><div class="cv-grid" id="cvGrid"></div>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn ghost" type="button" id="cvAuto">${T('Automatique')}</button>`);
     const q = $('#cvQ', api.body), grid = $('#cvGrid', api.body);
     const pool = () => {
       const t = (findDeck(id) || d0).text, pd = parseDeck(t), cm = new Set(commanderKeys(t)), seen = new Set(), out = [];
@@ -323,13 +325,13 @@ function openCoverPicker(id, done) {
     const paint = () => {
       const cur = dkCoverCard((findDeck(id) || d0).text, dmOf), chosen = cur && !cur.auto ? cur.key : '', f = q.value.trim().toLowerCase();
       const list = pool().filter(c => !f || c.name.toLowerCase().includes(f)).slice(0, 150);
-      grid.innerHTML = list.map(c => { const im = coverImg(c); return `<button type="button" class="cv-card" data-n="${esc(c.name)}" aria-pressed="${c.key === chosen}" aria-label="${esc(c.name)}${c.cmd ? ', commandant' : ''}"><span class="dvc-art" style="--h:${hash32(c.key) % 360}"><b>${esc((c.name.trim()[0] || '?').toUpperCase())}</b><i>${esc(c.name)}</i>${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span></button>`; }).join('') || '<p class="hint">Aucune carte de ce nom.</p>';
+      grid.innerHTML = list.map(c => { const im = coverImg(c); return `<button type="button" class="cv-card" data-n="${esc(c.name)}" aria-pressed="${c.key === chosen}" aria-label="${c.cmd ? T('{name}, commandant', { name: esc(c.name) }) : esc(c.name)}"><span class="dvc-art" style="--h:${hash32(c.key) % 360}"><b>${esc((c.name.trim()[0] || '?').toUpperCase())}</b><i>${esc(c.name)}</i>${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span></button>`; }).join('') || '<p class="hint">' + T('Aucune carte de ce nom.') + '</p>';
     };
     grid.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
     grid.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
     q.oninput = paint; paint();
     dmLoad().then(() => dmFetch(pool())).then(ok => ok && paint());      // images des cartes pas encore connues
-    const pick = name => { setDeckCover(id, name); haptic('ok'); api.close(); toast(name ? 'Image du deck choisie' : 'Image automatique'); if (done) done(); };
+    const pick = name => { setDeckCover(id, name); haptic('ok'); api.close(); toast(name ? T('Image du deck choisie') : T('Image automatique')); if (done) done(); };
     grid.onclick = e => { const b = e.target.closest('.cv-card'); if (b) pick(b.dataset.n); };
     $('#cvAuto', api.foot).onclick = () => pick('');
   });
@@ -337,7 +339,7 @@ function openCoverPicker(id, done) {
 
 /* ── Feuille : compte ─────────────────────────────────────────────────────────────────────── */
 function openAccount(view) {
-  openSheet('Compte', null, api => { D.account = { api, mode: 'in', del: view === 'delete' }; paintAccount(); });
+  openSheet(T('Compte'), null, api => { D.account = { api, mode: 'in', del: view === 'delete' }; paintAccount(); });
 }
 function accountOpen() { return D.account && sheets.indexOf(D.account.api) >= 0; }
 function paintAccount() {
@@ -345,11 +347,11 @@ function paintAccount() {
   const { api } = D.account, b = api.body;
   api.setFoot('');
   if (D.user) return D.account.del ? paintAccountDelete(api) : paintAccountIn(api);
-  if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>Chargement…</span></div>'; return; }
+  if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Chargement…') + '</span></div>'; return; }
   if (D.state === 'unavailable') {
     b.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(D.err)}</span></div>
-      <p class="hint">Tes decks restent enregistrés sur cet appareil. Le compte permet de les retrouver sur tous tes appareils.</p>
-      <button class="btn ghost small" type="button" id="acRetry" style="align-self:flex-start">Réessayer</button>`;
+      <p class="hint">${T('Tes decks restent enregistrés sur cet appareil. Le compte permet de les retrouver sur tous tes appareils.')}</p>
+      <button class="btn ghost small" type="button" id="acRetry" style="align-self:flex-start">${T('Réessayer')}</button>`;
     $('#acRetry', b).onclick = () => { connectCloud(); };
     return;
   }
@@ -357,53 +359,53 @@ function paintAccount() {
 }
 function paintAuthForm(api) {
   const b = api.body, st = D.account, up = st.mode === 'up';
-  b.innerHTML = `<div class="auth">${st.del ? '<div class="status" data-ok="0"><span class="dot"></span><span>Connecte-toi au compte à supprimer.</span></div>' : ''}
-    <div class="seg" id="acSeg" role="radiogroup" aria-label="Connexion ou création de compte"></div>
+  b.innerHTML = `<div class="auth">${st.del ? '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Connecte-toi au compte à supprimer.') + '</span></div>' : ''}
+    <div class="seg" id="acSeg" role="radiogroup" aria-label="${T('Connexion ou création de compte')}"></div>
     <form id="acForm" novalidate>
       <div class="field-in"><label class="label" for="acEmail">Email</label><input type="email" id="acEmail" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(st.email || '')}"></div>
-      <div class="field-in"><label class="label" for="acPw">Mot de passe</label><input type="password" id="acPw" autocomplete="${up ? 'new-password' : 'current-password'}" ${up ? 'minlength="6"' : ''}>${up ? '<span class="hint">6 caractères minimum.</span>' : ''}</div>
+      <div class="field-in"><label class="label" for="acPw">${T('Mot de passe')}</label><input type="password" id="acPw" autocomplete="${up ? 'new-password' : 'current-password'}" ${up ? 'minlength="6"' : ''}>${up ? '<span class="hint">' + T('6 caractères minimum.') + '</span>' : ''}</div>
       <div class="auth-msg" id="acMsg" role="alert" hidden></div>
-      <button class="btn block" type="submit" id="acGo">${up ? 'Créer mon compte' : 'Me connecter'}</button>
-      ${up ? '' : '<button class="link-btn link-inline" type="button" id="acForgot">Mot de passe oublié ?</button>'}
+      <button class="btn block" type="submit" id="acGo">${up ? T('Créer mon compte') : T('Me connecter')}</button>
+      ${up ? '' : '<button class="link-btn link-inline" type="button" id="acForgot">' + T('Mot de passe oublié ?') + '</button>'}
     </form>
-    <div class="divider"><span>ou</span></div>
-    <button class="btn ghost block" type="button" id="acGoogle">Continuer avec Google</button>
-    <p class="hint">Tes decks sont enregistrés sur ton compte. Ton token CardTrader reste sur cet appareil.</p></div>`;
-  mountSeg($('#acSeg', b), [{ v: 'in', label: 'Connexion' }, { v: 'up', label: 'Créer un compte' }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
+    <div class="divider"><span>${T('ou')}</span></div>
+    <button class="btn ghost block" type="button" id="acGoogle">${T('Continuer avec Google')}</button>
+    <p class="hint">${T('Tes decks sont enregistrés sur ton compte. Ton token CardTrader reste sur cet appareil.')}</p></div>`;
+  mountSeg($('#acSeg', b), [{ v: 'in', label: T('Connexion') }, { v: 'up', label: T('Créer un compte') }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
-  const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? 'Créer mon compte' : 'Me connecter'); };
-  const done = () => { api.close(); toast('Connecté'); };
+  const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? T('Créer mon compte') : T('Me connecter')); };
+  const done = () => { api.close(); toast(T('Connecté')); };
   const fail = e => { busy(false, true); msg(authMessage(e)); };
   $('#acForm', b).onsubmit = async e => {
     e.preventDefault(); msg('');
     const email = $('#acEmail', b).value.trim(), pw = $('#acPw', b).value;
-    if (!email) return msg('Saisis ton adresse email.'); if (!pw) return msg('Saisis ton mot de passe.');
-    if (up && pw.length < 6) return msg('Mot de passe trop court : 6 caractères minimum.');
-    busy(true, up ? 'Création…' : 'Connexion…');
+    if (!email) return msg(T('Saisis ton adresse email.')); if (!pw) return msg(T('Saisis ton mot de passe.'));
+    if (up && pw.length < 6) return msg(T('Mot de passe trop court : 6 caractères minimum.'));
+    busy(true, up ? T('Création…') : T('Connexion…'));
     try { await (up ? D.cloud.signUp(email, pw) : D.cloud.signIn(email, pw)); done(); } catch (err) { fail(err); }
   };
   $('#acGoogle', b).onclick = async () => { msg(''); busy(true); try { await D.cloud.google(); done(); } catch (err) { fail(err); } };
   const fg = $('#acForgot', b);
   if (fg) fg.onclick = async () => {
-    const email = $('#acEmail', b).value.trim(); if (!email) return msg('Saisis d\'abord ton adresse email.');
-    try { await D.cloud.reset(email); msg(`Email de réinitialisation envoyé à ${email}. Pense à vérifier les courriers indésirables.`, true); }
-    catch (err) { const t = authMessage(err); msg(err && err.code === 'auth/user-not-found' ? 'Si un compte existe avec cet email, un message vient d\'être envoyé.' : t, err && err.code === 'auth/user-not-found'); }
+    const email = $('#acEmail', b).value.trim(); if (!email) return msg(T('Saisis d\'abord ton adresse email.'));
+    try { await D.cloud.reset(email); msg(T('Email de réinitialisation envoyé à {email}. Pense à vérifier les courriers indésirables.', { email }), true); }
+    catch (err) { const t = authMessage(err); msg(err && err.code === 'auth/user-not-found' ? T('Si un compte existe avec cet email, un message vient d\'être envoyé.') : t, err && err.code === 'auth/user-not-found'); }
   };
 }
 function paintAccountIn(api) {
   const u = D.user, b = api.body, local = importable().length;
   const n = D.list.length;
-  const state = D.listErr ? D.listErr : D.pending ? 'Synchronisation…' : `Synchronisé · ${n} deck${n > 1 ? 's' : ''}`;
-  b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || 'Compte')}</b><span id="acState">${esc(state)}</span></div></div>
-    ${local ? `<div class="import-row"><span>${local} deck${local > 1 ? 's' : ''} sur cet appareil</span><button class="btn" type="button" id="acImport">Importer</button></div>` : ''}
-    <p class="hint">Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.</p>
-    ${CTX.proxy ? `<div class="sec-title">Accès au serveur</div>
-      ${CTX.needsLogin ? '<div class="status" data-ok="1"><span class="dot"></span><span>Le serveur est réservé aux comptes autorisés : plus de clé à saisir.</span></div>' : '<p class="hint">Pour réserver ce serveur à ton compte (et supprimer la clé APP_KEY), ajoute cet identifiant dans les variables d\'environnement Hostinger sous le nom <b>ALLOWED_UIDS</b>, puis redéploie.</p>'}
-      <div class="uid-row"><code id="acUid">${esc(u.uid)}</code><button class="btn ghost small" type="button" id="acCopyUid">Copier</button></div>` : ''}`;
-  b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">Supprimer mon compte</button>');
+  const state = D.listErr ? D.listErr : D.pending ? T('Synchronisation…') : TN(n, 'Synchronisé · {n} deck', 'Synchronisé · {n} decks');
+  b.innerHTML = `<div class="who"><span class="who-av">${esc(((u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(u.email || u.displayName || T('Compte'))}</b><span id="acState">${esc(state)}</span></div></div>
+    ${local ? `<div class="import-row"><span>${TN(local, '{n} deck sur cet appareil', '{n} decks sur cet appareil')}</span><button class="btn" type="button" id="acImport">${T('Importer')}</button></div>` : ''}
+    <p class="hint">${T('Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.')}</p>
+    ${CTX.proxy ? `<div class="sec-title">${T('Accès au serveur')}</div>
+      ${CTX.needsLogin ? '<div class="status" data-ok="1"><span class="dot"></span><span>' + T('Le serveur est réservé aux comptes autorisés : plus de clé à saisir.') + '</span></div>' : '<p class="hint">' + T('Pour réserver ce serveur à ton compte (et supprimer la clé APP_KEY), ajoute cet identifiant dans les variables d\'environnement Hostinger sous le nom <b>ALLOWED_UIDS</b>, puis redéploie.') + '</p>'}
+      <div class="uid-row"><code id="acUid">${esc(u.uid)}</code><button class="btn ghost small" type="button" id="acCopyUid">${T('Copier')}</button></div>` : ''}`;
+  b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">' + T('Supprimer mon compte') + '</button>');
   $('#acDel', b).onclick = () => { D.account.del = true; paintAccount(); };
-  api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">Se déconnecter</button>');
-  $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast('Déconnecté'); } catch (err) { e.target.disabled = false; toast('Déconnexion impossible'); } };
+  api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">' + T('Se déconnecter') + '</button>');
+  $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast(T('Déconnecté')); } catch (err) { e.target.disabled = false; toast(T('Déconnexion impossible')); } };
   const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
   const cu = $('#acCopyUid', b); if (cu) cu.onclick = () => copyText(u.uid);
 }
@@ -412,21 +414,21 @@ function paintAccountIn(api) {
 function paintAccountDelete(api) {
   const b = api.body, pw = D.cloud.provider() === 'password';
   b.innerHTML = `<div class="auth">
-    <div class="status" data-ok="0"><span class="dot"></span><span><b>Suppression définitive</b> de ${esc(D.user.email || 'ce compte')}</span></div>
-    <p class="hint">Tout ce que le compte a en ligne est effacé : decks, collection, historique de valeur, liste d'échange et liens partagés. C'est irréversible.</p>
-    <div class="switch-row"><span class="t"><b>Effacer aussi cet appareil</b><span class="hint">Collection, decks et réglages gardés sur ce téléphone ou cet ordinateur.</span></span><label class="switch"><input type="checkbox" id="acWipeLocal" checked><i></i></label></div>
-    ${pw ? '<div class="field-in"><label class="label" for="acDelPw">Mot de passe, pour confirmer</label><input type="password" id="acDelPw" autocomplete="current-password"></div>' : '<p class="hint">Google te demandera de confirmer ton identité.</p>'}
+    <div class="status" data-ok="0"><span class="dot"></span><span>${T('<b>Suppression définitive</b> de {who}', { who: esc(D.user.email || T('ce compte')) })}</span></div>
+    <p class="hint">${T('Tout ce que le compte a en ligne est effacé : decks, collection, historique de valeur, liste d\'échange et liens partagés. C\'est irréversible.')}</p>
+    <div class="switch-row"><span class="t"><b>${T('Effacer aussi cet appareil')}</b><span class="hint">${T('Collection, decks et réglages gardés sur ce téléphone ou cet ordinateur.')}</span></span><label class="switch"><input type="checkbox" id="acWipeLocal" checked><i></i></label></div>
+    ${pw ? '<div class="field-in"><label class="label" for="acDelPw">' + T('Mot de passe, pour confirmer') + '</label><input type="password" id="acDelPw" autocomplete="current-password"></div>' : '<p class="hint">' + T('Google te demandera de confirmer ton identité.') + '</p>'}
     <div class="auth-msg" id="acMsg" role="alert" hidden></div></div>`;
-  api.setFoot('<button class="btn ghost" type="button" id="acDelNo">Annuler</button><button class="btn danger" type="button" id="acDelGo">Supprimer définitivement</button>');
+  api.setFoot(`<button class="btn ghost" type="button" id="acDelNo">${T('Annuler')}</button><button class="btn danger" type="button" id="acDelGo">${T('Supprimer définitivement')}</button>`);
   const msg = t => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; };
   $('#acDelNo', api.foot).onclick = () => { D.account.del = false; paintAccount(); };
   $('#acDelGo', api.foot).onclick = async e => {
     const btn = e.target, local = $('#acWipeLocal', b).checked, p = pw ? $('#acDelPw', b).value : null;
-    if (pw && !p) return msg('Saisis ton mot de passe.');
-    msg(''); btn.disabled = true; btn.textContent = 'Vérification…';
+    if (pw && !p) return msg(T('Saisis ton mot de passe.'));
+    msg(''); btn.disabled = true; btn.textContent = T('Vérification…');
     try { await D.cloud.reauth(p); }
-    catch (err) { btn.disabled = false; btn.textContent = 'Supprimer définitivement'; const t = authMessage(err); if (t) msg(t); return; }
-    btn.textContent = 'Suppression…';
+    catch (err) { btn.disabled = false; btn.textContent = T('Supprimer définitivement'); const t = authMessage(err); if (t) msg(t); return; }
+    btn.textContent = T('Suppression…');
     const uid = D.uid;
     // Plus aucune synchronisation pendant l'effacement : sinon une copie locale pourrait être renvoyée dans le compte.
     if (D.unsub) { try { D.unsub(); } catch (x) { /* ignore */ } D.unsub = null; }
@@ -434,12 +436,12 @@ function paintAccountDelete(api) {
     try { await D.cloud.wipe(uid); await D.cloud.deleteUser(); }
     catch (err) {
       D.uid = uid; onUser(D.user);      // rien de cassé : on reprend la synchronisation
-      btn.disabled = false; btn.textContent = 'Supprimer définitivement';
-      msg(err && err.code === 'auth/requires-recent-login' ? 'Reconnecte-toi puis recommence.' : err && /^auth\//.test(err.code || '') ? authMessage(err) : 'Suppression impossible pour l\'instant (connexion ?). Rien n\'a été perdu de ce qui reste : réessaie.');
+      btn.disabled = false; btn.textContent = T('Supprimer définitivement');
+      msg(err && err.code === 'auth/requires-recent-login' ? T('Reconnecte-toi puis recommence.') : err && /^auth\//.test(err.code || '') ? authMessage(err) : T('Suppression impossible pour l\'instant (connexion ?). Rien n\'a été perdu de ce qui reste : réessaie.'));
       return;
     }
     api.close();
-    if (local) wipeDevice(); else toast('Compte supprimé');
+    if (local) wipeDevice(); else toast(T('Compte supprimé'));
   };
 }
 /** Efface tout ce que l'appli garde sur cet appareil (réglages, collection, decks, caches), puis recharge. */
@@ -447,7 +449,7 @@ async function wipeDevice() {
   try { Object.keys(localStorage).filter(k => /^deckdeal[:-]/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
   try { await Cache.clear(); } catch (e) { /* ignore */ }
   try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith('deckdeal-')) await caches.delete(k); } catch (e) { /* ignore */ }
-  toast('Données effacées'); setTimeout(() => location.reload(), 700);
+  toast(T('Données effacées')); setTimeout(() => location.reload(), 700);
 }
 
 /** Envoie les decks de cet appareil dans le compte. Les copies locales ne sont retirées qu'une fois le serveur d'accord. */
@@ -455,13 +457,13 @@ function importLocal() {
   const todo = importable(); if (!cloudOn() || !todo.length) return;
   const uid = D.user.uid, items = todo.map(d => ({ localId: d.id, id: D.cloud.newId(uid), data: stripDeck(d) }));
   items.forEach(x => D.importing.add(x.localId)); renderDecks(); paintAccount();
-  toast('Import en cours…');
+  toast(T('Import en cours…'));
   D.cloud.saveMany(uid, items.map(x => ({ id: x.id, data: x.data }))).then(() => {
     const gone = new Set(items.map(x => x.localId));
     gone.forEach(i => D.importing.delete(i));
     D.localList = D.localList.filter(d => !gone.has(d.id));
     localWrite(D.localList.map(d => ({ id: d.id, ...stripDeck(d) })));
-    renderDecks(); paintAccount(); toast(`${items.length} deck${items.length > 1 ? 's' : ''} importé${items.length > 1 ? 's' : ''}`);
+    renderDecks(); paintAccount(); toast(TN(items.length, '{n} deck importé', '{n} decks importés'));
   }).catch(err => { items.forEach(x => D.importing.delete(x.localId)); renderDecks(); paintAccount(); toast(deckErr(err)); });
 }
 
@@ -481,7 +483,7 @@ function onUser(user) {
       if (S.deckId && !pending && !D.list.some(d => d.id === S.deckId)) S.deckId = null;
       renderDecks(); renderAccountBtn(); paintAccount(); refreshDeck();
     }, err => {
-      D.listErr = err && err.code === 'permission-denied' ? 'Règles Firestore à publier' : 'Synchronisation impossible';
+      D.listErr = err && err.code === 'permission-denied' ? T('Règles Firestore à publier') : T('Synchronisation impossible');
       console.error(err); renderDecks(); paintAccount();
       toast(deckErr(err));
     });
@@ -496,7 +498,7 @@ async function connectCloud() {
   try { D.cloud = await loadCloud(); }
   catch (e) {
     D.state = 'unavailable';
-    D.err = e && e.code === 'env' ? e.message : 'Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Les decks restent enregistrés sur cet appareil.';
+    D.err = e && e.code === 'env' ? e.message : T('Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Les decks restent enregistrés sur cet appareil.');
     D.authReady = true; renderAccountBtn(); renderDecks(); paintAccount(); paintSync(); collPaintHead();
     return;
   }
@@ -515,11 +517,11 @@ function initDecks() {
   };
   $('#btnAccount').onclick = openAccount;
   $('#btnDecks').onclick = openDecks;
-  $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast('Deck mis à jour'); } else openSaveSheet(); };
+  $('#btnSave').onclick = () => { if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast(T('Deck mis à jour')); } else openSaveSheet(); };
   $('#btnViewer').onclick = () => openDeckViewer({ live: true });
   $('#btnSave2').onclick = () => {
     if (!S.run) return;
-    if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast(snapshotEntry() ? 'Deck et prix mis à jour' : 'Deck mis à jour'); } else openSaveSheet();
+    if (S.deckId && findDeck(S.deckId)) { saveCurrent(); toast(snapshotEntry() ? T('Deck et prix mis à jour') : T('Deck mis à jour')); } else openSaveSheet();
   };
   $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
   renderAccountBtn(); renderDecks(); dmLoad();

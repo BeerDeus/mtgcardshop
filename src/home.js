@@ -7,7 +7,7 @@
    Tout est repeint en différé (homeSoon) quand la collection, les decks, les prix ou la liste d'échange changent. */
 const HM = { t: 0, v: null, raf: 0, best: null, bestSig: '', edhAsk: 0, covers: '', lands: false };
 const HM_LANDS = [['W', 'plains', 'Plains'], ['U', 'island', 'Island'], ['B', 'swamp', 'Swamp'], ['R', 'mountain', 'Mountain'], ['G', 'forest', 'Forest']];
-const hmEur = c => Math.round(c / 100).toLocaleString('fr-FR') + ' €';
+const hmEur = c => I18N.lang === 'fr' ? Math.round(c / 100).toLocaleString('fr-FR') + ' €' : new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(c / 100));
 /** Petite image Scryfall → recadrage de l'illustration (même chemin, autre taille). */
 const hmArt = u => String(u || '').replace('/small/', '/art_crop/').replace('/normal/', '/art_crop/');
 
@@ -36,16 +36,16 @@ function homePaint() {
   if (n) {
     const v = homeValue();
     if (v > 0) homeCount(val, v); else { HM.v = null; val.textContent = nf0(n); }
-    cnt.textContent = v > 0 ? `${nf0(n)} carte${n > 1 ? 's' : ''}` : `carte${n > 1 ? 's' : ''}`;
+    cnt.textContent = v > 0 ? TN(n, '{n} carte', '{n} cartes') : TN(n, 'carte', 'cartes');
     const h = histDelta(VAL.hist, 7);
-    if (h && Math.abs(h.d) >= 100) { dl.hidden = false; dl.className = h.d < 0 ? 'down' : ''; dl.textContent = `${h.d < 0 ? '▼ −' : '▲ +'}${hmEur(Math.abs(h.d))} · 7 j`; } else dl.hidden = true;
-  } else { HM.v = null; val.textContent = 'Commencer'; cnt.textContent = 'Ajoute tes cartes'; dl.hidden = true; }
-  orb.setAttribute('aria-label', n ? `Ma collection : ${val.textContent}, ${nf0(n)} cartes` : 'Ma collection : ajoute tes cartes');
+    if (h && Math.abs(h.d) >= 100) { dl.hidden = false; dl.className = h.d < 0 ? 'down' : ''; dl.textContent = T('{d} · 7 j', { d: (h.d < 0 ? '▼ −' : '▲ +') + hmEur(Math.abs(h.d)) }); } else dl.hidden = true;
+  } else { HM.v = null; val.textContent = T('Commencer'); cnt.textContent = T('Ajoute tes cartes'); dl.hidden = true; }
+  orb.setAttribute('aria-label', n ? T('Ma collection : {v}, {n} cartes', { v: val.textContent, n: nf0(n) }) : T('Ma collection : ajoute tes cartes'));
   homeLands();
   // Mes decks
   const list = allDecks().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), top = list.slice(0, 3);
   $('#hmDecksN').textContent = list.length ? nf0(list.length) : '';
-  { const ds = $('#decksSub'); ds.hidden = !!list.length && !/complet|Chargement/.test(ds.textContent); }      // « 7 decks » répète le nombre du titre : seulement « · 2 complets »
+  { const ds = $('#decksSub'); ds.hidden = !!list.length && !/complet|Chargement| · |…/.test(ds.textContent); }      // « 7 decks » répète le nombre du titre : seulement « · 2 complets » (« · » et « … » : mêmes cas dans toutes les langues)
   $('#hmDeckNames').textContent = top.length ? top.map(d => d.name).join(', ') + (list.length > 3 ? '…' : '') : '';
   const fan = $$('#hmFan i'), need = [];
   fan.forEach((el, i) => {
@@ -59,15 +59,15 @@ function homePaint() {
   // Échange
   try {
     const st = trState(), ts = $('#hmTradeSub');
-    ts.textContent = n || st.want.length ? `${nf0(st.have.length)} doublon${st.have.length > 1 ? 's' : ''} · ${nf0(st.want.length)} recherchée${st.want.length > 1 ? 's' : ''}` : 'Doublons et cartes recherchées';
+    ts.textContent = n || st.want.length ? TN(st.have.length, '{n} doublon', '{n} doublons') + ' · ' + TN(st.want.length, '{n} recherchée', '{n} recherchées') : T('Doublons et cartes recherchées');
     $('#hmLive').hidden = !TR.share;
   } catch (e) { /* liste d'échange pas encore prête */ }
   // Deck à monter
   homeBuild();
   // Nouveau panier
   const draft = !S.isSample && S.deck && S.deck.cards.length;
-  $('#btnNewLabel').textContent = draft ? `Reprendre ma liste · ${nf0(S.deck.cards.length)} carte${S.deck.cards.length > 1 ? 's' : ''}` : 'Coller une liste';
-  $('#btnNew2Label').textContent = draft ? 'Coller' : 'Exemple';
+  $('#btnNewLabel').textContent = draft ? T('Reprendre ma liste · {cards}', { cards: TN(S.deck.cards.length, '{n} carte', '{n} cartes') }) : T('Coller une liste');
+  $('#btnNew2Label').textContent = draft ? T('Coller') : T('Exemple');
 }
 /** Illustrations des terrains de base : celles de la collection si elle les a, sinon la fiche Scryfall lue une fois par la file de l'appli
  *  (cache de l'appareil, pause Scryfall respectée) ; en attendant, un dégradé aux couleurs du terrain. */
@@ -96,10 +96,10 @@ function homeCovers(decks) {
 /** Deck à monter : parmi les decks EDHREC, celui dont la collection couvre la plus grande part (fichier EDHREC chargé en différé, seulement s'il y a une collection). */
 function homeBuild() {
   const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), n = collCount();
-  if (!n) { pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; HM.best = null; return; }
+  if (!n) { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); HM.best = null; return; }
   if (!EDH.data) {
     if (!EDH.p && !EDH.err && !HM.edhAsk) HM.edhAsk = setTimeout(() => { edhLoad().then(homeSoon, () => {}); }, 2500);
-    pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; return;
+    pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); return;
   }
   const sig = [COLL.u, n, EDH.at, engSig()].join('|');
   if (sig !== HM.bestSig) {
@@ -110,9 +110,9 @@ function homeBuild() {
     }
   }
   const b = HM.best;
-  if (!b) { pct.textContent = ''; sub.textContent = 'Decks EDHREC comparés à ta collection'; return; }
+  if (!b) { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); return; }
   const p = Math.floor(b.p * 100), name = b.r.cmd.names.join(' + ');
-  pct.textContent = p + ' %'; sub.textContent = `${name} : tu as déjà ${p} % des cartes`;
+  pct.textContent = T('{n} %', { n: p }); sub.textContent = T('{name} : tu as déjà {p} % des cartes', { name, p });
 }
 
 function homeInit() {

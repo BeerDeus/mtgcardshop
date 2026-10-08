@@ -1217,3 +1217,29 @@ test('dkMatch : format et couleurs (toutes celles demandées)', () => {
   assert.equal(C.dkMatch(std, { colors: 'R' }), true); assert.equal(C.dkMatch(std, { colors: 'BR' }), true); assert.equal(C.dkMatch(std, { colors: 'RW' }), false, 'toutes les couleurs');
   assert.equal(C.dkMatch(cmd, { fmt: 'commander', colors: 'WB' }), true); assert.equal(C.dkMatch(none, { colors: 'W' }), false, 'sans terrains de base : aucune couleur');
 });
+
+test('export CSV de la collection (format Moxfield) : relu par l\'import, une ligne par langue', () => {
+  const map = { 'sol ring': { n: 'Sol Ring', q: 3, l: 'fr', x: { fr: 2, en: 1 } }, 'fire': { n: 'Fire // Ice', q: 1 }, 'x': { n: 'Krenko, "Tin" Lord', q: 2, l: 'de' } };
+  const csv = C.collToCsv(map), lines = csv.trim().split('\n');
+  assert.equal(lines[0], 'Count,Tradelist Count,Name,Edition,Condition,Language,Foil');
+  assert.deepEqual(lines.slice(1), ['1,0,Fire // Ice,,Near Mint,,', '2,0,"Krenko, ""Tin"" Lord",,Near Mint,German,', '2,0,Sol Ring,,Near Mint,French,', '1,0,Sol Ring,,Near Mint,English,']);
+  const back = C.parseCollection(csv);
+  assert.equal(back.format, 'csv'); assert.equal(back.copies, 6);
+  const sr = back.items.find(i => i.n === 'Sol Ring'); assert.deepEqual(sr.x, { fr: 2, en: 1 });
+  assert.equal(back.items.find(i => /Krenko/.test(i.n)).n, 'Krenko, "Tin" Lord');
+  assert.equal(C.parseCollection('Quantity,Product Name,Set\n2,Sol Ring,CMM\n').items[0].q, 2, 'TCGplayer : « Product Name »');
+});
+
+test('i18n : T, TN, choix de la langue', () => {
+  const { T, TN, I18N, i18nPick } = C;
+  const all = { en: { 'Bonjour {who}': 'Hello {who}', '{n} carte': '{n} card', '{n} cartes': '{n} cards' } };
+  assert.equal(i18nPick({ nav: 'fr-BE', robot: false, all }), 'fr'); assert.equal(T('Bonjour {who}', { who: 'Ana' }), 'Bonjour Ana');
+  assert.equal(TN(0, '{n} carte', '{n} cartes'), '0 carte'); assert.equal(TN(2, '{n} carte', '{n} cartes'), '2 cartes'); assert.equal(TN(1500, '{n} carte', '{n} cartes'), (1500).toLocaleString('fr-FR') + ' cartes');
+  assert.equal(i18nPick({ nav: 'en-US', robot: false, all }), 'en'); assert.equal(T('Bonjour {who}', { who: 'Ana' }), 'Hello Ana'); assert.equal(T('Inconnu'), 'Inconnu', 'clé absente : français');
+  assert.equal(TN(0, '{n} carte', '{n} cartes'), '0 cards'); assert.equal(TN(1, '{n} carte', '{n} cartes'), '1 card'); assert.equal(TN(1500, '{n} carte', '{n} cartes'), '1,500 cards');
+  assert.equal(i18nPick({ nav: 'de-DE', robot: false, all }), 'en', 'autre langue : anglais');
+  assert.equal(i18nPick({ nav: 'en-US', robot: true, all }), 'fr', 'navigateur de test : français');
+  assert.equal(i18nPick({ nav: 'fr-FR', robot: true, saved: 'en', all }), 'en', 'choix gardé prioritaire');
+  assert.equal(i18nPick({ nav: 'fr-FR', robot: false, saved: 'xx', all }), 'fr', 'langue inconnue ignorée');
+  i18nPick({ nav: 'fr-FR', robot: true, all }); assert.equal(I18N.lang, 'fr');
+});

@@ -35,7 +35,7 @@ function buyDrop(msg) { XS.buy = null; buyWrite(); buyPaint(); if (msg) toast(ms
 function openBuySheet() {
   const b = XS.buy; if (!b) return;
   const rows = b.items.map(i => ({ ...i, a: i.q, have: collQty(i.k) }));
-  openSheet('J\'ai acheté', `Panier du ${new Date(b.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`, api => {
+  openSheet('J\'ai acheté', `Panier du ${new Date(b.at).toLocaleDateString(LOC(), { day: 'numeric', month: 'long' })}`, api => {
     const total = () => rows.reduce((a, r) => a + r.a, 0);
     const paint = () => {
       api.body.innerHTML = `<p class="hint">Ajuste les quantités si tu n'as pas tout pris. Les cartes ajoutées seront déduites des prochaines recherches.</p>

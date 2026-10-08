@@ -1,0 +1,13 @@
+{
+  "appId": "app.manaorbit",
+  "appName": "Mana Orbit",
+  "webDir": "www",
+  "server": {
+    "url": "https://card.m2s-photo.fr",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0b0f1c"
+  }
+}

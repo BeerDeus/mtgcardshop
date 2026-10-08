@@ -1,5 +1,52 @@
 /* ── core.js : logique pure (parse, filtres, optimiseur, démo). Testable sous Node. ───────── */
 
+/* ── Langue de l'interface ─────────────────────────────────────────────────────────────────────
+   Les textes sont écrits en français dans le code. T('Texte {n}', { n }) donne leur traduction dans la langue choisie
+   (dictionnaires src/i18n/<langue>.json, assemblés par build.mjs dans I18N_ALL), sinon le texte tel quel.
+   TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (français : 0 et 1 au singulier ; anglais : 1 seul).
+   Ajouter une langue = un dictionnaire de plus + une entrée dans I18N_LANGS ; rien d'autre à changer. */
+const I18N_LANGS = { fr: 'Français', en: 'English' };
+const I18N = { lang: 'fr', nav: 'fr-FR', dict: null };
+function T(s, v) {
+  let out = I18N.dict && Object.prototype.hasOwnProperty.call(I18N.dict, s) ? I18N.dict[s] : s;
+  if (v) out = out.replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? v[k] : m);
+  return out;
+}
+function TN(n, one, many, v) {
+  const key = I18N.lang === 'fr' ? (n > 1 ? many : one) : (n === 1 ? one : many);
+  return T(key, { n: Number(n || 0).toLocaleString(LOC()), ...v });
+}
+/** Locale des nombres et des dates : fr-FR, ou celle du navigateur pour l'anglais (en-US, en-GB…). */
+const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : /^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB';
+/** Langue : choix gardé, sinon ?lang=xx, sinon celle du téléphone (français → français, toute autre → anglais).
+ *  Navigateurs pilotés par les tests (webdriver, jsdom) : français, sauf choix explicite. */
+function i18nPick(o = {}) {
+  const has = c => Object.prototype.hasOwnProperty.call(I18N_LANGS, c);
+  const nav = o.nav || (typeof navigator !== 'undefined' && (navigator.languages && navigator.languages[0] || navigator.language)) || 'fr-FR';
+  const robot = o.robot != null ? o.robot : typeof navigator !== 'undefined' && (navigator.webdriver || /jsdom/i.test(navigator.userAgent || ''));
+  let code = o.saved && has(o.saved) ? o.saved : o.query && has(o.query) ? o.query : robot ? 'fr' : /^fr(-|$)/i.test(nav) ? 'fr' : 'en';
+  const all = typeof I18N_ALL !== 'undefined' ? I18N_ALL : (o.all || {});
+  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : (all[code] || null);
+  return code;
+}
+// Dans la page : la langue est choisie avant tout le reste (les autres fichiers peuvent appeler T dès leur chargement).
+if (typeof document !== 'undefined' && typeof location !== 'undefined') {
+  let saved = '', q = '';
+  try { q = new URLSearchParams(location.search).get('lang') || ''; if (q && Object.prototype.hasOwnProperty.call(I18N_LANGS, q)) localStorage.setItem('deckdeal:lang', q); else q = ''; } catch (e) { /* ignore */ }
+  try { saved = localStorage.getItem('deckdeal:lang') || ''; } catch (e) { /* ignore */ }
+  i18nPick({ saved: q || saved });
+  try { document.documentElement.lang = I18N.lang; } catch (e) { /* ignore */ }
+}
+/** Textes fixes de la page (body.html) : nœuds texte et attributs lisibles traduits une fois au démarrage. */
+function i18nDom(root) {
+  if (!I18N.dict || !root) return;
+  const tr = s => { const k = s.trim(); return k && Object.prototype.hasOwnProperty.call(I18N.dict, k) ? s.replace(k, I18N.dict[k]) : s; };
+  const w = root.ownerDocument.createTreeWalker(root, 4 /* texte */), nodes = [];
+  while (w.nextNode()) nodes.push(w.currentNode);
+  for (const n of nodes) { if (n.parentNode && /^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) continue; const v = tr(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
+  for (const el of root.querySelectorAll('[aria-label],[placeholder],[title],[alt]')) for (const a of ['aria-label', 'placeholder', 'title', 'alt']) { const v = el.getAttribute(a); if (v) { const t = tr(v); if (t !== v) el.setAttribute(a, t); } }
+}
+
 const CONDITIONS = ['Mint', 'Near Mint', 'Slightly Played', 'Moderately Played', 'Played', 'Heavily Played', 'Poor'];
 const COND_SHORT = { 'Mint': 'MT', 'Near Mint': 'NM', 'Slightly Played': 'SP', 'Moderately Played': 'MP', 'Played': 'PL', 'Heavily Played': 'HP', 'Poor': 'PO' };
 const BASIC_NAMES = new Set(['plains', 'island', 'swamp', 'mountain', 'forest', 'wastes',
@@ -322,7 +369,7 @@ function sanitizeOpts(o) {
 function suggestName(text) {
   const d = parseDeck(text);
   const first = d.cards[0];
-  return first ? first.name.slice(0, NAME_MAX) : 'Nouveau deck';
+  return first ? first.name.slice(0, NAME_MAX) : T('Nouveau deck');
 }
 
 /** Deux relevés sont comparables s'ils portent sur le même mode, le même nombre de cartes trouvées et les mêmes critères. */
@@ -413,25 +460,25 @@ const sumGroup = items => ({ count: items.reduce((a, i) => a + i.q, 0), cost: it
  */
 function groupSnap(items, sort, ref) {
   const list = items.filter(i => !i.sb), side = items.filter(i => i.sb), out = [];
-  const add = (id, label, arr) => { if (arr.length) out.push({ id, label, items: arr, ...sumGroup(arr) }); };
+  const add = (id, label, arr) => { if (arr.length) out.push({ id, label, items: arr, ...sumGroup(arr) }); };      // label : texte affiché (traduit) ; id : stable
   const nf = list.filter(i => i.s === 'nf').sort(byName), rest = list.filter(i => i.s !== 'nf');
   if (sort === 'price') {
     const priced = rest.filter(i => i.s === 'ok').sort((a, b) => (b.c - a.c) || byName(a, b));
-    add('p', 'Du plus cher au moins cher', priced);
-    add('own', 'Dans ta collection', rest.filter(i => i.s === 'own').sort(byName));
-    add('np', ref ? 'Sans prix' : 'Sans offre', rest.filter(i => i.s === 'none' || i.s === 'nohub').sort(byName));
-    add('b', 'Terrains de base', rest.filter(i => i.s === 'basic').sort(byName));
+    add('p', T('Du plus cher au moins cher'), priced);
+    add('own', T('Dans ta collection'), rest.filter(i => i.s === 'own').sort(byName));
+    add('np', T(ref ? 'Sans prix' : 'Sans offre'), rest.filter(i => i.s === 'none' || i.s === 'nohub').sort(byName));
+    add('b', T('Terrains de base'), rest.filter(i => i.s === 'basic').sort(byName));
   } else if (sort === 'type') {
     const by = new Map(TYPE_ORDER.map(t => [t, []]));
     for (const i of rest) by.get(i.s === 'basic' ? 'Terrains' : typeBucket(i.tl)).push(i);
-    for (const t of TYPE_ORDER) add('t-' + t, t, by.get(t).sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byCmcName(a, b)));
+    for (const t of TYPE_ORDER) add('t-' + t, T(t), by.get(t).sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byCmcName(a, b)));
   } else {
     const nonLand = rest.filter(i => !isLand(i)), lands = rest.filter(isLand);
-    for (let m = 0; m <= 7; m++) add('m' + m, m === 7 ? '7 et plus' : String(m), nonLand.filter(i => Math.min(i.cm ?? 0, 7) === m).sort(byName));
-    add('land', 'Terrains', lands.sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byName(a, b)));
+    for (let m = 0; m <= 7; m++) add('m' + m, m === 7 ? T('7 et plus') : String(m), nonLand.filter(i => Math.min(i.cm ?? 0, 7) === m).sort(byName));
+    add('land', T('Terrains'), lands.sort((a, b) => (a.s === 'basic') - (b.s === 'basic') || byName(a, b)));
   }
-  add('sb', 'Réserve', side.sort(byName));        // réserve (Standard) : à part, quel que soit le tri
-  add('nf', 'Introuvables', nf);
+  add('sb', T('Réserve'), side.sort(byName));        // réserve (Standard) : à part, quel que soit le tri
+  add('nf', T('Introuvables'), nf);
   return out;
 }
 /** Courbe de mana : nombre d'exemplaires par coût (0 à 7+), hors terrains. */
@@ -469,22 +516,22 @@ function relTime(ts, now) {
   now = now || Date.now();
   const s = Math.round((now - ts) / 1000);
   if (!Number.isFinite(s)) return '';
-  if (s < 45) return 'à l\'instant';
-  const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
+  if (s < 45) return T('à l\'instant');
+  const rtf = new Intl.RelativeTimeFormat(LOC(), { numeric: 'auto' });
   if (s < 3600) return rtf.format(-Math.max(1, Math.round(s / 60)), 'minute');
   if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour');
   if (s < 7 * 86400) return rtf.format(-Math.round(s / 86400), 'day');
-  return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return new Date(ts).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' });
 }
 
 /** Ancienneté d'une date 'AAAA-MM-JJ' en mots : « aujourd'hui », « hier », « il y a 5 jours », « il y a 3 semaines », « il y a 2 mois », « il y a 1 an » ('' si illisible). */
 function agoDay(day, now) {
   const t = Date.parse(String(day || '') + 'T12:00:00Z'); if (!Number.isFinite(t)) return '';
   const d = Math.max(0, Math.floor(((now || Date.now()) - t) / 86400000));
-  if (d < 1) return 'aujourd\'hui'; if (d < 2) return 'hier'; if (d < 14) return 'il y a ' + d + ' jours';
-  if (d < 60) return 'il y a ' + Math.floor(d / 7) + ' semaines';
-  if (d < 365) return 'il y a ' + Math.floor(d / 30.44) + ' mois';
-  const y = Math.floor(d / 365.25); return 'il y a ' + y + ' an' + (y > 1 ? 's' : '');
+  if (d < 1) return T('aujourd\'hui'); if (d < 2) return T('hier'); if (d < 14) return T('il y a {n} jours', { n: d });
+  if (d < 60) return T('il y a {n} semaines', { n: Math.floor(d / 7) });
+  if (d < 365) { const m = Math.floor(d / 30.44); return m === 1 ? T('il y a 1 mois') : T('il y a {n} mois', { n: m }); }      // « mois » : même mot au singulier et au pluriel en français, pas en anglais
+  const y = Math.floor(d / 365.25); return T(y > 1 ? 'il y a {n} ans' : 'il y a {n} an', { n: y });
 }
 
 /** Identifiant de document : valable pour Firestore, sans dépendre d'une API. */
@@ -625,8 +672,8 @@ const canLead = tl => /legendary/i.test(String(tl || '')) && /(creature|planeswa
 
 /* ── Créateur de deck (Standard / Commander) ──────────────────────────────────────────────────── */
 const DK_FORMATS = {
-  standard: { label: 'Standard', size: 60, copies: 4, side: 15, hint: '60 cartes, 4 exemplaires d\'une même carte au maximum (terrains de base exclus), réserve de 15 facultative.' },
-  commander: { label: 'Commander', size: 100, copies: 1, side: 0, hint: '100 cartes dont ton commandant, un seul exemplaire de chaque carte (terrains de base exclus).' },
+  standard: { label: 'Standard', size: 60, copies: 4, side: 15, hint: T('60 cartes, 4 exemplaires d\'une même carte au maximum (terrains de base exclus), réserve de 15 facultative.') },
+  commander: { label: 'Commander', size: 100, copies: 1, side: 0, hint: T('100 cartes dont ton commandant, un seul exemplaire de chaque carte (terrains de base exclus).') },
 };
 /** Format noté en tête d'une liste par le créateur (« // Deck Deal : commander »), '' sinon. */
 function dkFormat(text) { const m = String(text || '').match(/^\/\/\s*Deck Deal\s*:\s*(standard|commander)\b/im); return m ? m[1].toLowerCase() : ''; }
@@ -728,27 +775,26 @@ function dkColors(text) {
 function dkCheck(fmt, d, metaOf) {
   const f = DK_FORMATS[fmt] || DK_FORMATS.standard, main = d.main || [], side = d.side || [], cmdr = d.cmdr || [], issues = [];
   const sum = a => a.reduce((x, c) => x + c.qty, 0), n = sum(main) + cmdr.length, ns = sum(side);
-  const plural = (q, w) => q + ' ' + w + (q > 1 ? 's' : '');
   if (fmt === 'commander') {
-    if (!cmdr.length) issues.push({ lv: 'bad', t: 'Aucun commandant : choisis-en un.' });
-    else if (cmdr.length > 2) issues.push({ lv: 'bad', t: 'Deux commandants au maximum (partenaires).' });
-    if (n < f.size) issues.push({ lv: 'warn', t: `Il manque ${plural(f.size - n, 'carte')} pour arriver à ${f.size}.` });
-    else if (n > f.size) issues.push({ lv: 'bad', t: `${plural(n - f.size, 'carte')} en trop (${f.size} exactement).` });
+    if (!cmdr.length) issues.push({ lv: 'bad', t: T('Aucun commandant : choisis-en un.') });
+    else if (cmdr.length > 2) issues.push({ lv: 'bad', t: T('Deux commandants au maximum (partenaires).') });
+    if (n < f.size) issues.push({ lv: 'warn', t: T(f.size - n > 1 ? 'Il manque {n} cartes pour arriver à {size}.' : 'Il manque {n} carte pour arriver à {size}.', { n: f.size - n, size: f.size }) });
+    else if (n > f.size) issues.push({ lv: 'bad', t: T(n - f.size > 1 ? '{n} cartes en trop ({size} exactement).' : '{n} carte en trop ({size} exactement).', { n: n - f.size, size: f.size }) });
     for (const c of main) {
       if (BASIC_NAMES.has(c.key)) continue;
-      if (c.qty > 1) issues.push({ lv: 'bad', t: `${c.name} : ${c.qty} exemplaires (un seul en Commander).` });
-      if (cmdr.some(x => x.key === c.key)) issues.push({ lv: 'bad', t: `${c.name} est déjà ton commandant.` });
+      if (c.qty > 1) issues.push({ lv: 'bad', t: T('{name} : {n} exemplaires (un seul en Commander).', { name: c.name, n: c.qty }) });
+      if (cmdr.some(x => x.key === c.key)) issues.push({ lv: 'bad', t: T('{name} est déjà ton commandant.', { name: c.name }) });
     }
-    for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && m.cd === 0) issues.push({ lv: 'warn', t: `${c.name} ne peut normalement pas être commandant.` }); }      // cd : 0 = carte lue sur Scryfall et non éligible (absent = pas encore lue)
+    for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && m.cd === 0) issues.push({ lv: 'warn', t: T('{name} ne peut normalement pas être commandant.', { name: c.name }) }); }      // cd : 0 = carte lue sur Scryfall et non éligible (absent = pas encore lue)
     const ci = new Set(); let known = cmdr.length > 0;
     for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && typeof m.ci === 'string') for (const x of m.ci) ci.add(x); else known = false; }
-    if (known) for (const c of main) { const m = metaOf(c.key); if (m && typeof m.ci === 'string' && [...m.ci].some(x => !ci.has(x))) issues.push({ lv: 'warn', t: `${c.name} sort de l'identité de couleur du commandant.` }); }
+    if (known) for (const c of main) { const m = metaOf(c.key); if (m && typeof m.ci === 'string' && [...m.ci].some(x => !ci.has(x))) issues.push({ lv: 'warn', t: T('{name} sort de l\'identité de couleur du commandant.', { name: c.name }) }); }
   } else {
-    if (n < f.size) issues.push({ lv: 'warn', t: `Il manque ${plural(f.size - n, 'carte')} (${f.size} minimum).` });
-    if (ns > f.side) issues.push({ lv: 'bad', t: `Réserve de ${ns} cartes (${f.side} au maximum).` });
+    if (n < f.size) issues.push({ lv: 'warn', t: T(f.size - n > 1 ? 'Il manque {n} cartes ({size} minimum).' : 'Il manque {n} carte ({size} minimum).', { n: f.size - n, size: f.size }) });
+    if (ns > f.side) issues.push({ lv: 'bad', t: T('Réserve de {n} cartes ({max} au maximum).', { n: ns, max: f.side }) });
     const tot = new Map(), nm = new Map();
     for (const c of [...main, ...side]) { if (BASIC_NAMES.has(c.key)) continue; tot.set(c.key, (tot.get(c.key) || 0) + c.qty); nm.set(c.key, c.name); }
-    for (const [k, q] of tot) if (q > f.copies) issues.push({ lv: 'bad', t: `${nm.get(k)} : ${q} exemplaires (${f.copies} au maximum).` });
+    for (const [k, q] of tot) if (q > f.copies) issues.push({ lv: 'bad', t: T('{name} : {n} exemplaires ({max} au maximum).', { name: nm.get(k), n: q, max: f.copies }) });
   }
   return { n, side: ns, size: f.size, issues };
 }
@@ -769,7 +815,7 @@ function csvSplit(line, d) {
   }
   out.push(cur); return out.map(x => x.trim());
 }
-const NAME_COLS = ['name', 'card name', 'card', 'cardname', 'nom', 'nom de la carte', 'carte'];
+const NAME_COLS = ['name', 'card name', 'card', 'cardname', 'product name', 'simple name', 'nom', 'nom de la carte', 'carte'];
 const LANG_COLS = ['language', 'langue', 'lang', 'card language'];
 const QTY_COLS = ['quantity', 'qty', 'count', 'amount', 'quantite', 'reg qty', 'total qty', 'owned'];
 const colNorm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -854,6 +900,17 @@ function parseCollection(text, o) {
   }
   const items = [...map.values()].map(({ b, ...base }) => collFromLines(base, [...b]));
   return { items, lines: n, skipped, format: delim ? 'csv' : 'text', copies: items.reduce((a, x) => a + x.q, 0) };
+}
+
+/** Export CSV au format Moxfield (« Count,Tradelist Count,Name,Edition,Condition,Language,Foil ») : relu par Moxfield, ManaBox, Archidekt, Deckbox… et par cette appli.
+ *  Une ligne par langue ; langue non précisée : colonne vide. */
+const CSV_LANG = { fr: 'French', en: 'English', de: 'German', es: 'Spanish', it: 'Italian', pt: 'Portuguese', jp: 'Japanese', 'zh-CN': 'Chinese Simplified', ko: 'Korean', ru: 'Russian' };
+const csvCell = v => /[",\r\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+function collToCsv(map) {
+  const rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil'];
+  for (const x of Object.values(map || {}).filter(x => x && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')))
+    for (const [l, q] of collLines(x)) rows.push([q, 0, csvCell(x.n), '', 'Near Mint', CSV_LANG[l] || '', ''].join(','));
+  return rows.join('\n') + '\n';
 }
 
 /** Fusionne des cartes dans une collection (objet clé → { n, q, … }). mode : 'add' (somme) · 'replace' (remplace le reste, garde les infos Scryfall déjà lues). Retourne la nouvelle collection. */
@@ -1668,7 +1725,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,

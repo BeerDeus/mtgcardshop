@@ -14,7 +14,7 @@ const Tasks = (() => {
     el.className = 'task' + (o.hidden ? ' hide' : '') + (o.total ? '' : ' indet'); el.setAttribute('role', 'status');
     el.innerHTML = `<span class="task-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="${R}"/><circle class="arc" cx="12" cy="12" r="${R}" stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="${(CIRC * 0.72).toFixed(2)}"/><path class="chk" d="M7.4 12.6l3 3 6.2-6.4"/><path class="bang" d="M12 7.2v5.6M12 16.3v.1"/></svg></span>
       <span class="task-txt"><span class="task-t"></span><span class="task-s"></span></span>
-      <button class="task-x" type="button" aria-label="Fermer" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+      <button class="task-x" type="button" aria-label="${T('Fermer')}" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
       <span class="task-bar"><i></i></span>`;
     const t = el.querySelector('.task-t'), s = el.querySelector('.task-s'), arc = el.querySelector('.arc'), bar = el.querySelector('.task-bar i'), x = el.querySelector('.task-x');
     t.textContent = label; s.textContent = o.sub || '';

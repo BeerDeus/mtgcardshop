@@ -159,8 +159,8 @@ r = await imp1('https://moxfield.com/decks/AbCd_1'); assert.equal(r.s, 200); ass
 for (const [u, st] of [['https://evil.example.com/decks/1', 400], ['http://edhrec.com/average-decks/x', 400], ['https://edhrec.com.evil.com/average-decks/x', 400], ['https://archidekt.com/decks/abc', 400], ['https://edhrec.com/average-decks/../../etc/passwd', 400], ['https://edhrec.com/average-decks/a/b/c', 400], ['https://user:pw@edhrec.com/average-decks/x', 400], ['https://edhrec.com:8443/average-decks/x', 400], ['pas un lien', 400], ['https://archidekt.com/decks/404/x', 404], ['https://archidekt.com/decks/500/x', 502], ['https://archidekt.com/decks/7/x', 422], ['https://archidekt.com/decks/8/x', 502], ['https://archidekt.com/decks/9/x', 502]]) { r = await imp1(u); assert.equal(r.s, st, u + ' → ' + r.s); assert.ok(r.o.message, u); }
 console.log('✓ import : liens hors liste blanche refusés, 404 / 5xx / vide / redirection / réponse illisible gérés');
 r = await J(B, '/api/import?url=' + encodeURIComponent('https://edhrec.com/average-decks/x'), { method: 'POST', body: '{}' }); assert.equal(r.s, 405); console.log('✓ import : GET uniquement');
-// l'import passe par l'authentification, mais pas par le token CardTrader
+// l'import est ouvert à tous (aucun token CardTrader en jeu), même sur un serveur protégé par une clé
 await start({ ...env, APP_KEY: 'secret-secret-123', CARDTRADER_TOKEN: '', BAD_KEY_DELAY_MS: '0' }, 18844); const B3 = 'http://127.0.0.1:18844';
-r = await J(B3, '/api/import?url=' + encodeURIComponent('https://archidekt.com/decks/123/x')); assert.equal(r.s, 401);
-r = await J(B3, '/api/import?url=' + encodeURIComponent('https://archidekt.com/decks/123/x'), {}, { 'x-app-key': 'secret-secret-123' }); assert.equal(r.s, 200); assert.equal(r.o.site, 'Archidekt'); console.log('✓ import : protégé par la clé / le compte, fonctionne sans token CardTrader');
+r = await J(B3, '/api/import?url=' + encodeURIComponent('https://archidekt.com/decks/123/x')); assert.equal(r.s, 200); assert.equal(r.o.site, 'Archidekt');
+r = await J(B3, '/api/info'); assert.equal(r.s, 401, 'CardTrader reste protégé'); console.log('✓ import : ouvert sans clé ni compte, fonctionne sans token CardTrader ; CardTrader reste protégé');
 console.log('\nPUSH + IMPORT OK'); process.exit(0);

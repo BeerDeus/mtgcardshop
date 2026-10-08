@@ -36,7 +36,7 @@ function trRead() {
 function trWrite() { try { localStorage.setItem(TR_KEY, JSON.stringify({ ...trDoc(), u: TR.u, sig: TR.sig, who: TR.who })); } catch (e) { /* stockage indisponible */ } }
 const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
 /** Les écritures Firestore attendent le serveur : hors ligne, on prévient au lieu de laisser le bouton sans réponse. */
-function trNeedNet() { if (!trOffline()) return true; toast('Hors ligne : réessaie une fois connecté'); return false; }
+function trNeedNet() { if (!trOffline()) return true; toast(T('Hors ligne : réessaie une fois connecté')); return false; }
 /** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
 function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
 function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); }
@@ -136,15 +136,15 @@ async function trShareOn() {
   if (!cloudOn()) { openAccount(); return; }
   if (!trNeedNet() || TR.creating) return;
   const id = D.cloud.shareId(); TR.creating = true;
-  try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast('Lien créé', { label: 'Copier', fn: () => copyText(shareUrl(id)) }); haptic('ok'); }
-  catch (err) { TR.share = ''; toast(err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour le partage (voir README)' : 'Lien impossible à créer : réessaie en ligne'); trRepaint(); }
+  try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast(T('Lien créé'), { label: T('Copier'), fn: () => copyText(shareUrl(id)) }); haptic('ok'); }
+  catch (err) { TR.share = ''; toast(err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Lien impossible à créer : réessaie en ligne')); trRepaint(); }
   finally { TR.creating = false; }
 }
 async function trShareOff(renew) {
   const old = TR.share; if (!old || !trNeedNet()) return;
-  try { await D.cloud.dropShare(old); } catch (err) { toast('Arrêt impossible hors ligne : réessaie'); return; }
+  try { await D.cloud.dropShare(old); } catch (err) { toast(T('Arrêt impossible hors ligne : réessaie')); return; }
   delete TR.sig[old]; TR.share = ''; trChanged();
-  if (renew) await trShareOn(); else toast('Partage arrêté : l\'ancien lien ne marche plus');
+  if (renew) await trShareOn(); else toast(T('Partage arrêté : l\'ancien lien ne marche plus'));
 }
 async function sendLink(url, title) {
   if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
@@ -152,20 +152,20 @@ async function sendLink(url, title) {
 }
 /** Partage d'un deck : enregistré (suivi : chaque modification part sur le lien) ou figé (deck EDHREC, liste en cours). */
 async function shareDeck({ id, text, name }) {
-  if (!cloudOn()) { toast('Connecte-toi pour partager un deck', { label: 'Compte', fn: openAccount }); return; }
+  if (!cloudOn()) { toast(T('Connecte-toi pour partager un deck'), { label: T('Compte'), fn: openAccount }); return; }
   const d = id ? findDeck(id) : null, key = d ? d.id : 'txt:' + hash32(String(text || '')), body = d ? { name: d.name, text: d.text } : { name: String(name || 'Deck').slice(0, 120), text: String(text || '') };
-  if (!parseDeck(body.text).cards.length) { toast('Deck vide : rien à partager'); return; }
+  if (!parseDeck(body.text).cards.length) { toast(T('Deck vide : rien à partager')); return; }
   if (!trNeedNet()) return;
   let sid = TR.dsh[key];
   try {
     if (!sid) { sid = D.cloud.shareId(); TR.dsh[key] = sid; }
     await trPut(sid, 'deck', body); trChanged();
-  } catch (err) { if (!TR.sig[sid]) delete TR.dsh[key]; toast(err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour le partage (voir README)' : 'Partage impossible : réessaie en ligne'); return; }
-  openSheet('Partager le deck', d ? 'Lecture seule · le lien suit les modifications du deck' : 'Lecture seule · le deck est partagé tel qu\'il est maintenant', api => {
-    api.body.innerHTML = `<div class="tr-link"><input type="text" readonly value="${esc(shareUrl(sid))}" aria-label="Lien du deck"></div>
-      <p class="hint">Quiconque a ce lien voit le deck, ses images, sa courbe de mana et peut tirer une main de départ. Il ne peut rien modifier.</p>
-      <button class="link-btn link-inline" type="button" data-act="dstop">Arrêter ce partage</button>`;
-    api.setFoot(`<button class="btn ghost" type="button" data-act="dcopy">Copier</button><button class="btn" type="button" data-act="dsend">Partager</button>`);
+  } catch (err) { if (!TR.sig[sid]) delete TR.dsh[key]; toast(err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Partage impossible : réessaie en ligne')); return; }
+  openSheet(T('Partager le deck'), d ? T('Lecture seule · le lien suit les modifications du deck') : T('Lecture seule · le deck est partagé tel qu\'il est maintenant'), api => {
+    api.body.innerHTML = `<div class="tr-link"><input type="text" readonly value="${esc(shareUrl(sid))}" aria-label="${T('Lien du deck')}"></div>
+      <p class="hint">${T('Quiconque a ce lien voit le deck, ses images, sa courbe de mana et peut tirer une main de départ. Il ne peut rien modifier.')}</p>
+      <button class="link-btn link-inline" type="button" data-act="dstop">${T('Arrêter ce partage')}</button>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-act="dcopy">${T('Copier')}</button><button class="btn" type="button" data-act="dsend">${T('Partager')}</button>`);
     $('input', api.body).onfocus = e => e.target.select();
     api.wrap.addEventListener('click', async e => {
       const b = e.target.closest('[data-act]'); if (!b) return;
@@ -173,8 +173,8 @@ async function shareDeck({ id, text, name }) {
       else if (b.dataset.act === 'dsend') sendLink(shareUrl(sid), body.name);
       else if (b.dataset.act === 'dstop') {
         if (!trNeedNet()) return;
-        try { await D.cloud.dropShare(sid); } catch (err) { toast('Arrêt impossible hors ligne : réessaie'); return; }
-        delete TR.dsh[key]; delete TR.sig[sid]; trChanged(); api.close(); toast('Partage arrêté : le lien ne marche plus');
+        try { await D.cloud.dropShare(sid); } catch (err) { toast(T('Arrêt impossible hors ligne : réessaie')); return; }
+        delete TR.dsh[key]; delete TR.sig[sid]; trChanged(); api.close(); toast(T('Partage arrêté : le lien ne marche plus'));
       }
     });
   });
@@ -190,9 +190,9 @@ function trDeckGone(id) {
 const CM_WANTS = 'https://www.cardmarket.com/fr/Magic/Wants';
 function cmCopy(items, what) {
   const text = cmText(items), n = text ? text.split('\n').length : 0;
-  if (!n) { toast('Rien à copier : ' + (what || 'aucune carte manquante')); return; }
+  if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
   haptic('ok');
-  const done = () => toast(`${n} carte${n > 1 ? 's' : ''} copiée${n > 1 ? 's' : ''} : colle-les dans une Wants list Cardmarket`, { label: 'Ouvrir', fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  const done = () => toast(TN(n, '{n} carte copiée : colle-les dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
   try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
 }
 
@@ -204,25 +204,25 @@ function trItem(k, n, q, l) {
   return it;
 }
 function trShareBoxHtml(st) {
-  const rules = TR.err === 'rules' ? '<p class="hint warn">Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.</p>' : '';
-  if (!D.user) return `<div class="tr-box"><b>Partager ta liste</b><p class="hint">Connecte-toi pour créer un lien public : tes amis voient tes doublons et ce que tu cherches, sans rien pouvoir modifier.</p><button class="btn ghost" type="button" data-act="login">Se connecter</button></div>`;
-  if (!TR.share) return `<div class="tr-box"><b>Partager ta liste</b><p class="hint">Un lien public, en lecture seule, toujours à jour : tes ${nf0(st.have.length)} doublons et les ${nf0(st.want.length)} cartes que tu cherches, avec recherche par nom.</p>${rules}<button class="btn" type="button" data-act="tron">Créer le lien</button></div>`;
-  return `<div class="tr-box on"><b>Lien public actif</b><div class="tr-link"><input type="text" readonly value="${esc(shareUrl(TR.share))}" aria-label="Lien de ta liste d'échange"></div>
-    ${rules}${TR.err === 'net' ? '<p class="hint warn">Mise à jour du lien en attente (hors ligne).</p>' : '<p class="hint">Mis à jour tout seul quand ta collection, tes decks ou ta liste changent. Lecture seule.</p>'}
-    <div class="tr-acts"><button class="btn ghost" type="button" data-act="trcopy">Copier</button><button class="btn ghost" type="button" data-act="trsend">Partager</button><button class="btn ghost" type="button" data-act="trview">Aperçu</button></div>
-    <div class="tr-acts small"><button class="link-btn link-inline" type="button" data-act="trnew">Nouveau lien</button><button class="link-btn link-inline" type="button" data-act="troff">Arrêter le partage</button></div></div>`;
+  const rules = TR.err === 'rules' ? '<p class="hint warn">' + T('Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.') + '</p>' : '';
+  if (!D.user) return `<div class="tr-box"><b>${T('Partager ta liste')}</b><p class="hint">${T('Connecte-toi pour créer un lien public : tes amis voient tes doublons et ce que tu cherches, sans rien pouvoir modifier.')}</p><button class="btn ghost" type="button" data-act="login">${T('Se connecter')}</button></div>`;
+  if (!TR.share) return `<div class="tr-box"><b>${T('Partager ta liste')}</b><p class="hint">${T('Un lien public, en lecture seule, toujours à jour : tes {have} doublons et les {want} cartes que tu cherches, avec recherche par nom.', { have: nf0(st.have.length), want: nf0(st.want.length) })}</p>${rules}<button class="btn" type="button" data-act="tron">${T('Créer le lien')}</button></div>`;
+  return `<div class="tr-box on"><b>${T('Lien public actif')}</b><div class="tr-link"><input type="text" readonly value="${esc(shareUrl(TR.share))}" aria-label="${T('Lien de ta liste d\'échange')}"></div>
+    ${rules}${TR.err === 'net' ? '<p class="hint warn">' + T('Mise à jour du lien en attente (hors ligne).') + '</p>' : '<p class="hint">' + T('Mis à jour tout seul quand ta collection, tes decks ou ta liste changent. Lecture seule.') + '</p>'}
+    <div class="tr-acts"><button class="btn ghost" type="button" data-act="trcopy">${T('Copier')}</button><button class="btn ghost" type="button" data-act="trsend">${T('Partager')}</button><button class="btn ghost" type="button" data-act="trview">${T('Aperçu')}</button></div>
+    <div class="tr-acts small"><button class="link-btn link-inline" type="button" data-act="trnew">${T('Nouveau lien')}</button><button class="link-btn link-inline" type="button" data-act="troff">${T('Arrêter le partage')}</button></div></div>`;
 }
 function trHaveRow(x) {
   const it = trItem(x.k, x.n, x.q, x.lines[0] ? x.lines[0][0] : ''), nm = it.dn || it.n, img = collImage(x.k, it.l, it.im).src;
-  const langs = x.lines.map(([l, q]) => `<span class="tag">${l ? flag(l) : 'sans langue'}${x.lines.length > 1 ? ' × ' + q : ''}</span>`).join('');
+  const langs = x.lines.map(([l, q]) => `<span class="tag">${l ? flag(l) : T('sans langue')}${x.lines.length > 1 ? ' × ' + q : ''}</span>`).join('');
   return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${langs}${it.dn ? `<span class="tag">${esc(x.n)}</span>` : ''}</span></span>
-    <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="Garder ${esc(nm)} (ne plus la proposer)">Garder</button></span></div>`;
+    <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="${T('Garder {name} (ne plus la proposer)', { name: esc(nm) })}">${T('Garder')}</button></span></div>`;
 }
 function trWantRow(x, mine) {
   const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = x.p ? scrySmall(x.p.i) : it.im || '';
-  const tags = (x.p && x.p.w ? `<span class="tag accent" title="Illustration recherchée">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">manque à tes decks${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">souhait${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
-  const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="Un de moins">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="Un de plus">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
+  const tags = (x.p && x.p.w ? `<span class="tag accent" title="${T('Illustration recherchée')}">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">${T('manque à tes decks')}${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">${T('souhait')}${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
+  const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="${T('Un de moins')}">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="${T('Un de plus')}">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
   return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
 }
@@ -233,22 +233,22 @@ function trPanelHtml() {
   const have = fil(st.have), want = fil(st.want), held = st.held, sub = TR.sub;
   const list = sub === 'want' ? want : have, shown = list.slice(0, TR.shown);
   const copies = st.have.reduce((a, x) => a + x.q, 0);
-  const keepHint = `Échangeable = possédées − utilisées par ${st.decks > 1 ? `tes ${nf0(st.decks)} decks` : st.decks ? 'ton deck' : 'tes decks (aucun pour l\'instant)'} − réserve. Terrains de base jamais proposés.`;
+  const keepHint = T(st.decks > 1 ? 'Échangeable = possédées − utilisées par tes {n} decks − réserve. Terrains de base jamais proposés.' : st.decks ? 'Échangeable = possédées − utilisées par ton deck − réserve. Terrains de base jamais proposés.' : 'Échangeable = possédées − utilisées par tes decks (aucun pour l\'instant) − réserve. Terrains de base jamais proposés.', { n: nf0(st.decks) });
   return `${trShareBoxHtml(st)}
-    <div class="tr-keep"><span class="label">Réserve gardée en plus de tes decks</span><div class="seg" id="trKeep" role="radiogroup" aria-label="Réserve"></div><p class="hint">${esc(keepHint)}</p></div>
-    <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="Liste"></div>
-    ${act ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(sub === 'want' ? st.want.length : st.have.length)}</p>` : ''}
-    ${sub === 'want' ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>Ajouter une carte</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)"><svg class="i"><use href="#i-copy"/></svg>Copier pour Cardmarket</button>' : ''}</div>` : `<p class="hint">${nf0(st.have.length)} carte${st.have.length > 1 ? 's' : ''} · ${nf0(copies)} exemplaire${copies > 1 ? 's' : ''} à échanger</p>`}
+    <div class="tr-keep"><span class="label">${T('Réserve gardée en plus de tes decks')}</span><div class="seg" id="trKeep" role="radiogroup" aria-label="${T('Réserve')}"></div><p class="hint">${esc(keepHint)}</p></div>
+    <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="${T('Liste')}"></div>
+    ${act ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(sub === 'want' ? st.want.length : st.have.length) })}</p>` : ''}
+    ${sub === 'want' ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>${T('Ajouter une carte')}</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="' + T('Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)') + '"><svg class="i"><use href="#i-copy"/></svg>' + T('Copier pour Cardmarket') + '</button>' : ''}</div>` : `<p class="hint">${TN(st.have.length, '{n} carte', '{n} cartes')} · ${TN(copies, '{n} exemplaire à échanger', '{n} exemplaires à échanger')}</p>`}
     ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (sub === 'want' ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
-      : `<p class="hint listempty">${act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.'}</p>`}
-    ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}
-    ${sub === 'have' && held.length ? `<details class="tr-held"><summary>Gardées à la main (${nf0(held.length)})</summary><div class="coll-list">${held.map(x => `<div class="crow tr-row" data-k="${esc(x.k)}"><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta"><span class="tag">${x.q} en trop</span></span></span><span class="tr-q"><button class="link-btn" type="button" data-act="tunkeep">Remettre</button></span></div>`).join('')}</div></details>` : ''}`;
+      : `<p class="hint listempty">${T(act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.')}</p>`}
+    ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}
+    ${sub === 'have' && held.length ? `<details class="tr-held"><summary>${T('Gardées à la main ({n})', { n: nf0(held.length) })}</summary><div class="coll-list">${held.map(x => `<div class="crow tr-row" data-k="${esc(x.k)}"><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta"><span class="tag">${T('{n} en trop', { n: x.q })}</span></span></span><span class="tr-q"><button class="link-btn" type="button" data-act="tunkeep">${T('Remettre')}</button></span></div>`).join('')}</div></details>` : ''}`;
 }
 /** Après chaque peinture de l'onglet : les deux sélecteurs. */
 function trMount(host) {
   const st = TR.st || trState();
   mountSeg($('#trKeep', host), TR_KEEPS.map(v => ({ v: String(v), label: String(v) })), String(TR.keep), v => { TR.keep = Number(v); trChanged(); });
-  mountSeg($('#trSub', host), [{ v: 'have', label: 'À échanger', sub: nf0(st.have.length) }, { v: 'want', label: 'Je recherche', sub: nf0(st.want.length) }], TR.sub, v => { TR.sub = v; TR.shown = TR_PAGE; collPaintBody(true); });
+  mountSeg($('#trSub', host), [{ v: 'have', label: T('À échanger'), sub: nf0(st.have.length) }, { v: 'want', label: T('Je recherche'), sub: nf0(st.want.length) }], TR.sub, v => { TR.sub = v; TR.shown = TR_PAGE; collPaintBody(true); });
   const inp = $('.tr-link input', host); if (inp) inp.onfocus = e => e.target.select();
   // cartes recherchées sans fiche (image, type) : lues sur Scryfall, puis l'onglet se repeint
   const need = st.want.map(x => ({ key: x.k, name: x.n }));
@@ -263,18 +263,18 @@ function trClick(e) {
   else if (act === 'troff') trShareOff(false);
   else if (act === 'trnew') trShareOff(true);
   else if (act === 'trcopy') copyText(shareUrl(TR.share));
-  else if (act === 'trsend') sendLink(shareUrl(TR.share), 'Ma liste d\'échange Magic');
+  else if (act === 'trsend') sendLink(shareUrl(TR.share), T('Ma liste d\'échange Magic'));
   else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, at: Date.now() }), true); }
   else if (act === 'trmore') { TR.shown += TR_PAGE; collPaintBody(true); }
-  else if (act === 'tkeep' && k) { TR.kept.add(k); haptic('tap'); trChanged(); toast('Gardée : elle n\'est plus proposée', { label: 'Annuler', fn: () => { TR.kept.delete(k); trChanged(); } }); }
+  else if (act === 'tkeep' && k) { TR.kept.add(k); haptic('tap'); trChanged(); toast(T('Gardée : elle n\'est plus proposée'), { label: T('Annuler'), fn: () => { TR.kept.delete(k); trChanged(); } }); }
   else if (act === 'tunkeep' && k) { TR.kept.delete(k); haptic('tap'); trChanged(); }
   else if ((act === 'wplus' || act === 'wminus') && k && TR.wish[k]) {
     const q = TR.wish[k].q + (act === 'wplus' ? 1 : -1); haptic('tap');
-    if (q <= 0) { const was = TR.wish[k]; delete TR.wish[k]; trChanged(); toast(was.n + ' retirée de ta liste', { label: 'Annuler', fn: () => { TR.wish[k] = was; trChanged(); } }); }
+    if (q <= 0) { const was = TR.wish[k]; delete TR.wish[k]; trChanged(); toast(T('{name} retirée de ta liste', { name: was.n }), { label: T('Annuler'), fn: () => { TR.wish[k] = was; trChanged(); } }); }
     else { TR.wish[k] = { ...TR.wish[k], q: Math.min(99, q) }; trChanged(); }
   }
   else if (act === 'wadd') openWishAdd();
-  else if (act === 'wcm') cmCopy(TR.st ? TR.st.want : trState().want, 'aucune carte recherchée');
+  else if (act === 'wcm') cmCopy(TR.st ? TR.st.want : trState().want, T('aucune carte recherchée'));
   else return false;
   return true;
 }
@@ -285,26 +285,26 @@ function trOpenImg(row) {
   if (list.length) openCardViewer(list, at);
 }
 function openWishAdd() {
-  openSheet('Ajouter une carte recherchée', 'Nom anglais ou français déjà connu de Scryfall', api => {
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="waName">Nom de la carte</label><input type="text" id="waName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Mana Crypt" enterkeyhint="search"></div>
-      <div class="status" id="waStatus" data-ok="0" hidden><span class="dot"></span><span></span></div><div class="ca-list" id="waList" role="listbox" aria-label="Suggestions"></div>`;
+  openSheet(T('Ajouter une carte recherchée'), T('Nom anglais ou français déjà connu de Scryfall'), api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="waName">${T('Nom de la carte')}</label><input type="text" id="waName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Mana Crypt" enterkeyhint="search"></div>
+      <div class="status" id="waStatus" data-ok="0" hidden><span class="dot"></span><span></span></div><div class="ca-list" id="waList" role="listbox" aria-label="${T('Suggestions')}"></div>`;
     const inp = $('#waName', api.body), list = $('#waList', api.body), stt = $('#waStatus', api.body); let cat = null;
     const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
     const paint = () => {
       if (!cat) { list.innerHTML = ''; return; }
       const q = inp.value.trim(), sug = collSuggest(cat, q);
       list.innerHTML = sug.map(n => { const k = ownKey(n), w = TR.wish[k]; return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${w ? '× ' + w.q : '+'}</i></button>`; }).join('')
-        || (q.length >= 2 ? '<p class="hint">Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).</p>' : '');
+        || (q.length >= 2 ? '<p class="hint">' + T('Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).') + '</p>' : '');
     };
     list.onclick = e => {
       const b = e.target.closest('.ca-opt'); if (!b) return;
-      const n = b.dataset.n, k = ownKey(n); if (BASIC_NAMES.has(k)) { toast('Les terrains de base ne sont pas listés'); return; }
+      const n = b.dataset.n, k = ownKey(n); if (BASIC_NAMES.has(k)) { toast(T('Les terrains de base ne sont pas listés')); return; }
       TR.wish[k] = { n, q: Math.min(99, ((TR.wish[k] || {}).q || 0) + 1) }; trChanged(); haptic('ok');
-      $('i', b).textContent = '× ' + TR.wish[k].q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); say(`${n} · ${TR.wish[k].q} recherchée${TR.wish[k].q > 1 ? 's' : ''}`, true);
+      $('i', b).textContent = '× ' + TR.wish[k].q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); say(TN(TR.wish[k].q, '{name} · {n} recherchée', '{name} · {n} recherchées', { name: n }), true);
     };
     inp.oninput = paint;
-    say('Chargement du catalogue (une seule fois)…', false);
-    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? 'Scryfall demande une pause, réessaie dans une minute.' : 'Catalogue Scryfall injoignable : réessaie plus tard.', false));
+    say(T('Chargement du catalogue (une seule fois)…'), false);
+    collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? T('Scryfall demande une pause, réessaie dans une minute.') : T('Catalogue Scryfall injoignable : réessaie plus tard.'), false));
     setTimeout(() => inp.focus(), 380);
   });
 }
@@ -312,42 +312,42 @@ function openWishAdd() {
 /* ── Écran public (visiteur, ou aperçu du propriétaire) ─────────────────────────────────────────── */
 /** Ouverture par un lien ?p=<id> : lit le partage puis ouvre la liste d'échange ou le deck, en lecture seule. */
 async function openPublicLink(id) {
-  const t = Tasks.start('Lecture du partage');
+  const t = Tasks.start(T('Lecture du partage'));
   let sh;
   try { sh = await shareFetch(id); t.remove(); }
   catch (e) {
     t.remove();
-    const msg = e.code === 'gone' ? 'Ce lien ne marche plus : le partage a été arrêté.' : e.code === 'denied' ? 'Ce partage n\'est pas lisible (lien arrêté, ou partage pas encore activé sur ce site).' : e.code === 'bad' ? 'Lien de partage invalide.' : 'Partage injoignable : vérifie ta connexion puis recharge la page.';
-    openSheet('Partage', '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
+    const msg = T(e.code === 'gone' ? 'Ce lien ne marche plus : le partage a été arrêté.' : e.code === 'denied' ? 'Ce partage n\'est pas lisible (lien arrêté, ou partage pas encore activé sur ce site).' : e.code === 'bad' ? 'Lien de partage invalide.' : 'Partage injoignable : vérifie ta connexion puis recharge la page.');
+    openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
     return;
   }
   try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at }); else openPublicTrade(sh, false); }
   catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
     console.error(e);
-    openSheet('Partage', '', api => { api.body.innerHTML = `<p>Ce partage n'a pas pu s'afficher. Recharge la page ; si ça recommence, signale ce message :</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>Fermer</button>'); });
+    openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${T('Ce partage n\'a pas pu s\'afficher. Recharge la page ; si ça recommence, signale ce message :')}</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
   }
 }
 /** Liste d'échange en lecture seule : « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand. */
 function openPublicTrade(sh, preview) {
   if (TR.pub && TR.pub.el) TR.pub.el.__close();
   const P = TR.pub = { sh, sub: sh.have.length || !sh.want.length ? 'have' : 'want', f: newFilter(), shown: TR_PAGE, el: null };
-  const wrap = document.createElement('div'); wrap.className = 'dv coll pubv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'Liste d\'échange');
-  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="Fermer"><svg class="i"><use href="#i-back"/></svg></button>
-      <div class="dv-title"><b>${preview ? 'Aperçu de ta liste' : 'Liste d\'échange'}</b><span>${sh.at ? 'Mise à jour ' + esc(relTime(sh.at)) : ''}</span></div></header>
+  const wrap = document.createElement('div'); wrap.className = 'dv coll pubv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Liste d\'échange'));
+  wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer')}"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="dv-title"><b>${T(preview ? 'Aperçu de ta liste' : 'Liste d\'échange')}</b><span>${sh.at ? T('Mise à jour {when}', { when: esc(relTime(sh.at)) }) : ''}</span></div></header>
     <div class="dv-scroll"><div class="dv-body coll-body">
-      <p class="hint pub-note">${preview ? 'Ce que voient les personnes qui ont ton lien.' : 'Lecture seule. Touche une carte pour la voir en grand.'}${sh.cut ? ' Liste trop longue : seule une partie est affichée.' : ''}</p>
-      <div class="seg" id="pubSub" role="radiogroup" aria-label="Liste"></div><div id="pubF"></div><div class="pub-main"></div></div></div>`;
+      <p class="hint pub-note">${T(preview ? 'Ce que voient les personnes qui ont ton lien.' : 'Lecture seule. Touche une carte pour la voir en grand.')}${sh.cut ? ' ' + T('Liste trop longue : seule une partie est affichée.') : ''}</p>
+      <div class="seg" id="pubSub" role="radiogroup" aria-label="${T('Liste')}"></div><div id="pubF"></div><div class="pub-main"></div></div></div>`;
   P.el = wrap;
   const paint = keep => {
     const sc = $('.dv-scroll', wrap), pos = keep && sc ? sc.scrollTop : 0, all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
-    $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${nf0(list.length)} carte${list.length > 1 ? 's' : ''} sur ${nf0(all.length)}</p>` : ''}
-      ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.'}</p>`}
-      ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">Afficher ${nf0(Math.min(TR_PAGE, list.length - shown.length))} de plus · ${nf0(list.length - shown.length)} restantes</button>` : ''}`;
+    $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}</p>` : ''}
+      ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${T(all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.')}</p>`}
+      ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}`;
     if (sc) sc.scrollTop = pos;
     if (!keep) stagger($('.pub-main .coll-list', wrap));
   };
-  mountSeg($('#pubSub', wrap), [{ v: 'have', label: 'À échanger', sub: nf0(sh.have.length) }, { v: 'want', label: 'Recherchées', sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
-  mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: 'Nom français ou anglais' });
+  mountSeg($('#pubSub', wrap), [{ v: 'have', label: T('À échanger'), sub: nf0(sh.have.length) }, { v: 'want', label: T('Recherchées'), sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
+  mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: T('Nom français ou anglais') });
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
     if (P.el !== wrap) return; P.el = null; document.removeEventListener('keydown', onKey, true);
@@ -364,7 +364,7 @@ function openPublicTrade(sh, preview) {
     const row = e.target.closest('.pub-row'); if (!row) return;
     const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };      // illustration recherchée (data-pw) : montrée telle quelle, sans version française
     for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: !r.dataset.pw && r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
-    if (list.length) { haptic('tap'); openCardViewer(list, at.i); } else toast('Pas d\'aperçu pour cette carte');
+    if (list.length) { haptic('tap'); openCardViewer(list, at.i); } else toast(T('Pas d\'aperçu pour cette carte'));
   });
   document.body.appendChild(wrap); holdApp(); paint(false);
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
@@ -383,9 +383,9 @@ function pubItem(x) {
 }
 function pubRow(it) {
   const nm = it.dn || it.n, img = it.im || '', sub = it.dn && it.dn !== it.n ? `<span class="tag">${esc(it.n)}</span>` : it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '';
-  const pw = it.pw ? `<span class="tag accent" title="Illustration recherchée">${esc(it.pw)}</span>` : '';
-  const mine = it.mine ? `<span class="tag good">${TR.pub && TR.pub.sub === 'want' ? 'tu l\'as' : 'déjà à toi'} × ${it.mine}</span>` : '';
-  const x = `${it.q} exemplaire${it.q > 1 ? 's' : ''}${it.l ? ' · ' + (LANGS[it.l] || it.l) : ''}${it.pw ? ' · illustration ' + it.pw : ''}`;
+  const pw = it.pw ? `<span class="tag accent" title="${T('Illustration recherchée')}">${esc(it.pw)}</span>` : '';
+  const mine = it.mine ? `<span class="tag good">${T(TR.pub && TR.pub.sub === 'want' ? 'tu l\'as × {n}' : 'déjà à toi × {n}', { n: it.mine })}</span>` : '';
+  const x = TN(it.q, '{n} exemplaire', '{n} exemplaires') + (it.l ? ' · ' + (LANGS[it.l] || it.l) : '') + (it.pw ? ' · ' + T('illustration {name}', { name: it.pw }) : '');
   return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
     <span class="tr-q"><b>× ${it.q}</b></span></div>`;

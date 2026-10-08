@@ -119,8 +119,15 @@ ok('rechargement : collection et infos gardées sur l\'appareil, aucune requête
 /* ── 5b) sauvegarde : l'état est dit en toutes lettres, export, compte plus récent = annulable ──────────────── */
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.waitForFunction(() => !document.querySelector('.coll-sync').hidden, null, { timeout: 8000 });
 assert.match(await txt(p, '.coll-sync'), /ne sont que sur cet appareil/); assert.ok(['warn', 'bad'].includes(await p.$eval('.coll-sync', e => e.dataset.k)), 'hors compte : bandeau d\'alerte');
-const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.coll-sync [data-act="export"]')]);
+await p.click('.coll-sync [data-act="export"]'); await p.waitForSelector('.sheet-wrap.open .ex-opt[data-x="txt"]');
+const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.ex-opt[data-x="txt"]')]);
 assert.match(dl.suggestedFilename(), /^ma-collection-\d{4}-\d{2}-\d{2}\.txt$/); const exported = (await import('node:fs')).readFileSync(await dl.path(), 'utf8'); assert.match(exported, /\d+ Sol Ring/); assert.equal(exported.trim().split('\n').length, 4, 'une ligne par carte (réimportable)');
+await p.waitForTimeout(400); await p.click('.coll-sync [data-act="export"]'); await p.waitForSelector('.sheet-wrap.open .ex-opt[data-x="csv"]');
+const [dc] = await Promise.all([p.waitForEvent('download'), p.click('.ex-opt[data-x="csv"]')]);
+assert.match(dc.suggestedFilename(), /^ma-collection-\d{4}-\d{2}-\d{2}\.csv$/); const csv = (await import('node:fs')).readFileSync(await dc.path(), 'utf8');
+assert.equal(csv.split('\n')[0], 'Count,Tradelist Count,Name,Edition,Condition,Language,Foil'); assert.match(csv, /\n\d+,0,Sol Ring,,Near Mint,[A-Za-z ]*,/);
+const back = await p.evaluate(t => parseCollection(t).items.reduce((a, x) => a + x.q, 0), csv); assert.equal(back, await p.evaluate(() => collCopies()), 'le CSV se relit (mêmes exemplaires)');
+console.log('✓ export : texte ou CSV au format Moxfield, relu par l\'import');
 await p.screenshot({ path: 'shots/coll-sync-local.png' });
 await p.evaluate(() => { D.user = { uid: 'u1' }; D.uid = 'u1'; COLL.cloud = 'ok'; COLL.s = 'u1'; collPaintHead(); });
 assert.match(await txt(p, '.coll-sync'), /Sauvegardée dans ton compte/); assert.equal(await p.$eval('.coll-sync', e => e.dataset.k), 'ok');

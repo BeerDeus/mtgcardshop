@@ -137,9 +137,9 @@ scryFail = 500; r = await check(B2, IDD); assert.equal(r.s, 200); assert.equal(r
 r = await check(B2, IDD); assert.equal(r.o.ok, true); ok('Scryfall en panne : erreur signalée, reprise au contrôle suivant');
 r = await J(B2, '/api/alerts?id=' + IDD, { method: 'DELETE' }); assert.equal(r.o.removed, true); r = await J(B2, '/api/alerts?id=' + IDD); assert.equal(r.s, 404); ok('désactivation : abonnement supprimé');
 
-// 9) accès : clé d'application
+// 9) accès : ouvert à tous (les alertes n'utilisent que Scryfall et le push), même sur un serveur protégé par une clé
 await start({ ...env, APP_KEY: 'secret-secret-1234', ALERT_FILE: join(dir, 'k.json') }, 18863); const B3 = 'http://127.0.0.1:18863';
-r = await J(B3, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub, items: [{ k: 'sol ring', n: 'Sol Ring' }] }) }); assert.equal(r.s, 401, 'sans clé : refusé');
-r = await J(B3, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub, items: [{ k: 'sol ring', n: 'Sol Ring' }] }) }, { 'x-app-key': 'secret-secret-1234' }); assert.equal(r.s, 200); ok('alertes protégées comme le reste de l\'API');
+r = await J(B3, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub, items: [{ k: 'sol ring', n: 'Sol Ring' }] }) }); assert.equal(r.s, 200, 'sans clé : accepté');
+r = await J(B3, '/api/info'); assert.equal(r.s, 401, 'CardTrader reste protégé'); ok('alertes ouvertes à tous ; CardTrader reste protégé');
 
 console.log('ALERTS OK'); process.exit(0);

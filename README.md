@@ -6,12 +6,14 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 
 | Variable | Rôle |
 |---|---|
-| `CARDTRADER_TOKEN` | Token API CardTrader (reste côté serveur) |
+| `CARDTRADER_TOKEN` | Facultatif : token API CardTrader du serveur, réservé aux comptes autorisés. Sans lui, chacun cherche avec son propre token (Réglages › Prix) ou au prix Cardmarket |
 | `ALLOWED_UIDS` | Identifiants Firebase autorisés (séparés par des virgules). Recommandé : c'est l'accès par compte |
 | `ALLOWED_EMAILS` | Alternative à `ALLOWED_UIDS` : e-mails vérifiés autorisés. Moins sûr (un UID ne change jamais) |
 | `FIREBASE_PROJECT_ID` | Projet Firebase des comptes (défaut `m2s-mtg`) |
 | `APP_KEY` | Ancienne clé d'accès, facultative : sert de repli tant qu'elle est définie. À supprimer une fois la connexion par compte validée |
-| `HOST` | `0.0.0.0` en hébergement. Refusé si ni `APP_KEY` ni `ALLOWED_UIDS`/`ALLOWED_EMAILS` n'est défini |
+| `HOST` | `0.0.0.0` en hébergement. Avec `CARDTRADER_TOKEN` : refusé si ni `APP_KEY` ni `ALLOWED_UIDS`/`ALLOWED_EMAILS` n'est défini |
+| `PRICES_SOURCE_URL` | Relevé des prix « à partir de » (défaut : branche `data` du dépôt, régénérée chaque jour par `gen-prices.mjs`) ; vide = désactivé |
+| `JOB_MAX_RUNNING`, `ALERT_MAX_SUBS`, `UP_CONC` | Plafonds : recherches CardTrader simultanées (8), appareils abonnés aux alertes (500), requêtes simultanées vers CardTrader (12) |
 | `PORT` | Fourni par l'hébergeur (défaut 8787) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Facultatif : notifications « recherche terminée » (voir plus bas, `node gen-vapid.mjs`) |
 | `ALERTS` | `0` coupe les alertes de prix (actives dès que les clés VAPID sont là) |
@@ -20,6 +22,22 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `ALERT_FILE` | Fichier d'état des alertes (défaut `.data/alerts.json`) |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
 | `SCRYFALL_UPSTREAM`, `ALERT_FIRST_MS`, `ALERT_SEED_MS`, `ALERT_CHECK_GAP_MS` | Tests seulement |
+
+## Prix : Cardmarket par défaut, CardTrader avec un token
+
+- **Sans token** : prix tendance Cardmarket « à partir de » (impression papier la moins chère), lus dans le relevé quotidien `/prices.tsv` (≈ 400 Ko, gardé 12 h sur l'appareil) ; cartes absentes : Scryfall. Ni livraison ni vendeurs ; « Copier pour Cardmarket » prépare une Wants list.
+- **Avec ton token CardTrader** (Réglages › Prix) : offres réelles, port optimisé, panier rempli. Le token reste sur l'appareil ; il est envoyé au serveur (`X-CT-Token`) qui interroge CardTrader avec, à la cadence propre à chaque token.
+- **Token du serveur** (`CARDTRADER_TOKEN`) : seulement pour les comptes de `ALLOWED_UIDS` (`/__me` le confirme à l'appli).
+- `gen-prices.mjs` (Actions › « Prix des cartes », chaque jour) lit le fichier complet de Scryfall en flux et publie `prices.tsv.gz` sur la branche `data` (un seul commit réécrit) ; le serveur le relit toutes les 6 h. État : `/__prices`.
+
+## Confidentialité, compte, langues
+
+- Politique de confidentialité (FR + EN) : `pwa/privacy.html`, servie sur `/privacy` (lien de la fiche Google Play).
+- Suppression du compte : Compte › Supprimer mon compte, ou `/?delete-account` (lien web exigé par Google Play). Efface les liens publics, les decks, les documents annexes, puis le compte.
+- Réglages › Confidentialité : mentions (Fan Content Policy de Wizards of the Coast), sources, effacement des données de l'appareil.
+- Langues : français et anglais (langue du téléphone, puis Réglages › Langue). Textes écrits en français dans le code, `T('…')` / `TN(n, '…', '…')` ; dictionnaires `src/i18n/<langue>[.<partie>].json`, fusionnés par `build.mjs`. Ajouter une langue = un dictionnaire + une entrée dans `I18N_LANGS` (`src/core.js`).
+- Premier lancement (appareil vierge) : 3 écrans (bienvenue, collection, prix). `?onboarding` le force.
+- Application Android : voir `docs/android.md` (Capacitor, dossier `android-app/`).
 
 ### Accès par compte Firebase (remplace `APP_KEY`)
 

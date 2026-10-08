@@ -10,7 +10,7 @@ const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
 /** Exemplaires possédés d'une carte (k = ownKey du nom). */
 const collQty = k => (COLL.map[k] && COLL.map[k].q) || 0;
-const nf0 = n => Number(n || 0).toLocaleString('fr-FR');
+const nf0 = n => Number(n || 0).toLocaleString(LOC());
 
 /* ── Stockage local ───────────────────────────────────────────────────────────────────────────── */
 function collRead() {
@@ -24,7 +24,7 @@ function collRead() {
 }
 function collWrite() {
   try { localStorage.setItem(COLL_KEY, JSON.stringify({ t: collToText(COLL.map, true), u: COLL.u, s: COLL.s, ...(COLL.base ? { b: collToText(COLL.base, true) } : {}) })); return true; }
-  catch (e) { toast('Stockage plein : la collection n\'a pas pu être enregistrée sur cet appareil'); return false; }
+  catch (e) { toast(T('Stockage plein : la collection n\'a pas pu être enregistrée sur cet appareil')); return false; }
 }
 async function collMetaLoad() {
   try { const m = await Cache.get(COLL_META_KEY, 60 * DAY); if (m && typeof m === 'object' && !Array.isArray(m)) { COLL.meta = { ...m, ...COLL.meta }; collPaint(); } } catch (e) { /* cache absent */ }
@@ -75,9 +75,9 @@ function collAdd(items, mode) { COLL.map = mergeColl(COLL.map, items, mode); col
 /** Confirmation avant de retirer un exemplaire (« − » de la liste Cartes ou du scan) : petite fiche, jamais de confirm() natif. where : 'coll' | 'scan'. */
 function confirmMinus(name, q, where, onOk, line) {
   const last = q <= 1, scan = where === 'scan';
-  openSheet(last ? (scan ? 'Retirer cette carte ?' : 'Retirer de la collection ?') : 'Retirer un exemplaire ?', '', api => {
-    api.body.innerHTML = `<p class="cf-msg"><b>${esc(name)}</b>${last ? (scan ? 'Dernier exemplaire : la carte sort de la liste du scan.' : line ? `Dernier exemplaire ${line} : cette ligne sort de ta collection (la carte reste dans les autres langues).` : 'Dernier exemplaire : la carte sort de ta collection.') : `Il en restera ${nf0(q - 1)} sur ${nf0(q)}.`}</p>`;
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" data-ok>Retirer</button>');
+  openSheet(last ? (scan ? T('Retirer cette carte ?') : T('Retirer de la collection ?')) : T('Retirer un exemplaire ?'), '', api => {
+    api.body.innerHTML = `<p class="cf-msg"><b>${esc(name)}</b>${last ? (scan ? T('Dernier exemplaire : la carte sort de la liste du scan.') : line ? T('Dernier exemplaire {line} : cette ligne sort de ta collection (la carte reste dans les autres langues).', { line }) : T('Dernier exemplaire : la carte sort de ta collection.')) : T('Il en restera {a} sur {b}.', { a: nf0(q - 1), b: nf0(q) })}</p>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn danger" type="button" data-ok>${T('Retirer')}</button>`);
     api.foot.addEventListener('click', e => { if (e.target.closest('[data-ok]')) { api.close(); onOk(); } });
   });
 }
@@ -131,10 +131,10 @@ async function collPush() {
   } catch (err) {
     if (D.uid !== uid) return;
     const c = err && err.code;
-    if (c === 'permission-denied') { COLL.cloud = 'error'; COLL.err = 'Règles Firestore à publier pour la collection'; }
-    else if (c === 'too-big') { COLL.cloud = 'error'; COLL.err = 'Collection trop grosse pour le compte'; }
+    if (c === 'permission-denied') { COLL.cloud = 'error'; COLL.err = T('Règles Firestore à publier pour la collection'); }
+    else if (c === 'too-big') { COLL.cloud = 'error'; COLL.err = T('Collection trop grosse pour le compte'); }
     else if (c === 'unavailable' || collOffline()) { COLL.cloud = 'offline'; collRetry(COLL_RETRY.off); }
-    else { COLL.cloud = 'error'; COLL.err = 'Synchronisation impossible'; collRetry(COLL_RETRY.err); }
+    else { COLL.cloud = 'error'; COLL.err = T('Synchronisation impossible'); collRetry(COLL_RETRY.err); }
   } finally {
     if (COLL.pushing === id) {
       COLL.pushing = 0;
@@ -161,7 +161,7 @@ function collUser(user) {
   COLL.cloud = 'sync';
   COLL.liveT = setTimeout(() => { if (!COLL.live && D.uid === user.uid && COLL.cloud === 'sync') { COLL.cloud = 'offline'; collPaintHead(); } }, COLL_RETRY.live);     // pas de réponse du serveur : hors ligne
   COLL.unsub = D.cloud.watchColl(user.uid, (data, pending, fromCache) => collFromCloud(user.uid, data, pending, fromCache), err => {
-    COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? 'Règles Firestore à publier pour la collection' : 'Synchronisation impossible'; collPaintHead();
+    COLL.cloud = 'error'; COLL.err = err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour la collection') : T('Synchronisation impossible'); collPaintHead();
   });
 }
 /** Le compte a changé (ou premier état) : fusion avec cet appareil. fromCache : copie locale du SDK, jamais fiable pour fusionner ; pulled : lecture directe, peut arriver en retard. */
@@ -189,11 +189,11 @@ function collRemoteApplied(before, after, o = {}) {
   let add = 0, del = 0;
   for (const k in after) if (!before[k]) add++;
   for (const k in before) if (!after[k]) del++;
-  const n0 = Object.keys(before).length, plural = n => n + ' carte' + (n > 1 ? 's' : '');
-  if (del >= 10 && del * 2 >= n0) toast(`${plural(del)} retirée${del > 1 ? 's' : ''} depuis un autre appareil`, { label: 'Annuler', fn: () => { COLL.map = unionColl(COLL.map, before); collChanged(); } });
-  else if (o.first && o.had) toast('Collection de l\'appareil et du compte fusionnées');
-  else if (o.first) toast('Collection de ton compte chargée : ' + plural(add));
-  else if (add || del) toast('Autre appareil : ' + [add && '+' + plural(add), del && '−' + plural(del)].filter(Boolean).join(' · '));
+  const n0 = Object.keys(before).length, plural = n => T(n > 1 ? '{n} cartes' : '{n} carte', { n });
+  if (del >= 10 && del * 2 >= n0) toast(T(del > 1 ? '{n} cartes retirées depuis un autre appareil' : '{n} carte retirée depuis un autre appareil', { n: del }), { label: T('Annuler'), fn: () => { COLL.map = unionColl(COLL.map, before); collChanged(); } });
+  else if (o.first && o.had) toast(T('Collection de l\'appareil et du compte fusionnées'));
+  else if (o.first) toast(T('Collection de ton compte chargée : {cards}', { cards: plural(add) }));
+  else if (add || del) toast(T('Autre appareil : {changes}', { changes: [add && '+' + plural(add), del && '−' + plural(del)].filter(Boolean).join(' · ') }));
 }
 /** Retour au premier plan / réseau revenu : on envoie ce qui attend et on relit le compte (les navigateurs mobiles endorment la connexion en arrière-plan). */
 function collWake() { if (cloudOn()) collSyncNow(); }
@@ -221,24 +221,24 @@ function pxTargets(f) {
   return out;
 }
 function pxError(e) {
-  if (e.code === 'notoken') return 'Token CardTrader manquant.';
+  if (e.code === 'notoken') return T('Token CardTrader manquant.');
   if (e.code === 'auth') return authHint(e, 'CardTrader').msg;
-  if (e.code === 'rate') return (/scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader') + ' limite les requêtes : réessaie dans une minute.';
-  if (e.code === 'network') return e.offline ? 'Tu es hors ligne : reconnecte-toi puis relance (les cartes déjà lues sont gardées).' : 'Impossible de joindre ' + (e.host || 'CardTrader ou Scryfall') + '. Relance : les cartes déjà lues sont gardées.';
-  return 'Lecture des prix impossible : ' + (e.message || 'erreur inconnue') + '.';
+  if (e.code === 'rate') return T('{host} limite les requêtes : réessaie dans une minute.', { host: /scryfall/.test(e.host || '') ? 'Scryfall' : 'CardTrader' });
+  if (e.code === 'network') return e.offline ? T('Tu es hors ligne : reconnecte-toi puis relance (les cartes déjà lues sont gardées).') : T('Impossible de joindre {host}. Relance : les cartes déjà lues sont gardées.', { host: e.host || T('CardTrader ou Scryfall') });
+  return T('Lecture des prix impossible : {msg}.', { msg: e.message || T('erreur inconnue') });
 }
-const PX_STEPS = { prints: 'impressions', catalog: 'extensions', offers: 'offres', fallback: 'offres' };
+const PX_STEPS = { prints: T('impressions'), catalog: T('extensions'), offers: T('offres'), fallback: T('offres') };
 /** Lit les prix réels de ces cartes (targets : [{ key, name, lang }]) par lots, une langue après l'autre (o.fresh : sans le cache du serveur). Progression dans la barre de la collection et en pastille flottante. */
 async function pxRun(targets, o = {}) {
   if (COLL.pxRun || !targets.length) return;
-  if (S.demo) { toast('Mode démo : les prix réels viennent de CardTrader, désactive la démo'); return; }
-  if (S.run && S.run.status === 'running') { toast('Une recherche est en cours : attends sa fin'); return; }
+  if (S.demo) { toast(T('Mode démo : les prix réels viennent de CardTrader, désactive la démo')); return; }
+  if (S.run && S.run.status === 'running') { toast(T('Une recherche est en cours : attends sa fin')); return; }
   readOpts();
-  if (!CTX.proxy && !CTX.token) { toast('Ajoute ton token CardTrader dans les réglages'); openSettings(); return; }
-  if (CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast('Connecte-toi pour lire les prix'); openAccount(); return; }
+  if (!CTX.proxy && !CTX.token) { toast(T('Ajoute ton token CardTrader dans les réglages')); openSettings(); return; }
+  if (CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast(T('Connecte-toi pour lire les prix')); openAccount(); return; }
   const st = COLL.pxRun = { total: targets.length, done: 0, frac: 0, step: '', ctrl: new AbortController(), real: 0, none: 0, task: null };
   COLL.pxMsg = null;
-  st.task = floatTask('Prix réels de la collection', { total: st.total, sub: 'Démarrage…' }, () => !COLL.el || sheets.length > 0);
+  st.task = floatTask(T('Prix réels de la collection'), { total: st.total, sub: T('Démarrage…') }, () => !COLL.el || sheets.length > 0);
   const upd = () => { st.task.set(st.done, st.total, `${nf0(Math.floor(st.done))} / ${nf0(st.total)}${st.step ? ' · ' + st.step : ''}`); collPaintHead(); };
   const byLang = new Map(); for (const t of targets) { if (!byLang.has(t.lang)) byLang.set(t.lang, []); byLang.get(t.lang).push(t); }
   collPaintHead();
@@ -259,40 +259,41 @@ async function pxRun(targets, o = {}) {
       await runLive(chunk.map(t => ({ key: t.key, name: t.name, qty: 1 })), opts, hooks, st.ctrl.signal);
       st.done = base + chunk.length; upd();
     }
-    COLL.pxMsg = { t: `Prix réels à jour : ${nf0(st.real)} carte${st.real > 1 ? 's' : ''}${st.none ? ` · ${nf0(st.none)} sans offre` : ''}`, bad: false };
-    st.task.finish('Prix réels à jour', 'ok', `${nf0(st.real)} carte${st.real > 1 ? 's' : ''}${st.none ? ` · ${nf0(st.none)} sans offre` : ''}`);
+    const got = TN(st.real, '{n} carte', '{n} cartes') + (st.none ? ' · ' + T('{n} sans offre', { n: nf0(st.none) }) : '');
+    COLL.pxMsg = { t: T('Prix réels à jour : {cards}', { cards: got }), bad: false };
+    st.task.finish(T('Prix réels à jour'), 'ok', got);
   } catch (e) {
     const n = st.real + st.none;
-    if (e.name === 'AbortError') { COLL.pxMsg = { t: `Lecture interrompue : ${nf0(n)} carte${n > 1 ? 's' : ''} lue${n > 1 ? 's' : ''}`, bad: false }; st.task.finish('Prix réels interrompus', 'warn', `${nf0(n)} cartes lues`); }
-    else { const m = pxError(e); COLL.pxMsg = { t: m + (n ? ` (${nf0(n)} carte${n > 1 ? 's' : ''} déjà lue${n > 1 ? 's' : ''})` : ''), bad: true }; st.task.finish('Prix réels : échec', 'bad', m); }
+    if (e.name === 'AbortError') { COLL.pxMsg = { t: T('Lecture interrompue : {cards}', { cards: TN(n, '{n} carte lue', '{n} cartes lues') }), bad: false }; st.task.finish(T('Prix réels interrompus'), 'warn', T('{n} cartes lues', { n: nf0(n) })); }
+    else { const m = pxError(e); COLL.pxMsg = { t: m + (n ? ' (' + TN(n, '{n} carte déjà lue', '{n} cartes déjà lues') + ')' : ''), bad: true }; st.task.finish(T('Prix réels : échec'), 'bad', m); }
   } finally {
     COLL.pxRun = null; pxSave(); collPaintHead(); if (COLL.el) collPaintBody(true); paintCollSection();
   }
 }
 /** Feuille « Prix réels » : choix de la langue des cartes et de la portée, puis lancement. */
 function openCollPrices() {
-  if (COLL.pxRun) { toast('Lecture des prix déjà en cours'); return; }
+  if (COLL.pxRun) { toast(T('Lecture des prix déjà en cours')); return; }
   if (!collCount()) { toast('Ta collection est vide'); return; }
   readOpts();
-  openSheet('Prix réels', 'L\'offre CardTrader la moins chère, comme pour acheter', api => {
+  openSheet(T('Prix réels'), T('L\'offre CardTrader la moins chère, comme pour acheter'), api => {
     const counts = {}; let none = 0, all = 0;
     for (const [k, x] of Object.entries(COLL.map)) { if (BASIC_NAMES.has(k)) continue; all++; if (x.l) counts[x.l] = (counts[x.l] || 0) + 1; else none++; }
-    const opt = (v, t) => `<option value="${v}">${esc(t)}</option>`, LN = l => LANGS[l][0].toUpperCase() + LANGS[l].slice(1);
-    const crit = [LANGS[S.opts.lang], 'état ≥ ' + (COND_SHORT[S.opts.cond] || S.opts.cond), S.opts.foil === 'no' ? 'non foil' : S.opts.foil === 'yes' ? 'foil' : 'foil ou non', S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
-    api.body.innerHTML = `<p class="hint">Pour chaque carte, Mana Orbit lit l'offre la moins chère aujourd'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.</p>
-      <div class="ctl"><label class="label" for="pxLang">Langue des cartes</label><div class="sel"><select id="pxLang">${opt('', `Toutes (${all})`)}${CARD_LANG_LIST.filter(l => counts[l]).map(l => opt(l, `${LN(l)} (${counts[l]})`)).join('')}${none ? opt('none', `Sans langue (${none}) · cherchées en ${LANGS[S.opts.lang]}`) : ''}</select></div></div>
-      <div class="seg" id="pxScope" role="radiogroup" aria-label="Portée"></div>
+    const opt = (v, t) => `<option value="${v}">${esc(t)}</option>`, LN = l => { const s = T(LANGS[l]); return s[0].toUpperCase() + s.slice(1); };
+    const crit = [T(LANGS[S.opts.lang]), T('état ≥ {c}', { c: COND_SHORT[S.opts.cond] || S.opts.cond }), S.opts.foil === 'no' ? T('non foil') : S.opts.foil === 'yes' ? 'foil' : T('foil ou non'), S.opts.mode === 'zero' ? 'CardTrader Zero' : 'Direct'];
+    api.body.innerHTML = `<p class="hint">${T('Pour chaque carte, Mana Orbit lit l\'offre la moins chère aujourd\'hui (même moteur que la recherche) et garde ce prix dans ta collection : il remplace l\'estimation Cardmarket pour la valeur, le tri par prix et « les plus chères ». Les terrains de base sont ignorés.')}</p>
+      <div class="ctl"><label class="label" for="pxLang">${T('Langue des cartes')}</label><div class="sel"><select id="pxLang">${opt('', T('Toutes ({n})', { n: all }))}${CARD_LANG_LIST.filter(l => counts[l]).map(l => opt(l, `${LN(l)} (${counts[l]})`)).join('')}${none ? opt('none', T('Sans langue ({n}) · cherchées en {lang}', { n: none, lang: T(LANGS[S.opts.lang]) })) : ''}</select></div></div>
+      <div class="seg" id="pxScope" role="radiogroup" aria-label="${T('Portée')}"></div>
       <div class="ci-sum" id="pxSum"></div>
-      <p class="hint">Chaque carte est cherchée dans sa langue. Critères repris de la recherche : <b>${esc(crit.join(' · '))}</b>. La lecture se fait carte par carte (comme une recherche) : compte quelques secondes par dizaine de cartes.</p>`;
-    api.setFoot('<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="pxGo">Lire les prix</button>');
-    mountSeg($('#pxScope', api.body), [{ v: 'old', label: 'À actualiser' }, { v: 'all', label: 'Toutes' }], 'old', () => paint());
+      <p class="hint">${T('Chaque carte est cherchée dans sa langue. Critères repris de la recherche : <b>{crit}</b>. La lecture se fait carte par carte (comme une recherche) : compte quelques secondes par dizaine de cartes.', { crit: esc(crit.join(' · ')) })}</p>`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="pxGo">${T('Lire les prix')}</button>`);
+    mountSeg($('#pxScope', api.body), [{ v: 'old', label: T('À actualiser') }, { v: 'all', label: T('Toutes') }], 'old', () => paint());
     const sel = $('#pxLang', api.body), sum = $('#pxSum', api.body), go = $('#pxGo', api.foot);
     let targets = [];
     const paint = () => {
       const f = { lang: sel.value, scope: $('#pxScope', api.body)._v || 'old' }; targets = pxTargets(f);
       const pool = pxTargets({ lang: f.lang, scope: 'all' }), have = pool.filter(t => COLL.px[t.key] && COLL.px[t.key].t), last = have.reduce((a, t) => Math.max(a, COLL.px[t.key].t), 0);
-      sum.className = 'ci-sum'; sum.innerHTML = `<div><b>${nf0(targets.length)}</b> carte${targets.length > 1 ? 's' : ''} à lire sur ${nf0(pool.length)}</div><span>${have.length ? `${nf0(have.length)} déjà lue${have.length > 1 ? 's' : ''} · dernière lecture ${pxAgo(last)}` : 'Aucun prix lu pour l\'instant'}</span>`;
-      go.disabled = !targets.length; go.textContent = targets.length ? `Lire ${nf0(targets.length)} prix` : 'Rien à lire';
+      sum.className = 'ci-sum'; sum.innerHTML = `<div>${TN(targets.length, '<b>{n}</b> carte à lire sur {total}', '<b>{n}</b> cartes à lire sur {total}', { total: nf0(pool.length) })}</div><span>${have.length ? TN(have.length, '{n} déjà lue · dernière lecture {ago}', '{n} déjà lues · dernière lecture {ago}', { ago: pxAgo(last) }) : T('Aucun prix lu pour l\'instant')}</span>`;
+      go.disabled = !targets.length; go.textContent = targets.length ? T('Lire {n} prix', { n: nf0(targets.length) }) : T('Rien à lire');
     };
     sel.onchange = paint; paint();
     go.onclick = () => { if (!targets.length) return; const all = $('#pxScope', api.body)._v === 'all'; api.close(); haptic('ok'); pxRun(targets, { fresh: all }); };      // « Toutes » : relecture voulue, on ignore le cache de 10 min du serveur
@@ -300,7 +301,7 @@ function openCollPrices() {
 }
 function pxAgo(t) {
   const m = Math.round((Date.now() - t) / 60000);
-  return m < 2 ? 'à l\'instant' : m < 90 ? `il y a ${m} min` : m < 36 * 60 ? `il y a ${Math.round(m / 60)} h` : `il y a ${Math.round(m / 1440)} j`;
+  return m < 2 ? T('à l\'instant') : m < 90 ? T('il y a {n} min', { n: m }) : m < 36 * 60 ? T('il y a {n} h', { n: Math.round(m / 60) }) : T('il y a {n} j', { n: Math.round(m / 1440) });
 }
 
 /* ── Infos Scryfall ───────────────────────────────────────────────────────────────────────────── */
@@ -311,7 +312,7 @@ const collMissing = () => Object.keys(COLL.map).filter(k => !(k in COLL.meta) ||
 async function collEnrich() {
   if (COLL.enrich) return COLL.enrich.p;
   const miss = collMissing(), lm = collLangMissing(), lmN = Object.values(lm).reduce((a, x) => a + x.length, 0); if (!miss.length && !lmN) return;
-  if (scryLeft() > 0) { COLL.enrichErr = 'Scryfall demande une pause : réessaie dans ' + Math.ceil(scryLeft() / 1000) + ' s'; collPaintHead(); return; }
+  if (scryLeft() > 0) { COLL.enrichErr = T('Scryfall demande une pause : réessaie dans {s} s', { s: Math.ceil(scryLeft() / 1000) }); collPaintHead(); return; }
   const full = miss.length > 0 && miss.length >= collCount();      // toute la collection relue : les prix Cardmarket sont à jour
   const st = COLL.enrich = { done: 0, total: miss.length + lmN, ctrl: new AbortController(), ph: miss.length ? 'info' : 'img' };
   COLL.enrichErr = '';
@@ -330,7 +331,7 @@ async function collEnrich() {
         for (const k of keys) COLL.li[liKey(l, k)] = got.get(k) || '';
         st.done = base + keys.length; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true); scanPaintList();
       }
-    } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? 'Scryfall limite les requêtes : réessaie dans une minute' : 'Scryfall injoignable : réessaie plus tard'; }
+    } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? T('Scryfall limite les requêtes : réessaie dans une minute') : T('Scryfall injoignable : réessaie plus tard'); }
     finally {
       COLL.enrich = null; VAL.memo = null; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true);
       if (!COLL.enrichErr && !st.ctrl.signal.aborted && (collMissing().length || collLangMissingCount())) setTimeout(collEnrich, 50);      // cartes ajoutées ou langues changées pendant la lecture : on enchaîne
@@ -363,7 +364,7 @@ function paintCollSection() {
   const sub = $('#collSub'); if (!sub) return;
   const n = collCount();
   const al = n ? valAlertN() : 0;
-  sub.textContent = n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(collCopies())} exemplaire${collCopies() > 1 ? 's' : ''}${al ? ` · ${nf0(al)} prix ${al > 1 ? 'ont' : 'a'} bougé` : ''}` : 'Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.';
+  sub.textContent = n ? TN(n, '{n} carte', '{n} cartes') + ' · ' + TN(collCopies(), '{n} exemplaire', '{n} exemplaires') + (al ? ' · ' + TN(al, '{n} prix a bougé', '{n} prix ont bougé') : '') : T('Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.');
   $('#btnColl').dataset.empty = n ? '0' : '1';
   homeSoon();
 }
@@ -395,7 +396,7 @@ function collFrLoad() {
     if (rec) { FRN.map = frNames(rec.rows); collPaint(); } else FRN.fail = Date.now();
   })().catch(() => { FRN.fail = Date.now(); }).finally(() => { FRN.p = null; });
 }
-const SORT_OPTS = [['name', 'Nom'], ['qty', 'Quantité'], ['price', 'Prix'], ['cmc', 'Coût'], ['decks', 'Decks EDHREC'], ['new', 'Ajout : récentes en haut'], ['old', 'Ajout : anciennes en haut']];
+const SORT_OPTS = [['name', T('Nom')], ['qty', T('Quantité')], ['price', T('Prix')], ['cmc', T('Coût')], ['decks', T('Decks EDHREC')], ['new', T('Ajout : récentes en haut')], ['old', T('Ajout : anciennes en haut')]];
 const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
 function collItems() {
   return Object.entries(COLL.map).map(([k, x]) => {
@@ -416,53 +417,69 @@ function collSorted(items) {
 const CARD_LANG_LIST = ['fr', 'en', 'de', 'es', 'it', 'pt', 'jp', 'zh-CN'];
 /** Puce langue d'une carte : drapeau (ou « Langue ? »), et un <select> invisible par-dessus : un appui ouvre le choix natif de la langue. */
 function langChip(k, l, name, cls) {
-  return `<label class="lchip${l ? '' : ' none'}${cls ? ' ' + cls : ''}" data-l="${esc(l)}">${l ? flag(l) : '<span>Langue ?</span>'}<select data-lk="${esc(k)}" aria-label="Langue de ${esc(name)}"><option value=""${l ? '' : ' selected'}>Non précisée</option>${CARD_LANG_LIST.map(x => `<option value="${x}"${x === l ? ' selected' : ''}>${esc(LANGS[x][0].toUpperCase() + LANGS[x].slice(1))}</option>`).join('')}</select></label>`;
+  return `<label class="lchip${l ? '' : ' none'}${cls ? ' ' + cls : ''}" data-l="${esc(l)}">${l ? flag(l) : '<span>' + T('Langue ?') + '</span>'}<select data-lk="${esc(k)}" aria-label="${T('Langue de {name}', { name: esc(name) })}"><option value=""${l ? '' : ' selected'}>${T('Non précisée')}</option>${CARD_LANG_LIST.map(x => { const n = T(LANGS[x]); return `<option value="${x}"${x === l ? ' selected' : ''}>${esc(n[0].toUpperCase() + n.slice(1))}</option>`; }).join('')}</select></label>`;
 }
 function crowHtml(it) {
   const nm = it.dn || it.n, hue = hash32(it.k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase()), img = collImage(it.k, it.l, it.im).src, sub = it.li > 0;      // sub : 2e ligne de langue de la même carte
   const tags = [];      // le drapeau suit le nom (à droite, loin de la vignette qu'on touche pour agrandir) ; « Langue ? » finit la rangée de tags
-  if (!sub && it.tl) tags.push(`<span class="tag">${esc(typeBucket(it.tl))}</span>`);
-  if (!sub && it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">Coût ${it.cm}</span>`);
-  if (!sub && COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="Commandant dans des decks EDHREC">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
-  if (!sub && isDateSort() && it.d) tags.push(`<span class="tag" title="Date d'ajout à la collection">${esc(new Date(it.d * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
+  if (!sub && it.tl) tags.push(`<span class="tag">${esc(T(typeBucket(it.tl)))}</span>`);
+  if (!sub && it.cm != null && it.tl && typeBucket(it.tl) !== 'Terrains') tags.push(`<span class="tag">${T('Coût {n}', { n: it.cm })}</span>`);
+  if (!sub && COLL.f.cmdr && it.cx) tags.push(it.cx === 2 ? `<span class="tag accent" title="${T('Commandant dans des decks EDHREC')}">Commander${it.ed ? ' · ' + nf0(it.ed) + ' decks' : ''}</span>` : '<span class="tag accent">Commander</span>');
+  if (!sub && isDateSort() && it.d) tags.push(`<span class="tag" title="${T('Date d\'ajout à la collection')}">${esc(new Date(it.d * 1000).toLocaleString(LOC(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</span>`);
   const mvv = !sub && valMove(it.k); if (mvv) tags.push(valTag(mvv));
   const mnt = !sub && engTag(it.k); if (mnt) tags.push(mnt);
   if (!it.l) tags.push(langChip(it.k, '', it.n));
   const px = [];      // prix : CM (tendance Cardmarket, estimation) au-dessus, CT (offre CardTrader la plus basse, lue à la demande) en dessous
-  if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="Cardmarket : prix tendance"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
-  if (Number.isFinite(it.rp)) px.push(`<span class="px ct" title="CardTrader : offre la plus basse"><i>CT</i> <b>${esc(fmt(it.rp, it.rc || 'EUR'))}</b></span>`);
-  else if (it.rp === null && it.rt) px.push('<span class="px ct none" title="CardTrader : aucune offre"><i>CT</i> <b>aucune offre</b></span>');
+  if (Number.isFinite(it.eu)) px.push(`<span class="px cm" title="${T('Cardmarket : prix tendance')}"><i>CM</i> <b>${esc(fmt(it.eu, 'EUR'))}</b></span>`);
+  if (Number.isFinite(it.rp)) px.push(`<span class="px ct" title="${T('CardTrader : offre la plus basse')}"><i>CT</i> <b>${esc(fmt(it.rp, it.rc || 'EUR'))}</b></span>`);
+  else if (it.rp === null && it.rt) px.push(`<span class="px ct none" title="${T('CardTrader : aucune offre')}"><i>CT</i> <b>${T('aucune offre')}</b></span>`);
   return `<div class="crow${px.length ? ' has-px' : ''}${sub ? ' sub' : ''}${it.nl > 1 ? ' ml' : ''}" data-k="${esc(it.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? langChip(it.k, it.l, it.n) : ''}</span>${tags.length ? `<span class="row-meta">${tags.join('')}</span>` : ''}</span>
     ${px.length ? `<span class="row-px">${px.join('')}</span>` : ''}
-    <span class="qstep"><button type="button" data-d="-1" aria-label="Retirer un exemplaire de ${esc(nm)}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="Ajouter un exemplaire de ${esc(nm)}">+</button></span></div>`;
+    <span class="qstep"><button type="button" data-d="-1" aria-label="${T('Retirer un exemplaire de {name}', { name: esc(nm) })}">−</button><b>${it.q}</b><button type="button" data-d="1" aria-label="${T('Ajouter un exemplaire de {name}', { name: esc(nm) })}">+</button></span></div>`;
 }
 /** État de la sauvegarde, en toutes lettres (le sous-titre du header est tronqué sur téléphone) : { k: 'ok'|'warn'|'bad', t, acts:[[act, label]] } ou null. */
 function collSyncInfo() {
   if (!collCount()) return null;
-  const exp = ['export', 'Exporter'];
+  const exp = ['export', T('Exporter')];
   if (D.user) {
-    if (COLL.cloud === 'ok') return { k: 'ok', t: 'Sauvegardée dans ton compte', acts: [exp] };
-    if (COLL.cloud === 'offline') return { k: 'warn', t: 'Hors ligne : tes changements restent sur cet appareil et partiront au retour du réseau.', acts: [['resync', 'Réessayer'], exp] };
-    if (COLL.cloud === 'error') return { k: 'bad', t: 'Pas sauvegardée dans ton compte : ' + (COLL.err || 'synchronisation impossible') + '. Tes cartes ne sont que sur cet appareil.', acts: [['resync', 'Réessayer'], exp] };
-    return { k: 'warn', t: 'Synchronisation avec ton compte…', acts: [] };
+    if (COLL.cloud === 'ok') return { k: 'ok', t: T('Sauvegardée dans ton compte'), acts: [exp] };
+    if (COLL.cloud === 'offline') return { k: 'warn', t: T('Hors ligne : tes changements restent sur cet appareil et partiront au retour du réseau.'), acts: [['resync', T('Réessayer')], exp] };
+    if (COLL.cloud === 'error') return { k: 'bad', t: T('Pas sauvegardée dans ton compte : {err}. Tes cartes ne sont que sur cet appareil.', { err: COLL.err || T('synchronisation impossible') }), acts: [['resync', T('Réessayer')], exp] };
+    return { k: 'warn', t: T('Synchronisation avec ton compte…'), acts: [] };
   }
-  if (D.state === 'unavailable') return { k: 'bad', t: 'Compte indisponible ici (Firebase bloqué ou hors ligne) : tes cartes ne sont que sur cet appareil.', acts: [exp] };
+  if (D.state === 'unavailable') return { k: 'bad', t: T('Compte indisponible ici (Firebase bloqué ou hors ligne) : tes cartes ne sont que sur cet appareil.'), acts: [exp] };
   if (!D.authReady) return null;
-  return { k: 'warn', t: 'Pas sauvegardée dans un compte : tes cartes ne sont que sur cet appareil (perdues si les données du navigateur sont effacées).', acts: [['login', 'Se connecter'], exp] };
+  return { k: 'warn', t: T('Pas sauvegardée dans un compte : tes cartes ne sont que sur cet appareil (perdues si les données du navigateur sont effacées).'), acts: [['login', T('Se connecter')], exp] };
 }
-/** Télécharge la collection en texte (« 3 Sol Ring *FR* », réimportable). */
-function collExport() {
+/** Exporter la collection : CSV (Moxfield, ManaBox, Archidekt…), texte « 3 Sol Ring *FR* » (réimportable ici et dans la plupart des applis), ou copie du texte. */
+function collDownload(body, ext, type) {
   try {
-    const url = URL.createObjectURL(new Blob([collToText(COLL.map) + '\n'], { type: 'text/plain;charset=utf-8' })), a = document.createElement('a');
-    a.href = url; a.download = 'ma-collection-' + new Date().toISOString().slice(0, 10) + '.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Collection exportée (' + nf0(collCount()) + ' cartes)');
-  } catch (e) { toast('Export impossible sur ce navigateur'); }
+    const url = URL.createObjectURL(new Blob([body], { type: type + ';charset=utf-8' })), a = document.createElement('a');
+    a.href = url; a.download = 'ma-collection-' + new Date().toISOString().slice(0, 10) + '.' + ext; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast(T('Collection exportée ({n} cartes)', { n: nf0(collCount()) }));
+  } catch (e) { toast(T('Export impossible sur ce navigateur')); }
+}
+function collExport() {
+  if (!collCount()) { toast(T('Ta collection est vide')); return; }
+  openSheet(T('Exporter ma collection'), T('{n} cartes · {c} exemplaires', { n: nf0(collCount()), c: nf0(collCopies()) }), api => {
+    api.body.innerHTML = `<div class="ex-list">
+      <button class="ex-opt" type="button" data-x="csv"><b>${T('Fichier CSV')}</b><span>${T('Pour Moxfield, ManaBox, Archidekt, Deckbox… Une ligne par carte et par langue.')}</span></button>
+      <button class="ex-opt" type="button" data-x="txt"><b>${T('Fichier texte')}</b><span>${T('« 3 Sol Ring *FR* », une carte par ligne. Réimportable ici et dans la plupart des applis.')}</span></button>
+      <button class="ex-opt" type="button" data-x="copy"><b>${T('Copier le texte')}</b><span>${T('Pour le coller dans un message ou une autre appli.')}</span></button></div>`;
+    api.body.onclick = e => {
+      const x = (e.target.closest('[data-x]') || {}).dataset; if (!x || !x.x) return;
+      if (x.x === 'csv') collDownload(collToCsv(COLL.map), 'csv', 'text/csv');
+      else if (x.x === 'txt') collDownload(collToText(COLL.map) + '\n', 'txt', 'text/plain');
+      else { copyText(collToText(COLL.map)); }
+      api.close();
+    };
+  });
 }
 function collHeadText() {
   const n = collCount(), c = collCopies();
-  const sync = D.user ? (COLL.cloud === 'ok' ? 'synchronisée' : COLL.cloud === 'sync' ? 'synchronisation…' : COLL.cloud === 'offline' ? 'hors ligne' : COLL.cloud === 'error' ? COLL.err : '') : 'sur cet appareil';
-  return n ? `${nf0(n)} carte${n > 1 ? 's' : ''} · ${nf0(c)} exemplaire${c > 1 ? 's' : ''}${sync ? ' · ' + sync : ''}` : 'Vide pour le moment';
+  const sync = D.user ? (COLL.cloud === 'ok' ? T('synchronisée') : COLL.cloud === 'sync' ? T('synchronisation…') : COLL.cloud === 'offline' ? T('hors ligne') : COLL.cloud === 'error' ? COLL.err : '') : T('sur cet appareil');
+  return n ? TN(n, '{n} carte', '{n} cartes') + ' · ' + TN(c, '{n} exemplaire', '{n} exemplaires') + (sync ? ' · ' + sync : '') : T('Vide pour le moment');
 }
 function collPaintHead() {
   paintCollSection();
@@ -474,13 +491,13 @@ function collPaintHead() {
   else { sy.hidden = false; sy.dataset.k = si.k; sy.innerHTML = `<span class="sy-d" aria-hidden="true"></span><span class="sy-t">${esc(si.t)}</span>${si.acts.map(([a, l]) => `<button class="link-btn" type="button" data-act="${a}">${esc(l)}</button>`).join('')}`; }
   const stt = $('.coll-status', el), e = COLL.enrich, miss = collMissing().length, lmiss = collLangMissingCount();
   const px = COLL.pxRun;
-  if (px) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>Prix réels · ${nf0(Math.floor(px.done))} / ${nf0(px.total)}${px.step ? ' · ' + esc(px.step) : ''}</span><span class="track"><span class="fill" style="width:${Math.round(100 * px.done / Math.max(1, px.total))}%"></span></span><button class="link-btn" type="button" data-act="pxstop">Arrêter</button>`; }
+  if (px) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix réels · {a} / {b}', { a: nf0(Math.floor(px.done)), b: nf0(px.total) })}${px.step ? ' · ' + esc(px.step) : ''}</span><span class="track"><span class="fill" style="width:${Math.round(100 * px.done / Math.max(1, px.total))}%"></span></span><button class="link-btn" type="button" data-act="pxstop">${T('Arrêter')}</button>`; }
   else if (COLL.pxMsg) { stt.hidden = false; stt.dataset.k = COLL.pxMsg.bad ? 'err' : 'idle'; stt.innerHTML = `<span>${esc(COLL.pxMsg.t)}</span><button class="link-btn" type="button" data-act="pxok">OK</button>`; }
-  else if (e) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${e.ph === 'img' ? 'Images dans la langue des cartes' : 'Lecture des cartes sur Scryfall'} · ${nf0(e.done)} / ${nf0(e.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * e.done / Math.max(1, e.total))}%"></span></span>`; }
-  else if (VAL.run) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>Prix Cardmarket · ${nf0(VAL.run.done)} / ${nf0(VAL.run.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * VAL.run.done / Math.max(1, VAL.run.total))}%"></span></span>`; }
-  else if (COLL.enrichErr) { stt.hidden = false; stt.dataset.k = 'err'; stt.innerHTML = `<span>${esc(COLL.enrichErr)}</span><button class="link-btn" type="button" data-act="enrich">Réessayer</button>`; }
-  else if (miss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${nf0(miss)} carte${miss > 1 ? 's' : ''} sans infos (coût, type, image)</span><button class="link-btn" type="button" data-act="enrich">Compléter</button>`; }
-  else if (lmiss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${nf0(lmiss)} carte${lmiss > 1 ? 's' : ''} sans image dans sa langue</span><button class="link-btn" type="button" data-act="enrich">Charger</button>`; }
+  else if (e) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${e.ph === 'img' ? T('Images dans la langue des cartes') : T('Lecture des cartes sur Scryfall')} · ${nf0(e.done)} / ${nf0(e.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * e.done / Math.max(1, e.total))}%"></span></span>`; }
+  else if (VAL.run) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix Cardmarket · {a} / {b}', { a: nf0(VAL.run.done), b: nf0(VAL.run.total) })}</span><span class="track"><span class="fill" style="width:${Math.round(100 * VAL.run.done / Math.max(1, VAL.run.total))}%"></span></span>`; }
+  else if (COLL.enrichErr) { stt.hidden = false; stt.dataset.k = 'err'; stt.innerHTML = `<span>${esc(COLL.enrichErr)}</span><button class="link-btn" type="button" data-act="enrich">${T('Réessayer')}</button>`; }
+  else if (miss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(miss, '{n} carte sans infos (coût, type, image)', '{n} cartes sans infos (coût, type, image)')}</span><button class="link-btn" type="button" data-act="enrich">${T('Compléter')}</button>`; }
+  else if (lmiss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(lmiss, '{n} carte sans image dans sa langue', '{n} cartes sans image dans sa langue')}</span><button class="link-btn" type="button" data-act="enrich">${T('Charger')}</button>`; }
   else stt.hidden = true;
   valPaintAlert();
 }

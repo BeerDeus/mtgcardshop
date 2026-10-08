@@ -1,0 +1,22 @@
+{
+  "name": "mana-orbit-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Mana Orbit pour Android (Capacitor) : l'appli web de card.m2s-photo.fr dans une coque native (scan natif, notifications, publicité).",
+  "scripts": {
+    "setup": "npm install && npx cap sync android",
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "apk": "cd android && ./gradlew assembleDebug",
+    "bundle": "cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor-community/camera-preview": "^8.0.2",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@pantrist/capacitor-plugin-ml-kit-text-recognition": "^8.1.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

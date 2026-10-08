@@ -6,6 +6,7 @@ const BK = { armed: 0 };
 /** Ferme l'écran le plus haut ; retourne vrai s'il y en avait un. */
 function backClose() {
   if (typeof imgView !== 'undefined' && imgView) { imgView.close(); return true; }
+  if (typeof OB !== 'undefined' && OB.el && !sheets.length) { obBack(); return true; }
   if (sheets.length) { sheets[sheets.length - 1].close(); return true; }
   const dvs = $$('body > .dv.on'), top = dvs[dvs.length - 1];
   if (top && top.__close) { if (top.classList.contains('bd')) bdClose(); else top.__close(); return true; }
@@ -23,6 +24,6 @@ function backInit() {
     if (!e.state || e.state.dd !== 'root') return;
     if (backClose()) { BK.armed = 0; mark('trap'); return; }
     if (Date.now() - BK.armed < 2500) { BK.armed = 0; history.back(); return; }      // 2e Retour : on laisse partir
-    BK.armed = Date.now(); toast('Appuie encore sur Retour pour quitter'); mark('trap');
+    BK.armed = Date.now(); toast(T('Appuie encore sur Retour pour quitter')); mark('trap');
   });
 }

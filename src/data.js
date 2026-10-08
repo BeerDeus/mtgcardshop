@@ -7,7 +7,7 @@ const sleep = (ms, signal) => new Promise((res, rej) => {
   const t = setTimeout(res, ms);
   if (signal) signal.addEventListener('abort', () => { clearTimeout(t); rej(abortErr()); }, { once: true });
 });
-function abortErr() { const e = new Error('Annulé'); e.name = 'AbortError'; return e; }
+function abortErr() { const e = new Error(T('Annulé')); e.name = 'AbortError'; return e; }
 function netErr(code, msg, extra) { const e = new Error(msg); e.code = code; Object.assign(e, extra || {}); return e; }
 
 /** File d'attente cadencée : `rate` requêtes/s, `conc` en parallèle, ralentit seule sur 429/503. */
@@ -72,11 +72,11 @@ async function httpJson(lim, url, init, signal, retries = 4, prio = false) {
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (n < waits.length && !offline) { const w = waits[n++]; if (lim.onWait) lim.onWait(w, 'net'); await sleep(w, signal); continue; }
       if (scry && !offline) setScryUntil(Date.now() + BACKOFF.coolNet); // blocage probable : on évite de marteler à la relance
-      throw netErr('network', 'Connexion impossible', { cause: e, host, offline });
+      throw netErr('network', T('Connexion impossible'), { cause: e, host, offline });
     }
     if (r.status === 429 || r.status === 503) {
       lim.slow();
-      if (a >= (scry ? 2 : retries)) throw netErr('rate', 'Trop de requêtes, réessaie dans un instant', { status: r.status, host });
+      if (a >= (scry ? 2 : retries)) throw netErr('rate', T('Trop de requêtes, réessaie dans un instant'), { status: r.status, host });
       const ra = Number(r.headers.get('retry-after'));
       const wait = r.status === 429 && scry ? (Number.isFinite(ra) && r.headers.has('retry-after') ? Math.min(60000, ra * 1000) : BACKOFF.cool429) : 900 * (a + 1);
       lim.pause(wait); if (scry) setScryUntil(Date.now() + wait); if (lim.onWait) lim.onWait(wait, 'rate');
@@ -84,14 +84,14 @@ async function httpJson(lim, url, init, signal, retries = 4, prio = false) {
     }
     if (r.status === 401 || r.status === 403) {
       let reason = ''; try { const b = await r.json(); reason = (b && b.error) || ''; } catch (e) { /* corps absent */ }
-      throw netErr('auth', 'Accès refusé', { status: r.status, host, reason });   // reason : auth_required · forbidden · bad_token · token_expired · bad_app_key
+      throw netErr('auth', T('Accès refusé'), { status: r.status, host, reason });   // reason : auth_required · forbidden · bad_token · token_expired · bad_app_key
     }
-    if (r.status === 404) throw netErr('404', 'Introuvable', { status: 404 });
+    if (r.status === 404) throw netErr('404', T('Introuvable'), { status: 404 });
     if (!r.ok) {
       if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); a++; continue; }
       let detail = '';
       try { const b = await r.json(); const m = b && (b.error || b.message || b.errors); detail = m ? (typeof m === 'string' ? m : JSON.stringify(m)).slice(0, 160) : ''; } catch (e) { /* corps absent */ }
-      throw netErr('http', 'Erreur ' + r.status + (detail ? ' : ' + detail : ''), { status: r.status, host, detail });
+      throw netErr('http', detail ? T('Erreur {status} : {detail}', { status: r.status, detail }) : T('Erreur {status}', { status: r.status }), { status: r.status, host, detail });
     }
     lim.speedUp();
     return r.json();
@@ -188,7 +188,7 @@ async function scryPrintsBatch(cards, signal) {
   };
   const got = new Map();
   for (let pages = 1; url; pages++) {
-    if (pages > SCRY_BATCH.pages) throw netErr('batch', 'Lot trop volumineux'); // résultats tronqués : on se replie sur la recherche carte par carte
+    if (pages > SCRY_BATCH.pages) throw netErr('batch', T('Lot trop volumineux')); // résultats tronqués : on se replie sur la recherche carte par carte
     let j;
     try { j = await httpJson(limScry, url, SCRY_JSON, signal); }
     catch (e) { if (e.code === '404') break; throw e; }
@@ -242,7 +242,7 @@ async function scryArtPrints(name, lang, signal) {
   const out = await scryPrintsIn(n, sl, signal);
   if (sl !== 'en') {      // impressions qui n'existent qu'en anglais (promos, séries spéciales…) : après celles de la langue affichée, marquées « anglais »
     const have = new Set(out.map(p => p.set + '/' + p.num));
-    for (const p of await scryPrintsIn(n, 'en', signal)) if (!have.has(p.set + '/' + p.num)) out.push({ ...p, l: 'en', fx: [...p.fx, 'anglais'] });
+    for (const p of await scryPrintsIn(n, 'en', signal)) if (!have.has(p.set + '/' + p.num)) out.push({ ...p, l: 'en', fx: [...p.fx, T('anglais')] });
   }
   await Cache.set(key, out);
   return out;
@@ -255,7 +255,7 @@ async function scryPrintsIn(n, sl, signal) {
     for (const c of j.data || []) {
       const urls = facesOf(c), im = c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {}, id = c.set + '/' + c.collector_number;
       if (!urls.length || seen.has(id)) continue; seen.add(id);
-      const fe = c.frame_effects || [], fx = [c.full_art ? 'plein art' : '', c.border_color === 'borderless' ? 'sans bordure' : '', fe.includes('extendedart') ? 'étendue' : '', fe.includes('showcase') ? 'showcase' : '', c.promo ? 'promo' : ''].filter(Boolean);
+      const fe = c.frame_effects || [], fx = [c.full_art ? T('plein art') : '', c.border_color === 'borderless' ? T('sans bordure') : '', fe.includes('extendedart') ? T('étendue') : '', fe.includes('showcase') ? 'showcase' : '', c.promo ? 'promo' : ''].filter(Boolean);
       out.push({ set: c.set, num: c.collector_number, sn: c.set_name || '', y: String(c.released_at || '').slice(0, 4), th: im.small || urls[0], urls, fx, l: sl });
     }
     url = j.has_more ? j.next_page : '';
@@ -356,7 +356,7 @@ async function scryFrCatalog(signal, onProgress) {
     });
   }
   const seen = new Set(); rows = rows.filter(r => { const k = frRowKey(r); if (seen.has(k)) return false; seen.add(k); return true; });
-  if (rows.length < 500) throw netErr('http', 'Catalogue français incomplet');
+  if (rows.length < 500) throw netErr('http', T('Catalogue français incomplet'));
   const rec = { rows, at: Date.now() }; await Cache.set(FR_KEY, rec); await Cache.set(FR_PART, null);
   return rec;
 }
@@ -378,7 +378,7 @@ async function scryLangImages(names, lang, signal, onProgress, prio = false) {
 
 /* ── CardTrader ───────────────────────────────────────────────────────────────────────────── */
 async function ct(path, { method = 'GET', params, body, signal, lim = limCT } = {}) {
-  if (!CTX.proxy && !CTX.token) throw netErr('notoken', 'Token CardTrader manquant');
+  if (!CTX.proxy && !CTX.token) throw netErr('notoken', T('Token CardTrader manquant'));
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
   const url = CTX.proxy ? 'api/' + path + qs : 'https://api.cardtrader.com/api/v2/' + path + qs;
   const call = async force => {
@@ -452,9 +452,9 @@ async function fetchBpOffers(bp, lang, foil, signal) { return (await fetchBpRaw(
  */
 async function jobOffers(ids, lang, foil, { fresh = false, signal, onItem, onInfo, push = null }) {
   const want = new Set(ids), kill = id => { ct('jobs/' + id, { method: 'DELETE', lim: limJob }).catch(() => {}); };
-  const down = (e, why) => Object.assign(netErr('jobs', why || 'Tâches du serveur indisponibles', { cause: e }), { jobsDown: true });
+  const down = (e, why) => Object.assign(netErr('jobs', why || T('Tâches du serveur indisponibles'), { cause: e }), { jobsDown: true });
   for (let attempt = 0; want.size; attempt++) {
-    if (attempt >= 3) throw down(null, 'Recherche serveur interrompue à plusieurs reprises');
+    if (attempt >= 3) throw down(null, T('Recherche serveur interrompue à plusieurs reprises'));
     let st;
     try { st = await ct('jobs', { method: 'POST', body: { type: 'offers', lang: lang || '', foil: foil === 'no' || foil === 'yes' ? foil : 'any', bps: [...want], fresh: !!fresh && attempt === 0, push: push || undefined }, signal, lim: limJob }); }
     catch (e) { if (e.name === 'AbortError' || e.code === 'auth' || e.code === 'network') throw e; throw down(e); }   // 404 (désactivées) · 429 (serveur occupé) · 400 : on retombe sur la lecture depuis l'appareil
@@ -472,7 +472,7 @@ async function jobOffers(ids, lang, foil, { fresh = false, signal, onItem, onInf
         }
         for (const it of r.items) if (want.delete(it.bp)) onItem(it);
         from = r.next; if (onInfo) onInfo(r, !!st.attached);
-        if (r.status === 'failed' && r.fatal) throw netErr('auth', 'Accès refusé', { status: r.fatal, host: '', reason: '' });
+        if (r.status === 'failed' && r.fatal) throw netErr('auth', T('Accès refusé'), { status: r.fatal, host: '', reason: '' });
         if (r.status !== 'running' && from >= r.count) { if (r.status === 'cancelled' || r.status === 'failed') lost = true; break; }
         if (from >= r.count) await sleep(650, signal);                               // plus rien de nouveau : on laisse le serveur avancer
       }
@@ -538,13 +538,13 @@ async function runLive(cards, opts, hooks, signal) {
   const printsOf = {}; let done = 0;
   const label = () => done + ' / ' + total;
   // Pause visible quand Scryfall demande de ralentir (429) ou ne répond plus, au lieu d'un écran qui semble figé.
-  limScry.onWait = (ms, kind) => hooks.step('prints', 'run', (kind === 'rate' ? 'Scryfall demande une pause · ' : 'Nouvelle tentative · ') + Math.ceil(ms / 1000) + ' s');
+  limScry.onWait = (ms, kind) => hooks.step('prints', 'run', T(kind === 'rate' ? 'Scryfall demande une pause · {n} s' : 'Nouvelle tentative · {n} s', { n: Math.ceil(ms / 1000) }));
   // Cooldown mémorisé d'un essai précédent : on attend au lieu de relancer pendant le blocage.
   let gate = null;
   const scryGate = () => {
     if (!scryLeft()) return null;
     return gate || (gate = (async () => {
-      try { for (let l; (l = scryLeft()) > 0;) { hooks.step('prints', 'run', 'Scryfall en pause · ' + Math.ceil(l / 1000) + ' s'); await sleep(Math.min(1000, l), signal); } }
+      try { for (let l; (l = scryLeft()) > 0;) { hooks.step('prints', 'run', T('Scryfall en pause · {n} s', { n: Math.ceil(l / 1000) })); await sleep(Math.min(1000, l), signal); } }
       finally { gate = null; hooks.step('prints', 'run', label()); }
     })());
   };
@@ -573,9 +573,9 @@ async function runLive(cards, opts, hooks, signal) {
       hooks.step('prints', 'run', label()); hooks.progress(0.15 * done / total);
     });
   } finally { limScry.onWait = null; }
-  hooks.step('prints', 'done', total + ' cartes');
+  hooks.step('prints', 'done', T('{n} cartes', { n: total }));
 
-  hooks.step('catalog', 'run', 'Extensions…');
+  hooks.step('catalog', 'run', T('Extensions…'));
   const exps = await getExpansions(signal);
   const skip = opts.skip || new Set();                     // cartes déjà possédées en totalité : on lit leurs impressions (image, coût) mais pas leurs offres
   const needed = new Set();
@@ -585,9 +585,9 @@ async function runLive(cards, opts, hooks, signal) {
   const bpIndex = new Map(); let bd = 0; const ids = [...needed];
   await pool(ids, 4, async id => {
     bpIndex.set(id, await getBlueprints(id, signal)); bd++;
-    hooks.step('catalog', 'run', bd + ' / ' + ids.length + ' extensions'); hooks.progress(0.15 + 0.25 * bd / ids.length);
+    hooks.step('catalog', 'run', T('{done} / {total} extensions', { done: bd, total: ids.length })); hooks.progress(0.15 + 0.25 * bd / ids.length);
   });
-  hooks.step('catalog', 'done', ids.length + ' extensions');
+  hooks.step('catalog', 'done', T('{n} extensions', { n: ids.length }));
 
   const plan = cards.map(c => ({ c, bps: mapBlueprints(c, printsOf[c.key], exps, bpIndex) }));
   const store = {}; const entries = [];
@@ -602,11 +602,11 @@ async function runLive(cards, opts, hooks, signal) {
   // Progression : en mode serveur, la cadence et le nombre de requêtes sont ceux du serveur ; sinon ceux de cet appareil.
   const tick = base => (done, total, info) => {
     hooks.step('offers', 'run', done + ' / ' + total); hooks.progress(base.from + (base.to - base.from) * done / Math.max(1, total));
-    if (info && info.mode === 'job') { hooks.hint(true); hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); } else { hooks.hint(false); hooks.rate(limCT.rps(), limCT.count); }
+    if (info && info.mode === 'job') { hooks.hint(true); hooks.rate(info.rps || 0, info.sent || 0, info.cached ? T('{n} depuis le cache', { n: info.cached }) : ''); } else { hooks.hint(false); hooks.rate(limCT.rps(), limCT.count); }
   };
   const first = await offersPass(entries, opts.lang, opts, signal, (e, offers) => hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, meta: e.meta }), tick({ from: 0.4, to: 0.95 }));
   hooks.cacheAge(first.cacheAge);
-  hooks.step('offers', 'done', first.mode === 'job' ? 'sur le serveur · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s' : first.total + ' requêtes · ' + Math.max(1, Math.round((performance.now() - t0) / 1000)) + ' s');
+  hooks.step('offers', 'done', first.mode === 'job' ? T('sur le serveur · {n} s', { n: Math.max(1, Math.round((performance.now() - t0) / 1000)) }) : T('{n} requêtes · {s} s', { n: first.total, s: Math.max(1, Math.round((performance.now() - t0) / 1000)) }));
 
   if (opts.fallbackEn && opts.lang !== 'en') {
     const miss = entries.filter(e => e.bps.length && hooks.needsEn(e.c.key));
@@ -615,11 +615,11 @@ async function runLive(cards, opts, hooks, signal) {
       const second = await offersPass(miss, 'en', opts, signal, (e, offers) => {
         fd++; hooks.step('fallback', 'run', fd + ' / ' + miss.length);
         hooks.card(e.c.key, { offers, bps: e.bps, img: e.img, meta: e.meta, fellBack: true });
-      }, (done, total, info) => { hooks.progress(0.95 + 0.05 * fd / miss.length); if (info && info.mode === 'job') hooks.rate(info.rps || 0, info.sent || 0, info.cached ? info.cached + ' depuis le cache' : ''); });
+      }, (done, total, info) => { hooks.progress(0.95 + 0.05 * fd / miss.length); if (info && info.mode === 'job') hooks.rate(info.rps || 0, info.sent || 0, info.cached ? T('{n} depuis le cache', { n: info.cached }) : ''); });
       hooks.cacheAge(second.cacheAge);
-      hooks.step('fallback', 'done', miss.length + ' cartes');
-    } else hooks.step('fallback', 'skip', 'Inutile');
-  } else hooks.step('fallback', 'skip', 'Désactivé');
+      hooks.step('fallback', 'done', T('{n} cartes', { n: miss.length }));
+    } else hooks.step('fallback', 'skip', T('Inutile'));
+  } else hooks.step('fallback', 'skip', T('Désactivé'));
   hooks.hint(false);
   hooks.progress(1);
 }
@@ -636,10 +636,10 @@ async function runDemo(cards, opts, hooks, signal) {
   const total = cards.length;
   hooks.step('prints', 'run', '0 / ' + total);
   for (let i = 0; i < total; i++) { await sleep(14 + (hash32(cards[i].key) % 16), signal); hooks.step('prints', 'run', (i + 1) + ' / ' + total); hooks.progress(0.15 * (i + 1) / total); }
-  hooks.step('prints', 'done', total + ' cartes');
-  hooks.step('catalog', 'run', 'Extensions…');
-  const nExp = 9; for (let i = 1; i <= nExp; i++) { await sleep(70, signal); hooks.step('catalog', 'run', i + ' / ' + nExp + ' extensions'); hooks.progress(0.15 + 0.25 * i / nExp); }
-  hooks.step('catalog', 'done', nExp + ' extensions');
+  hooks.step('prints', 'done', T('{n} cartes', { n: total }));
+  hooks.step('catalog', 'run', T('Extensions…'));
+  const nExp = 9; for (let i = 1; i <= nExp; i++) { await sleep(70, signal); hooks.step('catalog', 'run', T('{done} / {total} extensions', { done: i, total: nExp })); hooks.progress(0.15 + 0.25 * i / nExp); }
+  hooks.step('catalog', 'done', T('{n} extensions', { n: nExp }));
   hooks.step('offers', 'run', '0 / ' + total);
   let reqs = 0; const t0 = performance.now();
   const skip = opts.skip || new Set();
@@ -653,7 +653,7 @@ async function runDemo(cards, opts, hooks, signal) {
     hooks.progress(0.4 + 0.55 * (i + 1) / total);
     hooks.rate(reqs / Math.max(1, (performance.now() - t0) / 1000), reqs);
   }
-  hooks.step('offers', 'done', reqs + ' requêtes simulées');
+  hooks.step('offers', 'done', T('{n} requêtes simulées', { n: reqs }));
   if (opts.fallbackEn && opts.lang !== 'en') {
     const miss = cards.filter(c => !skip.has(c.key) && hooks.needsEn(c.key));
     if (miss.length) {
@@ -663,9 +663,9 @@ async function runDemo(cards, opts, hooks, signal) {
         hooks.card(miss[i].key, { offers: makeDemoOffers(miss[i], 'en'), bps: [{ id: 1 }], img: null, fellBack: true });
         hooks.step('fallback', 'run', (i + 1) + ' / ' + miss.length); hooks.progress(0.95 + 0.05 * (i + 1) / miss.length);
       }
-      hooks.step('fallback', 'done', miss.length + ' cartes');
-    } else hooks.step('fallback', 'skip', 'Inutile');
-  } else hooks.step('fallback', 'skip', 'Désactivé');
+      hooks.step('fallback', 'done', T('{n} cartes', { n: miss.length }));
+    } else hooks.step('fallback', 'skip', T('Inutile'));
+  } else hooks.step('fallback', 'skip', T('Désactivé'));
   hooks.progress(1);
 }
 
@@ -699,24 +699,24 @@ async function pxTable(signal) {
 /** Recherche au prix Cardmarket : une « offre » par carte, au prix tendance. Mêmes étapes et mêmes crochets que runLive. */
 async function runCm(cards, opts, hooks, signal) {
   const skip = opts.skip || new Set(), todo = cards.filter(c => !skip.has(c.key)), price = new Map(), notFound = new Set();
-  hooks.step('prints', 'run', 'Relevé du jour…'); hooks.progress(0.05);
+  hooks.step('prints', 'run', T('Relevé du jour…')); hooks.progress(0.05);
   const tab = await pxTable(signal);
   if (tab) for (const c of todo) { const p = tab.map.get(ownKey(c.name)); if (p && p.e) price.set(c.key, p.e); }
-  hooks.step('prints', tab ? 'done' : 'skip', tab ? new Date(tab.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Indisponible'); hooks.progress(0.15);
+  hooks.step('prints', tab ? 'done' : 'skip', tab ? new Date(tab.at).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' }) : T('Indisponible')); hooks.progress(0.15);
   const miss = todo.filter(c => !price.has(c.key));
   if (miss.length) {
     hooks.step('catalog', 'run', '0 / ' + miss.length);
     const got = await scryCollection(miss.map(c => c.name), signal, (d, t) => { hooks.step('catalog', 'run', d + ' / ' + t); hooks.progress(0.15 + 0.75 * d / t); hooks.rate(0, Math.ceil(d / 75)); });
     for (const c of miss) { const m = got.get(ownKey(c.name)); if (m && m.eu) price.set(c.key, m.eu); else if (!m) notFound.add(c.key); }
-    hooks.step('catalog', 'done', miss.length + ' carte' + (miss.length > 1 ? 's' : ''));
-  } else hooks.step('catalog', 'skip', 'Inutile');
+    hooks.step('catalog', 'done', T(miss.length > 1 ? '{n} cartes' : '{n} carte', { n: miss.length }));
+  } else hooks.step('catalog', 'skip', T('Inutile'));
   hooks.step('offers', 'run', '');
   for (const c of cards) {
     if (skip.has(c.key)) hooks.card(c.key, { offers: [], bps: [], img: null, skipped: true });
     else if (price.has(c.key)) hooks.card(c.key, { offers: [cmOffer(c, price.get(c.key), opts)], bps: [], img: null });
     else hooks.card(c.key, { offers: [], bps: [], img: null, notFound: notFound.has(c.key) });
   }
-  hooks.step('offers', 'done', price.size + ' prix'); hooks.step('fallback', 'skip', 'Inutile'); hooks.progress(1);
+  hooks.step('offers', 'done', price.size === 1 ? T('1 prix') : T('{n} prix', { n: price.size }));      // « prix » : invariable en français, pas en anglais hooks.step('fallback', 'skip', T('Inutile')); hooks.progress(1);
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */
@@ -756,7 +756,7 @@ async function cartFill(parts, mode, address, signal, onItem, demo) {
   const failed = [], replaced = [], gone = [], added = []; let ok = 0, streak = 0, noAlt = false;
   const fatal = e => e.name === 'AbortError' || e.code === 'auth' || e.code === 'network' || e.code === 'notoken';
   const add = async (offer, n) => {
-    if (demo) { await sleep(70, signal); if (hash32(String(offer.id)) % 23 === 0) throw netErr('gone', 'Plus disponible'); return; }
+    if (demo) { await sleep(70, signal); if (hash32(String(offer.id)) % 23 === 0) throw netErr('gone', T('Plus disponible')); return; }
     const body = { product_id: offer.productId, quantity: n, via_cardtrader_zero: mode === 'zero' };
     if (address) { body.shipping_address = address; body.billing_address = address; }
     await ct('cart/add', { method: 'POST', body, signal });
@@ -780,7 +780,7 @@ async function cartFill(parts, mode, address, signal, onItem, demo) {
         if (used.length) {
           gone.push(offer.productId); handled = true;
           replaced.push({ name, from: offer, n, to: used, missing: Math.max(0, need) });
-          if (need > 0) failed.push({ name, reason: `${need} exemplaire${need > 1 ? 's' : ''} sans remplacement disponible` });
+          if (need > 0) failed.push({ name, reason: T(need > 1 ? '{n} exemplaires sans remplacement disponible' : '{n} exemplaire sans remplacement disponible', { n: need }) });
           else ok++;
           streak = 0;
         } else if (altFailed && lastMsg === e.message) { if (++streak >= 2) noAlt = true; }   // même erreur partout : probablement pas l'offre

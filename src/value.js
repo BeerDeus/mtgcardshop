@@ -44,8 +44,8 @@ async function valRefresh(opts) {
   if (VAL.run) return VAL.run.p;
   if (!collCount() || collMissing().length || COLL.enrich) return;
   if (!opts.force && Date.now() - VAL.at < VAL_EVERY) return;
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) { if (opts.force) { VAL.err = 'Hors ligne : réessaie avec du réseau.'; collPaint(); } return; }
-  if (scryLeft() > 0) { if (opts.force) { VAL.err = 'Scryfall demande une pause : réessaie dans ' + Math.ceil(scryLeft() / 1000) + ' s.'; collPaint(); } return; }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) { if (opts.force) { VAL.err = T('Hors ligne : réessaie avec du réseau.'); collPaint(); } return; }
+  if (scryLeft() > 0) { if (opts.force) { VAL.err = T('Scryfall demande une pause : réessaie dans {s} s.', { s: Math.ceil(scryLeft() / 1000) }); collPaint(); } return; }
   await valLoad();
   if (!opts.force && COLL.freshAt && Date.now() - COLL.freshAt < 15 * 60e3) { await valCommit(); collPaint(); paintCollSection(); return; }      // la collection vient d'être lue en entier : prix déjà à jour
   const keys = Object.keys(COLL.map), run = VAL.run = { done: 0, total: keys.length, ctrl: new AbortController() };
@@ -55,7 +55,7 @@ async function valRefresh(opts) {
       const got = await scryCollection(keys.map(k => COLL.map[k].n), run.ctrl.signal, n => { run.done = n; collPaintHead(); });
       for (const k of keys) { const g = got.get(k), old = COLL.meta[k]; if (g && old && g.eu > 0) COLL.meta[k] = { ...old, eu: g.eu }; }
       COLL.freshAt = Date.now(); collMetaSave(); await valCommit();
-    } catch (e) { if (e.name !== 'AbortError') VAL.err = e.code === 'rate' ? 'Scryfall limite les requêtes : réessaie dans une minute.' : 'Prix Cardmarket injoignables pour l\'instant.'; }
+    } catch (e) { if (e.name !== 'AbortError') VAL.err = e.code === 'rate' ? T('Scryfall limite les requêtes : réessaie dans une minute.') : T('Prix Cardmarket injoignables pour l\'instant.'); }
     finally { VAL.run = null; collPaint(); paintCollSection(); }
   })();
   collPaintHead();
@@ -77,11 +77,11 @@ const valMove = k => { const mv = valMovers(); return mv && mv.ready ? mv.by.get
 /** Nombre de prix en mouvement à signaler et pas encore écartés (accueil, bannière). */
 const valAlertN = () => { const mv = valMovers(); return mv && mv.ready && VAL.seen !== dayOf(VAL.at) ? mv.list.length : 0; };
 
-const valPct = p => (p > 0 ? '+' : p < 0 ? '−' : '') + nf0(Math.round(Math.abs(p))) + ' %';
+const valPct = p => (p > 0 ? '+' : p < 0 ? '−' : '') + T('{n} %', { n: nf0(Math.round(Math.abs(p))) });
 const valEur = c => (c > 0 ? '+' : c < 0 ? '−' : '') + fmt(Math.abs(c), 'EUR');
 const valCls = x => (x > 0 ? 'vu' : x < 0 ? 'vd' : '');
-const valDate = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-const valTag = m => `<span class="tag vm ${valCls(m.d)}" title="Cardmarket : ${esc(fmt(m.u0, 'EUR'))} → ${esc(fmt(m.u1, 'EUR'))}">${m.d > 0 ? '▲' : '▼'} ${valPct(m.pct)}</span>`;
+const valDate = t => new Date(t).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' });
+const valTag = m => `<span class="tag vm ${valCls(m.d)}" title="${T('Cardmarket : {a} → {b}', { a: esc(fmt(m.u0, 'EUR')), b: esc(fmt(m.u1, 'EUR')) })}">${m.d > 0 ? '▲' : '▼'} ${valPct(m.pct)}</span>`;
 
 /** Courbe de la valeur (SVG à l'échelle : axes min/max réels, temps proportionnel). */
 function valChartHtml(h) {
@@ -91,13 +91,13 @@ function valChartHtml(h) {
   const pts = h.map(x => f(X(x.t)) + ',' + f(Y(x.v))), last = h[h.length - 1];
   const area = `M${f(X(t0))},${f(H - pb)} L${pts.join(' L')} L${f(X(t1))},${f(H - pb)} Z`;
   const grid = max === min ? [max] : [max, min];
-  return `<svg class="vl-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Valeur de la collection du ${esc(valDate(t0))} au ${esc(valDate(t1))} : de ${esc(fmt(h[0].v, 'EUR'))} à ${esc(fmt(last.v, 'EUR'))}">
+  return `<svg class="vl-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${T('Valeur de la collection du {d0} au {d1} : de {v0} à {v1}', { d0: esc(valDate(t0)), d1: esc(valDate(t1)), v0: esc(fmt(h[0].v, 'EUR')), v1: esc(fmt(last.v, 'EUR')) })}">
     ${grid.map((v, i) => `<line x1="${pl}" x2="${W - pr}" y1="${f(Y(v))}" y2="${f(Y(v))}" class="vl-grid"/><text x="${pl}" y="${f(Y(v) + (i ? 11 : -4))}" class="vl-txt">${esc(fmt(v, 'EUR'))}</text>`).join('')}
     <path d="${area}" class="vl-area"/><polyline points="${pts.join(' ')}" class="vl-line" fill="none"/>
     <circle cx="${f(X(last.t))}" cy="${f(Y(last.v))}" r="3.4" class="vl-dot"/>
     <text x="${pl}" y="${H - 5}" class="vl-txt">${esc(valDate(t0))}</text><text x="${W - pr}" y="${H - 5}" class="vl-txt" text-anchor="end">${esc(valDate(t1))}</text></svg>`;
 }
-const valDeltaHtml = (lab, d) => `<div class="vl-d"><span>${lab}</span>${d ? `<b class="${valCls(d.d)}">${valEur(d.d)}</b><small>${d.pct == null ? 'depuis le ' + esc(valDate(d.from.t)) : valPct(d.pct) + ' · depuis le ' + esc(valDate(d.from.t))}</small>` : '<b>—</b><small>pas encore de recul</small>'}</div>`;
+const valDeltaHtml = (lab, d) => `<div class="vl-d"><span>${lab}</span>${d ? `<b class="${valCls(d.d)}">${valEur(d.d)}</b><small>${(d.pct == null ? '' : valPct(d.pct) + ' · ') + T('depuis le {d}', { d: esc(valDate(d.from.t)) })}</small>` : '<b>—</b><small>' + T('pas encore de recul') + '</small>'}</div>`;
 
 /** Rangée d'une carte qui a bougé (Stats). */
 function valMoveRow(m) {
@@ -109,25 +109,25 @@ function valMoveRow(m) {
 /** Sections « Valeur dans le temps » et « Variations des prix » de l'onglet Stats. */
 function valStatsHtml() {
   const h = VAL.hist, run = VAL.run;
-  const ago = VAL.at ? pxAgo(VAL.at) : '', status = run ? `Lecture des prix · ${nf0(run.done)} / ${nf0(run.total)}` : VAL.err ? esc(VAL.err) : VAL.at ? 'Dernier relevé : ' + ago : 'Aucun relevé pour l\'instant';
-  const act = run ? '' : `<button class="link-btn" type="button" data-act="valnow">Actualiser</button>`;
+  const ago = VAL.at ? pxAgo(VAL.at) : '', status = run ? T('Lecture des prix · {a} / {b}', { a: nf0(run.done), b: nf0(run.total) }) : VAL.err ? esc(VAL.err) : VAL.at ? T('Dernier relevé : {ago}', { ago }) : T('Aucun relevé pour l\'instant');
+  const act = run ? '' : `<button class="link-btn" type="button" data-act="valnow">${T('Actualiser')}</button>`;
   let chart;
-  if (h.length >= 2) chart = `${valChartHtml(h)}<div class="vl-ds">${valDeltaHtml('7 jours', histDelta(h, 7))}${valDeltaHtml('30 jours', histDelta(h, 30))}</div>`;
-  else if (h.length === 1) chart = `<p class="hint vl-first">Premier relevé : <b>${esc(fmt(h[0].v, 'EUR'))}</b>. La courbe apparaît dès demain.</p>`;
-  else chart = `<p class="hint vl-first">${VAL.err || run ? 'Relevé en cours…' : collMissing().length ? 'Le premier relevé aura lieu quand toutes les cartes auront leurs infos.' : 'Le premier relevé va être enregistré.'}</p>`;
-  const val = `<h3 class="cs-h">Valeur dans le temps <small>tendance Cardmarket</small></h3><div class="vl-box">${chart}<div class="vl-foot"><span>${status}</span>${act}</div></div>
-    <p class="hint">Un relevé par jour, gardé sur cet appareil (et sur ton compte si tu es connecté). La valeur varie aussi quand tu ajoutes ou retires des cartes.</p>`;
+  if (h.length >= 2) chart = `${valChartHtml(h)}<div class="vl-ds">${valDeltaHtml(T('7 jours'), histDelta(h, 7))}${valDeltaHtml(T('30 jours'), histDelta(h, 30))}</div>`;
+  else if (h.length === 1) chart = `<p class="hint vl-first">${T('Premier relevé : <b>{v}</b>. La courbe apparaît dès demain.', { v: esc(fmt(h[0].v, 'EUR')) })}</p>`;
+  else chart = `<p class="hint vl-first">${VAL.err || run ? T('Relevé en cours…') : collMissing().length ? T('Le premier relevé aura lieu quand toutes les cartes auront leurs infos.') : T('Le premier relevé va être enregistré.')}</p>`;
+  const val = `<h3 class="cs-h">${T('Valeur dans le temps')} <small>${T('tendance Cardmarket')}</small></h3><div class="vl-box">${chart}<div class="vl-foot"><span>${status}</span>${act}</div></div>
+    <p class="hint">${T('Un relevé par jour, gardé sur cet appareil (et sur ton compte si tu es connecté). La valeur varie aussi quand tu ajoutes ou retires des cartes.')}</p>`;
   const mv = valMovers();
-  const thr = `<span class="cs-sw" role="group" aria-label="Seuil de variation">${VAL_THRS.map(t => `<button type="button" data-act="valthr" data-v="${t}" aria-pressed="${VAL.thr === t}" class="${VAL.thr === t ? 'on' : ''}">${t} %</button>`).join('')}</span>`;
+  const thr = `<span class="cs-sw" role="group" aria-label="${T('Seuil de variation')}">${VAL_THRS.map(t => `<button type="button" data-act="valthr" data-v="${t}" aria-pressed="${VAL.thr === t}" class="${VAL.thr === t ? 'on' : ''}">${T('{n} %', { n: t })}</button>`).join('')}</span>`;
   let body;
-  if (!mv || !mv.ready) body = `<p class="hint">${VAL.base ? `Suivi commencé le ${esc(valDate(VAL.base.cur.t))} : les variations s'affichent dès qu'un jour a passé.` : 'Les variations s\'affichent après le premier relevé et un jour d\'écart.'}</p>`;
+  if (!mv || !mv.ready) body = `<p class="hint">${VAL.base ? T('Suivi commencé le {d} : les variations s\'affichent dès qu\'un jour a passé.', { d: esc(valDate(VAL.base.cur.t)) }) : T('Les variations s\'affichent après le premier relevé et un jour d\'écart.')}</p>`;
   else {
     const shown = mv.list.slice(0, VAL.topN), more = mv.list.length - shown.length;
-    body = `<div class="vl-sum"><span>Marché sur ta collection depuis le ${esc(valDate(mv.since))}</span><b class="${valCls(mv.total)}">${valEur(mv.total)}</b></div>
-      <p class="hint cs-topnote">Prix Cardmarket carte par carte, hors cartes ajoutées depuis. Seules comptent les hausses et baisses d'au moins ${VAL.thr} % et 0,20 € par exemplaire.</p>
-      ${shown.length ? `<div class="cs-top vl-top">${shown.map(valMoveRow).join('')}</div>${more > 0 ? `<button class="btn ghost block coll-more" type="button" data-act="valmore">Afficher ${nf0(Math.min(8, more))} de plus · ${nf0(more)} restantes</button>` : ''}` : `<p class="hint listempty">Aucune carte n'a bougé de plus de ${VAL.thr} %.</p>`}`;
+    body = `<div class="vl-sum"><span>${T('Marché sur ta collection depuis le {d}', { d: esc(valDate(mv.since)) })}</span><b class="${valCls(mv.total)}">${valEur(mv.total)}</b></div>
+      <p class="hint cs-topnote">${T('Prix Cardmarket carte par carte, hors cartes ajoutées depuis. Seules comptent les hausses et baisses d\'au moins {t} % et 0,20 € par exemplaire.', { t: VAL.thr })}</p>
+      ${shown.length ? `<div class="cs-top vl-top">${shown.map(valMoveRow).join('')}</div>${more > 0 ? `<button class="btn ghost block coll-more" type="button" data-act="valmore">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(8, more)), b: nf0(more) })}</button>` : ''}` : `<p class="hint listempty">${T('Aucune carte n\'a bougé de plus de {t} %.', { t: VAL.thr })}</p>`}`;
   }
-  return `${val}<h3 class="cs-h" id="valMv">Variations des prix ${thr}</h3>${body}`;
+  return `${val}<h3 class="cs-h" id="valMv">${T('Variations des prix')} ${thr}</h3>${body}`;
 }
 
 /** Bannière d'alerte en haut de l'écran de la collection (onglets Cartes et Decks). */
@@ -136,7 +136,7 @@ function valPaintAlert() {
   const n = COLL.tab === 'stats' ? 0 : valAlertN();
   if (!n) { host.hidden = true; return; }
   const mv = valMovers(), top = mv.list.slice(0, 2).map(m => `${m.d > 0 ? '▲' : '▼'} ${esc(m.n.split(' // ')[0])} ${valPct(m.pct)}`).join(' · ');
-  host.hidden = false; host.innerHTML = `<span class="al-t"><b>${nf0(n)} prix ${n > 1 ? 'ont' : 'a'} bougé de plus de ${VAL.thr} %</b> depuis le ${esc(valDate(mv.since))}${top ? ' · ' + top : ''}</span><button class="link-btn" type="button" data-act="valsee">Voir</button><button class="link-btn" type="button" data-act="valhide">Ignorer</button>`;
+  host.hidden = false; host.innerHTML = `<span class="al-t">${TN(n, '<b>{n} prix a bougé de plus de {t} %</b> depuis le {d}', '<b>{n} prix ont bougé de plus de {t} %</b> depuis le {d}', { t: VAL.thr, d: esc(valDate(mv.since)) })}${top ? ' · ' + top : ''}</span><button class="link-btn" type="button" data-act="valsee">${T('Voir')}</button><button class="link-btn" type="button" data-act="valhide">${T('Ignorer')}</button>`;
 }
 /** Clics des Stats « valeur » et de la bannière (appelé depuis l'écran de la collection). Retourne true si le clic était pour lui. */
 function valClick(e) {

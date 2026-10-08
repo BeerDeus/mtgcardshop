@@ -10,6 +10,8 @@ const FIREBASE_CONFIG = {
 };
 const FB_BASE = 'https://www.gstatic.com/firebasejs/12.19.0/';
 
+/** Traduction (T vient de core.js ; absent quand ce fichier est chargé seul sous Node, pour les tests). */
+const tcl = (s, v) => (typeof T === 'function' ? T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (v[k] != null ? v[k] : m)) : s);
 /** Code d'erreur Firebase → message lisible. null = silence (l'utilisateur a juste fermé la fenêtre). */
 function authMessage(e) {
   const c = (e && e.code) || '';
@@ -33,8 +35,8 @@ function authMessage(e) {
     'auth/user-disabled': 'Ce compte est désactivé.',
     'auth/requires-recent-login': 'Reconnecte-toi pour continuer.',
   };
-  if (c in m) return m[c];
-  return 'Connexion impossible' + (c ? ' (' + c.replace('auth/', '') + ')' : '') + '.';
+  if (c in m) return m[c] == null ? null : tcl(m[c]);
+  return c ? tcl('Connexion impossible ({code}).', { code: c.replace('auth/', '') }) : tcl('Connexion impossible.');
 }
 
 /** Construit l'API cloud à partir des modules du SDK (injectables pour les tests). */
@@ -112,7 +114,7 @@ function loadCloud() {
   if (cloudP) return cloudP;
   cloudP = (async () => {
     if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) {
-      throw Object.assign(new Error('Ouvre l\'app via http(s) (proxy local ou ton hébergement) pour te connecter.'), { code: 'env' });
+      throw Object.assign(new Error(tcl('Ouvre l\'app via http(s) (proxy local ou ton hébergement) pour te connecter.')), { code: 'env' });
     }
     const [app, auth, fs] = await Promise.all([import(FB_BASE + 'firebase-app.js'), import(FB_BASE + 'firebase-auth.js'), import(FB_BASE + 'firebase-firestore.js')]);
     return makeCloud({ app, auth, fs });
