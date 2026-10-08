@@ -50,7 +50,7 @@ async function adsConsent(P) {
   if (c && c.isConsentFormAvailable && c.status === 'REQUIRED') c = await P.showConsentForm({});
   AD.priv = (c && c.privacyOptionsRequirementStatus) || '';
   if (!c || !c.canRequestAds) return false;
-  await P.initialize({ maxAdContentRating: 'Teen' });      // appli « 13 ans et plus » : pas d'annonce pour adultes
+  await P.initialize({ maxAdContentRating: 'ParentalGuidance' });      // classement attendu PEGI 3-7 / E10+ : annonces « accord parental » au plus, jamais « ados » ni « adultes »
   const on = (ev, fn) => { try { const h = P.addListener(ev, fn); if (h && h.catch) h.catch(() => {}); } catch (e) { /* ignore */ } };
   on('bannerAdSizeChanged', s => { const h = Math.max(0, Math.round((s && s.height) || 0)); if (!h || AD.st === 'on') adsPad(h); });      // masqué : la hauteur d'un chargement tardif n'ouvre pas la marge
   on('bannerAdFailedToLoad', () => { if (AD.st === 'off') return; AD.st = 'off'; adsPad(0); adsRetry(); });      // le plugin a déjà retiré le bandeau
