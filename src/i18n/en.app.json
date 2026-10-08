@@ -352,13 +352,12 @@
   "Lien non lu : ouvre la liste sur le site, copie-la, puis colle-la ici": "Couldn't read the link: open the list on the site, copy it, then paste it here",
   "{n} decks": "{n} decks",
   "et": "and",
-  "{n} exemplaire réservé par {decks} ne est pas compté.": "{n} copy held by {decks} isn't counted.",
+  "{n} exemplaire réservé par {decks} n'est pas compté.": "{n} copy held by {decks} isn't counted.",
   "{n} exemplaires réservés par {decks} ne sont pas comptés.": "{n} copies held by {decks} aren't counted.",
   "Désactivé : toutes les cartes sont cherchées.": "Off: all cards are searched.",
   "{n} carte de cette liste est dans ta collection : non cherchée.": "{n} card from this list is in your collection: not searched.",
   "{n} cartes de cette liste sont dans ta collection : non cherchées.": "{n} cards from this list are in your collection: not searched.",
   "Aucune carte de cette liste n'est dans ta collection.": "No cards from this list are in your collection.",
-
   "Mode de connexion": "Connection mode",
   "Accueil": "Home",
   "Installer l'application": "Install the app",
@@ -380,10 +379,8 @@
   "Échange": "Trade",
   "Doublons et cartes recherchées": "Duplicates and wanted cards",
   "Nouveau panier": "New cart",
-  "Colle une decklist : on compare les offres CardTrader et on compose le panier le moins cher.": "Paste a decklist: we compare CardTrader offers and build the cheapest cart.",
   "Coller une liste": "Paste a list",
   "Ta decklist au meilleur prix, en français.": "Your decklist at the best price.",
-  "Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit cherche les offres sur CardTrader et compose le panier le moins cher.": "Paste an EDHREC, Moxfield or Archidekt export, one card per line. Mana Orbit searches CardTrader offers and builds the cheapest cart.",
   "Coller": "Paste",
   "Vider": "Clear",
   "Enregistrer": "Save",
@@ -418,5 +415,7 @@
   "Tout afficher": "Show all",
   "Chercher les offres": "Find offers",
   "Panier": "Cart",
-  "0,00 €": "€0.00"
+  "0,00 €": "€0.00",
+  "Colle une decklist : le prix de chaque carte et le total, ou le panier CardTrader le moins cher.": "Paste a decklist: the price of each card and the total, or the cheapest CardTrader cart.",
+  "Colle un export EDHREC, Moxfield ou Archidekt, une carte par ligne. Mana Orbit donne le prix Cardmarket de chaque carte, ou compose le panier CardTrader le moins cher avec ton token.": "Paste an EDHREC, Moxfield or Archidekt export, one card per line. Mana Orbit shows the Cardmarket price of each card, or builds the cheapest CardTrader cart with your token."
 }

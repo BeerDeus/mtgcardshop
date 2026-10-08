@@ -1274,7 +1274,7 @@ function paintCollSwitch() {
   $('#optColl').checked = S.useColl;
   const own = S.deck.cards.filter(c => c.own > 0).length, held = S.useColl ? engHeldBack(S.deck.cards) : { n: 0, names: [] };
   const decks = held.names.length > 2 ? T('{n} decks', { n: held.names.length }) : held.names.join(' ' + T('et') + ' ');
-  const note = held.n ? ' ' + TN(held.n, '{n} exemplaire réservé par {decks} ne est pas compté.', '{n} exemplaires réservés par {decks} ne sont pas comptés.', { decks }) : '';
+  const note = held.n ? ' ' + TN(held.n, '{n} exemplaire réservé par {decks} n\'est pas compté.', '{n} exemplaires réservés par {decks} ne sont pas comptés.', { decks }) : '';
   $('#collHint').textContent = !S.useColl ? T('Désactivé : toutes les cartes sont cherchées.')
     : (own ? TN(own, '{n} carte de cette liste est dans ta collection : non cherchée.', '{n} cartes de cette liste sont dans ta collection : non cherchées.') : T('Aucune carte de cette liste n\'est dans ta collection.')) + note;
 }

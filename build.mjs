@@ -15,7 +15,8 @@ const body = rd('body.html').trim();
 const I18N_DIR = join(root, 'src', 'i18n');
 // Une langue peut être répartie en plusieurs fichiers (en.json, en.app.json…) : ils sont fusionnés.
 const i18nAll = {};
-for (const f of (existsSync(I18N_DIR) ? readdirSync(I18N_DIR) : []).sort()) {
+// en.app.json, en.coll.json… d'abord, puis en.json : il tranche quand deux parties traduisent le même texte différemment.
+for (const f of (existsSync(I18N_DIR) ? readdirSync(I18N_DIR) : []).sort((a, b) => (a.split('.').length === 2) - (b.split('.').length === 2) || (a < b ? -1 : 1))) {
   const m = /^([a-z]{2}(?:-[A-Z]{2})?)(?:\.[a-z0-9-]+)?\.json$/.exec(f); if (!m) continue;
   Object.assign(i18nAll[m[1]] = i18nAll[m[1]] || {}, JSON.parse(readFileSync(join(I18N_DIR, f), 'utf8')));
 }

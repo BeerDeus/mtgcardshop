@@ -1,1 +1,21 @@
-{}
+{
+  "Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.": "Add your cards (import, photo, typing): they'll be left out of your cart.",
+  "Prix": "Price",
+  "Réessayer": "Try again",
+  "Aucune carte ne correspond.": "No matching cards.",
+  "Affichage": "Display",
+  "Plus tard": "Maybe later",
+  "Sans offre": "No offer",
+  "Familles": "Types",
+  "Mot de passe trop court : 6 caractères minimum.": "Password too short: at least 6 characters.",
+  "{n} sans offre": "{n} without an offer",
+  "7 et plus": "7+",
+  "Les plus chères": "Most expensive",
+  "Réserve": "Sideboard",
+  "Remettre": "Put back",
+  "Nom anglais ou français déjà connu de Scryfall": "English or French name already known to Scryfall",
+  "Aucune carte de ce nom. Vérifie l'orthographe (nom anglais).": "No card with that name. Check the spelling (English name).",
+  "Chargement du catalogue (une seule fois)…": "Loading the card catalog (one time only)…",
+  "Scryfall demande une pause, réessaie dans une minute.": "Scryfall is asking for a break, try again in a minute.",
+  "Catalogue Scryfall injoignable : réessaie plus tard.": "Can't reach the Scryfall catalog: try again later."
+}
