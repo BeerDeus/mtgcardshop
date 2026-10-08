@@ -20,6 +20,7 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `ALERT_EVERY_MS` | Intervalle entre deux relevés de prix (défaut 6 h) |
 | `ALERT_MIN_DROP_CENTS`, `ALERT_COOLDOWN_MS` | Chute minimale en centimes (défaut 50) · délai avant de re-signaler une carte (défaut 5 jours) |
 | `ALERT_FILE` | Fichier d'état des alertes (défaut `.data/alerts.json`) |
+| `ADMOB_BANNER_ID` | Facultatif : bloc d'annonces AdMob du bandeau de l'appli Android (`ca-app-pub-…/…`, voir `docs/android.md` › Publicité). Vide : bandeau de test de Google |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
 | `SCRYFALL_UPSTREAM`, `ALERT_FIRST_MS`, `ALERT_SEED_MS`, `ALERT_CHECK_GAP_MS` | Tests seulement |
 

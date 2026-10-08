@@ -114,11 +114,12 @@ Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléph
 3. **Contenu de l'appli** :
    - Règles de confidentialité : `https://card.m2s-photo.fr/privacy`
    - Suppression de compte : `https://card.m2s-photo.fr/?delete-account`
-   - Annonces : « Non » pour l'instant. Passe à « Oui » quand AdMob sera ajouté.
+   - Annonces : « Oui » (bandeau AdMob, voir « Publicité (AdMob) » plus bas).
+   - Identifiant publicitaire : « Oui », pour la publicité (le SDK AdMob l'utilise).
    - Sécurité des données :
      - adresse e-mail (compte, facultatif) ;
      - collection et decks (compte, facultatif) ;
-     - aucune donnée partagée ;
+     - publicité (AdMob) : ce que collecte le SDK Google Mobile Ads, partagé avec Google (voir « Publicité (AdMob) ») ;
      - chiffrement en transit ;
      - suppression possible.
    - Public cible : 13 ans et plus.
@@ -139,12 +140,55 @@ Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléph
 
 ---
 
+## Publicité (AdMob)
+
+Un petit bandeau Google AdMob, en haut de l'écran, paie l'hébergement :
+- seulement dans l'appli Android, jamais sur le site ni la PWA ;
+- jamais pour les comptes de `ALLOWED_UIDS` (le tien) : connecté avec ton compte, tu ne vois aucune pub ;
+- il arrive quelques secondes après l'ouverture puis reste en place ; il disparaît pendant l'accueil du premier lancement, le scan et la carte en grand. La page descend de sa hauteur : rien n'est caché dessous.
+
+Tant que rien n'est configuré, l'appli affiche le bandeau de **test** de Google : aucun revenu, aucun risque pour ton compte.
+
+### 1. Créer le compte et déclarer l'appli
+1. https://admob.google.com : connecte-toi avec ton compte Google, accepte les conditions, puis remplis **Paiements** (pays, adresse) pour être payé.
+2. **Applis › Ajouter une application** : plateforme **Android** ; « L'appli est-elle publiée sur un store compatible ? » : **Non** tant qu'elle n'est pas sur le Play Store ; nom « Mana Orbit ».
+3. **Applis › Mana Orbit › Paramètres de l'application** : copie l'**ID d'application**. Il ressemble à `ca-app-pub-1234567890123456~1234567890` (avec un tilde `~`).
+
+### 2. Mettre l'ID d'application dans l'appli (nouvelle version)
+1. Ouvre `android-app/android/app/src/main/res/values/strings.xml`.
+2. Remplace la valeur de `admob_app_id` (l'ID de test de Google) par ton ID d'application.
+3. Refais l'appli comme au § 4.3 : `versionCode` + 1, `npm run sync`, nouveau `.aab`. C'est la seule étape qui demande une nouvelle version.
+
+### 3. Créer le bloc d'annonces (bannière)
+1. **Applis › Mana Orbit › Blocs d'annonces › Ajouter un bloc d'annonces › Bannière**. Nom : « Bandeau haut ». Garde les réglages proposés (actualisation choisie par Google).
+2. Copie l'**ID du bloc d'annonces**. Il ressemble à `ca-app-pub-1234567890123456/1234567890` (avec une barre `/`).
+3. Hostinger › variables d'environnement : `ADMOB_BANNER_ID=<cet ID>` › redéployer. L'appli le lit à chaque lancement : rien à republier.
+
+Mets `ADMOB_BANNER_ID` une fois la version avec ton ID d'application installée : avec l'ID d'application de test, les vraies annonces ne se chargent pas (rien ne s'affiche, sans autre conséquence). Sans la variable : bandeau de test.
+
+**Ne touche jamais tes propres annonces réelles** (Google peut suspendre le compte). Pour voir le bandeau réel sur ton téléphone, déclare-le comme appareil de test : AdMob › **Paramètres › Appareils de test › Ajouter un appareil de test** (l'identifiant publicitaire est dans les paramètres Android, Google › Annonces).
+
+### 4. Message de consentement (Europe)
+1. AdMob › **Confidentialité et messages** › **RGPD** (Règlement européen) › **Créer un message**.
+2. Choisis l'appli Mana Orbit, les langues français et anglais, et l'adresse de la politique de confidentialité : `https://card.m2s-photo.fr/privacy`.
+3. Garde les boutons proposés (« Autoriser », « Gérer les options » ; ajoute « Ne pas autoriser » si on te le propose), puis **Publier**.
+
+L'appli affiche ce message de Google avant la première annonce, aux utilisateurs concernés. Sans message publié, Google ne recueille pas le consentement en Europe et y limite fortement les annonces (souvent aucune). Quand Google l'exige, Réglages › Confidentialité propose aussi « Choix publicitaires » pour changer d'avis.
+
+### 5. Play Console
+- **Contenu de l'appli › Annonces** : « Contient des annonces : Oui ».
+- **Contenu de l'appli › Identifiant publicitaire** : « Oui », utilisé pour la **publicité ou le marketing**.
+- **Sécurité des données** : ajoute ce que collecte le SDK Google Mobile Ads, partagé avec Google pour la publicité : identifiants de l'appareil (identifiant publicitaire), interactions avec l'appli, diagnostics (plantages, performances), position approximative (adresse IP). Liste à jour : https://developers.google.com/admob/android/privacy/play-data-disclosure
+- Une fois l'appli publiée : AdMob › **Applis › Mana Orbit › Paramètres › Infos sur le store**, relie l'appli à sa fiche Play Store. AdMob demandera ensuite un fichier `app-ads.txt` sur le site indiqué dans la fiche : demande-moi, je l'ajoute au serveur.
+
+---
+
 ## 5. Prochaines étapes natives (prévues)
 
 | Fonction | Plugin | Remarque |
 | --- | --- | --- |
 | Scan natif | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | installés ; le site détecte l'appli Android (`Capacitor.isNativePlatform()`) |
-| Bandeau de pub | `@capacitor-community/admob` | compte AdMob + identifiant de l'appli ; consentement (UMP) en Europe |
+| Bandeau de pub | `@capacitor-community/admob` | fait côté site : voir « Publicité (AdMob) » ; reste le compte AdMob et l'identifiant de l'appli |
 | Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
 | Connexion Google | `@capacitor-firebase/authentication` | Google bloque sa fenêtre de connexion dans les applis ; e-mail et mot de passe marchent déjà |
 | Widget (valeur de la collection) | code Kotlin natif | lit la valeur que l'appli lui laisse |

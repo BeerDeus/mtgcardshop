@@ -559,11 +559,11 @@ const isCm = () => !!S.run && S.run.src === 'cm';
 async function checkServer() {
   if (!CTX.proxy || !CTX.hasToken || !CTX.needsLogin) return;
   try {
-    const t = CTX.idToken ? await CTX.idToken() : ''; if (!t) { CTX.serverOk = false; modeLabel(); return; }
+    const t = CTX.idToken ? await CTX.idToken() : ''; if (!t) { CTX.serverOk = false; modeLabel(); adsRefresh(); return; }
     const r = await fetch('__me', { headers: { 'x-firebase-token': t }, cache: 'no-store' }); const j = r.ok ? await r.json() : null;
     CTX.serverOk = !!(j && j.server);
   } catch (e) { CTX.serverOk = false; }
-  modeLabel();
+  modeLabel(); adsRefresh();      // bandeau de pub (appli Android) : jamais pour un compte autorisé
 }
 
 /* ── Rendu : résumé ───────────────────────────────────────────────────────────────────────── */
