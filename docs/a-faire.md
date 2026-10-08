@@ -11,6 +11,6 @@
   - `ADMOB_BANNER_ID` sur Hostinger.
 - Créer la clé de signature release (`.jks`, à garder précieusement).
 - Après le premier `.aab`, ajouter dans Firebase le SHA-1 de la clé de signature Play (`docs/android.md`).
-- Politique de confidentialité (`pwa/privacy.html`) : ajouter le nom complet du responsable du traitement.
+- Vérifier auprès de l'URSSAF (ou d'un comptable) si l'édition d'une appli financée par la publicité doit être ajoutée aux activités de Martin Stuis EI.
 - Compte développeur personnel récent : test fermé obligatoire (12 testeurs pendant 14 jours) avant la production.
 - Play Console : remplir la fiche et le formulaire Sécurité des données d'après `docs/store/fiche.md`.

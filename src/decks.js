@@ -427,6 +427,8 @@ function accountOpen() { return D.account && sheets.indexOf(D.account.api) >= 0;
 function paintAccount() {
   if (!accountOpen()) return;
   const { api } = D.account, b = api.body;
+  // écran de suppression déjà affiché pour ce compte : pas de nouveau rendu (une synchro qui reprend effacerait le message d'erreur, le mot de passe saisi ou l'état « Suppression… »)
+  if (D.user && D.account.del && $('#acWipeLocal', b) && $('#acDelGo', api.foot) && b.dataset.delFor === D.user.uid) return;
   api.setFoot('');
   if (D.user) return D.account.del ? paintAccountDelete(api) : paintAccountIn(api);
   if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Chargement…') + '</span></div>'; return; }
@@ -494,6 +496,7 @@ function paintAccountIn(api) {
 /** Suppression définitive du compte (exigée par Google Play) : reconnexion, effacement des données en ligne, puis du compte. */
 function paintAccountDelete(api) {
   const b = api.body, pw = D.cloud.provider() === 'password';
+  b.dataset.delFor = D.user ? D.user.uid : '';
   b.innerHTML = `<div class="auth">
     <div class="status" data-ok="0"><span class="dot"></span><span>${T('<b>Suppression définitive</b> de {who}', { who: esc(D.user.email || T('ce compte')) })}</span></div>
     <p class="hint">${T('Tout ce que le compte a en ligne est effacé : decks, collection, historique de valeur, liste d\'échange et liens partagés. C\'est irréversible.')}</p>
