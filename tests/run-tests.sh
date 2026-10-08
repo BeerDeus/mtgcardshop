@@ -15,8 +15,9 @@ if [ ${#T[@]} -eq 0 ]; then T=("${NODE[@]}" "${BROWSER[@]}"); elif [ "$1" = --no
 fail=0
 for t in "${T[@]}"; do
   s=$(date +%s); timeout 420 node "tests/$t" > "tests/logs/$t.txt" 2>&1; rc=$?
-  [ $rc -ne 0 ] && fail=1
   echo "$t rc=$rc $(( $(date +%s)-s ))s" | tee -a tests/run-tests.out
+  # Échec : la fin du log s'affiche aussi (lisible directement dans le journal de la CI, sans télécharger l'artefact).
+  if [ $rc -ne 0 ]; then fail=$((fail+1)); tail -n 30 "tests/logs/$t.txt" | sed 's/^/    │ /'; fi
 done
 echo "FIN (échecs : $fail)" | tee -a tests/run-tests.out
-exit $fail
+[ $fail -eq 0 ]
