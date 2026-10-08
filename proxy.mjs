@@ -4,14 +4,15 @@
 //   HOST=0.0.0.0 ALLOWED_UIDS=<uid Firebase> node proxy.mjs  → accessible depuis le téléphone, réservé à ton compte Firebase
 //   HOST=0.0.0.0 APP_KEY=un-secret node proxy.mjs  → variante : clé partagée à saisir dans Réglages
 // Le token reste côté serveur. Seules les routes utiles sont relayées ; l'achat (cart/purchase) est bloqué.
-//   Alertes de prix : mêmes clés VAPID (ALERTS=0 pour couper).
+//   Alertes de prix : mêmes clés VAPID, ou le compte de service FCM pour l'appli Android (ALERTS=0 pour couper).
 //   Notifications « recherche terminée » (facultatif) : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (voir gen-vapid.mjs).
+//   Notifications dans l'appli Android (facultatif) : FCM_SERVICE_ACCOUNT (JSON du compte de service Firebase, ou son base64) ou FCM_SERVICE_ACCOUNT_FILE.
 import http from 'node:http';
 import { readFile, writeFile, mkdir, rename, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { gunzipSync, gzip, brotliCompress, constants as zc } from 'node:zlib';
 import { promisify } from 'node:util';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timingSafeEqual, createPublicKey, createPrivateKey, verify as rsaVerify, sign as dsaSign, randomBytes, createHash, createECDH, createCipheriv, hkdfSync } from 'node:crypto';
@@ -277,20 +278,32 @@ function pushEndpointOk(s) {
   if (PUSH_EXTRA.has(u.host)) return u.protocol === 'http:' || u.protocol === 'https:';
   return u.protocol === 'https:' && !u.port && PUSH_HOSTS.some(re => re.test(u.hostname));
 }
-/** Abonnement + texte reçus du navigateur → forme sûre, ou null (la recherche part quand même, sans notification). */
-function parsePush(p) {
-  if (!PUSH_ON || !p || typeof p !== 'object') return null;
-  const s = p.sub, k = s && s.keys;
-  if (!s || !pushEndpointOk(s.endpoint) || !k || typeof k.p256dh !== 'string' || typeof k.auth !== 'string') return null;
+/** Cible reçue → forme sûre, ou null : abonnement Web Push du navigateur, ou { fcm: jeton } de l'appli Android (chacun seulement si son service est configuré). */
+function parseTarget(s) {
+  if (!s || typeof s !== 'object') return null;
+  if ('fcm' in s) return FCM_ON && typeof s.fcm === 'string' && FCM_TOKEN_RE.test(s.fcm) ? { fcm: s.fcm } : null;
+  const k = s.keys;
+  if (!PUSH_ON || !pushEndpointOk(s.endpoint) || !k || typeof k.p256dh !== 'string' || typeof k.auth !== 'string') return null;
   if (!/^[A-Za-z0-9_-]{80,100}$/.test(k.p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(k.auth)) return null;
   const ua = Buffer.from(k.p256dh, 'base64url');
   if (ua.length !== 65 || ua[0] !== 4) return null;
   try { const e = createECDH('prime256v1'); e.generateKeys(); e.computeSecret(ua); } catch (e) { return null; }   // point hors courbe
+  return { endpoint: s.endpoint, keys: { p256dh: k.p256dh, auth: k.auth } };
+}
+/** Clé d'une cible : dédoublonnage des notifications d'une tâche, identifiant d'un appareil abonné aux alertes. */
+const pushKey = s => s.fcm ? 'fcm:' + s.fcm : s.endpoint;
+/** Abonnement (ou jeton FCM) + texte reçus de l'appli → forme sûre, ou null (la recherche part quand même, sans notification). */
+function parsePush(p) {
+  if (!p || typeof p !== 'object') return null;
+  const sub = parseTarget(p.sub); if (!sub) return null;
   const str = (v, n, d) => typeof v === 'string' && v.trim() ? v.replace(/[\u0000-\u001f]/g, ' ').slice(0, n) : d;
   const url = typeof p.url === 'string' && /^\.\/(\?[\w=&.%-]{0,60})?$/.test(p.url) ? p.url : './?resume=1';
-  return { sub: { endpoint: s.endpoint, keys: { p256dh: k.p256dh, auth: k.auth } }, title: str(p.title, 80, 'Recherche terminée'), body: str(p.body, 200, 'Les offres sont prêtes.'), url };
+  return { sub, title: str(p.title, 80, 'Recherche terminée'), body: str(p.body, 200, 'Les offres sont prêtes.'), url };
 }
+/** Envoi vers la cible : statut HTTP (404 / 410 = cible périmée, à retirer), 0 si le service est injoignable ou n'est plus configuré. */
 async function sendPush(p) {
+  if (p.sub.fcm) return FCM_ON ? sendFcm(p) : 0;
+  if (!PUSH_ON) return 0;                                            // abonnement enregistré avant le retrait des clés VAPID : gardé, pas envoyé
   const u = new URL(p.sub.endpoint), body = encryptPush(Buffer.from(JSON.stringify({ title: p.title, body: p.body, url: p.url, ...(p.kind ? { kind: p.kind } : {}) })), p.sub.keys.p256dh, p.sub.keys.auth);
   for (let a = 0; a < 2; a++) {
     let r;
@@ -303,28 +316,103 @@ async function sendPush(p) {
   }
   return 0;
 }
+
+/* ── Notifications dans l'appli Android (Firebase Cloud Messaging, API HTTP v1), sans dépendance ─────────────────────────
+   La WebView de l'appli n'a pas Web Push : l'appli envoie son jeton FCM ({ fcm }) partout où le navigateur envoie son abonnement.
+   Compte de service Firebase (FCM_SERVICE_ACCOUNT : le JSON, ou ce JSON en base64 ; ou FCM_SERVICE_ACCOUNT_FILE : son chemin) →
+   jeton d'accès OAuth2 (assertion JWT RS256 signée avec sa clé privée, gardé jusqu'à 5 min de son expiration) → POST messages:send.
+   Jeton d'appareil refusé (UNREGISTERED, NOT_FOUND, jeton invalide) : statut 404, la cible est retirée comme un abonnement expiré. */
+const FCM_BASE = (process.env.FCM_BASE_URL || 'https://fcm.googleapis.com').replace(/\/+$/, '');          // surchargeable pour les tests
+const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const FCM_TOKEN_RE = /^[A-Za-z0-9:_-]{100,4096}$/;
+let fcmSa = null;
+{
+  const raw = (process.env.FCM_SERVICE_ACCOUNT || '').replace(/^\uFEFF/, '').trim(), file = (process.env.FCM_SERVICE_ACCOUNT_FILE || '').trim();
+  if (raw || file) {
+    const src = raw ? 'FCM_SERVICE_ACCOUNT' : 'FCM_SERVICE_ACCOUNT_FILE';
+    try {
+      let txt;
+      try { txt = raw ? (raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8')) : readFileSync(file, 'utf8'); } catch (e) { throw new Error(src + ' : fichier illisible (' + e.message + ')'); }
+      let j; try { j = JSON.parse(txt.replace(/^\uFEFF/, '')); } catch (e) { throw new Error(src + ' illisible : colle le JSON du compte de service (sur une ligne) ou ce JSON encodé en base64'); }
+      if (!j || typeof j.client_email !== 'string' || typeof j.private_key !== 'string' || typeof j.project_id !== 'string' || !/^[a-z0-9-]{1,64}$/.test(j.project_id)) throw new Error(src + ' : compte de service incomplet (project_id, client_email et private_key attendus)');
+      let key; try { key = createPrivateKey(j.private_key.replace(/\\n/g, '\n')); } catch (e) { throw new Error(src + ' : private_key illisible'); }
+      if (key.asymmetricKeyType !== 'rsa') throw new Error(src + ' : private_key doit être une clé RSA');
+      const tokenUrl = String(process.env.FCM_TOKEN_URL || j.token_uri || 'https://oauth2.googleapis.com/token').trim();
+      if (!/^https?:\/\/[^\s/]+\//.test(tokenUrl)) throw new Error(src + ' : token_uri invalide');
+      fcmSa = { email: j.client_email, project: j.project_id, key, tokenUrl };
+    } catch (e) { console.error('Notifications de l\'appli (FCM) désactivées : ' + e.message); fcmSa = null; }
+  }
+}
+const FCM_ON = !!fcmSa;
+const fcmAuth = { tok: '', exp: 0, run: null };
+/** Assertion JWT signée (RS256), échangée contre un jeton d'accès (OAuth2, RFC 7523). */
+function fcmJwt() {
+  const now = Math.floor(Date.now() / 1000), enc = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const unsigned = enc({ alg: 'RS256', typ: 'JWT' }) + '.' + enc({ iss: fcmSa.email, scope: FCM_SCOPE, aud: fcmSa.tokenUrl, iat: now, exp: now + 3600 });
+  return unsigned + '.' + dsaSign('sha256', Buffer.from(unsigned), fcmSa.key).toString('base64url');
+}
+/** Jeton d'accès FCM, gardé jusqu'à 5 min de son expiration ; une seule demande à la fois. */
+function fcmAccess() {
+  if (fcmAuth.tok && Date.now() < fcmAuth.exp - 300e3) return Promise.resolve(fcmAuth.tok);
+  if (!fcmAuth.run) fcmAuth.run = (async () => {
+    const r = await fetch(fcmSa.tokenUrl, { method: 'POST', signal: AbortSignal.timeout(10000), redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: fcmJwt() }).toString() });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || typeof j.access_token !== 'string' || !j.access_token) throw new Error('jeton d\'accès refusé (' + r.status + (j && j.error ? ' ' + String(j.error).slice(0, 60) : '') + ')');
+    fcmAuth.tok = j.access_token; fcmAuth.exp = Date.now() + (Number(j.expires_in) > 0 ? Number(j.expires_in) : 3600) * 1000;
+    return fcmAuth.tok;
+  })().finally(() => { fcmAuth.run = null; });
+  return fcmAuth.run;
+}
+/** Jeton d'appareil à oublier : appli désinstallée, jeton renouvelé, autre projet Firebase, jeton mal formé. */
+function fcmGone(status, e) {
+  const det = Array.isArray(e && e.details) ? e.details : [], code = (det.find(d => d && d.errorCode) || {}).errorCode || (e && e.status) || '';
+  if (status === 404 || code === 'UNREGISTERED' || code === 'NOT_FOUND' || code === 'SENDER_ID_MISMATCH') return true;
+  return code === 'INVALID_ARGUMENT' && (/registration token/i.test(String(e && e.message || '')) || det.some(d => d && Array.isArray(d.fieldViolations) && d.fieldViolations.some(f => f && f.field === 'message.token')));
+}
+async function sendFcm(p) {
+  const body = JSON.stringify({ message: { token: p.sub.fcm, notification: { title: p.title, body: p.body }, data: { url: p.url },
+    android: { priority: 'HIGH', ttl: (p.ttl || 3600) + 's', collapse_key: p.topic || 'deckdeal-run' } } });   // ttl et collapse_key : équivalents des en-têtes TTL et Topic de Web Push
+  for (let a = 0; a < 2; a++) {
+    let tok, r;
+    try { tok = await fcmAccess(); } catch (e) { console.warn('FCM : ' + e.message); return 0; }
+    try {
+      r = await fetch(`${FCM_BASE}/v1/projects/${fcmSa.project}/messages:send`, { method: 'POST', body, signal: AbortSignal.timeout(10000), redirect: 'manual',
+        headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json; charset=utf-8', Accept: 'application/json' } });
+    } catch (e) { if (a === 0) { await sleepMs(1500); continue; } return 0; }
+    if (r.ok) { await r.arrayBuffer().catch(() => {}); return r.status; }
+    const e = ((await r.json().catch(() => null)) || {}).error;
+    if (fcmGone(r.status, e)) return 404;
+    if (r.status === 401 && a === 0) { fcmAuth.tok = ''; continue; }                // jeton d'accès révoqué ou expiré : un nouveau, un seul essai
+    if ((r.status === 429 || r.status >= 500) && a === 0) { await sleepMs(Math.min(5000, Number(r.headers.get('retry-after')) * 1000 || 1500)); continue; }
+    console.warn('FCM : ' + r.status + (e && e.message ? ' ' + String(e.message).slice(0, 120) : ''));
+    return r.status;
+  }
+  return 0;
+}
+
 /** Fin de tâche : si personne n'a relevé l'état final dans le délai de grâce (appli quittée, téléphone en veille), on prévient. */
 function pushWhenDone(job) {
-  if (!PUSH_ON || job.status !== 'done' || !job.pushes.length) return;
+  if (!(PUSH_ON || FCM_ON) || job.status !== 'done' || !job.pushes.length) return;
   setTimeout(async () => {
     if (job.seenEnd) return;
     for (const p of job.pushes.splice(0)) {
-      const st = await sendPush(p);
-      if (st && st < 300) console.log('push envoyé (' + st + ')'); else console.warn('push refusé (' + (st || 'réseau') + ')' + (st === 404 || st === 410 ? ' : abonnement expiré' : ''));
+      const st = await sendPush(p), via = p.sub.fcm ? ' FCM' : '';
+      if (st && st < 300) console.log('push' + via + ' envoyé (' + st + ')'); else console.warn('push' + via + ' refusé (' + (st || 'réseau') + ')' + (st === 404 || st === 410 ? ' : abonnement expiré' : ''));
     }
   }, PUSH_GRACE).unref();
 }
 
-/* ── Alertes de prix (Web Push) ────────────────────────────────────────────────────────────────────────────────────────
-   L'appli enregistre ici, avec son abonnement push, la liste des cartes à surveiller (cartes manquantes de tes decks enregistrés,
+/* ── Alertes de prix (Web Push, ou FCM dans l'appli Android) ───────────────────────────────────────────────────────────
+   L'appli enregistre ici, avec son abonnement push (ou son jeton FCM), la liste des cartes à surveiller (cartes manquantes de tes decks enregistrés,
    cartes suivies à la main, avec ou sans prix cible). Toutes les 6 h le serveur relit le prix tendance Cardmarket (champ `eur` de
    Scryfall, lots de 75 noms) et pousse une notification quand une carte :
    · chute d'au moins `thr` % (30 par défaut) ET d'au moins 0,50 € sous sa valeur habituelle (médiane des relevés précédents) ;
    · passe sous le prix cible fixé à la main.
    Une carte déjà signalée n'est plus signalée pendant 5 jours, sauf nouvelle chute de 15 % ou plus. Un seul message par appareil et par
    passage (plusieurs cartes = un résumé). Stocké dans .data/alerts.json (abonnements, listes, relevés), écriture atomique ; un
-   abonnement refusé par le service de push (404 / 410) est retiré. Le serveur doit tourner en continu pour que les passages aient lieu. */
-const ALERTS_ON = PUSH_ON && process.env.ALERTS !== '0';
+   abonnement refusé par le service de push (404 / 410, jeton FCM périmé) est retiré. Le serveur doit tourner en continu pour que les passages aient lieu. */
+const ALERTS_ON = (PUSH_ON || FCM_ON) && process.env.ALERTS !== '0';
 const SCRY_UP = (process.env.SCRYFALL_UPSTREAM || 'https://api.scryfall.com').replace(/\/+$/, '');            // surchargeable pour les tests
 const AL_EVERY = Number(process.env.ALERT_EVERY_MS) || 6 * 3600e3;
 const AL_FIRST = process.env.ALERT_FIRST_MS === undefined ? 90e3 : Number(process.env.ALERT_FIRST_MS);
@@ -335,7 +423,7 @@ const AL_MAX_ITEMS = 400, AL_MAX_SUBS = Number(process.env.ALERT_MAX_SUBS) || 50
 const AL = { subs: new Map(), px: new Map(), run: null, saveT: null, seedT: null, checkAt: 0, last: { at: 0, ok: 0, miss: 0, hits: 0, err: '' }, warned: false };
 const alKey = name => String(name || '').split('//')[0].replace(/æ/gi, 'ae').replace(/œ/gi, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’‘`´]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const alEur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
-const alId = endpoint => createHash('sha1').update(endpoint).digest('hex').slice(0, 24);
+const alId = key => createHash('sha1').update(key).digest('hex').slice(0, 24);                  // key : pushKey(cible) → un enregistrement par abonnement ou jeton FCM
 const alMedian = a => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
 
 async function alLoad() {
@@ -441,7 +529,7 @@ async function alTick({ seed = false } = {}) {
           rec.hits = [...hits, ...(rec.hits || [])].slice(0, AL_HITS_KEEP);
           const m = alMessage(hits), st = await sendPush({ sub: rec.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
           if (st && st < 300) { sent++; console.log('alerte envoyée (' + hits.length + ' carte' + (hits.length > 1 ? 's' : '') + ')'); }
-          else if (st === 404 || st === 410) { AL.subs.delete(rec.id); console.warn('alerte : abonnement expiré, retiré'); }
+          else if (st === 404 || st === 410) { AL.subs.delete(rec.id); console.warn('alerte : ' + (rec.sub.fcm ? 'jeton FCM périmé' : 'abonnement expiré') + ', retiré'); }
           else console.warn('alerte refusée (' + (st || 'réseau') + ')');
         }
         AL.last.hits = sent;
@@ -455,14 +543,14 @@ function alSeedSoon() { if (AL.seedT) return; AL.seedT = setTimeout(() => { AL.s
 
 const alStr = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '';
 async function alertsApi(req, res, path, url) {
-  if (!ALERTS_ON) return json(res, 404, { error: 'alerts_disabled', message: PUSH_ON ? 'Alertes désactivées (ALERTS=0).' : 'Notifications non configurées (clés VAPID manquantes).' });
+  if (!ALERTS_ON) return json(res, 404, { error: 'alerts_disabled', message: PUSH_ON || FCM_ON ? 'Alertes désactivées (ALERTS=0).' : 'Notifications non configurées (clés VAPID ou compte de service FCM manquants).' });
   const sub = path.replace(/^alerts\/?/, '');
   const id = String(url.searchParams.get('id') || '');
   if (req.method === 'PUT' && !sub) {
     let b; try { b = JSON.parse((await readBody(req)).toString('utf8') || '{}'); } catch (e) { return json(res, 400, { error: 'bad_request', message: 'JSON invalide' }); }
     const pu = parsePush({ sub: b && b.sub, url: './?alerts=1' });
     if (!pu) return json(res, 400, { error: 'bad_subscription', message: 'Abonnement push invalide ou refusé.' });
-    const rid = alId(pu.sub.endpoint), old = AL.subs.get(rid), oldItems = new Map(((old && old.items) || []).map(x => [x.nk, x]));
+    const rid = alId(pushKey(pu.sub)), old = AL.subs.get(rid), oldItems = new Map(((old && old.items) || []).map(x => [x.nk, x]));
     const items = new Map();
     for (const x of Array.isArray(b.items) ? b.items : []) {
       if (items.size >= AL_MAX_ITEMS) break;
@@ -556,7 +644,7 @@ async function jobsApi(req, res, path, url, tok = TOKEN) {
     const r = newJob({ lang, foil, bps: ids, fresh: !!b.fresh, tok });
     if (r.busy) return json(res, 429, { error: 'busy', message: 'Trop de recherches en cours sur le serveur.' }, { 'Retry-After': '10' });
     const pu = parsePush(b.push);
-    if (pu && r.job.status === 'running' && r.job.pushes.length < 3 && !r.job.pushes.some(x => x.sub.endpoint === pu.sub.endpoint)) r.job.pushes.push(pu);
+    if (pu && r.job.status === 'running' && r.job.pushes.length < 3 && !r.job.pushes.some(x => pushKey(x.sub) === pushKey(pu.sub))) r.job.pushes.push(pu);
     return json(res, 202, { id: r.job.id, total: r.job.total, attached: r.attached, status: r.job.status, push: !!pu });
   }
   const job = m[1] && jobs.get(m[1]);
@@ -848,7 +936,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__me') return json(res, 200, { server: await serverOk(req) });
     if (url.pathname === '/__prices') return json(res, 200, { source: PX_SRC ? 'GitHub' : '', ...PX_ST });
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '' });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '', fcm: FCM_ON });
     if (url.pathname === '/__edh') return json(res, 200, { source: EDH_SRC ? 'GitHub' : '', ...EDH_ST });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -890,6 +978,7 @@ server.listen(PORT, HOST, () => {
   if (APP_KEY) console.log(AUTH_FB ? 'APP_KEY encore acceptée en secours : supprime-la une fois la connexion par compte validée.' : 'Clé d\'accès requise (APP_KEY) — à saisir dans Réglages.');
   if (APP_KEY && APP_KEY.length < 12) console.warn('⚠ APP_KEY courte (' + APP_KEY.length + ' caractères) : prends 16 caractères ou plus.');
   if (!PAGE) console.log('⚠ deck-deal.html introuvable à côté du proxy.');
+  if (FCM_ON) console.log(`Notifications de l'appli Android (FCM) : projet Firebase « ${fcmSa.project} ».`);
   if (ALERTS_ON) {
     const wait = Math.max(AL_FIRST, (AL.last.at || 0) + AL_EVERY - Date.now());
     setTimeout(() => { alTick(); setInterval(alTick, AL_EVERY).unref(); }, wait).unref();

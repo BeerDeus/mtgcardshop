@@ -3,7 +3,8 @@
    notification quand l'une chute d'au moins N % (et 0,50 €) ou passe sous un prix cible. Cette page fournit la liste à surveiller :
    · automatiquement : cartes qu'il manque pour chaque deck enregistré (liste du deck − collection libre) ;
    · à la main : n'importe quelle carte, avec ou sans prix cible (fiche d'une carte, ou saisie dans la feuille « Alertes de prix »).
-   La liste part avec l'abonnement push de CET appareil (PUT /api/alerts) à chaque changement (différé de 3 s) et au plus toutes les 12 h.
+   La liste part avec l'abonnement push de CET appareil (PUT /api/alerts) à chaque changement (différé de 3 s) et au plus toutes les 12 h ;
+   dans l'appli Android, avec son jeton FCM ({ fcm }) à la place de l'abonnement (voir push.js).
    Les cartes suivies à la main et les réglages restent sur l'appareil (deckdeal:alert:v1). */
 const AL_KEY = 'deckdeal:alert:v1', AL_THRS = [20, 30, 40, 50], AL_RESYNC = 12 * 3600e3, AL_ROWS = 150;
 const AC = { on: false, thr: 30, deck: true, watch: {}, mute: {}, id: '', at: 0, sig: '', t: 0, busy: false, err: '', info: null };
@@ -19,7 +20,7 @@ function alRead() {
 function alWrite() {
   try { localStorage.setItem(AL_KEY, JSON.stringify({ on: AC.on, thr: AC.thr, deck: AC.deck, watch: AC.watch, mute: AC.mute, id: AC.id, at: AC.at, sig: AC.sig })); } catch (e) { /* stockage indisponible */ }
 }
-const alAvail = () => !!(CTX.proxy && CTX.alerts && CTX.vapid && !S.demo);
+const alAvail = () => !!(CTX.proxy && CTX.alerts && (pushNat() ? CTX.fcm : CTX.vapid) && !S.demo);
 /** Prix cible saisi (« 2,5 », « 2.50 € ») → centimes, 0 si vide ou illisible. */
 function alParseEuros(s) {
   const n = parseFloat(String(s || '').replace(/[\s€]/g, '').replace(',', '.'));
@@ -48,14 +49,8 @@ function alItems() {
   return [...out.values()].slice(0, 400).map(x => { const o = { k: x.k, n: x.n }; if (x.t) o.t = x.t; if (x.d.length) o.d = x.d; if (x.hand) o.h = 1; return o; });
 }
 
-/** Abonnement push de cet appareil (null si les notifications ne sont pas actives). */
-async function alSubJson() {
-  if (await pushState() !== 'on') return null;
-  const reg = await pushReg(); let sub = null;
-  try { sub = reg && await reg.pushManager.getSubscription(); } catch (e) { /* ignore */ }
-  const j = sub && sub.toJSON();
-  return j && j.endpoint && j.keys ? { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } } : null;
-}
+/** Abonnement push de cet appareil, ou { fcm: jeton } dans l'appli Android (null si les notifications ne sont pas actives). */
+const alSubJson = () => pushTarget();
 /** Envoie la liste au serveur (rien si inchangée depuis moins de 12 h). */
 async function alSync(force) {
   if (!AC.on || AC.busy || !alAvail()) return;
@@ -65,7 +60,8 @@ async function alSync(force) {
   AC.busy = true;
   try {
     const sub = await alSubJson(); if (!sub) { AC.err = 'push'; return; }
-    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, items: items.map(({ h, ...x }) => x) } });
+    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, items: items.map(({ h, ...x }) => x) } }), prev = AC.id;
+    if (prev && j.id && j.id !== prev) ct('alerts', { method: 'DELETE', params: { id: prev } }).catch(() => {});   // nouvel abonnement ou jeton FCM renouvelé : l'ancien ne doit plus notifier
     AC.id = items.length ? (j.id || AC.id) : ''; AC.sig = sig; AC.at = Date.now(); AC.err = ''; AC.info = { watching: j.watching | 0 }; alWrite();
   } catch (e) { AC.err = e && e.code === 'auth' ? 'auth' : 'net'; }
   finally { AC.busy = false; alPaintBox(); }
@@ -86,10 +82,11 @@ async function alDisable() {
 }
 /** Texte d'un refus d'activation (permission, appareil…). */
 function alWhy(r) {
-  return r.why === 'denied' ? T('Notifications bloquées : autorise-les pour ce site dans les réglages du navigateur.')
+  return r.why === 'denied' ? pushDeniedMsg()
     : r.why === 'dismissed' ? T('Autorisation non accordée.')
     : r.why === 'demo' ? T('Indisponible en mode démo.')
     : r.why === 'ios' ? T('Sur iPhone et iPad, installe d\'abord Mana Orbit sur l\'écran d\'accueil (Réglages › Application).')
+    : r.why === 'oldapp' ? T('Mets à jour l\'appli Mana Orbit pour recevoir les notifications.')
     : r.msg ? T('Activation impossible : {msg}.', { msg: r.msg }) : T('Activation impossible.');
 }
 
@@ -119,7 +116,8 @@ async function alPaintBox(box) {
   box = box && box.isConnected ? box : $('#alertBox'); if (!box || !box.isConnected) return;
   const note = t => `<p class="hint">${t}</p>`;
   if (!CTX.proxy) { box.innerHTML = note(T('Les alertes demandent le serveur Mana Orbit (il surveille les prix quand l\'app est fermée).')); return; }
-  if (!CTX.vapid) { box.innerHTML = note(T('Le serveur n\'a pas de clés de notification : ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT (voir README).')); return; }
+  const nat = !!pushNat();                                                      // appli Android : FCM à la place de Web Push
+  if (nat ? !CTX.fcm : !CTX.vapid) { box.innerHTML = note(nat ? T('Le serveur n\'a pas de compte de service Firebase pour les notifications de l\'appli : ajoute FCM_SERVICE_ACCOUNT (voir README).') : T('Le serveur n\'a pas de clés de notification : ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT (voir README).')); return; }
   if (!CTX.alerts) { box.innerHTML = note(T('Les alertes de prix sont désactivées sur le serveur.')); return; }
   if (S.demo) { box.innerHTML = note(T('Indisponible en mode démo.')); return; }
   const st = await pushState(); if (!box.isConnected) return;

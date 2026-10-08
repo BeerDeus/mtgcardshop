@@ -16,12 +16,15 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `JOB_MAX_RUNNING`, `ALERT_MAX_SUBS`, `UP_CONC` | Plafonds : recherches CardTrader simultanées (8), appareils abonnés aux alertes (500), requêtes simultanées vers CardTrader (12) |
 | `PORT` | Fourni par l'hébergeur (défaut 8787) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Facultatif : notifications « recherche terminée » (voir plus bas, `node gen-vapid.mjs`) |
-| `ALERTS` | `0` coupe les alertes de prix (actives dès que les clés VAPID sont là) |
+| `FCM_SERVICE_ACCOUNT` | Facultatif : notifications dans l'appli Android (Firebase Cloud Messaging), « recherche terminée » et alertes de prix. Contenu du fichier JSON du compte de service Firebase collé sur une ligne, ou ce contenu en base64 (voir `docs/android.md`). Secret : jamais dans GitHub |
+| `FCM_SERVICE_ACCOUNT_FILE` | Variante de `FCM_SERVICE_ACCOUNT` : chemin du fichier JSON du compte de service sur le serveur |
+| `ALERTS` | `0` coupe les alertes de prix (actives dès que les clés VAPID ou le compte de service FCM sont là) |
 | `ALERT_EVERY_MS` | Intervalle entre deux relevés de prix (défaut 6 h) |
 | `ALERT_MIN_DROP_CENTS`, `ALERT_COOLDOWN_MS` | Chute minimale en centimes (défaut 50) · délai avant de re-signaler une carte (défaut 5 jours) |
 | `ALERT_FILE` | Fichier d'état des alertes (défaut `.data/alerts.json`) |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
 | `SCRYFALL_UPSTREAM`, `ALERT_FIRST_MS`, `ALERT_SEED_MS`, `ALERT_CHECK_GAP_MS` | Tests seulement |
+| `FCM_TOKEN_URL`, `FCM_BASE_URL` | Tests seulement : serveur de jetons OAuth2 (défaut : `token_uri` du compte de service) et adresse de l'API FCM (défaut `https://fcm.googleapis.com`) |
 
 ## Prix : Cardmarket par défaut, CardTrader avec un token
 
