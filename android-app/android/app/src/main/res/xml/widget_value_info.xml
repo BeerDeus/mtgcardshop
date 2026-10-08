@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget « Ma collection » (ValueWidget) : 2 × 2 par défaut, réductible à une rangée (mise en page compacte), agrandissable.
+     Pas de mise à jour périodique (updatePeriodMillis 0) : le site envoie les chiffres quand ils changent (setWidget du plugin ManaOrbit).
+     targetCell*, previewLayout et description : Android 12 et plus (ignorés avant, où minWidth/minHeight et previewImage servent). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_value"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:previewImage="@drawable/widget_preview"
+    android:previewLayout="@layout/widget_value_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo Mana Orbit sans son fond (pwa/icons/icon.svg, repère 100 × 100 recadré sur le dessin) : la carte foil penchée et l'orbite aux cinq couleurs de mana.
+     Ordre de dessin de l'icône : moitié arrière de l'orbite, carte, moitié avant. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+
+    <group
+        android:translateX="-11.2"
+        android:translateY="-8.6">
+
+        <group
+            android:pivotX="50"
+            android:pivotY="52"
+            android:rotation="-20">
+            <path
+                android:pathData="M12,52 A38,13 0 0,1 88,52"
+                android:strokeWidth="2.4"
+                android:strokeColor="#9AA3B8"
+                android:strokeLineCap="round" />
+            <path
+                android:fillAlpha="0.85"
+                android:fillColor="#FF7A5C"
+                android:pathData="M24.3,41.5 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 Z" />
+            <path
+                android:fillAlpha="0.85"
+                android:fillColor="#6FD08C"
+                android:pathData="M68.9,41.5 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 Z" />
+        </group>
+
+        <group
+            android:pivotX="51"
+            android:pivotY="50"
+            android:rotation="-11">
+            <path android:pathData="M42,27 H60 A5,5 0 0,1 65,32 V63 A5,5 0 0,1 60,68 H42 A5,5 0 0,1 37,63 V32 A5,5 0 0,1 42,27 Z">
+                <aapt:attr name="android:fillColor">
+                    <gradient
+                        android:endX="65"
+                        android:endY="68"
+                        android:startX="37"
+                        android:startY="27"
+                        android:type="linear">
+                        <item
+                            android:color="#FF8FC3"
+                            android:offset="0" />
+                        <item
+                            android:color="#FFD479"
+                            android:offset="0.26" />
+                        <item
+                            android:color="#7BE8C8"
+                            android:offset="0.5" />
+                        <item
+                            android:color="#7FB0FF"
+                            android:offset="0.74" />
+                        <item
+                            android:color="#C79BFF"
+                            android:offset="1" />
+                    </gradient>
+                </aapt:attr>
+            </path>
+            <path
+                android:pathData="M42.8,29.6 H59.2 A3.2,3.2 0 0,1 62.4,32.8 V62.2 A3.2,3.2 0 0,1 59.2,65.4 H42.8 A3.2,3.2 0 0,1 39.6,62.2 V32.8 A3.2,3.2 0 0,1 42.8,29.6 Z"
+                android:strokeWidth="1.1"
+                android:strokeAlpha="0.45"
+                android:strokeColor="#FFFFFF" />
+        </group>
+
+        <group
+            android:pivotX="50"
+            android:pivotY="52"
+            android:rotation="-20">
+            <path
+                android:pathData="M12,52 A38,13 0 0,0 88,52"
+                android:strokeWidth="2.4"
+                android:strokeColor="#9AA3B8"
+                android:strokeLineCap="round" />
+            <path
+                android:fillColor="#7FB0FF"
+                android:pathData="M81.8,56 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0 Z" />
+            <path
+                android:fillColor="#F8F6D8"
+                android:pathData="M45.7,65 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0 Z" />
+            <path
+                android:fillColor="#B5A3C8"
+                android:pathData="M9.6,56 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0 Z" />
+        </group>
+    </group>
+</vector>

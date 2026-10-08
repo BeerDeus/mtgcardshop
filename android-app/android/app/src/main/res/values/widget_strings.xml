@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes du widget « Ma collection ». Ici l'anglais, langue par défaut ; le français est dans values-fr/ (même règle que le site :
+     téléphone en français → français, toute autre langue → anglais). Avec des chiffres, ValueWidget prend la langue choisie dans l'appli. -->
+<resources>
+    <string name="widget_label">Collection value</string>
+    <string name="widget_description">Your Magic collection value and its change over 7 days</string>
+    <string name="widget_title">My collection</string>
+    <string name="widget_empty">Open Mana Orbit to show your collection</string>
+    <!-- %1$s : « ▲ +€12 » ou « ▼ −€8 » -->
+    <string name="widget_delta">%1$s · 7d</string>
+    <plurals name="widget_cards">
+        <item quantity="one">%1$s card</item>
+        <item quantity="other">%1$s cards</item>
+    </plurals>
+    <!-- lecteur d'écran : %1$s la valeur, %2$s le nombre de cartes -->
+    <string name="widget_a11y">My collection: %1$s, %2$s</string>
+    <!-- aperçu dans la liste des widgets (Android 12 et plus) -->
+    <string name="widget_preview_value">€1,234</string>
+    <string name="widget_preview_delta">▲ +€12 · 7d</string>
+    <string name="widget_preview_count">312 cards</string>
+</resources>

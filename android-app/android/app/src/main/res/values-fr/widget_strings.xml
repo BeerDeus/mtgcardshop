@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes du widget « Ma collection » en français (anglais par défaut dans values/widget_strings.xml : mêmes noms, rien de plus ici). -->
+<resources>
+    <string name="widget_label">Valeur de la collection</string>
+    <string name="widget_description">La valeur de ta collection Magic et sa variation sur 7 jours</string>
+    <string name="widget_title">Ma collection</string>
+    <string name="widget_empty">Ouvre Mana Orbit pour afficher ta collection</string>
+    <!-- %1$s : « ▲ +12 € » ou « ▼ −8 € » -->
+    <string name="widget_delta">%1$s · 7 j</string>
+    <plurals name="widget_cards">
+        <item quantity="one">%1$s carte</item>
+        <item quantity="many">%1$s cartes</item>
+        <item quantity="other">%1$s cartes</item>
+    </plurals>
+    <!-- lecteur d'écran : %1$s la valeur, %2$s le nombre de cartes -->
+    <string name="widget_a11y">Ma collection : %1$s, %2$s</string>
+    <!-- aperçu dans la liste des widgets (Android 12 et plus) -->
+    <string name="widget_preview_value">1 234 €</string>
+    <string name="widget_preview_delta">▲ +12 € · 7 j</string>
+    <string name="widget_preview_count">312 cartes</string>
+</resources>

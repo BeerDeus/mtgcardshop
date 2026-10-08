@@ -24,6 +24,19 @@
 
         </activity>
 
+        <!-- Widget d'écran d'accueil « Ma collection » (ValueWidget.java). Non exporté : seul le système (AppWidgetManager) lui envoie ses mises à jour. -->
+        <receiver
+            android:name=".ValueWidget"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_value_info" />
+        </receiver>
+
         <!-- AdMob : identifiant d'application. Celui-ci est l'identifiant de TEST de Google ; remplace-le par le tien (console AdMob › Applis) avant la publication. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

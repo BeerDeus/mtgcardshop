@@ -102,6 +102,17 @@ La connexion Google utilise le compte Google du téléphone : un sélecteur nati
 
 Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléphone : si l'aperçu est décalé ou si l'image est mal orientée, je corrige.
 
+### Widget
+
+Le widget « Ma collection » affiche sur l'écran d'accueil la valeur de ta collection, sa variation sur 7 jours et le nombre de cartes.
+
+1. Appui long sur un espace vide de l'écran d'accueil › **Widgets** › **Mana Orbit** › « Valeur de la collection ».
+2. Pose-le (2 × 2). Un appui long dessus permet de le redimensionner : sur une seule rangée, il ne garde que la valeur et la variation.
+3. Ouvre l'appli une fois : le widget se remplit. Il se met à jour chaque fois que la valeur change dans l'appli (il ne lit rien sur Internet tout seul).
+4. Toucher le widget ouvre l'appli sur ta collection.
+
+Rien à configurer : le widget prend la langue choisie dans l'appli.
+
 ---
 
 ## 4. Publier sur le Play Store
@@ -245,7 +256,7 @@ Bon à savoir :
 | Bandeau de pub | `@capacitor-community/admob` | fait côté site : voir « Publicité (AdMob) » ; reste le compte AdMob et l'identifiant de l'appli |
 | Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
 | Connexion Google | `@capacitor-firebase/authentication` | branchée : sélecteur de compte natif (voir 2 bis pour Firebase) |
-| Widget (valeur de la collection) | code Kotlin natif | lit la valeur que l'appli lui laisse |
+| Widget (valeur de la collection) | plugin local `ManaOrbit` (Java, dans `android/app`) | fait : lit la valeur que l'appli lui laisse (voir « Widget », étape 3) |
 
 ---
 

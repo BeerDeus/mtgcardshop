@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Liseré foil sous le titre : les couleurs du dégradé foil de l'appli (rose, menthe, lilas). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="0"
+        android:centerColor="#7BE8C8"
+        android:endColor="#C79BFF"
+        android:startColor="#FF8FC3"
+        android:type="linear" />
+    <corners android:radius="2dp" />
+</shape>

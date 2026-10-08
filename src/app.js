@@ -1251,6 +1251,7 @@ function handleLaunch() {
   else if (resume) resumeRun();
   else if (alerts) setTimeout(alertsOpen, 900);
   else if (shared) onShared(extractShared({ title: q.get('title'), text: q.get('text'), url: q.get('url') }));
+  else if (q.has('collection')) setTimeout(() => openCollection(), 600);                  // lien direct vers la collection (?collection)
 }
 /** Contenu reçu du menu « Partager » : une decklist en texte, ou un lien (EDHREC, Archidekt, Moxfield) lu par le serveur. */
 /** Met une decklist dans la page de saisie (partage, import d'un lien, deck EDHREC de la collection). */

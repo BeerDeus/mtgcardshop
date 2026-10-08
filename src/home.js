@@ -41,6 +41,7 @@ function homePaint() {
     if (h && Math.abs(h.d) >= 100) { dl.hidden = false; dl.className = h.d < 0 ? 'down' : ''; dl.textContent = T('{d} · 7 j', { d: (h.d < 0 ? '▼ −' : '▲ +') + hmEur(Math.abs(h.d)) }); } else dl.hidden = true;
   } else { HM.v = null; val.textContent = T('Commencer'); cnt.textContent = T('Ajoute tes cartes'); dl.hidden = true; }
   orb.setAttribute('aria-label', n ? T('Ma collection : {v}, {n} cartes', { v: val.textContent, n: nf0(n) }) : T('Ma collection : ajoute tes cartes'));
+  widgetSoon();                                                                          // widget Android : mêmes chiffres (widget.js)
   homeLands();
   // Mes decks
   const list = allDecks().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), top = list.slice(0, 3);
