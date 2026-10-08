@@ -1512,7 +1512,7 @@ button,.btn,select,summary{touch-action:manipulation}
 .ob-chip.on{background:#fff;color:#0b0f1c;border-color:#fff}
 /* Appli Android : aperçu natif de l'appareil photo placé DERRIÈRE la page (CameraPreview toBack) → tout ce qui est au-dessus de la zone d'aperçu devient transparent */
 html.nat-cam,html.nat-cam body,html.nat-cam .dv.scan,html.nat-cam .sc-stage{background:transparent!important}
-html.nat-cam #app,html.nat-cam .hm-aura{visibility:hidden}
+html.nat-cam body>:not(.scan):not(.toast):not(.sheet-root):not(.sheet-wrap){visibility:hidden}      /* accueil, collection ouverte dessous, aurore… : rien d'opaque entre l'aperçu et le scan */
 html.nat-cam .dv.scan>:not(.sc-stage){background:var(--bg)}
 html.nat-cam .sc-video{display:none}
 html.nat-cam .dv.scan::before,html.nat-cam .dv.scan::after{display:none}

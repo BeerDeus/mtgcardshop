@@ -356,7 +356,9 @@ await camN.close();
   await np.waitForFunction(() => document.querySelector('.sc-stage').dataset.native === '1', null, { timeout: 5000 });
   const st = await np.evaluate(() => window.__nat.starts[0]); assert.equal(st.toBack, true); assert.equal(st.position, 'rear'); assert.ok(st.width > 100 && st.height > 50, 'aperçu placé sur la zone de la page');
   assert.equal(await np.evaluate(() => document.documentElement.classList.contains('nat-cam')), true);
-  await np.click('.sc-shot'); await idle(np, 20000);
+  assert.deepEqual(await np.evaluate(() => [getComputedStyle(document.querySelector('.coll')).visibility, getComputedStyle(document.querySelector('#app')).visibility, getComputedStyle(document.querySelector('.scan')).visibility, getComputedStyle(document.querySelector('.scan .sc-stage')).backgroundColor]), ['hidden', 'hidden', 'visible', 'rgba(0, 0, 0, 0)'], 'collection et accueil masqués sous le scan : l\'aperçu natif se voit à travers la bande');
+  await np.click('.sc-shot'); await np.waitForFunction(() => SC.cap >= 1 && SC.items.size + SC.miss.length >= 1, null, { timeout: 20000 }); await idle(np, 20000);      // capture native asynchrone : la carte n'entre en file qu'une fois l'image reçue
+  console.log('  DEBUG', JSON.stringify(await np.evaluate(() => ({ miss: SC.miss.length, items: SC.items.size, ocr: window.__nat.ocr, cap: SC.cap, hint: (document.querySelector('.sc-hint') || {}).textContent }))));
   assert.deepEqual((await items(np)).map(x => x.name), ['Sol Ring']); assert.ok((await np.evaluate(() => window.__nat.ocr.length)) >= 1, 'texte lu par ML Kit');
   assert.equal(cdnHits.slice(hits0).filter(h => /tesseract/.test(h)).length, 0, 'aucun téléchargement de Tesseract dans l\'appli');
   await np.click('.scan [data-act="close"]'); await np.waitForTimeout(400);
