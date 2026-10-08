@@ -287,8 +287,8 @@ r = await j(B + '/prices.tsv'); assert.equal(r.s, 404); console.log('✓ prix pa
   r = await j(B + '/api/info', { headers: { 'x-ct-token': 'utilisateur-token-abcdef123456', 'x-forwarded-for': '2001:db8:1:2:aaaa::1' } }); assert.equal(r.s, 200);
   for (let i = 0; i < 6; i++) await j(B + '/api/info', { headers: { 'x-ct-token': 'utilisateur-token-abcdef123456', 'x-forwarded-for': '2001:db8:1:2::' + (i + 2).toString(16) } });
   r = await j(B + '/api/info', { headers: { 'x-ct-token': 'utilisateur-token-abcdef123456', 'x-forwarded-for': '2001:0db8:0001:0002:ffff::9' } }); assert.equal(r.s, 429, 'IPv6 : un budget par réseau /64');
-  for (let i = 0; i < 10; i++) assert.equal((await ut(null)).s, 200, 'boucle locale sans X-Forwarded-For : pas de limite');
-  console.log('✓ token d\'un utilisateur : relais plafonnés par IP (réseau /64 en IPv6), autre IP servie, pas de limite en local');
+  for (let i = 0; i < 10; i++) assert.equal((await ut(null)).s, 200, 'sans X-Forwarded-For (clients indiscernables) : pas de budget par IP');
+  console.log('✓ token d\'un utilisateur : relais plafonnés par IP (réseau /64 en IPv6), autre IP servie, pas de budget sans X-Forwarded-For');
 }
 p.kill();
 

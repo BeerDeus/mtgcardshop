@@ -81,7 +81,7 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 | `UP_CONC` | 12 | Requêtes simultanées max vers CardTrader |
 
 - Clé invalide : délai de 400 ms, puis blocage 5 min de l'IP après 15 essais (nécessite `X-Forwarded-For`). `/__me` compte les mauvaises clés de la même façon (sinon on y devinerait `APP_KEY` sans frein) ; IP bloquée → `{ server: false }`.
-- **Routes publiques bornées** (budgets par IP : la dernière de `X-Forwarded-For`, réseau /64 en IPv6 ; en local sans `X-Forwarded-For`, pas de limite ; `0` = sans limite) : 429 + `Retry-After` au-delà.
+- **Routes publiques bornées** (budgets par IP : la dernière de `X-Forwarded-For`, réseau /64 en IPv6 ; sans `X-Forwarded-For`, comme pour le blocage, pas de budget par IP, seulement les plafonds globaux ; `0` = sans limite) : 429 + `Retry-After` au-delà.
   - Alertes (`/api/alerts`) : 30 enregistrements et 30 « Vérifier les prix » par heure, 10 appareils par IP, liste de 64 Ko au plus, 50 000 cartes au total. Serveur plein : le nouvel appareil est refusé (507), jamais un abonné évincé (seul un enregistrement sans aucune notification réussie et sans carte au prix connu depuis 1 h, ou pas réenregistré depuis 30 jours, laisse sa place).
   - Import de liens : 30 par heure ; réponse du site coupée dès 2 Mo pendant la lecture.
   - Token d'un utilisateur (`X-CT-Token`) : 360 relais par minute (rafale de 720) et 120 recherches lancées par heure ; 2 recherches en cours par token ; catalogues et offres en cache servis seulement une fois ce token accepté par CardTrader (une réponse 2xx dans les 6 h) ; résultats de toutes les recherches plafonnés à 64 Mo (les recherches terminées sont oubliées d'abord, sinon la recherche échoue et l'appli lit le reste elle-même).

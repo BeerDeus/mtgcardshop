@@ -764,7 +764,8 @@ async function badKey(req, res, error = 'bad_app_key', status = 401) {
 }
 
 // Budgets par client sur les routes publiques coûteuses (seau de jetons : `cap` requêtes d'avance, rechargé de `cap` par période `per`).
-// Client : l'IP ci-dessus, réseau /64 pour une IPv6 (une box en reçoit des milliards). Boucle locale sans X-Forwarded-For : clients indiscernables, pas de limite (comme BAD).
+// Client : l'IP ci-dessus, réseau /64 pour une IPv6 (une box en reçoit des milliards). Sans X-Forwarded-For, clients indiscernables : pas de limite, comme pour
+// le blocage BAD (sinon, derrière un proxy qui ne l'ajoute pas, tous les visiteurs partageraient un seul budget). Les plafonds globaux restent.
 // Token d'un utilisateur : 360 relais par minute (le rythme maximal de l'appli, 6/s) ; 120 recherches par heure (un refus renvoie l'appli à la lecture depuis l'appareil).
 const IMPORT_RATE = Number(process.env.IMPORT_RATE_PER_H ?? 30), USER_RATE = Number(process.env.USER_RATE_PER_MIN ?? 360), USER_JOBS_H = Number(process.env.USER_JOBS_PER_H ?? 120);
 const BUCKETS = new Map();
@@ -775,7 +776,7 @@ function netOf(ip) {
   const g = b === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t];
   return g.slice(0, 4).map(x => (parseInt(x, 16) || 0).toString(16)).join(':') + '::/64';
 }
-const clientOf = req => !req.headers['x-forwarded-for'] && /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '') ? '' : netOf(ipOf(req));
+const clientOf = req => req.headers['x-forwarded-for'] ? netOf(ipOf(req)) : '';
 /** 0 : requête permise (un jeton consommé) ; sinon secondes à attendre. cap ≤ 0 : sans limite. */
 function rateWait(req, name, cap, per) {
   const c = clientOf(req); if (!c || !(cap > 0)) return 0;
