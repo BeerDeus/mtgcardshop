@@ -4,13 +4,14 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 
-const reqs = []; let mode = {}; // mode : { bad: Set(bp) → 429 une fois, dead: status pour tous, delay }
+const reqs = []; let mode = {}; const REFUSED = 'jeton-refuse-0123456789abc'; // mode : { bad: Set(bp) → 429 une fois, dead: status pour tous, delay }
 const mkp = (bp, i, lang = 'fr') => ({ id: bp * 100 + i, blueprint_id: bp, quantity: 2, graded: false, on_vacation: false, bundle_size: 1, name_en: 'gros champ inutile', description: 'x'.repeat(400),
   price: { cents: 100 + i, currency: 'EUR', formatted: '1 €' }, properties_hash: { condition: 'Near Mint', mtg_language: lang, mtg_foil: false, collector_number: '9', secret_field: 1 },
   expansion: { code: 'cmm', name_en: 'Commander Masters', id: 1, extra: true }, user: { id: i, username: 'u' + i, country_code: 'FR', can_sell_via_hub: true, user_type: 'normal', email: 'x@y.z' } });
 const up = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x'); const bp = Number(u.searchParams.get('blueprint_id'));
   const finish = () => {
+    if (req.headers.authorization === 'Bearer ' + REFUSED) { res.writeHead(401, { 'Content-Type': 'application/json' }); return res.end('{"error":"Unauthorized"}'); }
     if (mode.dead) { res.writeHead(mode.dead, { 'Content-Type': 'application/json' }); return res.end('{"error":"x"}'); }
     if (mode.bad && mode.bad.has(bp)) { mode.bad.delete(bp); res.writeHead(429, { 'Content-Type': 'application/json' }); return res.end('{"error":"Too many requests: max 10 requests per second"}'); }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -21,8 +22,8 @@ const up = http.createServer((req, res) => {
   mode.delay ? setTimeout(finish, mode.delay) : finish();
 });
 await new Promise(r => up.listen(0, '127.0.0.1', r));
-const start = (env, port) => new Promise((resolve, reject) => {
-  const p = spawn('node', ['proxy.mjs'], { env: { ...process.env, EDH_SOURCE_URL: '', PORT: String(port), CT_UPSTREAM: `http://127.0.0.1:${up.address().port}/api/v2`, CARDTRADER_TOKEN: 'tok', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+const start = (env, port, args = []) => new Promise((resolve, reject) => {
+  const p = spawn('node', [...args, 'proxy.mjs'], { env: { ...process.env, EDH_SOURCE_URL: '', PORT: String(port), CT_UPSTREAM: `http://127.0.0.1:${up.address().port}/api/v2`, CARDTRADER_TOKEN: 'tok', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
   let out = ''; p.stdout.on('data', d => { out += d; if (/Mana Orbit →/.test(out)) resolve(p); }); p.stderr.on('data', d => { out += d; });
   p.on('exit', code => { if (code) reject(new Error('exit ' + code + ': ' + out)); });
 });
@@ -30,6 +31,7 @@ const procs = []; const cleanup = () => { for (const p of procs) try { p.kill();
 process.on('exit', cleanup);
 const J = async (B, path, init = {}, headers = {}) => { const r = await fetch(B + path, { ...init, headers: { 'Content-Type': 'application/json', ...headers } }); const t = await r.text(); let o; try { o = JSON.parse(t); } catch { o = t; } return { s: r.status, o }; };
 const post = (B, body, h) => J(B, '/api/jobs', { method: 'POST', body: JSON.stringify(body) }, h);
+const sleep = ms => new Promise(x => setTimeout(x, ms));
 const drain = async (B, id, h, max = 60000) => { // relève tous les résultats comme le fait l'application
   const items = []; let from = 0; const t0 = Date.now(); let last;
   for (;;) { const r = await J(B, `/api/jobs/${id}?from=${from}`, {}, h); assert.equal(r.s, 200); last = r.o; items.push(...r.o.items); from = r.o.next; if (r.o.status !== 'running' && from >= r.o.count) return { items, last }; assert.ok(Date.now() - t0 < max, 'délai dépassé'); if (!r.o.items.length) await new Promise(x => setTimeout(x, 60)); }
@@ -72,6 +74,16 @@ let r = await J(B, '/__ping'); assert.equal(r.o.jobs, true); console.log('✓ pi
   assert.equal(c.last.cached, 10); assert.equal(c.last.sent, 0); assert.equal(reqs.length, n1); assert.ok(c.last.cacheAge >= 0); console.log('✓ cache : 10 / 10 servis sans requête amont');
   // autre langue : clés distinctes
   r = await post(B, { type: 'offers', lang: 'en', foil: 'no', bps: bps.slice(0, 5) }); const e = await drain(B, r.o.id); assert.equal(e.last.cached, 0); assert.equal(new URLSearchParams(reqs.at(-1).q).get('language'), 'en'); console.log('✓ cache par langue');
+
+  // 3 ter) token d'un utilisateur : le cache partagé des offres n'est lu qu'une fois ce token accepté par CardTrader
+  const ten = bps.slice(0, 10), n2 = reqs.length;
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'no', bps: ten }, { 'x-ct-token': REFUSED }); assert.equal(r.o.attached, false);
+  let u = await drain(B, r.o.id, { 'x-ct-token': REFUSED }); assert.equal(u.last.status, 'failed'); assert.equal(u.last.fatal, 401); assert.equal(u.last.cached, 0, 'token inventé : aucune offre du cache');
+  assert.ok(reqs.slice(n2).every(x => x.auth === 'Bearer ' + REFUSED));
+  const GOOD = 'jeton-valide-0123456789abc';
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'no', bps: ten }, { 'x-ct-token': GOOD }); u = await drain(B, r.o.id, { 'x-ct-token': GOOD });
+  assert.equal(u.last.status, 'done'); assert.ok(u.last.sent >= 1 && u.last.sent <= 4, 'relu chez CardTrader jusqu\'à la première réponse : ' + u.last.sent); assert.equal(u.last.cached, 10 - u.last.sent, 'puis le cache');
+  console.log('✓ token d\'un utilisateur : cache des offres servi seulement après une réponse acceptée (' + u.last.sent + ' lues, ' + u.last.cached + ' du cache)');
 }
 
 // 3 bis) TTL : une instance à TTL court (offres 1,5 s, absences 3,5 s)
@@ -131,6 +143,54 @@ let r = await J(B, '/__ping'); assert.equal(r.o.jobs, true); console.log('✓ pi
   reqs.length = 0; const t0 = Date.now();
   await Promise.all(Array.from({ length: 12 }, (_, i) => J(B2, `/api/marketplace/products?blueprint_id=${6000 + i}&language=fr`, {}, { 'x-app-key': 'k'.repeat(16) })));
   const span = Date.now() - t0; assert.ok(span >= 11 * 100, 'relais direct aussi cadencé (12 requêtes en ' + span + ' ms)'); console.log('✓ le relais direct de marketplace/products est cadencé (', span, 'ms pour 12 )');
+}
+
+// 8 bis) token d'un utilisateur : 2 recherches en cours au plus (les autres places restent libres)
+{
+  mode = { delay: 60 }; const h = { 'x-ct-token': 'jeton-occupe-0123456789abc' }, ids = [];
+  for (let i = 0; i < 2; i++) { r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(20000 + i * 1000, 60) }, h); assert.equal(r.s, 202); ids.push(r.o.id); }
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(23000, 60) }, h); assert.equal(r.s, 429); assert.equal(r.o.error, 'busy'); assert.match(r.o.message, /ce token/);
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(20000, 60) }, h); assert.equal(r.s, 202); assert.equal(r.o.attached, true, 'même recherche : rattachée, pas comptée');
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(24000, 60) }); assert.equal(r.s, 202, 'token du serveur : place libre'); ids.push(r.o.id);
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(25000, 60) }, { 'x-ct-token': 'autre-jeton-0123456789abc' }); assert.equal(r.s, 202, 'autre utilisateur : place libre'); ids.push(r.o.id);
+  for (const id of ids) assert.equal((await J(B, '/api/jobs/' + id, { method: 'DELETE' })).o.status, 'cancelled');
+  r = await post(B, { type: 'offers', lang: 'fr', foil: 'any', bps: bpsOf(23000, 60) }, h); assert.equal(r.s, 202, 'annulées : de nouveau possible');
+  await J(B, '/api/jobs/' + r.o.id, { method: 'DELETE' }); mode = {};
+  console.log('✓ token d\'un utilisateur : 2 recherches en cours au plus ; token du serveur et autres utilisateurs non gênés');
+}
+
+// 8 ter) résultats gardés plafonnés (JOB_RESULTS_MB) : tâches terminées oubliées d'abord, puis la tâche en cours échoue (l'appli lit le reste elle-même)
+{
+  const pR = await start({ JOB_RESULTS_MB: '0.01' }, 18834); procs.push(pR); const BR = 'http://127.0.0.1:18834';
+  r = await post(BR, { type: 'offers', lang: 'fr', foil: 'no', bps: bpsOf(100, 5) }); const small = r.o.id; let d = await drain(BR, small); assert.equal(d.last.status, 'done');
+  r = await post(BR, { type: 'offers', lang: 'fr', foil: 'no', bps: bpsOf(200, 40) }); const big = r.o.id; d = await drain(BR, big);
+  assert.equal(d.last.status, 'failed'); assert.equal(d.last.fatal, null); assert.ok(d.last.count > 3 && d.last.count < 40, 'arrêtée en route : ' + d.last.count);
+  assert.equal((await J(BR, '/api/jobs/' + small)).s, 404, 'la tâche terminée a été oubliée d\'abord');
+  r = await post(BR, { type: 'offers', lang: 'fr', foil: 'no', bps: bpsOf(300, 3) }); d = await drain(BR, r.o.id); assert.equal(d.last.status, 'done'); assert.equal(d.items.length, 3);
+  console.log('✓ résultats des tâches plafonnés : tâche terminée oubliée, puis tâche trop grosse en échec ; le serveur continue');
+}
+
+// 8 quater) le token brut d'un utilisateur ne reste pas en mémoire (cadence, tâches) : instantané du tas après usage
+{
+  const { mkdtempSync, readdirSync, readFileSync, statSync, rmSync } = await import('node:fs'), { tmpdir } = await import('node:os'), { join } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'heap-')), T1 = 'jeton-memoire-' + Math.random().toString(36).slice(2) + 'abcdef', T2 = 'jeton-encours-' + Math.random().toString(36).slice(2) + 'abcdef';
+  const pH = await start({ JOB_KEEP_MS: '600000' }, 18835, ['--heapsnapshot-signal=SIGUSR2', '--diagnostic-dir=' + dir]); procs.push(pH); const BH = 'http://127.0.0.1:18835';
+  const snap = async () => {
+    const before = new Set(readdirSync(dir)); pH.kill('SIGUSR2'); let f = '';
+    for (let i = 0; i < 200 && !f; i++) { await sleep(100); f = readdirSync(dir).find(x => !before.has(x) && x.endsWith('.heapsnapshot')) || ''; }
+    assert.ok(f, 'instantané écrit'); let size = -1;
+    for (let i = 0; i < 100; i++) { const z = statSync(join(dir, f)).size; if (z > 0 && z === size) break; size = z; await sleep(150); }
+    return readFileSync(join(dir, f), 'utf8');
+  };
+  r = await J(BH, '/api/marketplace/products?blueprint_id=7001&language=fr', {}, { 'x-ct-token': T1 }); assert.equal(r.s, 200);
+  r = await post(BH, { type: 'offers', lang: 'fr', foil: 'no', bps: bpsOf(7100, 6) }, { 'x-ct-token': T1 }); const d = await drain(BH, r.o.id, { 'x-ct-token': T1 }); assert.equal(d.last.status, 'done');
+  mode = { delay: 400 }; r = await post(BH, { type: 'offers', lang: 'fr', foil: 'no', bps: bpsOf(7200, 40) }, { 'x-ct-token': T2 }); const run = r.o.id; await sleep(300);
+  let heap = await snap(); assert.ok(heap.includes(T2), 'contrôle : le token d\'une recherche en cours est bien visible dans l\'instantané');
+  await J(BH, '/api/jobs/' + run, { method: 'DELETE' }, { 'x-ct-token': T2 }); await sleep(900); mode = {};
+  for (let i = 0; i < 3; i++) { await J(BH, '/__ping'); await J(BH, '/api/jobs/' + run); }
+  heap = await snap(); assert.ok(!heap.includes(T1), 'token d\'une recherche terminée : effacé'); assert.ok(!heap.includes(T2), 'token d\'une recherche annulée : effacé');
+  rmSync(dir, { recursive: true, force: true });
+  console.log('✓ tokens des utilisateurs : absents de la mémoire après la recherche (cadence par empreinte, tâche terminée ou annulée)');
 }
 
 // 9) désactivation

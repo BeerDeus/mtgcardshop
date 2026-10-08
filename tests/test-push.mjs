@@ -14,6 +14,7 @@ const upCT = http.createServer((req, res) => { const bp = new URL(req.url, 'http
 const pushed = []; let pushStatus = 201;
 const upPush = http.createServer((req, res) => { const c = []; req.on('data', x => c.push(x)); req.on('end', () => { pushed.push({ url: req.url, h: req.headers, body: Buffer.concat(c) }); res.writeHead(pushStatus); res.end(); }); });
 // ── faux EDHREC / Archidekt / Moxfield
+const big = { sent: 0, closed: false };
 const imp = http.createServer((req, res) => {
   const send = (o, st = 200) => { res.writeHead(st, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
   const u = req.url;
@@ -32,6 +33,12 @@ const imp = http.createServer((req, res) => {
   if (u === '/archidekt/api/decks/7/') return send({ name: 'vide', cards: [] });
   if (u === '/archidekt/api/decks/8/') { res.writeHead(302, { Location: 'http://127.0.0.1:1/x' }); return res.end(); }
   if (u === '/archidekt/api/decks/9/') { res.writeHead(200); return res.end('<html>pas du json</html>'); }
+  if (u === '/archidekt/api/decks/11/' || u === '/archidekt/api/decks/12/') {      // réponse sans longueur annoncée (11) ou annoncée trop grosse (12), envoyée en flux jusqu'à 40 Mo
+    big.sent = 0; big.closed = false; res.writeHead(200, { 'Content-Type': 'application/json', ...(u.endsWith('12/') ? { 'Content-Length': String(40 << 20) } : {}) });
+    const chunk = Buffer.alloc(64 << 10, 0x20); res.on('close', () => { big.closed = true; });
+    const pump = () => { while (!big.closed && big.sent < 40 << 20) { big.sent += chunk.length; if (!res.write(chunk)) return res.once('drain', pump); } if (!big.closed) res.end(); };
+    return pump();
+  }
   send({ error: 'nf' }, 404);
 });
 for (const s of [upCT, upPush, imp]) await new Promise(r => s.listen(0, '127.0.0.1', r));
@@ -158,9 +165,19 @@ r = await imp1('https://archidekt.com/decks/123/mon-deck'); assert.equal(r.s, 20
 r = await imp1('https://moxfield.com/decks/AbCd_1'); assert.equal(r.s, 200); assert.equal(r.o.text, 'Commander\n1 Edgar Markov\n\nDeck\n1 Sol Ring\n2 Swamp'); console.log('✓ import Moxfield');
 for (const [u, st] of [['https://evil.example.com/decks/1', 400], ['http://edhrec.com/average-decks/x', 400], ['https://edhrec.com.evil.com/average-decks/x', 400], ['https://archidekt.com/decks/abc', 400], ['https://edhrec.com/average-decks/../../etc/passwd', 400], ['https://edhrec.com/average-decks/a/b/c', 400], ['https://user:pw@edhrec.com/average-decks/x', 400], ['https://edhrec.com:8443/average-decks/x', 400], ['pas un lien', 400], ['https://archidekt.com/decks/404/x', 404], ['https://archidekt.com/decks/500/x', 502], ['https://archidekt.com/decks/7/x', 422], ['https://archidekt.com/decks/8/x', 502], ['https://archidekt.com/decks/9/x', 502]]) { r = await imp1(u); assert.equal(r.s, st, u + ' → ' + r.s); assert.ok(r.o.message, u); }
 console.log('✓ import : liens hors liste blanche refusés, 404 / 5xx / vide / redirection / réponse illisible gérés');
+for (const n of [11, 12]) { r = await imp1('https://archidekt.com/decks/' + n + '/x'); assert.equal(r.s, 413, 'cas ' + n); assert.match(r.o.message, /trop grosse/); await sleep(200); assert.ok(big.closed && big.sent < 8 << 20, 'lecture coupée tôt (' + (big.sent >> 20) + ' Mo envoyés sur 40)'); }
+console.log('✓ import : réponse trop grosse coupée en cours de lecture (sans longueur annoncée ou annoncée trop grosse) → 413');
 r = await J(B, '/api/import?url=' + encodeURIComponent('https://edhrec.com/average-decks/x'), { method: 'POST', body: '{}' }); assert.equal(r.s, 405); console.log('✓ import : GET uniquement');
 // l'import est ouvert à tous (aucun token CardTrader en jeu), même sur un serveur protégé par une clé
-await start({ ...env, APP_KEY: 'secret-secret-123', CARDTRADER_TOKEN: '', BAD_KEY_DELAY_MS: '0' }, 18844); const B3 = 'http://127.0.0.1:18844';
+await start({ ...env, APP_KEY: 'secret-secret-123', CARDTRADER_TOKEN: '', BAD_KEY_DELAY_MS: '0', IMPORT_RATE_PER_H: '2' }, 18844); const B3 = 'http://127.0.0.1:18844';
 r = await J(B3, '/api/import?url=' + encodeURIComponent('https://archidekt.com/decks/123/x')); assert.equal(r.s, 200); assert.equal(r.o.site, 'Archidekt');
 r = await J(B3, '/api/info'); assert.equal(r.s, 401, 'CardTrader reste protégé'); console.log('✓ import : ouvert sans clé ni compte, fonctionne sans token CardTrader ; CardTrader reste protégé');
+{ // route publique : lectures limitées par IP (ici 2 par heure) ; un lien refusé d'office ne compte pas
+  const ip = (u, a) => J(B3, '/api/import?url=' + encodeURIComponent(u), {}, { 'x-forwarded-for': a });
+  for (let i = 0; i < 3; i++) assert.equal((await ip('https://evil.example.com/decks/1', '4.4.4.4')).s, 400);
+  for (let i = 0; i < 2; i++) assert.equal((await ip('https://archidekt.com/decks/123/x', '4.4.4.4')).s, 200);
+  r = await ip('https://archidekt.com/decks/123/x', '4.4.4.4'); assert.equal(r.s, 429); assert.equal(r.o.error, 'rate_limited'); assert.ok(Number(r.h.get('retry-after')) > 0);
+  assert.equal((await ip('https://archidekt.com/decks/123/x', '4.4.4.5')).s, 200, 'autre IP servie');
+  console.log('✓ import : 429 au-delà du budget par IP (IMPORT_RATE_PER_H), autre IP servie');
+}
 console.log('\nPUSH + IMPORT OK'); process.exit(0);

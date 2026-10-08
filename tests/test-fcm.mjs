@@ -79,7 +79,8 @@ const tok = tag => tag + ':APA91b' + randomBytes(96).toString('base64url');     
 const msgsFor = t => fcm.msgs.filter(m => m.body && m.body.message && m.body.message.token === t);
 
 const dir = mkdtempSync(join(tmpdir(), 'fcm-'));
-const ALERT_ENV = { SCRYFALL_UPSTREAM: `http://127.0.0.1:${port(upScry)}`, ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '100', ALERT_CHECK_GAP_MS: '0', ALERT_COOLDOWN_MS: '5000' };
+// Un relevé par carte et par seconde (une heure en production) : les contrôles d'appareils enchaînés partagent le même relevé.
+const ALERT_ENV = { SCRYFALL_UPSTREAM: `http://127.0.0.1:${port(upScry)}`, ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '100', ALERT_CHECK_GAP_MS: '0', ALERT_COOLDOWN_MS: '5000', ALERT_HIST_GAP_MS: '1000' };
 const env = { FCM_SERVICE_ACCOUNT: JSON.stringify(SA), FCM_TOKEN_URL: TOKEN_URL, FCM_BASE_URL: FCM_URL, PUSH_GRACE_MS: '300', ALERT_FILE: join(dir, 'a.json'), ...ALERT_ENV };
 
 /* ── 1) FCM seul (pas de clés VAPID) ─────────────────────────────────────────────────────────────── */
@@ -152,7 +153,7 @@ r = await reg({ fcm: tok('dev'), endpoint: 'https://evil.example/x' }); assert.e
 await J(B, '/api/alerts?id=' + r.o.id, { method: 'DELETE' });
 const ALG = tok('GONE'), ALB = tok('BAD'), ALM = tok('MISM'), ALD = tok('DOWN');
 const idG = (await reg({ fcm: ALG })).o.id, idB = (await reg({ fcm: ALB })).o.id, idM = (await reg({ fcm: ALM })).o.id, idD = (await reg({ fcm: ALD })).o.id;
-await sleep(500);
+await sleep(1500);
 r = await J(B, '/api/alerts?id=' + ID); assert.equal(r.s, 200); assert.equal(r.o.prices['sol ring'].c, 300);
 const k0 = fcm.msgs.length; r = await check(ID); assert.equal(r.o.ok, true); assert.equal(fcm.msgs.length, k0, 'prix stables : rien');
 price.set('sol ring', '1.80');
@@ -162,6 +163,7 @@ assert.deepEqual(Object.keys(m.body.message).sort(), ['android', 'data', 'notifi
 assert.equal(m.body.message.notification.title, 'Sol Ring : −40 %'); assert.match(m.body.message.notification.body, /3,00 € → 1,80 € \(tendance Cardmarket\)\. · manque à Deck A/);
 assert.deepEqual(m.body.message.data, { url: './?alerts=1' }); assert.deepEqual(m.body.message.android, { priority: 'HIGH', ttl: '43200s', collapse_key: 'deckdeal-alert' });
 ok('baisse de prix : alerte FCM (titre, texte, lien ./?alerts=1, priorité haute)');
+for (const id of [idG, idB, idM, idD]) { r = await check(id); assert.equal(r.o.ok, true); }                // « Vérifier les prix » ne concerne que l'appareil qui le demande
 assert.equal(msgsFor(ALD).length, 2, '500 : retenté une fois');
 assert.equal((await J(B, '/api/alerts?id=' + idG)).s, 404, 'UNREGISTERED : retiré');
 assert.equal((await J(B, '/api/alerts?id=' + idB)).s, 404, 'jeton invalide : retiré');
@@ -197,11 +199,13 @@ ok('une tâche, un navigateur et une appli : Web Push chiffré (VAPID) d\'un cô
 price.set('sol ring', '3.00'); price.set('mana crypt', '100.00');
 const idW = (await J(B2, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: br.sub, thr: 30, items }) })).o.id;
 const W2 = tok('devW2'); const idF = (await J(B2, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: { fcm: W2 }, thr: 30, items }) })).o.id;
-assert.notEqual(idW, idF); await sleep(500); pushed.length = 0;
-price.set('mana crypt', '60.00'); r = await J(B2, '/api/alerts/check?id=' + idF, { method: 'POST', body: '{}' }); assert.equal(r.o.ok, true);
+assert.notEqual(idW, idF); await sleep(1500); pushed.length = 0;
+price.set('mana crypt', '60.00'); r = await J(B2, '/api/alerts/check?id=' + idF, { method: 'POST', body: '{}' }); assert.equal(r.o.ok, true); assert.equal(r.o.last.hits, 1);
+assert.equal(pushed.length, 0, 'contrôle de l\'appli : le navigateur n\'est pas notifié'); assert.equal(msgsFor(W2).length, 1);
+r = await J(B2, '/api/alerts/check?id=' + idW, { method: 'POST', body: '{}' }); assert.equal(r.o.ok, true); assert.equal(r.o.last.hits, 1);
 assert.equal(pushed.length, 1); const wm = decrypt(pushed[0].body); assert.equal(wm.title, 'Mana Crypt : −40 %'); assert.equal(wm.url, './?alerts=1'); assert.equal(wm.kind, 'alert'); assert.equal(pushed[0].h.topic, 'deckdeal-alert');
 assert.equal(msgsFor(W2).length, 1); assert.equal(msgsFor(W2)[0].body.message.notification.title, 'Mana Crypt : −40 %');
-assert.equal(r.o.last.hits, 2); ok('alertes : l\'abonnement Web Push et le jeton FCM reçoivent chacun la même alerte, par leur propre service');
+ok('alertes : l\'abonnement Web Push et le jeton FCM reçoivent chacun la même alerte, par leur propre service');
 
 /* ── 4) configuration : fichier, base64, cache jusqu'à 5 min de l'expiration, erreurs ─────────────── */
 writeFileSync(join(dir, 'sa.json'), JSON.stringify({ ...SA, token_uri: TOKEN_URL }));

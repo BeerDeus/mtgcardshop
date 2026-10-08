@@ -35,7 +35,7 @@ function decrypt(body) {
 }
 const dir = mkdtempSync(join(tmpdir(), 'alerts-e2e-'));
 const world = await startWorld({ port: 18952, env: { VAPID_PUBLIC_KEY: VPUB, VAPID_PRIVATE_KEY: vk.d, VAPID_SUBJECT: 'mailto:test@example.com', PUSH_ALLOW_HOSTS: `127.0.0.1:${PORT_PUSH}`,
-  SCRYFALL_UPSTREAM: `http://127.0.0.1:${upScry.address().port}`, ALERT_FILE: join(dir, 'alerts.json'), ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '150', ALERT_CHECK_GAP_MS: '0' } });
+  SCRYFALL_UPSTREAM: `http://127.0.0.1:${upScry.address().port}`, ALERT_FILE: join(dir, 'alerts.json'), ALERT_EVERY_MS: '3600000', ALERT_FIRST_MS: '3600000', ALERT_SEED_MS: '150', ALERT_CHECK_GAP_MS: '0', ALERT_HIST_GAP_MS: '0' } });   // relevé à chaque contrôle (une heure entre deux en production)
 const stub = arg => {
   const g = k => { try { return JSON.parse(localStorage.getItem('__t_' + k)); } catch (e) { return null; } }, s = (k, v) => localStorage.setItem('__t_' + k, JSON.stringify(v));
   Object.defineProperty(Notification, 'permission', { configurable: true, get: () => g('perm') || 'default' });
