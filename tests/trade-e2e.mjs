@@ -201,6 +201,7 @@ const tradeId = [...shares.keys()][0];
     await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on'); await V.p.click('#pubSub [data-v="want"]');
     await V.p.waitForSelector('.pub-row[data-k="craterhoof behemoth"] img');
     assert.equal(await V.p.$eval('.pub-row[data-k="craterhoof behemoth"] img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'), 'visiteur : vignette de l\'illustration choisie');
+    await V.p.waitForFunction(() => { const m = document.querySelector('.pub-row[data-k="craterhoof behemoth"] .row-meta'); return m && m.innerText.trim(); }, null, { timeout: 5000 });      // la ligne se repeint une fois les infos lues
     assert.match(await txt(V.p, '.pub-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.split(' · ').pop()));
     await V.ctx.close(); }
   await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
