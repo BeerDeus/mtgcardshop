@@ -197,7 +197,8 @@ textarea#deckText:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0
 .row-price b{font-family:var(--font-mono);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
 .row-price small{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .row-miss{font-size:13px;color:var(--ink-3)}
-.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}      /* hauteur fixe : un texte replié débordait de la pastille */
+.tag.mount{display:inline-block;line-height:20px}      /* texte seul (nom de deck) : en bloc, l'ellipse s'affiche (une boîte flex coupe net) */
 .tag.warn{background:var(--warn-soft);color:var(--warn)}
 .tag.good{background:var(--good-soft);color:var(--good)}
 .tag.accent{background:var(--accent-soft);color:var(--accent)}
