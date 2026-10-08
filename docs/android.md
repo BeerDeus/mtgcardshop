@@ -153,6 +153,12 @@ Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléph
 
 ## 6. Problèmes fréquents
 
+- **« Incompatible Gradle JVM version… Gradle 8.14.3 supports Java versions between 1.8 and 24 »** (version de Java incompatible) : Android Studio lance Gradle avec Java 25, trop récent. Pour choisir Java 21 :
+  1. **File › Settings…** (Fichier › Paramètres).
+  2. **Build, Execution, Deployment › Build Tools › Gradle** (Compilation › Outils de compilation › Gradle).
+  3. **Gradle JDK** : choisis **jbr-21** (le Java 21 fourni avec Android Studio). S'il n'est pas dans la liste : **Download JDK…** (télécharger un JDK), version **21**, fournisseur **JetBrains Runtime** ou **Eclipse Temurin**, puis **Download**.
+  4. **OK**, puis l'icône éléphant **Sync Project with Gradle Files** (synchroniser le projet avec Gradle).
+
 - **« SDK location not found »** (emplacement du SDK introuvable) : **File › Project Structure… › SDK Location** (Fichier › Structure du projet › Emplacement du SDK), puis indique le dossier du SDK. Par défaut : `C:\Users\<toi>\AppData\Local\Android\Sdk`.
 - **Le téléphone n'apparaît pas** :
   - débranche et rebranche le câble ;
