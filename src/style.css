@@ -1446,6 +1446,7 @@ button,.btn,select,summary{touch-action:manipulation}
 #list.list,.coll-list{box-shadow:var(--shadow)}
 .btn.ghost,.fbtn,.fsearch,.sortsel,.icon-btn,.fopt:not([aria-pressed="true"]),.chip,.tools .link-btn:not(.strong){background-color:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .seg{background:var(--glass-2);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px var(--line)}
+.seg.dv-seg{background:var(--surface-2)}      /* barre Mana / Prix / Type collée en haut du viewer : opaque, sinon les cartes défilent au travers */
 .seg-thumb{border:1.5px solid transparent;background:linear-gradient(var(--seg-thumb,var(--surface)),var(--seg-thumb,var(--surface))) padding-box,var(--foil-ring) border-box;box-shadow:0 6px 16px -8px rgba(127,176,255,.7)}
 .sheet{background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3)}
 /* foil : valeurs mises en avant */
