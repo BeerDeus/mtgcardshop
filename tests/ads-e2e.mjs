@@ -52,6 +52,7 @@ async function natPage(o = {}) {
   await p.evaluate(() => { AD.delay = 700; AD.back = 200; AD.idle = 0; adsRefresh(); });      // délais de test
   await p.waitForFunction(() => window.__ad.calls.includes('showBanner'), null, { timeout: 8000 });
   assert.deepEqual(await p.evaluate(() => window.__ad.calls.filter(c => c !== 'removeBanner')), ['requestConsentInfo', 'initialize', 'showBanner'], 'consentement, SDK initialisé, puis bandeau');
+  assert.deepEqual(await p.evaluate(() => window.__ad.seen.initialize.args), { maxAdContentRating: 'ParentalGuidance' }, 'annonces « accord parental » au plus (PEGI 3-7 / E10+)');
   assert.deepEqual(await p.evaluate(() => window.__ad.last), { adId: TEST_ID, isTesting: true, adSize: 'ADAPTIVE_BANNER', position: 'TOP_CENTER', margin: 0 }, 'bandeau de test en haut (pas d\'ADMOB_BANNER_ID)');
   assert.equal(await p.evaluate(() => window.__ad.calls[0]), 'removeBanner', 'bandeau d\'une page précédente retiré au démarrage');
   await shown(p);

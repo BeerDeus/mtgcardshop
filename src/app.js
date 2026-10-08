@@ -960,7 +960,7 @@ function openSettings() {
       <div class="seg" id="segSrc" role="radiogroup" aria-label="${esc(T('Source des prix'))}"></div>
       <div class="status" id="connStatus" data-ok="0"><span class="dot"></span><span id="connMsg"></span></div>
       <div class="field-in" id="boxToken"><label class="label" for="setToken">${T('Token CardTrader (facultatif)')}</label><input type="password" id="setToken" autocomplete="off" spellcheck="false" placeholder="${esc(T('Colle ton token API'))}" value="${esc(S.token)}">
-        <span class="hint">${T('Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Il reste sur cet appareil et ne sert qu\'à interroger CardTrader avec ton compte.')}</span></div>
+        <span class="hint">${T('Pour les offres réelles des vendeurs, le port optimisé et le remplissage de ton panier. Ton token se trouve sur cardtrader.com, dans Paramètres › API. Gardé sur cet appareil, il passe par notre serveur seulement pour interroger CardTrader avec ton compte, sans jamais y être enregistré.')}</span></div>
       <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">${T('Clé du proxy')}</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? `<span class="hint">${T('Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.')}</span>` : ''}</div>
       <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">${T('Tester CardTrader')}</button>
       <div class="switch-row"><span class="t"><b>${T('Mode démo')}</b><span class="hint">${T('Prix simulés, aucune requête envoyée.')}</span></span>
@@ -983,9 +983,12 @@ function openSettings() {
         <div id="wipeBox"></div></div>
       <div class="sec-title">${T('Panier CardTrader')}</div>
       <div id="cartBox" class="cartbox"></div>
-      <p class="hint set-ver">${T('Version {v}', { v: esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev') })}${typeof isNativeApp === 'function' && isNativeApp() ? ' · APK : ' + NAT_PLUGINS.map(([n, l]) => (natPlugin(n) ? '✓' : '✗') + l).join(' ') : ''}</p>
+      <p class="hint set-ver">${T('Version {v}', { v: esc(typeof DD_BUILD === 'string' ? DD_BUILD : 'dev') })}${typeof isNativeApp === 'function' && isNativeApp() ? ' · APK<span class="set-apkv"></span> : ' + NAT_PLUGINS.map(([n, l]) => (natPlugin(n) ? '✓' : '✗') + l).join(' ') + '<span class="set-fb"></span>' : ''}</p>
       <p class="hint fan">${FAN_CONTENT}</p>`;
     const b = api.body;
+    // APK : sa version et Firebase (google-services.json), lus auprès de la coque ; APK sans plugin ManaOrbit ou info() refusé : la ligne reste telle quelle
+    { const mo = typeof natPlugin === 'function' && natPlugin('ManaOrbit');
+      if (mo) Promise.resolve().then(() => mo.info()).then(i => { const v = $('.set-apkv', b), f = $('.set-fb', b); if (!i || !v || !f) return; if (i.version) v.textContent = ' ' + i.version + (i.build ? ' (' + i.build + ')' : ''); f.textContent = ' ' + (i.firebase ? '✓' : '✗') + 'Firebase'; }).catch(() => {}); }
     // Installation de l'app : l'état change tout seul (installation acceptée, mode standalone…) tant que la feuille est ouverte
     const appBox = $('#appBox', b);
     const paintApp = () => {
@@ -1094,6 +1097,7 @@ const FAN_CONTENT = T('Mana Orbit est un contenu de fan non officiel autorisé p
 function openAbout() {
   const src = [
     ['Scryfall', 'https://scryfall.com', T('images et données des cartes, prix tendance Cardmarket')],
+    ['Cardmarket', 'https://www.cardmarket.com', T('prix tendance (via Scryfall)')],
     ['CardTrader', 'https://www.cardtrader.com', T('offres des vendeurs et panier (avec ton token)')],
     ['EDHREC', 'https://edhrec.com', T('classement des commandants et decks moyens')],
     ['Archidekt', 'https://archidekt.com', T('decks Budget, Premium et cEDH')],
@@ -1101,6 +1105,9 @@ function openAbout() {
     ['Mana', 'https://mana.andrewgioia.com', T('symboles de mana (Andrew Gioia, licences OFL et MIT)')],
     ['Tesseract.js', 'https://tesseract.projectnaptha.com', T('reconnaissance du texte au scan (Apache 2.0)')],
     ['Firebase', 'https://firebase.google.com', T('compte et synchronisation')],
+    ['Google Fonts', 'https://fonts.google.com', T('polices Bricolage Grotesque, Instrument Sans et JetBrains Mono (licence OFL)')],
+    ['Google ML Kit', 'https://developers.google.com/ml-kit', T('scan dans l\'appli Android (lecture du texte sur le téléphone)')],
+    ['Google AdMob', 'https://admob.google.com', T('bandeau publicitaire de l\'appli Android')],
   ];
   openSheet(T('Mentions et sources'), null, api => {
     api.body.innerHTML = `<p class="hint">${FAN_CONTENT}</p>

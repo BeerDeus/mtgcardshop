@@ -252,6 +252,12 @@ await sh.p.evaluate(() => localStorage.setItem('deckdeal:pending', JSON.stringif
 const before = world.reqs();
 await sh.p.goto(world.url + '?resume=1'); await done(sh.p); assert.equal(await sh.p.$$eval('.row', r => r.length), 2); assert.equal(await sh.p.evaluate(() => localStorage.getItem('deckdeal:pending')), null, 'reprise terminée : plus rien en attente');
 ok('reprise depuis la notification : la recherche est relancée (2 cartes), prix servis');
+// token CardTrader : envoyé seulement là où le serveur interroge CardTrader (relais, recherches), jamais à l'import d'un lien ni aux alertes
+const TOK = 'mon-token-cardtrader-1234567890', hdr = {};
+sh.p.on('request', r => { const m = /^\/api\/([a-z/]+)$/.exec(new URL(r.url()).pathname); if (m) hdr[m[1]] = r.headers()['x-ct-token'] || ''; });
+await sh.p.evaluate(async t => { CTX.token = t; for (const [path, o] of [['import', { params: { url: 'https://archidekt.com/decks/123/edgar' } }], ['alerts', { params: { id: 'x' } }], ['alerts/check', { method: 'POST', params: { id: 'x' }, body: {} }], ['info', {}], ['jobs', { method: 'POST', body: {} }]]) await ct(path, o).catch(() => {}); CTX.token = S.token; }, TOK);
+assert.deepEqual(Object.fromEntries(['import', 'alerts', 'alerts/check', 'info', 'jobs'].map(k => [k, hdr[k]])), { import: '', alerts: '', 'alerts/check': '', info: TOK, jobs: TOK });
+ok('token CardTrader : envoyé aux relais et recherches CardTrader, jamais à l\'import ni aux alertes');
 await sh.ctx.close();
 
 console.log('erreurs page :', errs.length ? errs : 'aucune'); assert.deepEqual(errs, []);

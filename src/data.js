@@ -263,14 +263,14 @@ async function scryPrintsIn(n, sl, signal) {
   return out;
 }
 
-/** Infos Scryfall d'une liste de cartes par leur nom (75 par requête) : Map(clé de collection → { cm, mc, tl, cl, ci, cd, im, eu } | null si inconnue). */
+/** Infos Scryfall d'une liste de cartes par leur nom (75 par requête) : Map(clé de collection → { cm, mc, tl, cl, ci, cd, im, eu, ar } | null si inconnue). ar : artiste de l'illustration (crédit des orbes de l'accueil). */
 async function scryCollection(names, signal, onProgress) {
   const out = new Map(), uniq = [...new Map(names.map(n => [ownKey(n), n])).entries()];
   for (let i = 0; i < uniq.length; i += 75) {
     const chunk = uniq.slice(i, i + 75);
     const body = JSON.stringify({ identifiers: chunk.map(([, n]) => ({ name: String(n).split('//')[0].trim() })) });
     const j = await httpJson(limScry, 'https://api.scryfall.com/cards/collection', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body }, signal);
-    for (const c of j.data || []) { const m = metaOf(c); out.set(ownKey(c.name), { cm: m.cmc, mc: m.mc, tl: m.tl, cl: m.cl, ci: (c.color_identity || []).join(''), cd: canBeCommander(c), im: imgOf(c) || '', eu: eurCents(c.prices && c.prices.eur) }); }
+    for (const c of j.data || []) { const m = metaOf(c); out.set(ownKey(c.name), { cm: m.cmc, mc: m.mc, tl: m.tl, cl: m.cl, ci: (c.color_identity || []).join(''), cd: canBeCommander(c), im: imgOf(c) || '', eu: eurCents(c.prices && c.prices.eur), ar: c.artist || '' }); }
     for (const [k] of chunk) if (!out.has(k)) out.set(k, null);
     if (onProgress) onProgress(Math.min(uniq.length, i + 75), uniq.length);
   }
@@ -384,7 +384,7 @@ async function ct(path, { method = 'GET', params, body, signal, lim = limCT } = 
   const call = async force => {
     const headers = { Accept: 'application/json' };
     if (CTX.proxy) {
-      if (CTX.token) headers['x-ct-token'] = CTX.token;                                          // ton token : le serveur cherche avec ton compte CardTrader
+      if (CTX.token && !/^(import|alerts)(\/|$)/.test(path)) headers['x-ct-token'] = CTX.token;  // ton token : seulement là où le serveur interroge CardTrader avec ton compte (relais, recherches) ; ni import ni alertes
       if (CTX.appKey) headers['x-app-key'] = CTX.appKey;
       if (CTX.needsLogin && CTX.idToken) { const t = await CTX.idToken(force); if (t) headers['x-firebase-token'] = t; } // jeton Firebase : le proxy vérifie que c'est bien ton compte
     } else headers.Authorization = 'Bearer ' + CTX.token;

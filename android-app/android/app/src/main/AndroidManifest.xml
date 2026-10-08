@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- allowBackup="false" : pas de sauvegarde Google Drive du stockage de la WebView (token CardTrader, jeton FCM) ni du widget -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -71,7 +72,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Notifications (Android 13 et plus : demandée à l'utilisateur quand il active les notifications dans l'appli) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Scan des cartes : appareil photo natif (aperçu CameraX + reconnaissance du texte ML Kit, sur l'appareil) -->
+    <!-- Scan des cartes : appareil photo natif (aperçu Camera1 du plugin camera-preview + reconnaissance du texte ML Kit, sur l'appareil) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

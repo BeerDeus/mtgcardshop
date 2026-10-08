@@ -78,6 +78,7 @@ function homeLands() {
     const img = $(`.hm-land[data-c="${c}"] img`); if (!img) continue;
     const m = dmOf(k), src = m && m.im ? hmArt(m.im) : '';
     if (!src) { miss = true; continue; }
+    img.title = m.ar ? T('Illustration : {artist}', { artist: m.ar }) : '';      // crédit de l'artiste, demandé par Scryfall pour les recadrages art_crop (lu avec la fiche, sans requête de plus)
     if (img.getAttribute('src') === src) continue;
     img.onload = () => img.classList.add('ok'); img.onerror = () => img.classList.remove('ok'); img.src = src;
   }

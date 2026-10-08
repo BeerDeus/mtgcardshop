@@ -116,9 +116,11 @@ self.addEventListener('push', e => {
   e.waitUntil(self.registration.showNotification(title, {
     body: String(d.body || (alert ? 'Une carte surveillée a baissé.' : 'Les offres sont prêtes.')).slice(0, 200),
     icon: 'icons/icon-192.png', badge: 'icons/favicon-32.png', tag: alert ? 'deckdeal-alert' : 'deckdeal-run', renotify: true,
-    data: { kind: alert ? 'alert' : 'run', url: typeof d.url === 'string' && !/^[a-z]+:/i.test(d.url) ? d.url : (alert ? './?alerts=1' : './?resume=1') },
+    data: { kind: alert ? 'alert' : 'run', url: sameOrigin(d.url) ? d.url : (alert ? './?alerts=1' : './?resume=1') },
   }));
 });
+/** Lien d'une notification : seulement vers l'app elle-même (« ./… », « /… » ou sa propre adresse). Résolu comme le ferait le navigateur, donc « //autre-site » et ses variantes (« /\… », tabulations) sont refusés. */
+function sameOrigin(u) { try { return typeof u === 'string' && new URL(u, ROOT).origin === self.location.origin; } catch (_) { return false; } }
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const nd = e.notification.data || {}, url = new URL(nd.url || './?resume=1', ROOT).href;
