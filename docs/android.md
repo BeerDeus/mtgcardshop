@@ -1,101 +1,160 @@
-# Mana Orbit sur Android (Capacitor)
+# Mana Orbit sur Android : guide pas à pas
 
-The `android-app/` folder holds the Android app. It is a native shell that opens https://card.m2s-photo.fr and adds what a browser can't do:
+Le dossier `android-app/` contient l'appli Android. C'est une coque native (Capacitor) qui ouvre https://card.m2s-photo.fr et ajoute ce qu'un navigateur ne sait pas faire :
 
-- the native camera for scanning, smooth like Snapchat;
-- later: AdMob ads, Firebase Cloud Messaging notifications, and the home-screen widget.
+- l'appareil photo natif pour le scan, fluide comme Snapchat ;
+- plus tard : la pub AdMob, les notifications Firebase et le widget d'écran d'accueil.
 
-Every website update reaches the app instantly. You only rebuild the app when the native part changes (plugins, icons, permissions).
+Toute mise à jour du site arrive tout de suite dans l'appli. Il ne faut refaire l'appli que si la partie native change (plugins, icônes, permissions).
 
-## 1. Install (once)
+Les boutons d'Android Studio sont écrits **en anglais, tels qu'ils apparaissent à l'écran**, avec la traduction entre parenthèses.
 
-1. **Node.js 22 LTS**: https://nodejs.org (the "LTS" button, keep the default options).
-2. **Git**: https://git-scm.com/download/win (default options).
-3. **Android Studio**: already installed. On first launch, accept the SDK it suggests downloading.
+---
 
-Check in a terminal (Windows: "Terminal" or "PowerShell"):
+## 1. Installer les outils (une seule fois)
+
+1. **Node.js 22 LTS** : https://nodejs.org. Clique sur le bouton « LTS » et garde les options par défaut pendant l'installation.
+2. **Git** : https://git-scm.com/download/win. Options par défaut.
+3. **Android Studio** : déjà installé. Au premier lancement, accepte le téléchargement du SDK proposé par l'assistant : **Next** (suivant) puis **Finish** (terminer).
+
+Pour vérifier, ouvre un terminal : sous Windows, tape « PowerShell » dans le menu Démarrer. Puis :
 
 ```bash
-node -v      # v22.x
-git --version
+node -v        # doit afficher v22.x
+git --version  # doit afficher une version
 ```
 
-## 2. Get the project
+---
+
+## 2. Récupérer le projet
+
+Dans le terminal, place-toi dans le dossier de ton choix (par exemple `cd Documents`), puis :
 
 ```bash
 git clone https://github.com/BeerDeus/mtgcardshop.git
 cd mtgcardshop/android-app
-npm run setup          # installs Capacitor and its plugins, then prepares the Android project
-npm run open           # opens the project in Android Studio
+npm run setup
+npm run open
 ```
 
-If `npm run open` can't find Android Studio: in Android Studio, use **File › Open** and choose the `mtgcardshop/android-app/android` folder.
+- `npm run setup` installe Capacitor et ses plugins, puis prépare le projet Android. Compte 1 à 2 minutes.
+- `npm run open` ouvre le projet dans Android Studio.
 
-The first Gradle sync takes a few minutes, because it downloads its dependencies.
+Si `npm run open` ne trouve pas Android Studio, ouvre le projet à la main :
+1. Dans Android Studio : **File › Open…** (Fichier › Ouvrir).
+2. Choisis le dossier `mtgcardshop/android-app/android`.
+3. Clique **OK**.
 
-## 3. Try it on your phone (Xiaomi 14)
+Si Android Studio demande s'il doit faire confiance au projet, clique **Trust Project** (faire confiance au projet).
 
-1. On the phone: **Settings › About phone**, then tap **OS version** 7 times. This unlocks the developer options.
-2. **Settings › Additional settings › Developer options**: turn on **USB debugging** and **Install via USB**. Xiaomi asks you to sign in to your Mi account for this.
-3. Connect the phone over USB and accept the "Allow USB debugging" prompt.
-4. In Android Studio, choose your phone in the device list at the top, then press **Run ▶**.
+À la première ouverture, Android Studio lance une **Gradle Sync** (synchronisation Gradle) : une barre de progression en bas à droite. Elle télécharge ce qu'il faut et dure quelques minutes. Attends qu'elle soit finie avant la suite.
 
-The app opens Mana Orbit. Scanning cards then uses the native camera, with text recognized on the phone by ML Kit. In a browser or the installed PWA, the scan works as it does today.
+---
 
-## 4. Publish on the Play Store
+## 3. Essayer sur ton téléphone (Xiaomi 14)
 
-### Build the signed bundle
+### Sur le téléphone
 
-In Android Studio: **Build › Generate Signed App Bundle or APK › Android App Bundle**, then **Create new…** to create the signing key (keystore).
+1. **Paramètres › À propos du téléphone** : touche **Version de l'OS** 7 fois de suite. Le message « Vous êtes maintenant développeur » apparaît.
+2. **Paramètres › Paramètres supplémentaires › Options pour les développeurs**, puis active :
+   - **Débogage USB** ;
+   - **Installer via USB**. Xiaomi demande de te connecter à ton compte Mi pour celle-ci.
+3. Branche le téléphone en USB au PC. À la question « Autoriser le débogage USB ? », coche « Toujours autoriser » puis **OK**.
 
-**Keep the `.jks` file and its passwords safe** (password manager, plus a backup copy). Without them, you can never update the app again.
+### Dans Android Studio
 
-Choose **release**. You get `android/app/release/app-release.aab`.
+1. En haut de la fenêtre, dans la liste des appareils (**Device Manager**, gestionnaire d'appareils, ou la liste déroulante à côté de « app »), choisis ton Xiaomi.
+2. Clique le bouton vert **Run ▶** (exécuter), ou **Run › Run 'app'**.
+3. L'appli s'installe et s'ouvre sur le téléphone.
 
-### Play Console (play.google.com/console)
+**Pour tester le scan :** Ma collection › Scanner. L'aperçu de l'appareil photo est maintenant natif. Le nom de la carte est lu sur le téléphone par ML Kit (Google), sans rien télécharger.
 
-1. **Create app**: name "Mana Orbit", app (not game), free.
-2. **Store listing**:
-   - short and full description;
-   - 512×512 icon: `pwa/icons/icon-512.png`;
-   - 1024×500 feature graphic;
-   - at least 2 phone screenshots.
-   - Don't put "Magic: The Gathering" in the title.
-3. **App content**:
-   - Privacy policy: `https://card.m2s-photo.fr/privacy`
-   - Account deletion: `https://card.m2s-photo.fr/?delete-account`
-   - Ads: "No" for now. Switch to "Yes" when AdMob is added.
-   - Data safety:
-     - email address (account, optional);
-     - collection and decks (account, optional);
-     - no data shared;
-     - encrypted in transit;
-     - deletion possible.
-   - Target audience: 13 and over.
-   - Content rating: fill in the questionnaire (no sensitive content).
-4. **Tests › Internal testing**: upload the `.aab` and add your email address. You install the test version from the link Google gives you.
-5. If your developer account is a **personal account created after November 2023**, Google requires a **closed test with at least 12 testers for 14 days** before production. Your testers sign up through a link.
+Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléphone : si l'aperçu est décalé ou si l'image est mal orientée, je corrige.
 
-### Updates
+---
 
-- **Website** (most changes): pushing to `main` is enough. The app shows the new version on its next launch.
-- **Native part** (plugins, icons, permissions):
-  1. In `android-app/android/app/build.gradle`, increase `versionCode` by 1 and update `versionName`.
-  2. Run `npm run sync`.
-  3. Build a new signed bundle and upload it to the Play Console.
+## 4. Publier sur le Play Store
 
-## 5. Next native steps (already planned)
+### 4.1. Créer le fichier à envoyer à Google (.aab)
 
-| Feature | Plugin | Notes |
+1. Dans Android Studio : **Build › Generate Signed App Bundle or APK…** (générer un App Bundle ou un APK signé).
+2. Choisis **Android App Bundle**, puis **Next** (suivant).
+3. **Key store path** (emplacement de la clé) : clique **Create new…** (créer). Ensuite :
+   - choisis où enregistrer le fichier `.jks`, par exemple `mana-orbit.jks` ;
+   - mets un mot de passe dans **Password** et **Confirm** (confirmer) ;
+   - dans **Key** (clé) : **Alias** `mana-orbit`, un mot de passe, et **Validity (years)** (validité en années) à 25 ;
+   - dans **Certificate** (certificat), remplis au moins **First and Last Name** (prénom et nom) ;
+   - clique **OK**.
+4. **Garde précieusement le fichier `.jks` et ses deux mots de passe** (gestionnaire de mots de passe et copie de sauvegarde). Sans eux, tu ne pourras plus jamais mettre l'appli à jour.
+5. Clique **Next**, choisis **release** (version de publication), puis **Create** (créer).
+6. Le fichier `app-release.aab` est créé dans `android-app/android/app/release/`. Android Studio affiche une notification avec un lien **locate** (afficher dans le dossier).
+
+### 4.2. Play Console (play.google.com/console)
+
+1. **Créer une application** :
+   - nom « Mana Orbit » ;
+   - Application (pas Jeu) ;
+   - Gratuite.
+2. **Fiche Play Store principale** :
+   - description courte et description complète ;
+   - icône 512 × 512 : `pwa/icons/icon-512.png` ;
+   - image de présentation 1024 × 500 (je peux te la faire) ;
+   - au moins 2 captures d'écran du téléphone.
+   - Pas de « Magic: The Gathering » dans le titre. Dans la description, « pour les joueurs de Magic » suffit.
+3. **Contenu de l'appli** :
+   - Règles de confidentialité : `https://card.m2s-photo.fr/privacy`
+   - Suppression de compte : `https://card.m2s-photo.fr/?delete-account`
+   - Annonces : « Non » pour l'instant. Passe à « Oui » quand AdMob sera ajouté.
+   - Sécurité des données :
+     - adresse e-mail (compte, facultatif) ;
+     - collection et decks (compte, facultatif) ;
+     - aucune donnée partagée ;
+     - chiffrement en transit ;
+     - suppression possible.
+   - Public cible : 13 ans et plus.
+   - Classification du contenu : remplis le questionnaire (aucun contenu sensible).
+4. **Tests › Tests internes** : envoie le fichier `.aab` et ajoute ton adresse e-mail comme testeur. Tu installes la version de test depuis le lien donné par Google.
+5. Si ton compte développeur est un **compte personnel créé après novembre 2023**, Google impose un **test fermé avec au moins 12 testeurs pendant 14 jours** avant la mise en production. Les testeurs s'inscrivent via un lien.
+
+**À ne publier qu'une fois l'accord d'EDHREC et d'Archidekt obtenu** (voir `docs/mails-partenaires.md`).
+
+### 4.3. Mises à jour
+
+- **Le site** (la plupart des changements) : un push sur `main` suffit. L'appli affiche la nouvelle version au lancement suivant.
+- **La partie native** (plugins, icônes, permissions) :
+  1. Dans `android-app/android/app/build.gradle`, augmente `versionCode` de 1 (par exemple 1 → 2) et change `versionName` (par exemple "1.1").
+  2. Dans le terminal, depuis `android-app` : `npm run sync`.
+  3. Refais un fichier `.aab` signé (étape 4.1) avec le même fichier `.jks`.
+  4. Envoie-le dans la Play Console : **Créer une release** dans la piste de test ou de production.
+
+---
+
+## 5. Prochaines étapes natives (prévues)
+
+| Fonction | Plugin | Remarque |
 | --- | --- | --- |
-| Native scan | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | installed; detected by the site (`Capacitor.isNativePlatform()`) |
-| Ad banner | `@capacitor-community/admob` | AdMob account + app ID; consent (UMP) in Europe |
-| Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (`google-services.json` from the Firebase console) |
-| Google sign-in | `@capacitor-firebase/authentication` | Google blocks its sign-in window inside apps; email/password works already |
-| Widget (collection value) | native Kotlin code | reads the value that the app leaves for it |
+| Scan natif | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | installés ; le site détecte l'appli Android (`Capacitor.isNativePlatform()`) |
+| Bandeau de pub | `@capacitor-community/admob` | compte AdMob + identifiant de l'appli ; consentement (UMP) en Europe |
+| Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
+| Connexion Google | `@capacitor-firebase/authentication` | Google bloque sa fenêtre de connexion dans les applis ; e-mail et mot de passe marchent déjà |
+| Widget (valeur de la collection) | code Kotlin natif | lit la valeur que l'appli lui laisse |
 
-## Option: let Claude do it on your PC
+---
 
-Claude Code can work directly on your computer: the desktop app (claude.ai/download) or the terminal (`npm install -g @anthropic-ai/claude-code`, then `claude` in the `mtgcardshop` folder).
+## 6. Problèmes fréquents
 
-A session opened there can run all of the commands above itself (npm, Gradle, emulator). You only approve each action. The phone connection (USB debugging) and signing in to the Play Console stay with you.
+- **« SDK location not found »** (emplacement du SDK introuvable) : **File › Project Structure… › SDK Location** (Fichier › Structure du projet › Emplacement du SDK), puis indique le dossier du SDK. Par défaut : `C:\Users\<toi>\AppData\Local\Android\Sdk`.
+- **Le téléphone n'apparaît pas** :
+  - débranche et rebranche le câble ;
+  - sur le téléphone, choisis le mode USB « Transfert de fichiers » ;
+  - vérifie que « Débogage USB » est bien activé.
+- **Gradle Sync échoue** : **File › Invalidate Caches… › Invalidate and Restart** (vider les caches et redémarrer), puis relance la synchronisation avec l'icône éléphant **Sync Project with Gradle Files** (synchroniser le projet avec Gradle).
+- **L'appli affiche « Mana Orbit a besoin d'Internet »** : le téléphone n'avait pas de réseau au lancement. Reconnecte-toi puis rouvre l'appli.
+
+---
+
+## Option : laisser Claude faire sur ton PC
+
+Claude Code peut travailler directement sur ton ordinateur : l'appli de bureau (claude.ai/download), ou le terminal (`npm install -g @anthropic-ai/claude-code`, puis `claude` dans le dossier `mtgcardshop`).
+
+Une session ouverte là-bas peut lancer elle-même toutes les commandes ci-dessus (npm, Gradle, émulateur). Tu n'as qu'à valider chaque action. Le branchement du téléphone (débogage USB) et la connexion à la Play Console restent à faire par toi.
