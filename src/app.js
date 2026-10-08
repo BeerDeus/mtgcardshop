@@ -433,7 +433,7 @@ function undoRemove(all) {
 function authHint(e, svc = 'CardTrader') {
   const r = e && e.reason;
   if (r === 'auth_required' && CTX.needsLogin) return { msg: T('Connecte-toi pour utiliser ce serveur : il est réservé à ton compte.'), action: 'account', label: T('Se connecter') };
-  if (r === 'forbidden') return { msg: T('Ce compte n\'est pas autorisé sur ce serveur. Dans Compte, copie ton identifiant et ajoute-le à ALLOWED_UIDS (Hostinger).'), action: 'account', label: T('Compte') };
+  if (r === 'forbidden') return { msg: T('Ce compte n\'a pas accès au CardTrader du serveur. Ajoute ton propre token CardTrader dans les réglages.'), action: 'settings', label: T('Réglages') };
   if (r === 'bad_token') return { msg: T('Connexion au compte invalide : déconnecte-toi puis reconnecte-toi.'), action: 'account', label: T('Compte') };
   if (r === 'token_expired') return { msg: T('Session expirée : relance la recherche.'), action: null, label: null };
   return { msg: T('{svc} refuse l\'accès. Vérifie le token ou la clé du proxy.', { svc }), action: 'settings', label: T('Réglages') };
@@ -1108,7 +1108,8 @@ function openAbout() {
     ['CardTrader', 'https://www.cardtrader.com', T('offres des vendeurs et panier (avec ton token)')],
     ['EDHREC', 'https://edhrec.com', T('classement des commandants et decks moyens')],
     ['Archidekt', 'https://archidekt.com', T('decks Budget, Premium et cEDH')],
-    ['EDHTop16', 'https://edhtop16.com', T('commandants joués en tournoi cEDH')],
+    ['EDHTop16', 'https://edhtop16.com', T('commandants joués en tournoi cEDH (données TopDeck.gg)')],
+    ['TopDeck.gg', 'https://topdeck.gg', T('résultats de tournois cEDH, via EDHTop16')],
     ['Mana', 'https://mana.andrewgioia.com', T('symboles de mana (Andrew Gioia, licences OFL et MIT)')],
     ['Tesseract.js', 'https://tesseract.projectnaptha.com', T('reconnaissance du texte au scan (Apache 2.0)')],
     ['Firebase', 'https://firebase.google.com', T('compte et synchronisation')],

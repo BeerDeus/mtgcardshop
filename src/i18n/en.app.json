@@ -56,7 +56,6 @@
   "{name} remise": "{name} restored",
   "Connecte-toi pour utiliser ce serveur : il est réservé à ton compte.": "Sign in to use this server: it's reserved for your account.",
   "Se connecter": "Sign in",
-  "Ce compte n'est pas autorisé sur ce serveur. Dans Compte, copie ton identifiant et ajoute-le à ALLOWED_UIDS (Hostinger).": "This account isn't allowed on this server. In Account, copy your ID and add it to ALLOWED_UIDS (Hostinger).",
   "Compte": "Account",
   "Connexion au compte invalide : déconnecte-toi puis reconnecte-toi.": "Invalid account session: sign out, then sign in again.",
   "Session expirée : relance la recherche.": "Session expired: run the search again.",
@@ -431,5 +430,9 @@
   "Vraies offres des vendeurs (état, langue, port) et panier le moins cher, rempli sur CardTrader.": "Real seller offers (condition, language, shipping) and the cheapest cart, filled on CardTrader.",
   "Prix tendance de chaque carte, tout de suite, et liste à copier pour Cardmarket.": "Trend price of each card, right away, and a list to copy for Cardmarket.",
   "Voir les prix · {n} carte": "See prices · {n} card",
-  "Voir les prix · {n} cartes": "See prices · {n} cards"
+  "Voir les prix · {n} cartes": "See prices · {n} cards",
+  "Les prix réels viennent des offres CardTrader : ajoute ton token CardTrader dans les réglages.": "Real prices come from CardTrader offers: add your CardTrader token in Settings.",
+  "Ce compte n'a pas accès au CardTrader du serveur. Ajoute ton propre token CardTrader dans les réglages.": "This account has no access to the server's CardTrader. Add your own CardTrader token in Settings.",
+  "commandants joués en tournoi cEDH (données TopDeck.gg)": "commanders played in cEDH tournaments (TopDeck.gg data)",
+  "résultats de tournois cEDH, via EDHTop16": "cEDH tournament results, via EDHTop16"
 }

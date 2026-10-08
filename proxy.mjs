@@ -859,7 +859,8 @@ async function authorize(req, res) {
       const code = e && e.authCode;
       if (code === 'expired') { json(res, 401, { error: 'token_expired', message: 'Session expirée : le navigateur va la renouveler.' }); return false; }
       if (code === 'unavailable') { json(res, 503, { error: 'auth_unavailable', message: 'Vérification du compte impossible pour le moment.' }, { 'Retry-After': '5' }); return false; }
-      await badKey(req, res, code === 'forbidden' ? 'forbidden' : 'bad_token', code === 'forbidden' ? 403 : 401); return false;
+      if (code === 'forbidden') { json(res, 403, { error: 'forbidden', message: 'Ce compte n\'est pas autorisé sur ce serveur.' }); return false; }      // jeton authentique : pas un essai de clé, rien à compter
+      await badKey(req, res, 'bad_token', 401); return false;
     }
   }
   if (!key && !tok) { json(res, 401, { error: 'auth_required', message: AUTH_FB ? 'Connecte-toi pour utiliser le proxy.' : 'Clé du proxy requise.', login: AUTH_FB, key: !!APP_KEY }); return false; }

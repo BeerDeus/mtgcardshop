@@ -240,6 +240,8 @@ async function pxRun(targets, o = {}) {
   if (S.demo) { toast(T('Mode démo (serveur injoignable) : prix réels indisponibles pour l\'instant')); return; }
   if (S.run && S.run.status === 'running') { toast(T('Une recherche est en cours : attends sa fin')); return; }
   readOpts();
+  // prix réels = offres CardTrader : sans token (ni compte autorisé sur le serveur), on explique au lieu d'envoyer vers une connexion qui ne mènera à rien
+  if (!ctReady()) { toast(T('Les prix réels viennent des offres CardTrader : ajoute ton token CardTrader dans les réglages.'), { label: T('Réglages'), fn: openSettings }); return; }
   if (!CTX.proxy && !CTX.token) { toast(T('Ajoute ton token CardTrader dans les réglages')); openSettings(); return; }
   if (CTX.proxy && CTX.needsLogin && !(CTX.needsKey && CTX.appKey) && CTX.idToken && !(await CTX.idToken())) { toast(T('Connecte-toi pour lire les prix')); openAccount(); return; }
   const st = COLL.pxRun = { total: targets.length, done: 0, frac: 0, step: '', ctrl: new AbortController(), real: 0, none: 0, task: null };

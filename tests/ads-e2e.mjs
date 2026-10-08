@@ -33,7 +33,7 @@ function fakeNative(o) {
 }
 const n = (p, m) => p.evaluate(m => window.__ad.calls.filter(c => c === m).length, m);
 const pad = p => p.evaluate(() => ({ on: document.documentElement.classList.contains('ad-on'), top: getComputedStyle(document.documentElement).paddingTop, bar: getComputedStyle(document.querySelector('.bar')).top }));
-const shown = p => p.waitForFunction(h => document.documentElement.classList.contains('ad-on') && getComputedStyle(document.documentElement).paddingTop === h + 'px', H, { timeout: 8000 });
+const shown = p => p.waitForFunction(h => document.documentElement.classList.contains('ad-on') && getComputedStyle(document.documentElement).paddingTop === (h + 16) + 'px', H, { timeout: 8000 });      // hauteur du bandeau + 16 px d'écart
 const gone = p => p.waitForFunction(() => !document.documentElement.classList.contains('ad-on') && getComputedStyle(document.documentElement).paddingTop === '0px', null, { timeout: 8000 });
 /** Page de l'appli « Android ». firebase : 'abort' (SDK injoignable, compte connu tout de suite) ou 'hang' (session qui tarde : pg.held, à relâcher). */
 async function natPage(o = {}) {
@@ -56,12 +56,12 @@ async function natPage(o = {}) {
   assert.deepEqual(await p.evaluate(() => window.__ad.last), { adId: TEST_ID, isTesting: true, adSize: 'ADAPTIVE_BANNER', position: 'TOP_CENTER', margin: 0 }, 'bandeau de test en haut (pas d\'ADMOB_BANNER_ID)');
   assert.equal(await p.evaluate(() => window.__ad.calls[0]), 'removeBanner', 'bandeau d\'une page précédente retiré au démarrage');
   await shown(p);
-  assert.deepEqual(await pad(p), { on: true, top: H + 'px', bar: H + 'px' }, 'page et barre du haut décalées de la hauteur reçue');
+  assert.deepEqual(await pad(p), { on: true, top: (H + 16) + 'px', bar: (H + 16) + 'px' }, 'page et barre du haut décalées de la hauteur reçue + 16 px d\'écart (règle AdMob)');
   assert.ok(await p.evaluate(h => document.querySelector('.bar').getBoundingClientRect().top >= h, H), 'barre du haut sous le bandeau');
   ok('bandeau après le démarrage (consentement → initialisation → bandeau de test en haut), page décalée de sa hauteur');
 
   await p.evaluate(() => openCollection()); await p.waitForSelector('.coll.on');
-  assert.equal(await p.$eval('.coll .dv-head', e => getComputedStyle(e).paddingTop), (H + 10) + 'px', 'écran plein (collection) : en-tête sous le bandeau');
+  assert.equal(await p.$eval('.coll .dv-head', e => getComputedStyle(e).paddingTop), (H + 16 + 10) + 'px', 'écran plein (collection) : en-tête sous le bandeau (+ écart)');
   assert.equal(await n(p, 'hideBanner'), 0, 'collection : le bandeau reste');
   await p.evaluate(() => openScan()); await p.waitForSelector('.scan.on');
   await p.waitForFunction(() => document.documentElement.classList.contains('nat-cam'), null, { timeout: 5000 });
