@@ -3,6 +3,7 @@ import './setup-env.mjs';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { routeFonts } from './fonts.mjs';
 export const { chromium } = createRequire(import.meta.url)('playwright-core');
 
 const user = { id: 1, username: 'seller_a', country_code: 'FR', can_sell_via_hub: true };
@@ -127,7 +128,7 @@ export async function newPage(browser, world, opts = {}) {
     return json({ object: 'error' }, 404);
   });
   await p.route('https://cards.scryfall.io/**', route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'image/svg+xml', body: SVG }));
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(p);
   if (opts.init) await p.addInitScript(opts.init);
   if (opts.goto !== false) { await p.goto(world.url + (opts.path || '')); await p.waitForTimeout(700); await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; }); }
   return { ctx, p, errs };

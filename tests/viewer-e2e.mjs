@@ -5,6 +5,7 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { routeFonts } from './fonts.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
 
 const user = { id: 1, username: 'seller_a', country_code: 'FR', can_sell_via_hub: true };
@@ -61,7 +62,7 @@ const newPage = async () => {
     return route.fulfill({ status: 404, headers: h, json: { object: 'error' } });
   });
   await p.route('https://cards.scryfall.io/**', route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="672" height="936"><rect width="672" height="936" fill="#456"/></svg>' }));
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(p);
   await p.goto('http://127.0.0.1:18810/'); await p.waitForTimeout(700);
   await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
   return { ctx, p, errs, scry };

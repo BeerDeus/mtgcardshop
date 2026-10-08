@@ -31,6 +31,7 @@ jobs:
       - name: Chromium
         run: |
           cd tests && npx playwright-core install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends ffmpeg python3-pil      # scan-e2e : images et vidéo de la caméra simulée
           echo "CHROMIUM=$(node -p "require('playwright-core').chromium.executablePath()")" >> "$GITHUB_ENV"
       - name: Tous les tests (Node, jsdom et navigateur)
         run: bash tests/run-tests.sh

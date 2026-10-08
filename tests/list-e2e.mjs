@@ -3,6 +3,7 @@ import './setup-env.mjs';
 const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); }), toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });      // accueil ↔ « Nouveau panier »
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { routeFonts } from './fonts.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const URL = 'file://' + new globalThis.URL('../deck-deal.html', import.meta.url).pathname;
@@ -10,7 +11,7 @@ const open = async (opts = {}) => {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, ...opts });
   const pg = await c.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   pg.on('console', m => { if (m.type() === 'error' && !/fonts\.g|ERR_|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
-  await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(pg);
   await pg.goto(URL); await pg.waitForTimeout(500);
   await toInput(pg); await pg.click('#btnRun');
   await pg.waitForFunction(() => /terminée/.test(document.querySelector('#progTitle').textContent), null, { timeout: 60000 });

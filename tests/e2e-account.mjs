@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { generateKeyPairSync, sign as rsaSign } from 'node:crypto';
 const KP = generateKeyPairSync('rsa', { modulusLength: 2048 });
 import { createRequire } from 'node:module';
+import { routeFonts } from './fonts.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -76,7 +77,7 @@ async function wireFirebase(ctx, { sdk = true } = {}) {
     const data = [...(u.searchParams.get('q') || '').matchAll(/!"(.+?)"/g)].flatMap(m => PRINTS[m[1]] || []);   // recherche groupée : (!"A" or !"B" …)
     return data.length ? route.fulfill({ status: 200, headers: h, json: { object: 'list', has_more: false, data } }) : route.fulfill({ status: 404, headers: h, json: { object: 'error' } });
   });
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(ctx);
 }
 
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });

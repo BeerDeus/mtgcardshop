@@ -5,6 +5,7 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { routeFonts } from './fonts.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
 
 const prod = (id, bp, user, cents, cond, lang, extra = {}) => ({
@@ -77,7 +78,7 @@ await p.route('https://api.scryfall.com/**', route => {
   }
   return route.fulfill({ status: 404, headers: h, json: { object: 'error' } });
 });
-await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+await routeFonts(p);
 
 await p.goto('http://127.0.0.1:18800/'); await p.waitForTimeout(800);
 await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
@@ -138,7 +139,7 @@ assert.deepEqual(errs, [], 'aucune erreur page');
   const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const p2 = await ctx2.newPage();
   await p2.route('https://api.scryfall.com/**', r => r.abort('failed'));
-  await p2.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(p2);
   await p2.goto('http://127.0.0.1:18800/'); await p2.waitForTimeout(800);
   await p2.evaluate(() => { BACKOFF.scry = [60, 60, 60]; });
   await toInput(p2); await p2.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares');
@@ -158,7 +159,7 @@ assert.deepEqual(errs, [], 'aucune erreur page');
   await ctx3.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('deckdeal:scry-until', String(Date.now() + 4500)); } });
   const p3 = await ctx3.newPage(); const t3 = [];
   await p3.route('https://api.scryfall.com/**', route => { t3.push(Date.now()); const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
-  await p3.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(p3);
   await p3.goto('http://127.0.0.1:18800/'); await p3.waitForTimeout(800);
   await toInput(p3); await p3.fill('#deckText', '1 Sol Ring'); await p3.waitForTimeout(300);
   const tRun = Date.now(); await toInput(p3); await p3.click('#btnRun');
@@ -175,7 +176,7 @@ const mkPage = async (port = 18800) => {
   const pg = await c.newPage(); const errs2 = [];
   pg.on('pageerror', e => errs2.push(e.message));
   await pg.route('https://api.scryfall.com/**', route => { const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
-  await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(pg);
   await pg.goto('http://127.0.0.1:' + port + '/'); await pg.waitForTimeout(800);
   return { c, pg, errs2 };
 };
@@ -273,7 +274,7 @@ const rowsOf = pg => pg.$$eval('#list .row', rs => rs.map(r => r.innerText.repla
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const pg = await c.newPage(); const errs2 = []; pg.on('pageerror', e => errs2.push(e.message));
   await pg.route('https://api.scryfall.com/**', async route => { await new Promise(r => setTimeout(r, 1600));      /* lent : la recherche dure pendant toute la séquence (les offres CardTrader, déjà en cache côté proxy, reviennent vite) */ const u = new URL(route.request().url()); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, json: { object: 'list', has_more: false, data: printsFor(u.searchParams.get('q')) } }); });
-  await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(pg);
   await pg.goto('http://127.0.0.1:18800/'); await pg.waitForTimeout(800);
   await toInput(pg); await pg.fill('#deckText', '1 Sol Ring\n1 Swords to Plowshares\n1 Arcane Signet\n1 Wrath of God'); await pg.waitForTimeout(300);
   await toInput(pg); await pg.click('#btnRun'); await pg.waitForSelector('#tasks .task', { state: 'attached' });
@@ -390,7 +391,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
     const page = Number(u.searchParams.get('page') || 1), more = all.length > page * PAGE; const next = new URL(u); next.searchParams.set('page', String(page + 1));
     return route.fulfill({ status: 200, headers: h, json: { object: 'list', has_more: more, next_page: more ? next.toString() : undefined, data: all.slice((page - 1) * PAGE, page * PAGE) } });
   });
-  await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(pg);
   await pg.goto('http://127.0.0.1:18800/'); await pg.waitForTimeout(800);
   const deck = [...names.map(n => '1 ' + n), '1 Delver of Secrets', '1 Fire // Ice', '1 Aether Vial', '1 Phantom Card'].join('\n');
   await runDeck(pg, deck);
@@ -528,7 +529,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
     return data.length ? route.fulfill({ status: 200, headers: h, json: { object: 'list', has_more: false, data } }) : route.fulfill({ status: 404, headers: h, json: { object: 'error' } });
   });
   await pg.route('https://cards.scryfall.io/**', route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'image/svg+xml', body: `<svg xmlns="http://www.w3.org/2000/svg" width="672" height="936"><rect width="672" height="936" fill="#456"/><text x="30" y="480" fill="#fff" font-size="40">${route.request().url().split('/').pop()}</text></svg>` }));
-  await pg.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await routeFonts(pg);
   await pg.goto('http://127.0.0.1:18800/'); await pg.waitForTimeout(800);
   await runDeck(pg, "1 Sol Ring\n1 Swords to Plowshares\n1 Ranger's Hawk\n1 Arcane Signet"); await pg.waitForTimeout(500);
   await pg.waitForFunction(() => document.querySelectorAll('#list .thumb img.ok').length >= 4, null, { timeout: 5000 });

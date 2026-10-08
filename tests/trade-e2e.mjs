@@ -206,6 +206,7 @@ const tradeId = [...shares.keys()][0];
     await V.ctx.close(); }
   await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.click('#trSub [data-v="want"]');
   await p.waitForSelector('.tr-row[data-k="craterhoof behemoth"]');
+  await p.waitForFunction(() => { const m = document.querySelector('.tr-row[data-k="craterhoof behemoth"] .row-meta'); return m && m.innerText.trim(); }, null, { timeout: 5000 });      // la ligne se repeint une fois les infos lues (machine lente : CI)
   assert.match(await txt(p, '.tr-row[data-k="craterhoof behemoth"] .row-meta'), new RegExp(w2.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.equal(await p.$eval('.tr-row[data-k="craterhoof behemoth"] .thumb img', i => i.getAttribute('src')), w2.i.replace('/normal/', '/small/'));
   await p.click('.coll .dv-back'); await p.waitForTimeout(400);
