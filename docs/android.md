@@ -81,6 +81,17 @@ Si Android Studio demande s'il doit faire confiance au projet, clique **Trust Pr
 
 Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléphone : si l'aperçu est décalé ou si l'image est mal orientée, je corrige.
 
+### Widget
+
+Le widget « Ma collection » affiche sur l'écran d'accueil la valeur de ta collection, sa variation sur 7 jours et le nombre de cartes.
+
+1. Appui long sur un espace vide de l'écran d'accueil › **Widgets** › **Mana Orbit** › « Valeur de la collection ».
+2. Pose-le (2 × 2). Un appui long dessus permet de le redimensionner : sur une seule rangée, il ne garde que la valeur et la variation.
+3. Ouvre l'appli une fois : le widget se remplit. Il se met à jour chaque fois que la valeur change dans l'appli (il ne lit rien sur Internet tout seul).
+4. Toucher le widget ouvre l'appli sur ta collection.
+
+Rien à configurer : le widget prend la langue choisie dans l'appli.
+
 ---
 
 ## 4. Publier sur le Play Store
@@ -147,7 +158,7 @@ Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléph
 | Bandeau de pub | `@capacitor-community/admob` | compte AdMob + identifiant de l'appli ; consentement (UMP) en Europe |
 | Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
 | Connexion Google | `@capacitor-firebase/authentication` | Google bloque sa fenêtre de connexion dans les applis ; e-mail et mot de passe marchent déjà |
-| Widget (valeur de la collection) | code Kotlin natif | lit la valeur que l'appli lui laisse |
+| Widget (valeur de la collection) | plugin local `ManaOrbit` (Java, dans `android/app`) | fait : lit la valeur que l'appli lui laisse (voir « Widget », étape 3) |
 
 ---
 
