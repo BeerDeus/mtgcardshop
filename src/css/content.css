@@ -1,0 +1,56 @@
+/* ── content.css : accueil « Prochaines extensions » (sets.js) et lien d'aide ; Réglages › Aide et avis, feuille d'aide, demande de note (help.js) ──
+   Même verre que les tuiles de l'accueil (.hm-decks) ; icônes d'édition Scryfall (noires) éclaircies en thème sombre. */
+.hm-sets{position:relative;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:22px;padding:14px 6px 6px;box-shadow:var(--shadow);animation:hmDeal .8s cubic-bezier(.16,1,.3,1) both}
+.hm-sets-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 12px 4px}
+.hm-sets-h b{font-family:var(--font-display);font-size:18px;font-weight:700;letter-spacing:-.02em}
+.hm-sets-h span{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
+.hm-sets-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hm-set{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:15px;color:inherit;text-decoration:none;transition:background .2s,transform .3s var(--spring)}
+.hm-set:active{background:var(--surface-2);transform:scale(.98)}
+@media (hover:hover){.hm-set:hover{background:var(--surface-2)}}
+.hm-set:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.hm-set-ic{width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;position:relative}
+.hm-set-ic img{width:23px;height:23px;object-fit:contain}
+.hm-set.past .hm-set-ic::after{content:"";position:absolute;inset:-1.5px;border-radius:13.5px;padding:1.5px;background:var(--foil-ring);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}      /* sortie récente : liseré foil */
+.hm-set-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hm-set-t b{font-size:14px;font-weight:650;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-set-t span{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-set-when{flex:none;font-style:normal;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hm-set-when.soon{background:var(--warn-soft);color:var(--warn)}
+.hm-set-when.past{background:var(--good-soft);color:var(--good)}
+:root[data-theme="dark"] .hm-set-ic img{filter:invert(1) brightness(.92)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-set-ic img{filter:invert(1) brightness(.92)}}
+.hm-help{align-self:center;display:inline-flex;align-items:center;gap:8px;margin-top:-2px;border:0;background:transparent;color:var(--ink-3);font-size:13px;font-weight:600;padding:8px 14px;border-radius:99px;transition:color .2s,background .2s}
+.hm-help i{width:19px;height:19px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-style:normal;font-size:11.5px;font-weight:800;line-height:1}
+.hm-help:active{background:var(--surface-2)}
+@media (hover:hover){.hm-help:hover{color:var(--accent)}}
+@media (prefers-reduced-motion:reduce){.hm-sets{animation:none}}
+
+/* Réglages › Aide et avis : le bloc vient d'un autre module, mêmes écarts que le reste de la feuille */
+#helpBox{display:flex;flex-direction:column;gap:14px}
+#helpBox:empty{display:none}
+#helpBox a.btn,.hp-sheet a.btn,.rate-sheet a.btn{text-decoration:none}      /* liens présentés en bouton (mailto, Play Store) */
+.hp-mail{margin:0}
+.hp-mail span{color:var(--ink-2);user-select:all;-webkit-user-select:all}
+
+/* Feuille « Comment ça marche » : questions repliables */
+.hp-list{display:flex;flex-direction:column;gap:8px}
+.hp-q{border:1px solid var(--line);border-radius:16px;background:var(--surface-3);transition:border-color .2s,background .2s}
+.hp-q[open]{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--surface)}
+.hp-q summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;font-weight:650;font-size:14.5px;line-height:1.3}
+.hp-q summary::-webkit-details-marker{display:none}
+.hp-q summary span{flex:1;min-width:0}
+.hp-q summary .i{flex:none;width:18px;height:18px;color:var(--ink-3);transition:transform .3s var(--spring)}
+.hp-q[open] summary .i{transform:rotate(90deg);color:var(--accent)}
+.hp-q summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:16px}
+.hp-q p{margin:0;padding:0 14px 14px;font-size:13.5px;line-height:1.5;color:var(--ink-2);text-wrap:pretty}
+.hp-q p b{color:var(--ink);font-weight:650}
+.hp-more{margin:0;text-align:center}
+
+/* Demande de note : neutre, le logo et une phrase */
+.rate-hero{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:6px 6px 4px}
+.rate-logo{width:72px;height:72px;border-radius:22px;display:grid;place-items:center;background:var(--accent-soft);position:relative}
+.rate-logo::before{content:"";position:absolute;inset:-2px;border-radius:24px;padding:2px;background:var(--foil-ring);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.rate-logo .logo{width:52px;height:52px}
+.rate-hero p{margin:0;font-size:15px;line-height:1.45;color:var(--ink-2);max-width:32ch;text-wrap:balance}
+.rate-sheet .sheet-foot a.btn:not(.ghost){line-height:52px}      /* lien sans bordure : même ligne de base que « Plus tard » (bouton) */
