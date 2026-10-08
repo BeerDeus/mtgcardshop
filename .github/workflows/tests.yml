@@ -1,18 +1,13 @@
 # Tests de Mana Orbit (voir DEV.md).
 # · Chaque push / pull request : build à jour (deck-deal.html = build de src/).
-# · Push : tests Node et jsdom (~2 min, `run-tests.sh --node`).
-# · Pull request et lancement manuel : TOUS les tests de tests/run-tests.sh, Node compris (~22 min) : un nouveau test listé là y est lancé d'office.
+# · Puis TOUS les tests de tests/run-tests.sh (Node, jsdom et navigateur, ~22 min) : un nouveau test listé là y est lancé d'office.
+#   On pousse directement sur main (déployé par Hostinger) : les tests navigateur doivent tourner à chaque push, pas seulement en pull request.
 name: Tests
 on:
   push:
     paths-ignore: ['pwa/edh.bin.gz', 'pwa/fr-names.tsv', '**.md']
   pull_request:
   workflow_dispatch:
-    inputs:
-      full:
-        description: 'Suite complète (navigateur)'
-        type: boolean
-        default: true
 concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
@@ -33,16 +28,11 @@ jobs:
           git diff --exit-code -- deck-deal.html edhbin.cjs || { echo "::error::deck-deal.html ou edhbin.cjs ne correspond pas à src/ : lance node build.mjs et committe le résultat"; exit 1; }
       - name: Dépendances de test
         run: cd tests && npm ci && npm run fb
-      - name: Tests Node et jsdom
-        if: github.event_name != 'pull_request' && !inputs.full
-        run: bash tests/run-tests.sh --node
       - name: Chromium
-        if: github.event_name == 'pull_request' || inputs.full
         run: |
           cd tests && npx playwright-core install --with-deps chromium
           echo "CHROMIUM=$(node -p "require('playwright-core').chromium.executablePath()")" >> "$GITHUB_ENV"
       - name: Tous les tests (Node, jsdom et navigateur)
-        if: github.event_name == 'pull_request' || inputs.full
         run: bash tests/run-tests.sh
       - name: Journaux
         if: failure()

@@ -41,4 +41,4 @@ Toujours committer `src/` **et** `deck-deal.html` ensemble.
 
 ## CI
 
-`.github/workflows/tests.yml` : build à jour à chaque push et pull request ; tests Node + jsdom (`run-tests.sh --node`) à chaque push ; **tous** les tests de `run-tests.sh` (~22 min) sur les pull requests et à la demande (onglet Actions › Tests › Run workflow). Un nouveau test s'ajoute dans les listes `NODE` / `BROWSER` de `tests/run-tests.sh` : la CI le lance d'office.
+`.github/workflows/tests.yml` : build à jour, puis **tous** les tests de `run-tests.sh` (~22 min) à chaque push, pull request et à la demande (onglet Actions › Tests › Run workflow). Un nouveau test s'ajoute dans les listes `NODE` / `BROWSER` de `tests/run-tests.sh` : la CI le lance d'office.
