@@ -61,6 +61,27 @@ Si Android Studio demande s'il doit faire confiance au projet, clique **Trust Pr
 
 ---
 
+## 2 bis. Firebase : le fichier `google-services.json` (obligatoire)
+
+La connexion Google et les notifications de l'appli passent par Firebase. Sans le fichier `google-services.json`, Android Studio refuse de compiler, avec un message clair. C'est voulu : sans lui, l'appli se fermerait au lancement.
+
+1. Va sur https://console.firebase.google.com et ouvre le projet **m2s-mtg**.
+2. **Paramètres du projet** (roue dentée) › onglet **Général** › **Vos applications** › **Ajouter une application** › icône **Android**.
+3. **Nom du package Android** : `app.manaorbit`. Surnom : « Mana Orbit Android ».
+4. **Certificat de signature SHA-1** (nécessaire pour la connexion Google). Pour l'obtenir, dans Android Studio :
+   - ouvre l'onglet **Terminal** en bas ;
+   - tape `cd android-app/android` puis `./gradlew signingReport` (sous Windows : `gradlew signingReport`) ;
+   - copie la ligne **SHA1** de la variante **debug**.
+
+   Si la commande échoue faute de `google-services.json`, laisse le SHA-1 vide pour l'instant : on peut l'ajouter après, dans **Paramètres du projet** › ton appli Android › **Ajouter une empreinte**.
+5. **Enregistrer l'application**, puis **Télécharger google-services.json**.
+6. Place ce fichier dans `mtgcardshop/android-app/android/app/`, à côté de `build.gradle`.
+7. Dans Android Studio : l'icône éléphant **Sync Project with Gradle Files** (synchroniser le projet avec Gradle).
+
+Pour la publication sur le Play Store, une étape de plus : Play Console › ton appli › **Tester et publier › Configuration › Intégrité de l'application** (Test and release › Setup › App integrity). Copie le **SHA-1 du certificat de la clé de signature de l'application** (App signing key certificate), ajoute-le comme empreinte dans Firebase, puis retélécharge `google-services.json`.
+
+La connexion Google utilise le compte Google du téléphone : un sélecteur natif, sans fenêtre de navigateur. La connexion par e-mail et mot de passe marche aussi.
+
 ## 3. Essayer sur ton téléphone (Xiaomi 14)
 
 ### Sur le téléphone
@@ -146,7 +167,7 @@ Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléph
 | Scan natif | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | installés ; le site détecte l'appli Android (`Capacitor.isNativePlatform()`) |
 | Bandeau de pub | `@capacitor-community/admob` | compte AdMob + identifiant de l'appli ; consentement (UMP) en Europe |
 | Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
-| Connexion Google | `@capacitor-firebase/authentication` | Google bloque sa fenêtre de connexion dans les applis ; e-mail et mot de passe marchent déjà |
+| Connexion Google | `@capacitor-firebase/authentication` | branchée : sélecteur de compte natif (voir 2 bis pour Firebase) |
 | Widget (valeur de la collection) | code Kotlin natif | lit la valeur que l'appli lui laisse |
 
 ---

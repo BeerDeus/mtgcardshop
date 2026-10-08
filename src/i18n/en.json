@@ -17,5 +17,6 @@
   "Aucune carte de ce nom. Vérifie l'orthographe (nom anglais).": "No card with that name. Check the spelling (English name).",
   "Chargement du catalogue (une seule fois)…": "Loading the card catalog (one time only)…",
   "Scryfall demande une pause, réessaie dans une minute.": "Scryfall is asking for a break, try again in a minute.",
-  "Catalogue Scryfall injoignable : réessaie plus tard.": "Can't reach the Scryfall catalog: try again later."
+  "Catalogue Scryfall injoignable : réessaie plus tard.": "Can't reach the Scryfall catalog: try again later.",
+  "Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail.": "Google sign-in failed on this phone. Try again, or use your email."
 }
