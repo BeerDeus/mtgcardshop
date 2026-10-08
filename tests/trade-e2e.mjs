@@ -2,11 +2,15 @@
 // visiteur en lecture seule (recherche FR/EN, filtres), deck partagé (viewer public, main de départ), lien arrêté. Faux Firestore (partages) côté test.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { chromium, startWorld, newPage, ok, txt, toInput, toHome } from './e2e-world.mjs';
+const Q = createRequire(import.meta.url)('../src/qr.js');
+const SHOTS = process.env.TRADE_SHOTS || 'shots';      // captures 390 px (TRADE_SHOTS : autre dossier)
 
 const world = await startWorld({ port: 18960 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const tc = (pg, sel) => pg.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim());      // texte même hors écran (lignes en content-visibility : innerText vide tant qu'elles ne sont pas peintes)
 const errsOf = [];
 
 const shares = new Map(), meta = {}; let shareWrites = 0, ids = 0;
@@ -109,6 +113,32 @@ const tradeId = [...shares.keys()][0];
   assert.equal(await p.evaluate(() => [PROF.name, $('#btnAccount').dataset.img].join()), 'Martin b,1', 'avatar : la photo choisie remplace l\'initiale');
   ok('profil : pseudo nettoyé et photo dans le lien partagé, avatar du compte'); }
 
+/* ── QR code du lien (échange en vrai) : grand, net, pseudo et photo, adresse, écran gardé allumé ── */
+{
+  await p.evaluate(() => { window.__wl = 0; window.__wlr = 0; Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: async t => { window.__wl++; window.__wlt = t; return { release: async () => { window.__wlr++; }, addEventListener() {} }; } } }); });
+  await p.emulateMedia({ colorScheme: 'dark' });
+  await p.click('.tr-box.on [data-act="trqr"]'); await p.waitForSelector('.sheet-wrap.open .qr-img svg');
+  const url = world.url + '?p=' + tradeId;
+  assert.equal(await txt(p, '.qr-url'), url, 'adresse en clair sous le QR code'); assert.equal(await txt(p, '.qr-who b'), 'Liste d\'échange de Martin b'); assert.ok(await p.$('.qr-who img.pub-av'), 'photo du profil');
+  assert.equal(await txt(p, '.qr-hint'), 'Fais-le scanner par l\'autre joueur');
+  const ref = Q.qrSvg(url), shown = await p.$eval('.qr-img svg', s => [s.getAttribute('viewBox'), s.querySelector('path').getAttribute('d'), s.querySelector('rect').getAttribute('fill'), s.querySelector('path').getAttribute('fill')]);
+  assert.deepEqual(shown, [`0 0 ${ref.n} ${ref.n}`, /d="([^"]+)"/.exec(ref.svg)[1], '#fff', '#000'], 'le QR code affiché est celui de l\'encodeur vérifié (tests/test-trade.mjs), noir sur blanc');
+  const px = await p.$eval('.qr-img svg', s => [s.getBoundingClientRect().width, devicePixelRatio]), mod = px[0] * px[1] / Q.qrSvg(url).n;
+  assert.ok(px[0] >= 240 && Math.abs(mod - Math.round(mod)) < 0.01, 'grand, et un nombre entier de pixels par module : ' + px.join(' × '));
+  await p.waitForFunction(() => window.__wl === 1 && !document.querySelector('.qr-lock').hidden); assert.equal(await p.evaluate(() => window.__wlt), 'screen', 'écran gardé allumé');
+  await p.waitForTimeout(600); await p.screenshot({ path: SHOTS + '/trade-qr.png' });
+  await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => window.__wlr === 1); await p.waitForTimeout(450);
+  await p.emulateMedia({ colorScheme: 'light' });
+  ok('QR code du lien : SVG de l\'encodeur vérifié, net (modules entiers), pseudo et photo, adresse, Wake Lock pris puis rendu');
+  // aperçu du propriétaire : ce que voient les visiteurs, sans « Pour toi », sans connexion ni signalement
+  await p.click('.tr-box.on [data-act="trview"]'); await p.waitForSelector('.pubv.on');
+  assert.match(await txt(p, '.pubv .dv-title'), /Aperçu de ta liste/); assert.equal(await p.$$eval('#pubSub .seg-opt', b => b.map(x => x.dataset.v).join()), 'have,want', 'pas d\'onglet « Pour toi »');
+  assert.ok(!(await p.$('.pubv [data-act="login"]')) && !(await p.$('.pubv .pub-report')), 'ni connexion ni signalement dans l\'aperçu');
+  assert.equal(await p.$$eval('.pubv .pub-row .tag.good, .pubv .pub-row .tag.accent', t => t.length), 0, 'aucune étiquette du visiteur (déjà à toi…) sur sa propre liste');
+  await p.click('.pubv .dv-back'); await p.waitForTimeout(400);
+  ok('aperçu du propriétaire : sans « Pour toi », sans étiquettes ni signalement');
+}
+
 /* ── Visiteur : lien public de la liste d'échange ─────────────────────────────────────────────── */
 {
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);
@@ -116,6 +146,13 @@ const tradeId = [...shares.keys()][0];
   await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on');
   assert.match(await txt(V.p, '.pubv .dv-title'), /Liste d'échange de Martin b/); assert.ok(await V.p.$('.pubv .pub-av'), 'photo du propriétaire');
   assert.equal(await txt(V.p, '#pubSub [data-v="have"] small'), '2'); assert.equal(await txt(V.p, '#pubSub [data-v="want"] small'), '5');
+  assert.equal(await V.p.$eval('#pubSub [data-v="match"]', b => b.getAttribute('aria-checked')), 'true', '« Pour toi » : premier onglet, ouvert');
+  assert.match(await txt(V.p, '.pub-cta'), /Ajoute ta collection pour voir ce que vous pouvez échanger/, 'visiteur sans collection : invitation');
+  assert.equal(await txt(V.p, '.pub-cta [data-act="login"]'), 'Se connecter pour voir vos correspondances');
+  const rep = await V.p.$eval('.pub-report a', a => [a.textContent, a.getAttribute('href')]);
+  assert.equal(rep[0], 'Signaler ce partage'); assert.ok(rep[1].startsWith('mailto:martin.stuis11@gmail.com?subject=' + encodeURIComponent('Mana Orbit · signalement') + '&body='), rep[1]);
+  assert.ok(decodeURIComponent(rep[1].split('&body=')[1]).includes(world.url + '?p=' + tradeId), 'le courriel contient le lien signalé');
+  await V.p.click('#pubSub [data-v="have"]'); await V.p.waitForSelector('.pub-row');
   const names = await V.p.$$eval('.pub-row', r => r.map(x => x.querySelector('.row-name').textContent + ' ' + x.querySelector('.tr-q b').textContent.trim()));
   assert.deepEqual(names, ['Llanowar Elves × 2', 'Anneau solaire × 4'], 'exemplaire FR sous son nom français'); await V.p.waitForTimeout(600); await V.p.screenshot({ path: 'shots/trade-4-visiteur.png' });
   await V.p.fill('#pubF input', 'anneau'); await V.p.waitForFunction(() => document.querySelectorAll('.pub-row').length === 1);
@@ -129,7 +166,58 @@ const tradeId = [...shares.keys()][0];
   assert.ok(!(await V.p.$('.coll-tools')) && !(await V.p.$('.pubv .qstep')) && !(await V.p.$('.pubv [data-act="tkeep"]')), 'aucun bouton de modification');
   assert.equal(await V.p.evaluate(() => Object.keys(COLL.map).length), 0, 'rien n\'est ajouté chez le visiteur');
   await V.ctx.close();
-  ok('visiteur : liste en lecture seule, onglets, recherche FR/EN, rien d\'écrit');
+  ok('visiteur : liste en lecture seule, onglets, recherche FR/EN, rien d\'écrit, « Signaler ce partage »');
+}
+
+/* ── Visiteur non connecté : « Se connecter pour voir vos correspondances » → compte (faux cloud) → « Pour toi » sans rouvrir le lien ── */
+{
+  const VDECK = '1 Command Tower\n1 Sol Ring\n1 Llanowar Elves\n1 Edgar Markov', VCOLL = '3 Arcane Signet *FR*\n1 Command Tower\n2 Edgar Markov';
+  const V = await newPage(browser, world, { goto: false, ctx: { colorScheme: 'dark' } }); errsOf.push(V.errs);
+  await V.p.route('https://www.gstatic.com/**', r => r.abort()); await routeRest(V.p);
+  await V.p.route('**/prices.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values', body: '#MOPX1 2026-10-08T09:00:00Z 4\nSol Ring\t150\t100\nLlanowar Elves\t20\t25\nArcane Signet\t40\t50\nCommand Tower\t30\t20\n' }));
+  await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on'); await V.p.waitForFunction(() => D.authReady, null, { timeout: 15000 });
+  await V.p.evaluate(([deck, coll]) => {
+    window.__signin = 0;
+    D.cloud = {
+      onUser() {}, signIn: async email => { window.__signin++; setTimeout(() => onUser({ uid: 'v1', email, displayName: 'Léa', reload: async () => {} }), 30); return {}; }, signUp: async () => {}, google: async () => {},
+      watch: (uid, cb) => { cb([{ id: 'vd', data: { name: 'Mon deck', text: deck, createdAt: 1, updatedAt: 2 } }], false); return () => {}; }, newId: () => 'x', save: async () => {}, remove: async () => {},
+      watchColl(uid, cb) { setTimeout(() => cb({ text: coll, count: 3, updatedAt: 5 }, false, false), 900); return () => {}; }, txColl: async () => null, pullColl: async () => ({ data: { text: coll, updatedAt: 5 } }), saveColl: async () => {},      // la collection du compte arrive après un délai (réseau)
+      watchMeta(uid, id, cb) { cb(null, false, false); return () => {}; }, saveMeta: async () => {}, pullMeta: async () => ({ data: null }), shareId: () => 'x', saveShare: async () => {}, dropShare: async () => {},
+    };
+    D.state = 'ready'; D.err = ''; document.querySelector('.pubv').__same = 1;
+  }, [VDECK, VCOLL]);
+  assert.equal(await txt(V.p, '#pubSub [data-v="match"] small'), '–', 'rien à comparer : pas de chiffre');
+  await V.p.waitForTimeout(500); await V.p.screenshot({ path: SHOTS + '/trade-pourtoi-connexion.png' });
+  await V.p.click('.pub-cta [data-act="login"]'); await V.p.waitForSelector('.sheet-wrap.open #acEmail'); await V.p.waitForTimeout(650);      // feuille arrivée en place
+  assert.ok(await V.p.$eval('.sheet-wrap.open .sheet', s => { const r = s.getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + 40); return s.contains(el); }), 'la feuille du compte passe par-dessus la liste');
+  await V.p.fill('#acEmail', 'lea@example.com'); await V.p.fill('#acPw', 'secret1'); await V.p.click('#acGo');
+  await V.p.waitForFunction(() => !document.querySelector('.sheet-wrap.open'), null, { timeout: 5000 });
+  await V.p.waitForSelector('.pubv .status'); assert.match(await txt(V.p, '.pubv .status'), /Lecture de ta collection/, 'compte connecté, collection pas encore arrivée');
+  await V.p.waitForFunction(() => document.querySelectorAll('.pm-block[data-side="get"] .pm-row').length === 2 && document.querySelectorAll('.pm-block[data-side="give"] .pm-row').length === 1, null, { timeout: 8000 });
+  assert.equal(await V.p.evaluate(() => [window.__signin, document.querySelectorAll('.pubv').length, document.querySelector('.pubv.on').__same, TR.pub.el === document.querySelector('.pubv')].join()), '1,1,1,true', 'même écran, toujours ouvert : rien à rouvrir');
+  assert.ok(!(await V.p.$('.pubv [data-act="login"]')), 'connecté : plus de bouton');
+  assert.deepEqual(await V.p.$$eval('.pm-block[data-side="get"] .pm-row', r => r.map(x => x.dataset.k)), ['sol ring', 'llanowar elves'], 'il a ce que je cherche (manque à mon deck), la plus chère d\'abord');
+  assert.deepEqual(await V.p.$$eval('.pm-block[data-side="give"] .pm-row', r => r.map(x => x.dataset.k)), ['arcane signet'], 'je peux lui donner : seulement mes doublons (Edgar et Command Tower servent à mon deck)');
+  await V.p.waitForFunction(() => /≈/.test(document.querySelector('.pm-block[data-side="get"] .pm-head').textContent), null, { timeout: 5000 });
+  assert.match(await txt(V.p, '.pm-block[data-side="get"] .pm-head'), /^Martin b a ce que tu cherches 2 cartes · ≈ 1,70\s€$/);
+  assert.match(await txt(V.p, '.pm-block[data-side="give"] .pm-head'), /^Tu as ce que Martin b cherche 1 carte · ≈ 0,40\s€$/);
+  assert.match(await tc(V.p, '.pm-row[data-k="sol ring"] .row-meta'), /tu la cherches × 1/); assert.match(await tc(V.p, '.pm-row[data-k="arcane signet"] .row-meta'), /tu peux l'échanger × 2/);
+  assert.match(await tc(V.p, '.pm-row[data-k="sol ring"] .tr-q'), /× 1\s*≈ 1,50\s€/); assert.match(await txt(V.p, '.pm-note'), /tendance Cardmarket/);
+  assert.equal(await txt(V.p, '#pubSub [data-v="match"] small'), '3');
+  await V.p.waitForTimeout(700); await V.p.screenshot({ path: SHOTS + '/trade-pourtoi.png' });
+  // F5 : dans ce qu'il cherche, « échangeable » = mes doublons ; une carte de mes decks est seulement « tu l'as »
+  await V.p.click('#pubSub [data-v="want"]'); await V.p.waitForSelector('.pub-row[data-k="edgar markov"]');
+  assert.match(await tc(V.p, '.pub-row[data-k="arcane signet"] .row-meta'), /tu peux l'échanger × 2/);
+  assert.match(await tc(V.p, '.pub-row[data-k="edgar markov"] .row-meta'), /tu l'as · dans tes decks/); assert.doesNotMatch(await tc(V.p, '.pub-row[data-k="edgar markov"] .row-meta'), /× 2/, 'plus le brut possédé');
+  assert.match(await tc(V.p, '.pub-row[data-k="command tower"] .row-meta'), /tu l'as · dans tes decks/);
+  await V.p.click('#pubSub [data-v="have"]'); await V.p.waitForSelector('.pub-row[data-k="sol ring"]');
+  assert.match(await tc(V.p, '.pub-row[data-k="sol ring"] .row-meta'), /tu la cherches × 1/);
+  // un souhait ajouté ailleurs dans l'appli : « Pour toi » suit, sans rouvrir le lien
+  await V.p.click('#pubSub [data-v="match"]'); await V.p.evaluate(() => { TR.wish['llanowar elves'] = { n: 'Llanowar Elves', q: 2 }; trChanged(); });
+  await V.p.waitForFunction(() => /× 2/.test(document.querySelector('.pm-row[data-k="llanowar elves"] .tr-q').textContent), null, { timeout: 4000 });
+  assert.match(await tc(V.p, '.pm-row[data-k="llanowar elves"] .row-meta'), /tu la cherches × 3/, '1 pour le deck + 2 souhaitées ; il en a 2');
+  await V.ctx.close();
+  ok('visiteur non connecté : bouton → compte par-dessus la liste → synchro → « Pour toi » (2 + 1 cartes, valeurs), étiquettes sur ses doublons (F5), suivi des souhaits');
 }
 
 /* ── Deck partagé : viewer public + main de départ ────────────────────────────────────────────── */
@@ -204,6 +292,14 @@ const tradeId = [...shares.keys()][0];
   });
   assert.ok(big.size <= 880000, 'sous la limite : ' + big.size); assert.ok(big.have >= 5000, 'toutes les cartes gardées');
   assert.equal(big.crater.w, w2.w); assert.equal('https://cards.scryfall.io/' + big.crater.i, w2.i.replace('/normal/', '/small/'), 'illustration souhaitée conservée même allégé');
+  // F1 : avec une grosse photo de profil (40 000 caractères au plus), le document écrit reste sous la règle des 900 000
+  const f1 = await p.evaluate(() => {
+    const keep = COLL.map, m = { ...keep }, photo = PROF.photo, bp = 'data:image/jpeg;base64,' + 'A'.repeat(39000); PROF.photo = bp;
+    for (let i = 0; i < 12000; i++) m['dup card ' + i] = { n: 'Dup Card ' + i + ' With A Rather Long Name For Size Purposes', q: 3 };
+    COLL.map = m; const b = trPayload(); COLL.map = keep; PROF.photo = photo;
+    return { body: JSON.stringify(b).length, doc: JSON.stringify({ ...b, by: PROF.name, bp, at: Date.now() }).length, cut: !!b.cut };
+  });
+  assert.ok(f1.cut && f1.body <= 880000 - 39000 && f1.doc <= 900000, 'liste tronquée en comptant la photo : ' + JSON.stringify(f1));
   { const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs); await routeRest(V.p);
     await V.p.goto(world.url + '?p=' + tradeId); await V.p.waitForSelector('.pubv.on'); await V.p.click('#pubSub [data-v="want"]');
     await V.p.waitForSelector('.pub-row[data-k="craterhoof behemoth"] img');
@@ -224,6 +320,14 @@ const tradeId = [...shares.keys()][0];
 {
   await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
   await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box.on');
+  // F1 : partage trop gros même allégé → « liste trop longue » (et non « règles Firestore à publier »), rien d'écrit ; revenu sous la limite, le message part
+  { const w0 = shareWrites, idle = 'for (let i = 0; i < 80 && TR.busy; i++) await sleep(100);';
+    await p.evaluate(`(async () => { ${idle} window.__tp = trPayload; trPayload = () => ({ have: [], want: [{ n: 'Huge', q: 1, w: 'x'.repeat(950000) }] }); await trSync(); })()`);
+    await p.waitForSelector('.tr-box.on .hint.warn'); assert.equal(shareWrites, w0, 'rien d\'écrit');
+    assert.match(await txt(p, '.tr-box.on .hint.warn'), /^Liste trop longue : le lien ne peut plus être mis à jour/);
+    await p.evaluate(`(async () => { trPayload = window.__tp; ${idle} await trSync(); })()`);
+    await p.waitForFunction(() => !document.querySelector('.tr-box.on .hint.warn'));
+    ok('F1 : photo comptée dans la taille du lien ; trop gros quand même → « liste trop longue », sans écriture'); }
   await p.click('[data-act="troff"]'); await p.waitForSelector('[data-act="tron"]');
   assert.ok(!shares.has(tradeId), 'document supprimé');
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);

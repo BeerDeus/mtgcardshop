@@ -7,6 +7,7 @@
      Un deck enregistré partagé suit ses modifications ; un deck EDHREC ou une liste en cours est partagé tel quel (figé).
    · Visiteur : <site>/?p=<id>. Lecture par l'API REST Firestore (shareFetch : ni SDK, ni compte), écran en lecture seule ; rien n'est écrit, ni chez lui ni chez le propriétaire. */
 const TR_KEY = 'deckdeal:trade:v1', TR_KEEPS = [0, 1, 2, 3, 4], TR_PAGE = 120, TR_MAX = 880000, TR_SHARE_MAX = 900000;      // TR_SHARE_MAX : champ d d'un partage (règles Firestore)
+const TR_REPORT = 'martin.stuis11@gmail.com';      // « Signaler ce partage » : contact de la politique de confidentialité (pwa/privacy.html)
 const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: new Set(), wish: {}, share: '', dsh: {}, u: 0, sig: {}, sub: 'have', shown: TR_PAGE, err: '', busy: false, again: false, syncT: 0,
   doc: { unsub: null, uid: '', pushT: 0 }, pub: null };
 
@@ -39,10 +40,11 @@ const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine ===
 function trNeedNet() { if (!trOffline()) return true; toast(T('Hors ligne : réessaie une fois connecté')); return false; }
 /** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
 function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
-function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); }
+function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); pubSoon(); }
 
 /* ── Réglages dans le compte ───────────────────────────────────────────────────────────────────────── */
 function trUser(user) {
+  pubSoon();      // liste d'un autre joueur ouverte : ses correspondances suivent la connexion
   const d = TR.doc; if (d.unsub) { try { d.unsub(); } catch (e) { /* ignore */ } d.unsub = null; } clearTimeout(d.pushT); d.uid = '';
   if (!user || !D.cloud || !D.cloud.watchMeta) return;
   if (TR.who && TR.who !== user.uid) { trApply({}); TR.sig = {}; }                // autre compte sur cet appareil : ses réglages et liens ne sont pas les nôtres
@@ -94,7 +96,7 @@ function trPayload() {
 }
 
 /* ── Partages : écriture (propriétaire) ────────────────────────────────────────────────────────── */
-function trSoon(ms = 4000) { if (!TR.share && !Object.keys(TR.dsh).length) return; clearTimeout(TR.syncT); TR.syncT = setTimeout(trSync, ms); }
+function trSoon(ms = 4000) { pubSoon(); if (!TR.share && !Object.keys(TR.dsh).length) return; clearTimeout(TR.syncT); TR.syncT = setTimeout(trSync, ms); }
 /** Empreinte du propriétaire (SHA-256 de l'UID, en hexadécimal) : le document est public, l'UID n'y est jamais écrit. Les règles Firestore la recalculent. */
 const ownerTags = new Map();
 async function ownerTag(uid) {
@@ -217,6 +219,7 @@ function trShareBoxHtml(st) {
   return `<div class="tr-box on"><b>${T('Lien public actif')}</b><div class="tr-link"><input type="text" readonly value="${esc(shareUrl(TR.share))}" aria-label="${T('Lien de ta liste d\'échange')}"></div>
     ${rules}${TR.err === 'net' ? '<p class="hint warn">' + T('Mise à jour du lien en attente (hors ligne).') + '</p>' : '<p class="hint">' + T('Mis à jour tout seul quand ta collection, tes decks ou ta liste changent. Lecture seule.') + '</p>'}
     <div class="tr-acts"><button class="btn ghost" type="button" data-act="trcopy">${T('Copier')}</button><button class="btn ghost" type="button" data-act="trsend">${T('Partager')}</button><button class="btn ghost" type="button" data-act="trview">${T('Aperçu')}</button></div>
+    <button class="btn ghost block tr-qr" type="button" data-act="trqr">${QR_ICON}${T('QR code')}</button>
     <div class="tr-acts small"><button class="link-btn link-inline" type="button" data-act="trnew">${T('Nouveau lien')}</button><button class="link-btn link-inline" type="button" data-act="troff">${T('Arrêter le partage')}</button></div></div>`;
 }
 function trHaveRow(x) {
@@ -271,6 +274,7 @@ function trClick(e) {
   else if (act === 'trnew') trShareOff(true);
   else if (act === 'trcopy') copyText(shareUrl(TR.share));
   else if (act === 'trsend') sendLink(shareUrl(TR.share), T('Ma liste d\'échange Magic'));
+  else if (act === 'trqr') trQrOpen();
   else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, ...profShare(), at: Date.now() }), true); }
   else if (act === 'trmore') { TR.shown += TR_PAGE; collPaintBody(true); }
   else if (act === 'tkeep' && k) { TR.kept.add(k); haptic('tap'); trChanged(); toast(T('Gardée : elle n\'est plus proposée'), { label: T('Annuler'), fn: () => { TR.kept.delete(k); trChanged(); } }); }
@@ -316,6 +320,37 @@ function openWishAdd() {
   });
 }
 
+/* ── QR code du lien (échange en vrai : l'autre joueur le scanne avec l'appareil photo de son téléphone) ── */
+const QR_ICON = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2M14 20h2M18 18v2h2"/></svg>';
+/** Feuille du QR code : grand, net (modules calés sur les pixels de l'écran), pseudo ou photo du profil, adresse en clair ; l'écran reste allumé tant qu'elle est ouverte (Wake Lock, si le navigateur l'a). */
+function trQrOpen() {
+  if (!TR.share) return;
+  const url = shareUrl(TR.share); let q;
+  try { q = qrSvg(url); } catch (e) { toast(T('Lien trop long pour un QR code')); return; }
+  const { by, bp } = profShare();
+  openSheet(T('QR code de ta liste'), T('Lien public · lecture seule'), api => {
+    api.body.innerHTML = `<div class="qr-card">
+        <div class="qr-who">${bp ? `<img class="pub-av" src="${bp}" alt="">` : ''}<b>${by ? T('Liste d\'échange de {name}', { name: esc(by) }) : T('Ma liste d\'échange')}</b></div>
+        <div class="qr-img" role="img" aria-label="${T('QR code du lien de ta liste d\'échange')}">${q.svg}</div>
+        <p class="qr-url">${esc(url)}</p></div>
+      <p class="qr-hint">${T('Fais-le scanner par l\'autre joueur')}</p><p class="hint qr-lock" hidden>${T('L\'écran reste allumé tant que le QR code est affiché.')}</p>`;
+    const box = $('.qr-img', api.body), svg = $('svg', box);
+    // taille : un nombre entier de pixels physiques par module (aucun module flou ou plus large que ses voisins)
+    const fit = () => { const w = Math.min(box.clientWidth || 300, 380), r = window.devicePixelRatio || 1, px = Math.max(2, Math.floor(w * r / q.n)) * q.n / r; svg.style.width = svg.style.height = px + 'px'; };
+    fit(); requestAnimationFrame(fit);
+    let wl = null, on = true;
+    const lock = async () => {
+      if (!on || wl || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+      try { const l = await navigator.wakeLock.request('screen'); if (!on) { l.release(); return; } wl = l; if (l.addEventListener) l.addEventListener('release', () => { if (wl === l) wl = null; }); } catch (e) { wl = null; }      // refusé (économie d'énergie) : l'écran s'éteindra comme d'habitude
+      const h = $('.qr-lock', api.body); if (h) h.hidden = !wl;
+    };
+    const vis = () => { if (document.visibilityState === 'visible') lock(); };      // le verrou tombe quand on quitte l'appli : repris au retour
+    document.addEventListener('visibilitychange', vis); lock();
+    const close = api.close;
+    api.close = () => { on = false; document.removeEventListener('visibilitychange', vis); try { if (wl) wl.release(); } catch (e) { /* déjà relâché */ } wl = null; close(); };
+  });
+}
+
 /* ── Écran public (visiteur, ou aperçu du propriétaire) ─────────────────────────────────────────── */
 /** Ouverture par un lien ?p=<id> : lit le partage puis ouvre la liste d'échange ou le deck, en lecture seule. */
 async function openPublicLink(id) {
@@ -328,36 +363,49 @@ async function openPublicLink(id) {
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
     return;
   }
-  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at, by: sh.by }); else openPublicTrade(sh, false); }
+  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at, by: sh.by }); else openPublicTrade(sh, false, id); }
   catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
     console.error(e);
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${T('Ce partage n\'a pas pu s\'afficher. Recharge la page ; si ça recommence, signale ce message :')}</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
   }
 }
-/** Liste d'échange en lecture seule : « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand. */
-function openPublicTrade(sh, preview) {
+/** « Signaler ce partage » (contenu choisi par un autre compte : pseudo, photo) : courriel prérempli avec le lien. Objet fixe, pour le tri. */
+const trReportHref = id => 'mailto:' + TR_REPORT + '?subject=' + encodeURIComponent('Mana Orbit · signalement') + '&body=' + encodeURIComponent(T('Partage signalé : {url}', { url: shareUrl(id) }) + '\n' + T('Raison :') + ' ');
+/**
+ * Liste d'échange en lecture seule : « Pour toi » (visiteur : ce que vous pouvez échanger), « À échanger » / « Recherchées », recherche par nom (français ou anglais) et filtres, carte en grand.
+ * preview : aperçu du propriétaire (ni « Pour toi », ni étiquettes du visiteur, ni signalement). id : identifiant du partage (signalement).
+ */
+function openPublicTrade(sh, preview, id) {
   if (TR.pub && TR.pub.el) TR.pub.el.__close();
-  const P = TR.pub = { sh, sub: sh.have.length || !sh.want.length ? 'have' : 'want', f: newFilter(), shown: TR_PAGE, el: null };
+  const P = TR.pub = { sh, preview: !!preview, sub: preview ? (sh.have.length || !sh.want.length ? 'have' : 'want') : 'match', f: newFilter(), shown: TR_PAGE, el: null, mine: null, key: '', refs: [], t: 0, tick: 0, px: 0, paint: null };
+  if (!preview) P.mine = pubMine(P);
   const wrap = document.createElement('div'); wrap.className = 'dv coll pubv'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Liste d\'échange'));
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer')}"><svg class="i"><use href="#i-back"/></svg></button>
       ${sh.bp ? `<img class="pub-av" src="${sh.bp}" alt="">` : ''}<div class="dv-title"><b>${preview ? T('Aperçu de ta liste') : sh.by ? T('Liste d\'échange de {name}', { name: esc(sh.by) }) : T('Liste d\'échange')}</b><span>${sh.at ? T('Mise à jour {when}', { when: esc(relTime(sh.at)) }) : ''}</span></div></header>
     <div class="dv-scroll"><div class="dv-body coll-body">
       <p class="hint pub-note">${T(preview ? 'Ce que voient les personnes qui ont ton lien.' : 'Lecture seule. Touche une carte pour la voir en grand.')}${sh.cut ? ' ' + T('Liste trop longue : seule une partie est affichée.') : ''}</p>
-      <div class="seg" id="pubSub" role="radiogroup" aria-label="${T('Liste')}"></div><div id="pubF"></div><div class="pub-main"></div></div></div>`;
+      <div class="seg" id="pubSub" role="radiogroup" aria-label="${T('Liste')}"></div><div id="pubF"></div><div class="pub-main"></div>
+      ${!preview && id ? `<p class="pub-report"><a href="${esc(trReportHref(id))}" rel="noopener">${T('Signaler ce partage')}</a></p>` : ''}</div></div>`;
   P.el = wrap;
   const paint = keep => {
-    const sc = $('.dv-scroll', wrap), pos = keep && sc ? sc.scrollTop : 0, all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
-    $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}</p>` : ''}
-      ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${T(all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.')}</p>`}
-      ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}`;
+    const sc = $('.dv-scroll', wrap), pos = keep && sc ? sc.scrollTop : 0;
+    $('#pubF', wrap).hidden = P.sub === 'match';
+    if (P.sub === 'match') $('.pub-main', wrap).innerHTML = pubMatchHtml(P);
+    else {
+      const all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
+      $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}</p>` : ''}
+        ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${T(all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.')}</p>`}
+        ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}`;
+    }
     if (sc) sc.scrollTop = pos;
-    if (!keep) stagger($('.pub-main .coll-list', wrap));
+    if (!keep) stagger($$('.pub-main .coll-list', wrap));
   };
-  mountSeg($('#pubSub', wrap), [{ v: 'have', label: T('À échanger'), sub: nf0(sh.have.length) }, { v: 'want', label: T('Recherchées'), sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
+  P.paint = paint;
+  mountSeg($('#pubSub', wrap), [...(preview ? [] : [{ v: 'match', label: T('Pour toi'), sub: pubMatchSub(P) }]), { v: 'have', label: T('À échanger'), sub: nf0(sh.have.length) }, { v: 'want', label: T('Recherchées'), sub: nf0(sh.want.length) }], P.sub, v => { P.sub = v; P.shown = TR_PAGE; paint(false); });
   mountFilters($('#pubF', wrap), P.f, () => { P.shown = TR_PAGE; paint(true); }, { placeholder: T('Nom français ou anglais') });
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
-    if (P.el !== wrap) return; P.el = null; document.removeEventListener('keydown', onKey, true);
+    if (P.el !== wrap) return; P.el = null; document.removeEventListener('keydown', onKey, true); clearTimeout(P.t); clearInterval(P.tick);
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
     if (!preview) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } }
   };
@@ -368,6 +416,8 @@ function openPublicTrade(sh, preview) {
     const b = e.target.closest('[data-act]');
     if (b && b.dataset.act === 'close') return wrap.__close();
     if (b && b.dataset.act === 'more') { P.shown += TR_PAGE; paint(true); return; }
+    if (b && b.dataset.act === 'login') { haptic('tap'); openAccount(); return; }      // feuille du compte par-dessus (z-index 85 > 80) ; les correspondances suivent la synchro
+    if (b && b.dataset.act === 'import') { openCollImport(); return; }
     const row = e.target.closest('.pub-row'); if (!row) return;
     const rows = $$('.pub-row', wrap), list = [], at = { i: 0 };      // illustration recherchée (data-pw) : montrée telle quelle, sans version française
     for (const r of rows) { const im = $('img', r); if (!im) continue; if (r === row) at.i = list.length; list.push({ key: r.dataset.k, name: $('.row-name', r).textContent, wl: !r.dataset.pw && r.dataset.ln && r.dataset.ln !== 'en' ? r.dataset.ln : '', small: im.getAttribute('src'), lang: r.dataset.ln || 'en', plain: true, extra: r.dataset.x || '' }); }
@@ -375,23 +425,93 @@ function openPublicTrade(sh, preview) {
   });
   document.body.appendChild(wrap); holdApp(); paint(false);
   requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('on'); $('.dv-back', wrap).focus({ preventScroll: true }); }));
+  if (!preview) { P.key = pubKey(); P.refs = pubRefs(); P.tick = setInterval(() => { if (P.el === wrap && (pubKey() !== P.key || pubRefs().some((r, i) => r !== P.refs[i]))) pubRefresh(); }, 1500); pubPx(P); }      // filet : un changement que les crochets n'auraient pas signalé
   // cartes sans image ni type (partage trop gros, ou fiche pas encore lue chez le propriétaire) : lues sur Scryfall par lots, puis repeintes
   (async () => {
     const need = [...sh.have, ...sh.want].filter(x => !x.im || x.tl == null).map(x => ({ key: x.k, name: x.n }));
     for (let i = 0; i < 40 && P.el === wrap && dmMissing(need).length; i++) { if (!(await dmFetch(need))) break; if (P.el === wrap) paint(true); }
   })();
 }
-/** Item public : fiche du partage, complétée par le cache Scryfall de cet appareil ; « Dans ta collection » si le visiteur a la carte. */
-function pubItem(x) {
+
+/* ── « Pour toi » : ce que le visiteur et le propriétaire du lien peuvent échanger ───────────────── */
+/** Prix unitaire (centimes) pour l'estimation : tendance Cardmarket du fichier de prix (impression la moins chère), sinon le prix Scryfall déjà connu de l'appareil. */
+const pubPrice = k => { const t = PXT && PXT.map && PXT.map.get(k); return (t && t.e) || (dmOf(k) || {}).eu || null; };
+/** Ce que le visiteur a en trop (tradeLists : ses decks et sa réserve gardent leurs cartes) et ce qu'il cherche, comparés au partage. */
+function pubMine(P) {
+  const st = trState();
+  return { st, spare: new Map(st.have.map(x => [x.k, x])), want: new Map(st.want.map(x => [x.k, x])), m: tradeMatch(P.sh, st.want, st.have, pubPrice) };
+}
+/** Ce qui change les correspondances : compte, synchro, collection, decks, réglages d'échange, fichier de prix. */
+const pubKey = () => [D.uid || '', D.authReady ? 1 : 0, COLL.live ? 1 : 0, COLL.cloud, COLL.u, collCount(), allDecks().length, TR.u, CTX.proxy ? 1 : 0, PXT ? PXT.t : 0].join('|');
+const pubRefs = () => [COLL.map, allDecks(), TR.wish];
+/** Rien à comparer : ni collection, ni carte recherchée (deck, souhait). */
+const pubEmpty = P => !collCount() && !P.mine.st.want.length;
+const pubMatchSub = P => (!D.user && pubEmpty(P) ? '–' : nf0(P.mine.m.n));
+/** Fichier de prix (un seul, gardé 12 h, déjà utilisé par la recherche Cardmarket) : lu une fois, puis les valeurs se repeignent. */
+function pubPx(P) {
+  if (PXT || P.px || !CTX.proxy) return;
+  P.px = 1; pxTable().then(t => { if (t && TR.pub === P && P.el) pubRefresh(); }, () => {});
+}
+/** Recalcule (connexion, collection du compte arrivée, deck, souhait…) et repeint sans perdre la position. Appelée par les crochets (trSoon, trRepaint, trUser) et le filet. */
+function pubRefresh() {
+  const P = TR.pub; if (!P || !P.el || P.preview) return;
+  clearTimeout(P.t); P.key = pubKey(); P.refs = pubRefs(); P.mine = pubMine(P); pubPx(P);
+  const seg = $('#pubSub', P.el); if (seg && seg.setSub) seg.setSub('match', pubMatchSub(P));
+  if (P.paint) P.paint(true);
+}
+function pubSoon() { const P = TR.pub; if (!P || !P.el || P.preview) return; clearTimeout(P.t); P.t = setTimeout(pubRefresh, 250); }
+/** Onglet « Pour toi » : connexion ou import si rien à comparer, sinon les deux blocs avec leur valeur. */
+function pubMatchHtml(P) {
+  const M = P.mine, m = M.m, empty = pubEmpty(P), who = P.sh.by ? esc(P.sh.by) : '';
+  if (!D.user && !D.authReady && D.hint) return `<div class="status" data-ok="0"><span class="dot"></span><span>${T('Connexion à ton compte…')}</span></div>`;
+  if (D.user && !collCount() && !COLL.live && COLL.cloud === 'sync') return `<div class="status" data-ok="0"><span class="dot"></span><span>${T('Lecture de ta collection…')}</span></div>`;
+  let top = '';
+  if (!D.user) top = `<div class="tr-box pub-cta"><b>${T('Ce que vous pouvez échanger')}</b>
+      <p class="hint">${empty ? T('Ajoute ta collection pour voir ce que vous pouvez échanger : tes doublons et les cartes que tu cherches sont comparés à cette liste.') : T('Calculé avec la collection de cet appareil. Connecte-toi pour utiliser celle de ton compte.')}</p>
+      <button class="btn block" type="button" data-act="login">${T('Se connecter pour voir vos correspondances')}</button>${empty ? `<button class="btn ghost block" type="button" data-act="import">${T('Importer ma collection')}</button>` : ''}</div>`;
+  else if (empty) top = `<div class="tr-box pub-cta"><b>${T('Ce que vous pouvez échanger')}</b><p class="hint">${T('Ajoute ta collection pour voir ce que vous pouvez échanger.')}</p><button class="btn block" type="button" data-act="import">${T('Importer ma collection')}</button></div>`;
+  if (empty) return top;
+  const block = side => {
+    const list = m[side], s = m.sum[side];
+    const title = side === 'get' ? (who ? T('{name} a ce que tu cherches', { name: who }) : T('Il a ce que tu cherches')) : (who ? T('Tu as ce que {name} cherche', { name: who }) : T('Tu as ce qu\'il cherche'));
+    const none = side === 'get' ? T(M.st.want.length ? 'Aucune des cartes que tu cherches n\'est dans sa liste.' : 'Tu ne cherches aucune carte pour l\'instant : tes decks sont complets et ta liste de souhaits est vide.')
+      : T(M.st.have.length ? 'Il ne cherche aucun de tes doublons.' : 'Aucune carte en trop dans ta collection pour l\'instant (tes decks et ta réserve gardent les leurs).');
+    return `<section class="pm-block" data-side="${side}"><div class="pm-head"><b>${title}</b><span>${TN(s.n, '{n} carte', '{n} cartes')}${s.v ? ` · <em>≈ ${esc(fmt(s.v, 'EUR'))}</em>` : ''}</span></div>
+      ${list.length ? `<div class="coll-list">${list.map(x => pubMatchRow(x, side)).join('')}</div>` : `<p class="hint pm-none">${none}</p>`}</section>`;
+  };
+  const priced = m.sum.get.v || m.sum.give.v, at = PXT && Date.parse(PXT.at);
+  return `${top}${block('get')}${block('give')}${priced ? `<p class="hint pm-note">${at ? T('≈ valeur indicative : tendance Cardmarket ({when}), sans l\'état ni l\'édition des cartes.', { when: esc(relTime(at)) }) : T('≈ valeur indicative : tendance Cardmarket, sans l\'état ni l\'édition des cartes.')}</p>` : ''}`;
+}
+/** Ligne d'un bloc : sa carte (image, nom français), ce qui la rend intéressante, exemplaires échangeables et valeur. */
+function pubMatchRow(x, side) {
+  const it = pubFill(x.it), nm = it.dn || it.n, img = it.im || '', alt = it.dn && it.dn !== it.n ? it.n : it.fn || '';
+  const ls = side === 'get' ? x.ls : x.s.lines.map(l => l[0]).filter(Boolean);      // ses langues / celles de mes doublons
+  const tags = side === 'get'
+    ? `<span class="tag accent">${T('tu la cherches × {n}', { n: x.w.q })}</span>${x.w.p && x.w.p.w ? `<span class="tag" title="${T('Illustration recherchée')}">${T('illustration souhaitée : {name}', { name: esc(x.w.p.w) })}</span>` : ''}`
+    : `<span class="tag good">${T('tu peux l\'échanger × {n}', { n: x.s.q })}</span>${it.pw ? `<span class="tag accent" title="${T('Illustration recherchée')}">${esc(it.pw)}</span>` : ''}`;
+  const val = x.v != null ? '≈ ' + fmt(x.v, 'EUR') : '', cap = TN(x.q, '{n} exemplaire', '{n} exemplaires') + (val ? ' · ' + val : '');
+  return `<div class="crow pub-row pm-row" role="button" tabindex="0" data-k="${esc(x.k)}" data-ln="${esc(side === 'get' ? it.l || '' : '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(cap)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+    <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${ls.map(flag).join('')}</span><span class="row-meta">${tags}${alt ? `<span class="tag">${esc(alt)}</span>` : ''}</span></span>
+    <span class="tr-q"><b>× ${x.q}</b>${val ? `<small>${esc(val)}</small>` : ''}</span></div>`;
+}
+/** Carte du partage complétée par le cache Scryfall de cet appareil (image, coût, type, couleurs, symboles). */
+function pubFill(x) {
   const m = dmOf(x.k) || {}, it = { ...x };
   for (const f of ['im', 'cm', 'tl', 'cl', 'mc']) if (it[f] == null && m[f] != null) it[f] = m[f];
-  it.mine = collQty(x.k);
+  return it;
+}
+/** Item public (onglets complets) : ce que le visiteur peut en faire, d'après ses doublons échangeables (pas le brut possédé : ses decks gardent leurs cartes). */
+function pubItem(x) {
+  const it = pubFill(x), M = TR.pub && TR.pub.mine;
+  if (M) { it.own = collQty(x.k); it.spare = (M.spare.get(x.k) || {}).q || 0; it.used = !!M.st.use.get(x.k); it.wq = (M.want.get(x.k) || {}).q || 0; }
   return it;
 }
 function pubRow(it) {
   const nm = it.dn || it.n, img = it.im || '', sub = it.dn && it.dn !== it.n ? `<span class="tag">${esc(it.n)}</span>` : it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '';
   const pw = it.pw ? `<span class="tag accent" title="${T('Illustration recherchée')}">${esc(it.pw)}</span>` : '';
-  const mine = it.mine ? `<span class="tag good">${T(TR.pub && TR.pub.sub === 'want' ? 'tu l\'as × {n}' : 'déjà à toi × {n}', { n: it.mine })}</span>` : '';
+  const mine = TR.pub && TR.pub.sub === 'want'      // ce qu'il cherche : échangeable seulement si j'en ai en trop
+    ? (it.spare ? `<span class="tag good">${T('tu peux l\'échanger × {n}', { n: it.spare })}</span>` : it.own ? `<span class="tag">${T(it.used ? 'tu l\'as · dans tes decks' : 'tu l\'as · gardée')}</span>` : '')
+    : (it.wq ? `<span class="tag accent">${T('tu la cherches × {n}', { n: it.wq })}</span>` : it.own ? `<span class="tag good">${T('déjà à toi × {n}', { n: it.own })}</span>` : '');
   const x = TN(it.q, '{n} exemplaire', '{n} exemplaires') + (it.l ? ' · ' + (LANGS[it.l] || it.l) : '') + (it.pw ? ' · ' + T('illustration {name}', { name: it.pw }) : '');
   return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
