@@ -2,8 +2,8 @@
 
 Le dossier `android-app/` contient l'appli Android. C'est une coque native (Capacitor) qui ouvre https://card.m2s-photo.fr et ajoute ce qu'un navigateur ne sait pas faire :
 
-- l'appareil photo natif pour le scan, fluide comme Snapchat ;
-- plus tard : la pub AdMob, les notifications Firebase et le widget d'écran d'accueil.
+- l'appareil photo natif et la lecture ML Kit pour le scan, fluides comme Snapchat ;
+- la connexion Google native, les notifications Firebase, le bandeau AdMob, le widget d'écran d'accueil et le bouton Retour d'Android.
 
 Toute mise à jour du site arrive tout de suite dans l'appli. Il ne faut refaire l'appli que si la partie native change (plugins, icônes, permissions).
 
@@ -13,16 +13,18 @@ Les boutons d'Android Studio sont écrits **en anglais, tels qu'ils apparaissent
 
 ## 1. Installer les outils (une seule fois)
 
-1. **Node.js 22 LTS** : https://nodejs.org. Clique sur le bouton « LTS » et garde les options par défaut pendant l'installation.
+1. **Node.js** (version 22 ou plus récente) : https://nodejs.org. Clique sur le bouton « LTS » et garde les options par défaut pendant l'installation. Si Android Studio était ouvert, redémarre-le ensuite : sinon son terminal ne trouve pas `npm`.
 2. **Git** : https://git-scm.com/download/win. Options par défaut.
 3. **Android Studio** : déjà installé. Au premier lancement, accepte le téléchargement du SDK proposé par l'assistant : **Next** (suivant) puis **Finish** (terminer).
 
 Pour vérifier, ouvre un terminal : sous Windows, tape « PowerShell » dans le menu Démarrer. Puis :
 
 ```bash
-node -v        # doit afficher v22.x
+node -v        # doit afficher v22 ou plus récent
 git --version  # doit afficher une version
 ```
+
+Si PowerShell répond « l'exécution de scripts est désactivée sur ce système » quand tu lances `npm`, tape une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, réponds `O` (oui), puis relance la commande.
 
 ---
 
@@ -39,6 +41,7 @@ npm run open
 
 - `npm run setup` installe Capacitor et ses plugins, puis prépare le projet Android. Compte 1 à 2 minutes.
 - `npm run open` ouvre le projet dans Android Studio.
+- Plus tard, après chaque `git pull` : `npm run setup` depuis `android-app`, avant de refaire l'appli.
 
 **Variante sans terminal externe, depuis Android Studio :**
 1. Sur l'écran d'accueil, clique **Clone Repository** (cloner un dépôt).
@@ -69,18 +72,25 @@ La connexion Google et les notifications de l'appli passent par Firebase. Sans l
 2. **Paramètres du projet** (roue dentée) › onglet **Général** › **Vos applications** › **Ajouter une application** › icône **Android**.
 3. **Nom du package Android** : `app.manaorbit`. Surnom : « Mana Orbit Android ».
 4. **Certificat de signature SHA-1** (nécessaire pour la connexion Google). Pour l'obtenir, dans Android Studio :
-   - ouvre l'onglet **Terminal** en bas ;
-   - tape `cd android-app/android` puis `./gradlew signingReport` (sous Windows : `gradlew signingReport`) ;
-   - copie la ligne **SHA1** de la variante **debug**.
+   - appuie deux fois sur **Ctrl** : la fenêtre **Run Anything** (tout exécuter) s'ouvre ;
+   - tape `gradle signingReport`, puis Entrée ;
+   - dans le panneau qui s'ouvre en bas, copie la ligne **SHA1** de la variante **debug**.
 
-   Si la commande échoue faute de `google-services.json`, laisse le SHA-1 vide pour l'instant : on peut l'ajouter après, dans **Paramètres du projet** › ton appli Android › **Ajouter une empreinte**.
+   À défaut, dans l'onglet **Terminal** en bas (il s'ouvre déjà dans `android-app/android`) :
+   ```powershell
+   $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+   .\gradlew signingReport
+   ```
+   Sur Mac ou Linux : `./gradlew signingReport`.
+
+   `signingReport` marche avant d'avoir `google-services.json`. Une empreinte s'ajoute aussi plus tard : **Paramètres du projet** › ton appli Android › **Ajouter une empreinte**.
 5. **Enregistrer l'application**, puis **Télécharger google-services.json**.
 6. Place ce fichier dans `mtgcardshop/android-app/android/app/`, à côté de `build.gradle`.
 7. Dans Android Studio : l'icône éléphant **Sync Project with Gradle Files** (synchroniser le projet avec Gradle).
 
 Pour la publication sur le Play Store, une étape de plus : Play Console › ton appli › **Tester et publier › Configuration › Intégrité de l'application** (Test and release › Setup › App integrity). Copie le **SHA-1 du certificat de la clé de signature de l'application** (App signing key certificate), ajoute-le comme empreinte dans Firebase, puis retélécharge `google-services.json`.
 
-La connexion Google utilise le compte Google du téléphone : un sélecteur natif, sans fenêtre de navigateur. La connexion par e-mail et mot de passe marche aussi.
+La connexion Google utilise le compte Google du téléphone : un sélecteur natif, sans fenêtre de navigateur. Elle n'ouvre jamais le navigateur : si l'APK a été construit sans le plugin, l'appli demande de la mettre à jour (voir § 6). La connexion par e-mail et mot de passe marche aussi.
 
 ## 3. Essayer sur ton téléphone (Xiaomi 14)
 
@@ -98,9 +108,9 @@ La connexion Google utilise le compte Google du téléphone : un sélecteur nati
 2. Clique le bouton vert **Run ▶** (exécuter), ou **Run › Run 'app'**.
 3. L'appli s'installe et s'ouvre sur le téléphone.
 
-**Pour tester le scan :** Ma collection › Scanner. L'aperçu de l'appareil photo est maintenant natif. Le nom de la carte est lu sur le téléphone par ML Kit (Google), sans rien télécharger.
+**Pour tester le scan :** dans Ma collection, l'icône appareil photo **Scanner des cartes**, ou **Prix rapide** sur l'accueil. L'aperçu de l'appareil photo est natif. Le nom de la carte est lu sur le téléphone par ML Kit (Google), dont le modèle arrive avec les services Google Play à l'installation de l'appli.
 
-Dis-moi ce que tu vois. Je n'ai pas pu tester le scan natif sur un vrai téléphone : si l'aperçu est décalé ou si l'image est mal orientée, je corrige.
+**En ligne de commande**, depuis `android-app` (Windows, Mac ou Linux) : `npm run apk` fabrique le même APK de test sans Android Studio ; sous Windows, définis d'abord `JAVA_HOME` comme au 2 bis. Pour le Play Store, passe par l'étape 4.1 (fichier signé).
 
 ### Widget
 
@@ -137,36 +147,22 @@ Rien à configurer : le widget prend la langue choisie dans l'appli.
    - nom « Mana Orbit » ;
    - Application (pas Jeu) ;
    - Gratuite.
-2. **Fiche Play Store principale** :
-   - description courte et description complète ;
-   - icône 512 × 512 : `pwa/icons/icon-512.png` ;
-   - image de présentation 1024 × 500 (je peux te la faire) ;
-   - au moins 2 captures d'écran du téléphone.
-   - Pas de « Magic: The Gathering » dans le titre. Dans la description, « pour les joueurs de Magic » suffit.
-3. **Contenu de l'appli** :
+2. **Fiche Play Store principale** et **Contenu de l'appli** : copie tout depuis `docs/store/fiche.md` : textes (§1-4), classification (§6), public cible (§7), sécurité des données (§8) et visuels (§9, déjà prêts dans `docs/store/`).
+3. Les adresses à donner :
    - Règles de confidentialité : `https://card.m2s-photo.fr/privacy`
    - Suppression de compte : `https://card.m2s-photo.fr/?delete-account`
-   - Annonces : « Oui » (bandeau AdMob, voir « Publicité (AdMob) » plus bas).
-   - Identifiant publicitaire : « Oui », pour la publicité (le SDK AdMob l'utilise).
-   - Sécurité des données :
-     - adresse e-mail (compte, facultatif) ;
-     - collection et decks (compte, facultatif) ;
-     - publicité (AdMob) : ce que collecte le SDK Google Mobile Ads, partagé avec Google (voir « Publicité (AdMob) ») ;
-     - chiffrement en transit ;
-     - suppression possible.
-   - Public cible : 13 ans et plus.
-   - Classification du contenu : remplis le questionnaire (aucun contenu sensible).
 4. **Tests › Tests internes** : envoie le fichier `.aab` et ajoute ton adresse e-mail comme testeur. Tu installes la version de test depuis le lien donné par Google.
+   Juste après ce premier envoi, ajoute dans Firebase le SHA-1 de la clé de signature Play (**Intégrité de l'application**, voir la fin du 2 bis). Sinon « Continuer avec Google » échoue pour les testeurs.
 5. Si ton compte développeur est un **compte personnel créé après novembre 2023**, Google impose un **test fermé avec au moins 12 testeurs pendant 14 jours** avant la mise en production. Les testeurs s'inscrivent via un lien.
 
 **À ne publier qu'une fois l'accord d'EDHREC et d'Archidekt obtenu** (voir `docs/mails-partenaires.md`).
 
 ### 4.3. Mises à jour
 
-- **Le site** (la plupart des changements) : un push sur `main` suffit. L'appli affiche la nouvelle version au lancement suivant.
+- **Le site** (la plupart des changements) : push sur `main`, puis **Redéployer** dans Hostinger (sauf si le déploiement automatique est activé). L'appli affiche la nouvelle version au lancement suivant.
 - **La partie native** (plugins, icônes, permissions) :
   1. Dans `android-app/android/app/build.gradle`, augmente `versionCode` de 1 (par exemple 1 → 2) et change `versionName` (par exemple "1.1").
-  2. Dans le terminal, depuis `android-app` : `npm run sync`.
+  2. Dans le terminal, depuis `android-app` : `npm run setup`. À faire aussi après chaque `git pull` : il installe les plugins ajoutés entre-temps, sinon l'appli serait construite sans eux.
   3. Refais un fichier `.aab` signé (étape 4.1) avec le même fichier `.jks`.
   4. Envoie-le dans la Play Console : **Créer une release** dans la piste de test ou de production.
 
@@ -176,7 +172,7 @@ Rien à configurer : le widget prend la langue choisie dans l'appli.
 
 Un petit bandeau Google AdMob, en haut de l'écran, paie l'hébergement :
 - seulement dans l'appli Android, jamais sur le site ni la PWA ;
-- jamais pour les comptes de `ALLOWED_UIDS` (le tien) : connecté avec ton compte, tu ne vois aucune pub ;
+- jamais pour les comptes de `ALLOWED_UIDS` (le tien) quand le serveur a `CARDTRADER_TOKEN` : connecté avec ton compte, tu ne vois aucune pub ;
 - il arrive quelques secondes après l'ouverture puis reste en place ; il disparaît pendant l'accueil du premier lancement, le scan et la carte en grand. La page descend de sa hauteur : rien n'est caché dessous.
 
 Tant que rien n'est configuré, l'appli affiche le bandeau de **test** de Google : aucun revenu, aucun risque pour ton compte.
@@ -189,7 +185,7 @@ Tant que rien n'est configuré, l'appli affiche le bandeau de **test** de Google
 ### 2. Mettre l'ID d'application dans l'appli (nouvelle version)
 1. Ouvre `android-app/android/app/src/main/res/values/strings.xml`.
 2. Remplace la valeur de `admob_app_id` (l'ID de test de Google) par ton ID d'application.
-3. Refais l'appli comme au § 4.3 : `versionCode` + 1, `npm run sync`, nouveau `.aab`. C'est la seule étape qui demande une nouvelle version.
+3. Refais l'appli comme au § 4.3 : `versionCode` + 1, `npm run setup`, nouveau `.aab`. C'est la seule étape qui demande une nouvelle version.
 
 ### 3. Créer le bloc d'annonces (bannière)
 1. **Applis › Mana Orbit › Blocs d'annonces › Ajouter un bloc d'annonces › Bannière**. Nom : « Bandeau haut ». Garde les réglages proposés (actualisation choisie par Google).
@@ -248,15 +244,18 @@ Bon à savoir :
 
 ---
 
-## 5. Prochaines étapes natives (prévues)
+## 5. Fonctions natives
 
 | Fonction | Plugin | Remarque |
 | --- | --- | --- |
-| Scan natif | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | installés ; le site détecte l'appli Android (`Capacitor.isNativePlatform()`) |
-| Bandeau de pub | `@capacitor-community/admob` | fait côté site : voir « Publicité (AdMob) » ; reste le compte AdMob et l'identifiant de l'appli |
-| Notifications | `@capacitor/push-notifications` | Firebase Cloud Messaging (fichier `google-services.json` depuis la console Firebase) |
-| Connexion Google | `@capacitor-firebase/authentication` | branchée : sélecteur de compte natif (voir 2 bis pour Firebase) |
+| Scan natif | `@capacitor-community/camera-preview` + `@pantrist/capacitor-plugin-ml-kit-text-recognition` | fait ; le site détecte l'appli Android (`Capacitor.isNativePlatform()`) |
+| Bandeau de pub | `@capacitor-community/admob` | fait : voir « Publicité (AdMob) » ; reste le compte AdMob et l'identifiant de l'appli |
+| Notifications | `@capacitor/push-notifications` | fait : Firebase Cloud Messaging (voir « Notifications ») |
+| Connexion Google | `@capacitor-firebase/authentication` | fait : sélecteur de compte natif, jamais le navigateur (voir 2 bis pour Firebase) |
 | Widget (valeur de la collection) | plugin local `ManaOrbit` (Java, dans `android/app`) | fait : lit la valeur que l'appli lui laisse (voir « Widget », étape 3) |
+| Bouton Retour | `@capacitor/app` | fait : ferme l'écran ouvert ; sur l'accueil, deux appuis mettent l'appli en arrière-plan |
+| Page hors ligne | `android-app/www/index.html` | fait : « Mana Orbit a besoin d'Internet… » si le site ne répond pas au lancement |
+| Diagnostic | plugin local `ManaOrbit` (Firebase, version) | en bas de **Réglages**, la ligne « Version … · APK : » montre ✓ ou ✗ pour chaque plugin (caméra, ML Kit, Google, pub, notif, widget, retour), Firebase et la version de l'APK |
 
 ---
 
@@ -276,6 +275,13 @@ Bon à savoir :
   - sur le téléphone, choisis le mode USB « Transfert de fichiers » ;
   - vérifie que « Débogage USB » est bien activé.
 - **Gradle Sync échoue** : **File › Invalidate Caches… › Invalidate and Restart** (vider les caches et redémarrer), puis relance la synchronisation avec l'icône éléphant **Sync Project with Gradle Files** (synchroniser le projet avec Gradle).
+- **« l'exécution de scripts est désactivée sur ce système »** en lançant `npm` : `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, réponds `O` (voir § 1). **`npm` introuvable** dans le terminal d'Android Studio : redémarre Android Studio après avoir installé Node.
+- **« google-services.json manquant dans android/app/ »** à la compilation : le fichier Firebase n'est pas en place, voir § 2 bis.
+- **« Continuer avec Google » ouvre le navigateur, ou affiche « Connexion Google indisponible dans cette version »** : l'appli installée a été construite sans le plugin de connexion Google.
+  1. Depuis `android-app` : `git pull`, puis `npm run setup`, puis refais l'appli (**Run ▶**).
+  2. En bas de **Réglages**, la ligne « APK : » doit montrer **✓Google**, et ✓ pour Firebase. Firebase ✗ : `google-services.json` manque ou est vide (§ 2 bis).
+  3. Le sélecteur s'ouvre mais la connexion échoue : dans Firebase, **Paramètres du projet** › ton appli Android doit avoir le SHA-1 de chaque clé qui signe l'appli : debug (ton PC, § 2 bis étape 4), ta clé `.jks` et la clé de signature Play (les deux dans Play Console › **Intégrité de l'application**). Attends quelques minutes après un ajout.
+  4. Pour lire l'erreur exacte : onglet **Logcat** en bas d'Android Studio, filtre `package:mine`, puis cherche `FirebaseAuthentication` ou `Capacitor/Console`.
 - **L'appli affiche « Mana Orbit a besoin d'Internet »** : le téléphone n'avait pas de réseau au lancement. Reconnecte-toi puis rouvre l'appli.
 
 ---
