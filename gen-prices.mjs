@@ -46,8 +46,10 @@ export async function pxStream(stream, map) {
 
 async function main() {
   const out = process.argv[2] || join(here, 'prices.tsv.gz');
-  const meta = await (await fetch('https://api.scryfall.com/bulk-data/default-cards', { headers: { 'User-Agent': UA, Accept: 'application/json' } })).json();
-  if (!meta || !meta.download_uri) throw new Error('Scryfall : bulk data introuvable');
+  const lr = await fetch('https://api.scryfall.com/bulk-data', { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+  if (!lr.ok) throw new Error('Scryfall : liste des fichiers complets refusée (' + lr.status + ')');
+  const meta = ((await lr.json()).data || []).find(x => x && x.type === 'default_cards');
+  if (!meta || !meta.download_uri) throw new Error('Scryfall : fichier « default_cards » introuvable');
   console.log(`  fichier Scryfall du ${meta.updated_at} (${Math.round((meta.size || 0) / 1048576)} Mo)`);
   const r = await fetch(meta.download_uri, { headers: { 'User-Agent': UA } });
   if (!r.ok || !r.body) throw new Error('Scryfall : téléchargement refusé (' + r.status + ')');
