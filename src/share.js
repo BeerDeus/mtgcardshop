@@ -363,7 +363,7 @@ async function openPublicLink(id) {
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${esc(msg)}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
     return;
   }
-  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at, by: sh.by }); else openPublicTrade(sh, false, id); }
+  try { if (sh.kind === 'deck') openDeckViewer({ text: sh.text, name: sh.name, pub: true, at: sh.at, by: sh.by, sid: id }); else openPublicTrade(sh, false, id); }      // sid : identifiant du partage (« Signaler ce partage », trReportHref)
   catch (e) {      // jamais l'accueil sans explication : le message aide à comprendre ce qui coince
     console.error(e);
     openSheet(T('Partage'), '', api => { api.body.innerHTML = `<p>${T('Ce partage n\'a pas pu s\'afficher. Recharge la page ; si ça recommence, signale ce message :')}</p><p class="hint">${esc(String(e && e.message || e))}</p>`; api.setFoot('<button class="btn" type="button" data-close>' + T('Fermer') + '</button>'); });
