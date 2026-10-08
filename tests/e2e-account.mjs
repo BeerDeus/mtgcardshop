@@ -124,7 +124,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.equal(await p.$eval('#segMode', e => e._v), 'direct'); await D(p); assert.equal(await p.$eval('.deck', e => e.dataset.active), '1'); await H(p); ok('ouvrir un deck : liste + critères restaurés (l\'écran des decks se referme)');
 
   // détacher
-  await p.click('#deckStats .stat-x'); await p.waitForTimeout(150);
+  await toInput(p); await p.click('#deckStats .stat-x'); await p.waitForTimeout(150);
   assert.equal(await T(p, '#btnSave'), 'Enregistrer'); await D(p); assert.equal(await p.$eval('.deck', e => e.dataset.active), '0'); ok('détacher le deck');
   // renommer / dupliquer / supprimer
   await p.click('.deck-more'); await sheetOpen(p); await p.waitForTimeout(500);
@@ -139,7 +139,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   assert.equal(await p.$$eval('.deck', n => n.length), 1); ok('supprimer en deux temps');
   // plus de 4 decks
   await H(p);
-  for (let i = 0; i < 5; i++) { await toInput(p); await p.fill('#deckText', `1 Sol Ring\n1 Card ${i}`); await p.click('#deckStats .stat-x').catch(() => {}); await toInput(p); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck ' + i); await p.click('#svGo'); await sheetGone(p); }
+  for (let i = 0; i < 5; i++) { await toInput(p); await p.fill('#deckText', `1 Sol Ring\n1 Card ${i}`); await toInput(p); await p.click('#deckStats .stat-x').catch(() => {}); await toInput(p); await p.click('#btnSave'); await sheetOpen(p); await p.fill('#svName', 'Deck ' + i); await p.click('#svGo'); await sheetGone(p); }
   await D(p); assert.equal(await p.$$eval('.deck', n => n.length), 6); assert.equal(await p.$('#btnMoreDecks'), null); assert.equal(await T(p, '.dks .dv-title span'), '6 decks'); ok('tous les decks sont listés dans l\'écran (plus de « Afficher les N autres »)');
   await H(p);
   // compte indisponible (SDK bloqué dans ce contexte ? non : ici SDK dispo) → ouvre la feuille compte

@@ -426,14 +426,14 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await waitTotal('^4,00');
 
   // tri
-  await toInput(pg); await pg.selectOption('#optSort', 'price-desc'); await settle();
+  await pg.selectOption('#optSort', 'price-desc'); await settle();
   assert.deepEqual(await names(), ['Swords to Plowshares', 'Sol Ring', 'Arcane Signet', "Ranger's Hawk", 'Phantom Card'], 'plus chères d\'abord, sans prix à la fin');
-  await toInput(pg); await pg.selectOption('#optSort', 'price-asc'); await settle();
+  await pg.selectOption('#optSort', 'price-asc'); await settle();
   assert.deepEqual(await names(), ["Ranger's Hawk", 'Arcane Signet', 'Sol Ring', 'Swords to Plowshares', 'Phantom Card'], 'moins chères d\'abord, sans prix à la fin');
-  await toInput(pg); await pg.selectOption('#optSort', 'name'); await settle();
+  await pg.selectOption('#optSort', 'name'); await settle();
   assert.deepEqual(await names(), ['Arcane Signet', 'Phantom Card', "Ranger's Hawk", 'Sol Ring', 'Swords to Plowshares'], 'A → Z');
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1')).sort), 'name', 'tri mémorisé');
-  await toInput(pg); await pg.selectOption('#optSort', 'deck'); await settle();
+  await pg.selectOption('#optSort', 'deck'); await settle();
   assert.deepEqual(await names(), ['Sol Ring', 'Swords to Plowshares', "Ranger's Hawk", 'Phantom Card', 'Arcane Signet']);
 
   // filtres (puces avec compteurs ; « Choix manuel » absent tant que rien n'est choisi)
@@ -494,7 +494,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await pg.click('#fchips [data-f="none"]'); await settle(); assert.deepEqual(await names(), ['Phantom Card']);
   await pg.click('#list .rw[data-key="phantom card"] .rx'); await pg.waitForTimeout(500);
   assert.equal((await names()).length, 4, 'plus aucune carte sans offre : le filtre se désactive seul'); assert.deepEqual(await chips(), ['Toutes4*', 'Autre langue2']);
-  await toInput(pg); await pg.selectOption('#optSort', 'price-desc'); await settle();
+  await pg.selectOption('#optSort', 'price-desc'); await settle();
   await pg.click('#list .rw[data-key="swords to plowshares"] .rx'); await pg.waitForTimeout(500);
   assert.deepEqual(await names(), ['Sol Ring', 'Arcane Signet', "Ranger's Hawk"]);
   await pg.click('#undoAll'); await pg.waitForTimeout(500);
@@ -506,7 +506,7 @@ const sheetText = pg => pg.evaluate(() => document.querySelector('#sheetRoot').t
   await pg.click('#setHaptic ~ i, .switch:has(#setHaptic)'); assert.equal(await pg.isChecked('#setHaptic'), false);
   await pg.click('.sheet-wrap.open [data-close].icon-btn'); await pg.waitForTimeout(500);
   const v1 = await pg.evaluate(() => window.__vib.length);
-  await toInput(pg); await pg.selectOption('#optSort', 'name'); await pg.click('#list .rw[data-key="sol ring"] .rx'); await pg.waitForTimeout(400);
+  await pg.selectOption('#optSort', 'name'); await pg.click('#list .rw[data-key="sol ring"] .rx'); await pg.waitForTimeout(400);
   assert.equal(await pg.evaluate(() => window.__vib.length), v1, 'vibrations coupées');
   assert.equal(await pg.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:v1')).haptic), false);
   assert.deepEqual(errs2, []); await c.close();

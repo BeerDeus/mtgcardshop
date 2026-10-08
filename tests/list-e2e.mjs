@@ -24,26 +24,26 @@ const vis = pg => pg.$$eval('#list .rw:not([hidden])', rs => rs.map(r => ({ name
   const base = await vis(pg); console.log('cartes :', base.length);
   assert.ok(base.length >= 70);
   // tri par prix décroissant : prix non croissants, lignes sans prix à la fin
-  await toInput(pg); await pg.selectOption('#optSort', 'price-desc');
+  await pg.selectOption('#optSort', 'price-desc');
   assert.ok((await pg.evaluate(() => document.getAnimations().length)) > 0, 'le réordonnancement est animé (FLIP)');
   await pg.waitForTimeout(500);
   let rows = await vis(pg), priced = rows.filter(r => r.price != null);
   assert.ok(priced.length > 50); assert.deepEqual(priced.map(r => r.price), priced.map(r => r.price).sort((a, b) => b - a), 'prix décroissants');
   const firstNull = rows.findIndex(r => r.price == null); assert.ok(firstNull === -1 || rows.slice(firstNull).every(r => r.price == null), 'sans prix à la fin');
-  await toInput(pg); await pg.selectOption('#optSort', 'price-asc'); await pg.waitForTimeout(500);
+  await pg.selectOption('#optSort', 'price-asc'); await pg.waitForTimeout(500);
   rows = await vis(pg); priced = rows.filter(r => r.price != null);
   assert.deepEqual(priced.map(r => r.price), priced.map(r => r.price).sort((a, b) => a - b), 'prix croissants');
-  await toInput(pg); await pg.selectOption('#optSort', 'name'); await pg.waitForTimeout(500);
+  await pg.selectOption('#optSort', 'name'); await pg.waitForTimeout(500);
   rows = await vis(pg); assert.deepEqual(rows.map(r => r.name), rows.map(r => r.name).slice().sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })), 'A → Z');
   assert.equal(rows.length, base.length, 'le tri ne perd aucune carte');
   await pg.screenshot({ path: 'shots/list-1-tri.png' });
-  await toInput(pg); await pg.selectOption('#optSort', 'deck'); await pg.waitForTimeout(500);
+  await pg.selectOption('#optSort', 'deck'); await pg.waitForTimeout(500);
   assert.deepEqual((await vis(pg)).map(r => r.name), base.map(r => r.name), 'retour à l\'ordre de la liste');
 
   // perf : réordonner 75 lignes reste fluide
   const ms = await pg.evaluate(() => { S.sort = 'price-desc'; const t = performance.now(); applyView(true); return performance.now() - t; });
   console.log('applyView (75 lignes) :', ms.toFixed(1), 'ms'); assert.ok(ms < 120, 'applyView lent : ' + ms);
-  await toInput(pg); await pg.selectOption('#optSort', 'deck'); await pg.waitForTimeout(500);
+  await pg.selectOption('#optSort', 'deck'); await pg.waitForTimeout(500);
 
   // filtres : chaque puce affiche exactement son nombre de cartes
   const chips = await pg.$$eval('#fchips .fchip', x => x.map(e => [e.dataset.f, Number(e.querySelector('b').textContent)]));
@@ -71,7 +71,7 @@ const vis = pg => pg.$$eval('#list .rw:not([hidden])', rs => rs.map(r => ({ name
 }
 { // mouvement réduit : aucune animation de réordonnancement
   const { c, pg, errs } = await open({ reducedMotion: 'reduce' });
-  await toInput(pg); await pg.selectOption('#optSort', 'price-desc');
+  await pg.selectOption('#optSort', 'price-desc');
   assert.equal(await pg.evaluate(() => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('#list')).length), 0, 'pas de FLIP en mouvement réduit');
   const rows = await vis(pg); const p = rows.filter(r => r.price != null).map(r => r.price); assert.deepEqual(p, p.slice().sort((a, b) => b - a));
   const k = await pg.$eval('#list .rw', r => r.dataset.key); await pg.click(`#list .rw[data-key="${k}"] .rx`); await pg.waitForTimeout(150);

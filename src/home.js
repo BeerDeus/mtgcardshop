@@ -1,6 +1,6 @@
 /* ── home.js : page d'accueil ──────────────────────────────────────────────────────────────────────
    · Orbe « Ma collection » : valeur (prix tendance Cardmarket), cartes, variation sur 7 jours ; les 5 terrains de base tournent autour
-     (illustration de ceux de la collection s'ils y sont, sinon celle de Scryfall).
+     (illustration de ceux de la collection s'ils y sont, sinon la fiche Scryfall, lue une fois).
    · « Mes decks » : les cartes de présentation des 3 derniers decks en éventail.
    · Prix rapide · Deck à monter (le deck EDHREC dont tu as déjà la plus grande part) · Échange (doublons, cartes recherchées, lien en direct).
    · « Nouveau panier » : ouvre la saisie (coller une liste, exemple, ou reprendre la liste en cours).
@@ -69,13 +69,20 @@ function homePaint() {
   $('#btnNewLabel').textContent = draft ? `Reprendre ma liste · ${nf0(S.deck.cards.length)} carte${S.deck.cards.length > 1 ? 's' : ''}` : 'Coller une liste';
   $('#btnNew2Label').textContent = draft ? 'Coller' : 'Exemple';
 }
-/** Illustrations des terrains de base : celles de la collection si elle les a, sinon Scryfall (une fois). */
+/** Illustrations des terrains de base : celles de la collection si elle les a, sinon la fiche Scryfall lue une fois par la file de l'appli
+ *  (cache de l'appareil, pause Scryfall respectée) ; en attendant, un dégradé aux couleurs du terrain. */
 function homeLands() {
-  for (const [c, k, name] of HM_LANDS) {
+  let miss = false;
+  for (const [c, k] of HM_LANDS) {
     const img = $(`.hm-land[data-c="${c}"] img`); if (!img) continue;
-    const own = (COLL.map[k] && COLL.meta[k] && COLL.meta[k].im) || '', src = own ? hmArt(own) : `https://api.scryfall.com/cards/named?exact=${name}&format=image&version=art_crop`;
+    const m = dmOf(k), src = m && m.im ? hmArt(m.im) : '';
+    if (!src) { miss = true; continue; }
     if (img.getAttribute('src') === src) continue;
     img.onload = () => img.classList.add('ok'); img.onerror = () => img.classList.remove('ok'); img.src = src;
+  }
+  if (miss && !HM.lands) {
+    HM.lands = true;
+    setTimeout(async () => { try { await dmLoad(); if (await dmFetch(HM_LANDS.map(([, key, name]) => ({ key, name })), true)) homeSoon(); else if (HM_LANDS.some(([, k]) => !(dmOf(k) || {}).im)) HM.lands = false; } catch (e) { HM.lands = false; } }, 3000);
   }
 }
 /** Cartes de présentation pas encore lues : lues en arrière-plan, puis l'éventail est repeint. */
