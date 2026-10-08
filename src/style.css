@@ -545,6 +545,9 @@ button.sync:active{background:var(--surface-2)}
 .dv-foot{display:flex;gap:10px;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--line);background:var(--bar-bg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .dv-foot .btn{flex:1;height:46px}
 .dv-foot[hidden]{display:none}
+.dv:not(.scan)>.dv-foot .btn{flex:1 1 auto;min-width:0;display:block;line-height:44px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}      /* viewer : « Chercher les offres » sur une ligne, comme les pieds de feuille (le scan garde sa disposition autour du total) */
+@media (max-width:430px){.dv:not(.scan)>.dv-foot{gap:8px}.dv:not(.scan)>.dv-foot .btn{padding:0 12px;font-size:14.5px}}
+@media (max-width:359px){.dv:not(.scan)>.dv-foot .btn{padding:0 8px;font-size:13px}}
 .dv-empty{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:48px 20px;color:var(--ink-2)}
 .dv-empty b{font-family:var(--font-display);font-size:18px;color:var(--ink)}
 .dv-empty p{max-width:34ch;font-size:14px}
