@@ -3,11 +3,20 @@
      téléphone en français → français, toute autre langue → anglais). Avec des chiffres, ValueWidget prend la langue choisie dans l'appli. -->
 <resources>
     <string name="widget_label">Collection value</string>
-    <string name="widget_description">Your Magic collection value and its change over 7 days</string>
+    <string name="widget_description">Your Magic collection value, its change and its curve, with a shortcut to the scanner</string>
     <string name="widget_title">My collection</string>
     <string name="widget_empty">Open Mana Orbit to show your collection</string>
-    <!-- %1$s : « ▲ +€12 » ou « ▼ −€8 » -->
-    <string name="widget_delta">%1$s · 7d</string>
+    <!-- %1$s : « ▲ +€12 », « ▼ −€8 » ou « ± €0 » ; %2$d : durée de la variation en jours -->
+    <string name="widget_delta">%1$s · %2$dd</string>
+    <!-- chiffres de plus de 36 h (même texte que l'appli : « {n} d ago ») -->
+    <string name="widget_age">%1$d d ago</string>
+    <!-- valeur recalculée appli fermée d'après les prix du jour, jusqu'à la prochaine ouverture de l'appli -->
+    <string name="widget_estimated">estimated</string>
+    <string name="widget_btn_scan">Scan</string>
+    <string name="widget_btn_quick">Quick price</string>
+    <!-- légende de la courbe : sa durée en jours -->
+    <string name="widget_chart_span">%1$dd</string>
+    <string name="widget_chart_wait">The chart appears after two days of readings</string>
     <plurals name="widget_cards">
         <item quantity="one">%1$s card</item>
         <item quantity="other">%1$s cards</item>
@@ -18,4 +27,5 @@
     <string name="widget_preview_value">€1,234</string>
     <string name="widget_preview_delta">▲ +€12 · 7d</string>
     <string name="widget_preview_count">312 cards</string>
+    <string name="widget_preview_span">30d</string>
 </resources>

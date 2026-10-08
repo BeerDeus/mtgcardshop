@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget « Ma collection », mise en page complète (deux rangées et plus) : logo, titre, liseré foil, valeur, variation 7 j, cartes.
-     Vues permises par RemoteViews seulement (FrameLayout, LinearLayout, TextView, ImageView). Textes et visibilités posés par ValueWidget.java. -->
+<!-- Widget « Ma collection », 2 × 2 : logo, titre, bouton rond (Scanner ou Prix rapide), liseré foil, valeur, variation, cartes (âge ou « estimée » à la suite).
+     Vues permises par RemoteViews seulement (FrameLayout, LinearLayout, TextView, ImageView). Textes, icône et visibilités posés par ValueWidget.java. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
+    android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
@@ -25,25 +25,47 @@
                 android:importantForAccessibility="no"
                 android:src="@drawable/widget_logo" />
 
+            <!-- taille ajustée (12 → 9 sp) : le titre tient à côté du bouton même sur un 2 × 2 étroit ; avant Android 8, « … » -->
             <TextView
                 android:id="@+id/widget_title"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="18dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
+                android:autoSizeMaxTextSize="12sp"
+                android:autoSizeMinTextSize="9sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
                 android:ellipsize="end"
+                android:gravity="center_vertical|start"
                 android:maxLines="1"
                 android:text="@string/widget_title"
                 android:textColor="#A9B3CF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+
+            <FrameLayout
+                android:id="@+id/widget_btn"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/widget_btn_round">
+
+                <ImageView
+                    android:id="@+id/widget_btn_icon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/widget_ic_scan" />
+            </FrameLayout>
         </LinearLayout>
 
         <ImageView
             android:layout_width="34dp"
             android:layout_height="3dp"
             android:layout_marginStart="2dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:importantForAccessibility="no"
             android:scaleType="fitXY"
             android:src="@drawable/widget_foil" />

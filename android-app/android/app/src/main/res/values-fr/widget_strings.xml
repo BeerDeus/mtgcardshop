@@ -2,11 +2,20 @@
 <!-- Textes du widget « Ma collection » en français (anglais par défaut dans values/widget_strings.xml : mêmes noms, rien de plus ici). -->
 <resources>
     <string name="widget_label">Valeur de la collection</string>
-    <string name="widget_description">La valeur de ta collection Magic et sa variation sur 7 jours</string>
+    <string name="widget_description">La valeur de ta collection Magic, sa variation et sa courbe, avec un raccourci vers le scan</string>
     <string name="widget_title">Ma collection</string>
     <string name="widget_empty">Ouvre Mana Orbit pour afficher ta collection</string>
-    <!-- %1$s : « ▲ +12 € » ou « ▼ −8 € » -->
-    <string name="widget_delta">%1$s · 7 j</string>
+    <!-- %1$s : « ▲ +12 € », « ▼ −8 € » ou « ± 0 € » ; %2$d : durée de la variation en jours -->
+    <string name="widget_delta">%1$s · %2$d j</string>
+    <!-- chiffres de plus de 36 h (même texte que l'appli : « il y a {n} j ») -->
+    <string name="widget_age">il y a %1$d j</string>
+    <!-- valeur recalculée appli fermée d'après les prix du jour, jusqu'à la prochaine ouverture de l'appli -->
+    <string name="widget_estimated">estimée</string>
+    <string name="widget_btn_scan">Scanner</string>
+    <string name="widget_btn_quick">Prix rapide</string>
+    <!-- légende de la courbe : sa durée en jours -->
+    <string name="widget_chart_span">%1$d j</string>
+    <string name="widget_chart_wait">La courbe apparaît après deux jours de relevés</string>
     <plurals name="widget_cards">
         <item quantity="one">%1$s carte</item>
         <item quantity="many">%1$s cartes</item>
@@ -18,4 +27,5 @@
     <string name="widget_preview_value">1 234 €</string>
     <string name="widget_preview_delta">▲ +12 € · 7 j</string>
     <string name="widget_preview_count">312 cartes</string>
+    <string name="widget_preview_span">30 j</string>
 </resources>

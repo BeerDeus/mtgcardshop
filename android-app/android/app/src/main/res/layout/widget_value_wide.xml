@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget « Ma collection », 2 × 1 (une rangée, étroit) : logo, valeur et variation (âge ou « estimée » à la suite, en gris).
-     Racine @android:id/background : animation de lancement d'Android 12. Mêmes identifiants que les autres mises en page. -->
+<!-- Widget « Ma collection », 4 × 1 (une rangée, large) : logo, valeur et variation, puis le bouton (Scanner ou Prix rapide, choisi dans l'appli).
+     Vues permises par RemoteViews seulement (LinearLayout, TextView, ImageView). Textes, icône et visibilités posés par ValueWidget.java. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -10,7 +10,7 @@
     android:orientation="horizontal"
     android:paddingStart="12dp"
     android:paddingTop="6dp"
-    android:paddingEnd="12dp"
+    android:paddingEnd="10dp"
     android:paddingBottom="6dp">
 
     <ImageView
@@ -48,7 +48,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="#4FD1A1"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:visibility="gone" />
 
@@ -57,10 +57,40 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="3"
+            android:maxLines="2"
             android:text="@string/widget_empty"
             android:textColor="#C3C9FF"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_btn_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="12dp">
+
+        <ImageView
+            android:id="@+id/widget_btn_icon"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ic_scan" />
+
+        <TextView
+            android:id="@+id/widget_btn_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:maxLines="1"
+            android:text="@string/widget_btn_scan"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

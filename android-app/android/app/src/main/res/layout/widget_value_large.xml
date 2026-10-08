@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Aperçu du widget dans la liste des widgets (Android 12 et plus, android:previewLayout) : widget_value_large.xml (4 × 2, taille par défaut)
-     avec des chiffres d'exemple traduits et une courbe d'exemple (widget_preview_curve.xml). -->
+<!-- Widget « Ma collection », 4 × 2 et plus : logo, titre et bouton (Scanner ou Prix rapide) ; à gauche valeur, variation, cartes (âge ou « estimée ») ;
+     à droite la courbe des 30 derniers jours (image dessinée par WidgetChart.java, durée en légende en haut à gauche) ou, avant deux relevés, un mot d'attente.
+     Vues permises par RemoteViews seulement (FrameLayout, LinearLayout, TextView, ImageView). Textes, image et visibilités posés par ValueWidget.java. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
@@ -24,7 +26,9 @@
                 android:importantForAccessibility="no"
                 android:src="@drawable/widget_logo" />
 
+            <!-- taille ajustée (12 → 9 sp) : le titre tient à côté du bouton même sur un 4 × 2 étroit ; avant Android 8, « … » -->
             <TextView
+                android:id="@+id/widget_title"
                 android:layout_width="0dp"
                 android:layout_height="18dp"
                 android:layout_marginStart="6dp"
@@ -42,6 +46,7 @@
                 android:textStyle="bold" />
 
             <LinearLayout
+                android:id="@+id/widget_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="30dp"
                 android:layout_marginStart="6dp"
@@ -52,12 +57,14 @@
                 android:paddingEnd="12dp">
 
                 <ImageView
+                    android:id="@+id/widget_btn_icon"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/widget_ic_scan" />
 
                 <TextView
+                    android:id="@+id/widget_btn_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
@@ -83,6 +90,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/widget_value"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
@@ -94,51 +102,80 @@
                     android:gravity="bottom|start"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:text="@string/widget_preview_value"
                     android:textColor="#FFFFFF"
                     android:textSize="26sp" />
 
                 <TextView
+                    android:id="@+id/widget_delta"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
+                    android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="@string/widget_preview_delta"
                     android:textColor="#4FD1A1"
                     android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:visibility="gone" />
 
                 <TextView
+                    android:id="@+id/widget_count"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="@string/widget_preview_count"
                     android:textColor="#C3C9FF"
                     android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:maxLines="4"
+                    android:text="@string/widget_empty"
+                    android:textColor="#C3C9FF"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <FrameLayout
+                android:id="@+id/widget_chart_box"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_marginStart="10dp"
                 android:layout_weight="1.1">
 
                 <ImageView
+                    android:id="@+id/widget_chart"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:importantForAccessibility="no"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/widget_preview_curve" />
+                    android:scaleType="fitXY" />
 
+                <!-- en haut à gauche : le dernier point (souvent le plus haut, à droite) reste dégagé -->
                 <TextView
+                    android:id="@+id/widget_chart_span"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|start"
                     android:maxLines="1"
-                    android:text="@string/widget_preview_span"
                     android:textColor="#8F98B8"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/widget_chart_wait"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:maxLines="3"
+                    android:textColor="#8F98B8"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>
