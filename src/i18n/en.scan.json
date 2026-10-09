@@ -139,7 +139,6 @@
   "Partage arrêté : le lien ne marche plus": "Sharing stopped: the link no longer works",
   "Rien à copier : {what}": "Nothing to copy: {what}",
   "aucune carte manquante": "no missing cards",
-  "{n} carte copiée : colle-les dans une Wants list Cardmarket": "{n} card copied: paste it into a Cardmarket Wants list",
   "{n} cartes copiées : colle-les dans une Wants list Cardmarket": "{n} cards copied: paste them into a Cardmarket Wants list",
   "Ouvrir": "Open",
   "Règles Firestore à publier pour le partage (voir README) : le lien ne peut pas être mis à jour.": "Firestore rules need to be published for sharing (see README): the link can't be updated.",

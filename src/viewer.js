@@ -438,7 +438,7 @@ function dvFrame(snap) {
     <div id="dvCmd"></div>
     <div class="seg dv-seg" id="dvSeg"></div>
     <div id="dvF"></div>
-    <div class="dv-groups"></div>`;
+    <div class="dv-groups"></div>${DV.pub && DV.sid ? `<p class="pub-report"><a href="${esc(trReportHref(DV.sid))}" rel="noopener">${T('Signaler ce partage')}</a></p>` : ''}`;      // deck reçu par un lien : contenu choisi par quelqu'un d'autre (règles Google Play)
   mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: T('Prix') }, { v: 'type', label: 'Type' }], DV.sort, v => {
     DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); DV.anim = true; dvGroups();
     const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
@@ -499,10 +499,10 @@ function dvOpenCard(i) {
 function closeDeckViewer() { if (DV.el) DV.el.__close(); }
 /** Ouvre le viewer d'un deck enregistré ({ id }), de la recherche en cours ({ live: true }) ou d'une liste quelconque ({ text, name } : deck EDHREC ;
  *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil). */
-function openDeckViewer({ id, live, text, name, pub, by } = {}) {
+function openDeckViewer({ id, live, text, name, pub, by, sid } = {}) {
   closeDeckViewer(); closeCardImage();
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
-  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.by = pub && by ? String(by) : ''; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
+  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.by = pub && by ? String(by) : ''; DV.sid = pub && sid ? String(sid) : ''; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
   DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
   DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : T('Liste en cours'));
   if (live && !DV.snap) { toast(T('Lance une recherche pour voir le deck')); return; }

@@ -251,7 +251,7 @@ const tradeId = [...shares.keys()][0];
   const V = await newPage(browser, world, { goto: false }); errsOf.push(V.errs);
   await routeRest(V.p);
   await V.p.goto(world.url + '?p=' + id); await V.p.waitForSelector('.dv.on .dv-sum');
-  assert.match(await txt(V.p, '.dv.on .dv-title'), /Edgar v2/); assert.match(await txt(V.p, '.dv.on .dv-title'), /partagé par Martin b/);
+  assert.match(await txt(V.p, '.dv.on .dv-title'), /Edgar v2/); assert.match(await txt(V.p, '.dv.on .dv-title'), /partagé par Martin b/); assert.match(await V.p.$eval('.dv.on .pub-report a', e => e.getAttribute('href')), /^mailto:.*signalement/, 'deck partagé : lien « Signaler ce partage »');
   assert.ok(!(await V.p.$('.dv.on [data-act="share"]')) && await V.p.$eval('.dv.on [data-act="edit"]', b => b.hidden), 'ni partage ni modification pour le visiteur');
   await V.p.waitForFunction(() => document.querySelectorAll('.dv.on .dvc').length >= 6, null, { timeout: 8000 }); await V.p.waitForTimeout(500); await V.p.screenshot({ path: 'shots/trade-6-deck-public.png' });
   await V.p.click('.dv.on [data-act="hand"]'); await V.p.waitForSelector('.hand-grid'); assert.equal(await V.p.$$eval('.hand-c', n => n.length), 7);
