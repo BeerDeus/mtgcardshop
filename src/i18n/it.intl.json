@@ -1,0 +1,23 @@
+{
+  "Catalogue des noms incomplet ({lang})": "Catalogo dei nomi incompleto ({lang})",
+  "Tape son nom en anglais ou en {lang}": "Scrivi il nome in inglese o in {lang}",
+  "Tape son nom en anglais": "Scrivi il nome in inglese",
+  "Aucune carte de ce nom. Vérifie l'orthographe (les noms en {lang} arrivent dès que leur liste est chargée).": "Nessuna carta con questo nome. Controlla l'ortografia (i nomi in {lang} funzionano appena il loro elenco è caricato).",
+  "Lightning Bolt ou {name}": "Lightning Bolt o {name}",
+  "Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l'emporte, et un nom en {lang} compte comme une carte en {lang}.": "Per le righe che non la indicano: prevale una colonna «Language» o «*EN*» a fine riga, e un nome in {lang} conta come carta in {lang}.",
+  "Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l'emporte.": "Per le righe che non la indicano: prevale una colonna «Language» o «*EN*» a fine riga.",
+  "{n} nom en {lang} reconnu": "{n} nome in {lang} riconosciuto",
+  "{n} noms en {lang} reconnus": "{n} nomi in {lang} riconosciuti",
+  "(nom en {lang} de plusieurs cartes)": "(nome in {lang} di più carte)",
+  "Nom en {lang} de plusieurs cartes : {list}. Écris le nom anglais.": "Nome in {lang} di più carte: {list}. Scrivi il nome inglese.",
+  "Catalogue des noms en {lang} : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite": "Catalogo dei nomi in {lang}: {pct}% · la lettura funziona già, poi sarà più affidabile",
+  "Pour lire les cartes en {lang} avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).": "Per leggere con precisione le carte in {lang}: catalogo dei nomi (≈ 15-20 MB, una volta sola).",
+  "{err}. Les cartes en {lang} restent lues, moins sûrement.": "{err}. Le carte in {lang} vengono comunque lette, con meno precisione.",
+  "Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré ({lang} d'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.": "Inquadra la parte alta di ogni carta (nome + mana) e tocca il cerchio: la lettura avviene in background, continua senza aspettare. Viene letto solo il nome (prima in {lang}, poi in inglese), non il mana, poi cercato su Scryfall: controlla la miniatura (toccala per vederla in grande). Le foto non vengono mai salvate. «Fotocamera» apre la fotocamera del telefono (se l'anteprima va a scatti): foto della <b>carta intera in verticale</b>, nome e mana nel <b>terzo superiore</b> dell'immagine (il resto non viene letto); «Foto»: la tua galleria.",
+  "Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (en anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.": "Inquadra la parte alta di ogni carta (nome + mana) e tocca il cerchio: la lettura avviene in background, continua senza aspettare. Viene letto solo il nome (in inglese), non il mana, poi cercato su Scryfall: controlla la miniatura (toccala per vederla in grande). Le foto non vengono mai salvate. «Fotocamera» apre la fotocamera del telefono (se l'anteprima va a scatti): foto della <b>carta intera in verticale</b>, nome e mana nel <b>terzo superiore</b> dell'immagine (il resto non viene letto); «Foto»: la tua galleria.",
+  "Nom anglais ou en {lang} déjà connu de Scryfall": "Nome in inglese o in {lang} già noto a Scryfall",
+  "Nom anglais déjà connu de Scryfall": "Nome inglese già noto a Scryfall",
+  "Nom en {lang} ou en anglais": "Nome in {lang} o in inglese",
+  "L'appareil photo lit le nom de la carte, en {lang} ou en anglais.": "La fotocamera legge il nome della carta, in {lang} o in inglese.",
+  "L'appareil photo lit le nom de la carte.": "La fotocamera legge il nome della carta."
+}

@@ -1,0 +1,8 @@
+{
+  "Firebase ne répond pas": "Firebase non risponde",
+  "Notifications bloquées : autorise-les pour Mana Orbit dans les réglages d'Android (Paramètres › Applications › Mana Orbit › Notifications).": "Notifiche bloccate: consentile per Mana Orbit nelle impostazioni di Android (Impostazioni › App › Mana Orbit › Notifiche).",
+  "Notifications bloquées pour Mana Orbit : autorise-les dans les réglages d'Android (Paramètres › Applications › Mana Orbit › Notifications), puis reviens ici.": "Notifiche bloccate per Mana Orbit: consentile nelle impostazioni di Android (Impostazioni › App › Mana Orbit › Notifiche), poi torna qui.",
+  "Le serveur n'a pas de compte de service Firebase pour les notifications de l'appli. Ajoute FCM_SERVICE_ACCOUNT dans les variables d'environnement (voir README).": "Il server non ha un account di servizio Firebase per le notifiche dell'app. Aggiungi FCM_SERVICE_ACCOUNT alle variabili d'ambiente (vedi README).",
+  "Le serveur n'a pas de compte de service Firebase pour les notifications de l'appli : ajoute FCM_SERVICE_ACCOUNT (voir README).": "Il server non ha un account di servizio Firebase per le notifiche dell'app: aggiungi FCM_SERVICE_ACCOUNT (vedi README).",
+  "Mets à jour l'appli Mana Orbit pour recevoir les notifications.": "Aggiorna l'app Mana Orbit per ricevere le notifiche."
+}
