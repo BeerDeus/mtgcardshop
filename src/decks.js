@@ -119,8 +119,8 @@ function updateHeroDelta() {
 
 /* ── Chargement d'un deck dans la saisie ──────────────────────────────────────────────────── */
 function applyOpts(o) {
-  Object.assign(S.opts, o);
-  $('#optLang').value = o.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
+  Object.assign(S.opts, o, S.opts.langSet ? {} : { lang: S.opts.lang });      // langue jamais choisie : celle de l'utilisateur, pas celle enregistrée avec le deck (souvent l'ancien défaut, le français)
+  $('#optLang').value = S.opts.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
   $('#optShip').value = (o.ship / 100).toFixed(2).replace('.', ',');
   $('#segFoil').setValue(o.foil); $('#segMode').setValue(o.mode);
   syncShip(); modeHint(); saveStore();
@@ -158,7 +158,7 @@ function deckCard(d, i) {
     <button class="deck-main" type="button" data-act="open"><span class="dvc-art deck-art tilt" style="--h:${hue}"><b>${esc((d.name.trim()[0] || '?').toUpperCase())}</b>${art ? `<img alt="" loading="lazy" decoding="async" src="${esc(art)}">` : ''}<span class="deck-price">${dl ? `<b>${fmt(dl.total)}</b>${deltaChip(d.history)}` : ''}</span></span>
       <span class="deck-top"><span class="deck-name">${esc(d.name)}</span></span>
       <span class="deck-tags">${fk ? `<span class="deck-fmt ${fk}">${DK_FORMATS[fk].label}</span>` : ''}${pips(d.text)}</span>
-      <span class="deck-meta"><span class="deck-line">${TN(d.cards, '{n} carte', '{n} cartes')}${vt ? ' · <span title="' + T('Valeur estimée : prix tendance Cardmarket') + '">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">' + T('complet') + '</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
+      <span class="deck-meta"><span class="deck-line">${esc(dkCountText(d.text))}${vt ? ' · <span title="' + T('Valeur estimée : prix tendance Cardmarket') + '">' + esc(vt) + '</span>' : ''}${engIsOn(d.id) ? ' · <b class="mounted">' + T('monté') + '</b>' : ''}</span><span class="deck-ago">${esc(relTime(d.updatedAt))}</span></span></button>
     <button class="deck-more" type="button" data-act="more" aria-label="${T('Options de {name}', { name: esc(d.name) })}"><svg class="i"><use href="#i-more"/></svg></button></div>`;
 }
 /** Bouton « Mes decks » de l'accueil + écran des decks s'il est ouvert. */
@@ -166,7 +166,7 @@ function renderDecks() {
   alSoon(); trSoon();
   const list = allDecks(), mounted = list.filter(d => engIsOn(d.id)).length, loading = !!D.hint && !D.authReady, btn = $('#btnDecks');
   btn.dataset.empty = list.length ? '0' : '1';
-  $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} complet', '{n} complets') : ''}` : T('Crée ou colle un deck');
+  $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} monté', '{n} montés') : ''}` : T('Crée ou colle un deck');
   dksPaint();
   paintSync(); updateSaveButtons(); homeSoon();
 }
@@ -294,18 +294,22 @@ function openSaveSheet() {
   const text = $('#deckText').value, n = parseDeck(text).cards.length;
   if (!n) { toast(T('Colle d\'abord une liste')); return; }
   readOpts();
-  const modeName = S.opts.mode === 'zero' ? 'Zero' : 'Direct';
+  const modeName = S.opts.mode === 'zero' ? 'Zero' : 'Direct', cm = priceSrc() === 'cm';      // prix Cardmarket : langue, état et mode CardTrader ne changent rien au prix, on ne les annonce pas
   openSheet(T('Enregistrer le deck'), null, api => {
     const where = D.user ? T('Enregistré sur ton compte ({email}).', { email: esc(D.user.email || '') })
       : T('Enregistré sur cet appareil.') + (D.state !== 'unavailable' ? ' ' + T('{login} pour le retrouver partout.', { login: `<button class="link-btn link-inline" type="button" id="svLogin">${T('Connecte-toi')}</button>` }) : '');
-    const cardsTxt = n === 1 && I18N.lang !== 'fr' ? T('{n} carte', { n }) : T('{n} cartes', { n });      // le français dit toujours « cartes » ici
+    const cardsTxt = esc(dkCountText(text));      // exemplaires, comme Mes decks et le viewer (« 41/100 cartes » en Commander)
     api.body.innerHTML = `<div class="field-in"><label class="label" for="svName">${T('Nom')}</label><input type="text" id="svName" maxlength="120" autocomplete="off" value="${esc(suggestName(text))}"></div>
-      <p class="hint">${cardsTxt} · ${esc(LANGS[S.opts.lang] || S.opts.lang)} · ${esc(COND_SHORT[S.opts.cond] || S.opts.cond)} min · ${modeName}. ${T('Les critères sont enregistrés avec la liste.')}</p>
+      <p class="hint">${cm ? T('{cards} · prix Cardmarket.', { cards: cardsTxt }) : `${cardsTxt} · ${esc(LANGS[S.opts.lang] || S.opts.lang)} · ${esc(COND_SHORT[S.opts.cond] || S.opts.cond)} min · ${modeName}. ${T('Les critères sont enregistrés avec la liste.')}`}</p>
       <p class="hint" id="svWhere">${where}</p>`;
     api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="svGo">${T('Enregistrer')}</button>`);
     const input = $('#svName', api.body), go = $('#svGo', api.foot);
     const sync = () => { go.disabled = !input.value.trim(); }; input.oninput = sync;
-    const run = () => { if (go.disabled) return; saveCurrent(input.value.trim()); api.close(); toast(cloudOn() ? T('Deck enregistré sur ton compte') : T('Deck enregistré')); };
+    const run = () => {
+      if (go.disabled) return; const id = saveCurrent(input.value.trim()); api.close();
+      const msg = cloudOn() ? T('Deck enregistré sur ton compte') : T('Deck enregistré'), al = alSaveOffer(text, id);      // alertes possibles mais coupées, et des cartes manquent : proposées ici (alerts.js)
+      toast(al ? msg + ' · ' + T('Me prévenir des baisses ?') : msg, al);
+    };
     go.onclick = run; input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); run(); } };
     const lg = $('#svLogin', api.body); if (lg) lg.onclick = () => { api.close(); setTimeout(openAccount, 120); };
   });
@@ -323,7 +327,7 @@ function chartSvg(values, w) {
 }
 function openDeckSheet(id) {
   const d = findDeck(id); if (!d) return;
-  openSheet(d.name, TN(d.cards, '{n} carte · modifié {ago}', '{n} cartes · modifié {ago}', { ago: relTime(d.updatedAt) }), api => {
+  openSheet(d.name, T('{cards} · modifié {ago}', { cards: dkCountText(d.text), ago: relTime(d.updatedAt) }), api => {
     const series = priceSeries(d.history), lastE = d.history[d.history.length - 1], same = lastE ? d.history.filter(e => sameKind(e, lastE)) : [];
     const rows = d.history.slice().reverse().slice(0, 14).map((e, i, arr) => {
       const p = arr.slice(i + 1).find(x => sameKind(x, e)); const df = p ? e.total - p.total : null;
@@ -332,7 +336,7 @@ function openDeckSheet(id) {
     }).join('');
     api.body.innerHTML = `<div class="field-in"><label class="label" for="dkName">${T('Nom')}</label><input type="text" id="dkName" maxlength="120" autocomplete="off" value="${esc(d.name)}"></div>
       <button class="coll-open dk-cover" type="button" id="dkCover"><span class="cover-th" aria-hidden="true"></span><span class="coll-t"><b>${T('Image du deck')}</b><span id="dkCoverSub"></span></span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button>
-      <label class="switch-row" for="dkMount"><span class="t"><b>${T('Deck complet')}</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
+      <label class="switch-row" for="dkMount"><span class="t"><b>${T('Deck monté')}</b><span class="hint" id="dkMountHint"></span></span><span class="switch"><input type="checkbox" id="dkMount"><i></i></span></label>
       <div class="dk-val" id="dkVal"></div>
       <div class="sec-title">${T('Historique des prix')}</div>
       ${series.length >= 2 ? chartSvg(series, Math.max(220, (api.body.clientWidth || 376) - 36)) + `<div class="chart-cap"><span>${esc(dateShort(same[0].at))}</span><span>${T('{n} relevés · de {min} à {max}', { n: series.length, min: esc(fmt(Math.min(...series))), max: esc(fmt(Math.max(...series))) })}</span><span>${esc(dateShort(lastE.at))}</span></div>` : ''}
@@ -434,7 +438,7 @@ function paintAccount() {
   if (D.state === 'loading' || D.state === 'idle') { b.innerHTML = '<div class="status" data-ok="0"><span class="dot"></span><span>' + T('Chargement…') + '</span></div>'; return; }
   if (D.state === 'unavailable') {
     b.innerHTML = `<div class="status" data-ok="0"><span class="dot"></span><span>${esc(D.err)}</span></div>
-      <p class="hint">${T('Tes decks restent enregistrés sur cet appareil. Le compte permet de les retrouver sur tous tes appareils.')}</p>
+      <p class="hint">${T('Ta collection, tes decks, l\'historique de valeur et ta liste d\'échange restent sur cet appareil. Le compte permet de les sauvegarder et de les retrouver sur tous tes appareils.')}</p>
       <button class="btn ghost small" type="button" id="acRetry" style="align-self:flex-start">${T('Réessayer')}</button>`;
     $('#acRetry', b).onclick = () => { connectCloud(); };
     return;
@@ -454,7 +458,7 @@ function paintAuthForm(api) {
     </form>
     <div class="divider"><span>${T('ou')}</span></div>
     <button class="btn ghost block" type="button" id="acGoogle">${T('Continuer avec Google')}</button>
-    <p class="hint">${T('Tes decks sont enregistrés sur ton compte. Ton token CardTrader reste sur cet appareil.')}</p></div>`;
+    <p class="hint">${T('Ta collection, tes decks, l\'historique de valeur et ta liste d\'échange sont sauvegardés sur ton compte. Ton token CardTrader reste sur cet appareil.')}</p></div>`;
   mountSeg($('#acSeg', b), [{ v: 'in', label: T('Connexion') }, { v: 'up', label: T('Créer un compte') }], st.mode, v => { st.email = $('#acEmail', b).value; st.mode = v; paintAccount(); });
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
   const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? T('Créer mon compte') : T('Me connecter')); };
@@ -484,7 +488,7 @@ function paintAccountIn(api) {
   b.innerHTML = `<div class="who"><span class="who-av" id="acAv">${esc(((PROF.name || u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(PROF.name || u.email || u.displayName || T('Compte'))}</b>${PROF.name && u.email ? `<span class="who-mail">${esc(u.email)}</span>` : ''}<span id="acState">${esc(state)}</span></div></div>
     <button class="btn ghost small" type="button" id="acProfile" style="align-self:flex-start">${T('Modifier le profil')}</button>
     ${local ? `<div class="import-row"><span>${TN(local, '{n} deck sur cet appareil', '{n} decks sur cet appareil')}</span><button class="btn" type="button" id="acImport">${T('Importer')}</button></div>` : ''}
-    <p class="hint">${T('Tes decks et leur historique de prix sont synchronisés sur tous les appareils connectés à ce compte. Ton token CardTrader reste sur cet appareil.')}</p>`;      // identifiant du compte pour ALLOWED_UIDS : se lit dans la console Firebase (Authentication › Users), plus dans l'appli
+    <p class="hint">${T('Ta collection, tes decks, l\'historique de valeur et ta liste d\'échange sont sauvegardés sur ton compte et synchronisés sur tous tes appareils connectés. Ton token CardTrader reste sur cet appareil.')}</p>`;      // identifiant du compte pour ALLOWED_UIDS : se lit dans la console Firebase (Authentication › Users), plus dans l'appli
   profImg($('#acAv', b), profAvatar()); $('#acProfile', b).onclick = openProfile;
   b.insertAdjacentHTML('beforeend', '<button class="link-btn link-inline ac-del" type="button" id="acDel">' + T('Supprimer mon compte') + '</button>');
   $('#acDel', b).onclick = () => { D.account.del = true; paintAccount(); };
@@ -634,7 +638,7 @@ async function connectCloud() {
   try { D.cloud = await loadCloud(); }
   catch (e) {
     D.state = 'unavailable';
-    D.err = e && e.code === 'env' ? e.message : T('Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Les decks restent enregistrés sur cet appareil.');
+    D.err = e && e.code === 'env' ? e.message : T('Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Ta collection et tes decks restent sur cet appareil.');
     D.authReady = true; renderAccountBtn(); renderDecks(); paintAccount(); paintSync(); collPaintHead();
     return;
   }

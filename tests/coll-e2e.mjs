@@ -125,7 +125,8 @@ assert.match(dl.suggestedFilename(), /^ma-collection-\d{4}-\d{2}-\d{2}\.txt$/); 
 await p.waitForTimeout(400); await p.click('.coll-sync [data-act="export"]'); await p.waitForSelector('.sheet-wrap.open .ex-opt[data-x="csv"]');
 const [dc] = await Promise.all([p.waitForEvent('download'), p.click('.ex-opt[data-x="csv"]')]);
 assert.match(dc.suggestedFilename(), /^ma-collection-\d{4}-\d{2}-\d{2}\.csv$/); const csv = (await import('node:fs')).readFileSync(await dc.path(), 'utf8');
-assert.equal(csv.split('\n')[0], 'Count,Tradelist Count,Name,Edition,Condition,Language,Foil'); assert.match(csv, /\n\d+,0,Sol Ring,,Near Mint,[A-Za-z ]*,/);
+assert.equal(csv.split('\n')[0], 'Count,Tradelist Count,Name,Edition,Condition,Language,Foil'); assert.match(csv, /\n3,2,Sol Ring,,Near Mint,English,\n/, 'Tradelist Count : 3 − 1 de réserve (aucun deck)');
+{ const r = csv.trim().split('\n').slice(1).map(l => l.split(',').map(Number)); assert.ok(r.every(([c, t]) => t === Math.max(0, c - 1)), 'chaque ligne : sa part de la liste d\'échange (' + csv + ')'); }
 const back = await p.evaluate(t => parseCollection(t).items.reduce((a, x) => a + x.q, 0), csv); assert.equal(back, await p.evaluate(() => collCopies()), 'le CSV se relit (mêmes exemplaires)');
 console.log('✓ export : texte ou CSV au format Moxfield, relu par l\'import');
 await p.screenshot({ path: 'shots/coll-sync-local.png' });

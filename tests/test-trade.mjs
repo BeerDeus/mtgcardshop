@@ -124,6 +124,48 @@ const use = C.deckUse(decks);
   assert.equal(C.tradeMatch(sh, want, spare).get[0].u, null, 'sans fonction de prix : triées par nom');
   console.log('✓ tradeMatch : ses doublons ∩ ma recherche, sa recherche ∩ mes doublons (decks et réserve exclus), quantités, langues, valeurs');
 }
+{
+  // onglet « Échange » du propriétaire : valeurs, tri par prix, « ≥ X € »
+  const have = C.tradeLists(coll, use, 0, new Set()).have, px = { 'sol ring': 150, 'counterspell': 90, 'fire': 0 };
+  const price = k => px[k];
+  assert.deepEqual(have.map(x => [x.k, x.q]), [['counterspell', 1], ['fire', 1], ['sol ring', 3]], 'réserve 0 : Counterspell, Fire // Ice et Sol Ring');
+  let r = C.tradeView(have, { price });
+  assert.deepEqual(r.rows.map(x => [x.k, x.u, x.v]), [['counterspell', 90, 90], ['fire', null, null], ['sol ring', 150, 450]], 'ordre reçu (nom), prix unitaire et valeur de la ligne ; prix 0 = inconnu');
+  assert.deepEqual(r.sum, { n: 3, q: 5, v: 540, nv: 1 }); assert.ok(!('u' in have[0]), 'les lignes reçues ne sont pas modifiées');
+  const list = [{ k: 'a', n: 'Alpha', q: 2 }, { k: 'b', n: 'Beta', q: 1 }, { k: 'c', n: 'Gamma', q: 5 }, { k: 'd', n: 'Delta', q: 1 }], p2 = { a: 120, b: 900, c: null, d: 120 };
+  r = C.tradeView(list, { price: k => p2[k], sort: 'price' });
+  assert.deepEqual(r.rows.map(x => x.k), ['b', 'a', 'd', 'c'], 'prix unitaire décroissant, puis nom ; sans prix à la fin');
+  assert.deepEqual(r.sum, { n: 4, q: 9, v: 900 + 240 + 120, nv: 1 }, 'carte sans prix comptée à part, jamais à 0 €');
+  r = C.tradeView(list, { price: k => p2[k], min: 200 });
+  assert.deepEqual(r.rows.map(x => x.k), ['b'], '≥ 2 € : prix à l\'unité (Alpha 2 × 1,20 € n\'y est pas), cartes sans prix écartées');
+  assert.deepEqual(r.sum, { n: 1, q: 1, v: 900, nv: 0 }, 'total des lignes gardées');
+  assert.deepEqual(C.tradeView(list, { price: k => p2[k], min: 120 }).rows.map(x => x.k), ['a', 'b', 'd'], 'seuil inclus');
+  assert.deepEqual(C.tradeView(list, {}).sum, { n: 4, q: 9, v: 0, nv: 4 }, 'sans prix du tout');
+  assert.deepEqual(C.tradeView(null).rows, []);
+  console.log('✓ tradeView : prix unitaire, total des lignes affichées, tri par prix (sans prix à la fin), « ≥ X € » au prix unitaire');
+}
+{
+  // Cardmarket : 150 lignes au plus par Wants list
+  assert.equal(C.CM_MAX, 150);
+  const items = Array.from({ length: 320 }, (_, i) => ({ n: 'Card ' + String(i).padStart(3, '0'), q: 1 + (i % 3) })), text = C.cmText(items), parts = C.cmParts(text);
+  assert.deepEqual(parts.map(p => p.split('\n').length), [150, 150, 20], '320 lignes : 150 + 150 + 20');
+  assert.equal(parts.join('\n'), text, 'rien de perdu ni de répété, ordre gardé'); assert.match(parts[1], /^1 Card 150\n2 Card 151/);
+  assert.deepEqual(C.cmParts(C.cmText(items.slice(0, 150))).length, 1, '150 lignes : une seule partie');
+  assert.deepEqual(C.cmParts('2 Sol Ring'), ['2 Sol Ring']); assert.deepEqual(C.cmParts(''), [], 'rien à copier');
+  assert.deepEqual(C.cmParts('a\nb\nc', 2), ['a\nb', 'c']);
+  console.log('✓ cmParts : parties de 150 lignes (limite d\'une Wants list Cardmarket), une seule jusqu\'à 150');
+}
+{
+  // export CSV : « Tradelist Count » = doublons de la liste d'échange, langue par langue (Moxfield, Deckbox)
+  const csv = C.collToCsv(coll, C.tradeLists(coll, use, 1, new Set()).have).trim().split('\n');
+  assert.ok(csv.includes('4,1,Sol Ring,,Near Mint,French,') && csv.includes('1,1,Sol Ring,,Near Mint,English,'), 'Sol Ring 5 − 2 (decks) − 1 (réserve) = 2 : 1 FR + 1 EN, gardées d\'abord en FR');
+  assert.ok(csv.includes('3,0,Lightning Bolt,,Near Mint,French,') && csv.includes('12,0,Forest,,Near Mint,,'), 'utilisée par un deck, terrain de base : 0');
+  const kept = C.collToCsv(coll, C.tradeLists(coll, use, 0, new Set(['sol ring'])).have);
+  assert.match(kept, /\n4,0,Sol Ring,,Near Mint,French,\n1,0,Sol Ring/, 'carte gardée à la main : 0'); assert.match(kept, /\n2,1,Counterspell,/);
+  assert.match(C.collToCsv(coll), /\n4,0,Sol Ring,/, 'sans liste d\'échange : 0 partout');
+  assert.equal(C.parseCollection(C.collToCsv(coll, C.tradeLists(coll, use, 0, new Set()).have)).copies, C.parseCollection(C.collToCsv(coll)).copies, 'relu : « Count », jamais « Tradelist Count »');
+  console.log('✓ collToCsv : « Tradelist Count » rempli depuis la liste d\'échange (langue par langue, réserve et « Garder » compris)');
+}
 
 /* ── QR code (src/qr.js) : décodeur indépendant écrit d'après la norme (tables recopiées, lecture façon ZXing), et matrices de référence ── */
 const Q = createRequire(import.meta.url)('../src/qr.js');

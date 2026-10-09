@@ -107,7 +107,7 @@ const SAMPLE = `1 Cloud, Midgar Mercenary
 /* ── État ─────────────────────────────────────────────────────────────────────────────────── */
 const S = {
   demo: true, demoPref: null, src: 'auto', proxy: false, token: '', appKey: '', theme: 'auto', draft: null,
-  opts: { lang: 'fr', cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
+  opts: { lang: 'fr', langSet: false, cond: 'Slightly Played', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true },
   deck: { cards: [], basics: [], lines: 0, ignored: 0, copies: 0, basicCopies: 0 },
   view: 'home', tab: 'cards', run: null, res: null, fo: {}, overrides: {}, cur: 'EUR', isSample: false, wake: null, deckId: null, runDelta: null,
   enBusy: null, enCtrl: null, gone: new Set(), haptic: true, sort: 'deck', filter: 'all', removed: [], useColl: true, push: false,
@@ -787,7 +787,7 @@ function openCardSheet(key) {
     openSheet(c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
       const o = (S.fo[key] || [])[0];
       api.body.innerHTML = `${o ? `<div class="cm-price"><b>${fmt(o.price)}</b><span>${T('Prix tendance Cardmarket de l\'impression la moins chère, par exemplaire.')}</span></div>` : `<p class="hint">${st.notFound ? T('Scryfall ne connaît pas ce nom. Corrige-le dans la liste.') : T('Aucun prix Cardmarket connu pour cette carte.')}</p>`}
-        <a class="btn ghost small" href="${esc(cmUrl(c.name, S.opts.lang))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">${T('Voir sur Cardmarket ↗')}</a>
+        <a class="btn ghost small" href="${esc(cmUrl(c.name, userLang()))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">${T('Voir sur Cardmarket ↗')}</a>
         <p class="hint">${T('Les offres réelles des vendeurs, leur port et le remplissage du panier demandent ton token CardTrader (Réglages › Prix).')}</p>`;
       ownBtn(api); alWatchBtn(api, c.name);
     });
@@ -927,7 +927,7 @@ function openCartSheet() {
           } catch (e) { html += `<p class="hint">${T('Le panier est rempli, mais ses totaux n\'ont pas pu être lus.')}</p>`; }
         }
         api.body.innerHTML = html;
-        api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>${S.demo ? '' : `<a class="btn" style="text-decoration:none" href="https://www.cardtrader.com/fr-FR/cart/edit" target="_blank" rel="noopener">${T('Ouvrir sur CardTrader')}</a>`}`);
+        api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>${S.demo ? '' : `<a class="btn" style="text-decoration:none" href="${ctCartUrl()}" target="_blank" rel="noopener">${T('Ouvrir sur CardTrader')}</a>`}`);
         const det = TN(res.ok, '{n} offre ajoutée', '{n} offres ajoutées') + (rep ? ', ' + TN(rep, '{n} remplacée', '{n} remplacées') : '') + sim;
         if (res.failed.length) bye(T('Panier partiellement rempli'), 'warn', det + ', ' + TN(res.failed.length, '{n} non ajoutée', '{n} non ajoutées'));
         else bye(T('Panier rempli'), 'ok', det);
@@ -1170,6 +1170,10 @@ function init() {
   i18nDom(document.body);                                        // textes fixes de la page dans la langue choisie
   const saved = loadStore();
   if (saved.opts) Object.assign(S.opts, saved.opts);
+  // Langue des cartes : choix fait dans « Langue » gardé ; sinon celle de l'utilisateur (interface, téléphone), recalculée à chaque démarrage (elle suit un changement de langue de l'interface).
+  // Réglages d'avant langSet : 'fr' y était le défaut enregistré tel quel (recalculé), une autre langue ne pouvait venir que d'un choix (gardée).
+  if (saved.opts && typeof saved.opts === 'object' && !('langSet' in saved.opts)) S.opts.langSet = OPT_LANGS.includes(saved.opts.lang) && saved.opts.lang !== 'fr';
+  if (!S.opts.langSet || !OPT_LANGS.includes(S.opts.lang)) { S.opts.lang = userLang(); S.opts.langSet = false; }
   S.token = saved.token || ''; S.appKey = saved.appKey || ''; S.theme = saved.theme || 'auto';
   S.demoPref = null; S.src = saved.src === 'cm' ? 'cm' : 'auto';      // ancien interrupteur « Mode démo » retiré (choix enregistré ignoré) : démo seulement sans serveur joignable
   S.useColl = saved.useColl !== false; S.push = saved.push === true;
@@ -1184,7 +1188,7 @@ function init() {
   mountSeg($('#segTab'), [{ v: 'cards', label: T('Cartes') }, { v: 'sellers', label: T('Vendeurs') }], 'cards', v => {
     S.tab = v; $('#list').hidden = v !== 'cards'; $('#cardsPane').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true); else applyView(true);
   });
-  ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { readOpts(); saveStore(); }));
+  ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { if (s === '#optLang') S.opts.langSet = true; readOpts(); saveStore(); }));      // langue choisie à la main : elle ne suit plus celle de l'interface
   syncShip(); modeHint(); modeLabel();
 
   const ta = $('#deckText');

@@ -47,6 +47,10 @@ const STATIC = new Map([
   ['/prices.tsv', ['prices.tsv.gz', 'text/tab-separated-values; charset=utf-8', 'public, max-age=3600', 'pre', 'px']],          // prix « à partir de » (gen-prices.mjs, relu depuis GitHub) : servi seulement une fois récupéré
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
 ]);
+// Catalogues des noms imprimés des autres langues (gen-fr-names.mjs --lang xx) : /names-<code Scryfall>.tsv, liste fermée (rien n'est construit depuis l'URL) ;
+// /names-fr.tsv = fr-names.tsv. 'lazy' : compressés à la première demande seulement (≈ 5 Mo de mémoire par langue servie), pas au démarrage.
+const NAME_LANGS = ['fr', 'de', 'es', 'it', 'pt', 'ja', 'zhs', 'zht', 'ko', 'ru'];
+for (const l of NAME_LANGS) STATIC.set('/names-' + l + '.tsv', [l === 'fr' ? 'fr-names.tsv' : 'names-' + l + '.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', l === 'fr' ? true : 'lazy']);
 
 // ── Données EDHREC (edh.bin.gz) : le serveur récupère tout seul la dernière version générée par GitHub Actions (lundi et jeudi), sans redéploiement ──
 // Au démarrage puis toutes les 6 h : lecture conditionnelle (ETag) du fichier du dépôt ; il n'est gardé que s'il est lisible (gzip + EDH2), assez fourni et plus récent
@@ -521,15 +525,22 @@ function alEval(rec, now) {
   }
   return hits;
 }
-function alMessage(hits) {
+// Textes des alertes dans la langue de l'interface envoyée par l'appli (« lang ») ; français pour une appli plus ancienne qui ne la donne pas.
+const AL_TXT = {
+  fr: { eur: alEur, pct: p => `−${p} %`, at: (n, p) => `${n} à ${p}`, drop: (n, p) => `${n} : ${p}`, under: p => `Sous ton prix cible de ${p} (tendance Cardmarket).`, trend: (a, b) => `${a} → ${b} (tendance Cardmarket).`, deck: d => ' · manque à ' + d, many: n => `${n} cartes en baisse`, more: n => ` et ${n} autre${n > 1 ? 's' : ''}` },
+  en: { eur: c => '€' + (c / 100).toFixed(2), pct: p => `−${p}%`, at: (n, p) => `${n} at ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Below your target price of ${p} (Cardmarket trend).`, trend: (a, b) => `${a} → ${b} (Cardmarket trend).`, deck: d => ' · missing from ' + d, many: n => `${n} cards down`, more: n => ` and ${n} more` },
+};
+const alLang = l => (typeof l === 'string' && Object.prototype.hasOwnProperty.call(AL_TXT, l) ? l : 'fr');
+function alMessage(hits, lang) {
+  const L = AL_TXT[alLang(lang)];
   if (hits.length === 1) {
-    const h = hits[0], deck = h.d && h.d.length ? ' · manque à ' + h.d[0] : '';
+    const h = hits[0], deck = h.d && h.d.length ? L.deck(h.d[0]) : '';
     return h.why === 'target'
-      ? { title: `${h.n} à ${alEur(h.to)}`, body: `Sous ton prix cible de ${alEur(h.t)} (tendance Cardmarket).` + deck }
-      : { title: `${h.n} : −${h.pct} %`, body: `${alEur(h.from)} → ${alEur(h.to)} (tendance Cardmarket).` + deck };
+      ? { title: L.at(h.n, L.eur(h.to)), body: L.under(L.eur(h.t)) + deck }
+      : { title: L.drop(h.n, L.pct(h.pct)), body: L.trend(L.eur(h.from), L.eur(h.to)) + deck };
   }
-  const part = h => h.why === 'target' ? `${h.n} ${alEur(h.to)}` : `${h.n} −${h.pct} %`;
-  return { title: `${hits.length} cartes en baisse`, body: hits.slice(0, 3).map(part).join(', ') + (hits.length > 3 ? ` et ${hits.length - 3} autre${hits.length > 4 ? 's' : ''}` : '') };
+  const part = h => h.why === 'target' ? `${h.n} ${L.eur(h.to)}` : `${h.n} ${L.pct(h.pct)}`;
+  return { title: L.many(hits.length), body: hits.slice(0, 3).map(part).join(', ') + (hits.length > 3 ? L.more(hits.length - 3) : '') };
 }
 
 /** Un passage : relève les prix des cartes suivies, puis prévient chaque appareil concerné. `seed` : seulement les cartes jamais relevées (pas d'alerte) ;
@@ -562,7 +573,7 @@ async function alPass({ seed = false, rec = null }) {
       for (const r of recs) {
         const hits = alEval(r, now); if (!hits.length) continue;
         r.hits = [...hits, ...(r.hits || [])].slice(0, AL_HITS_KEEP);
-        const m = alMessage(hits), st = await sendPush({ sub: r.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
+        const m = alMessage(hits, r.lang), st = await sendPush({ sub: r.sub, title: m.title.slice(0, 80), body: m.body.slice(0, 200), url: './?alerts=1', kind: 'alert', topic: 'deckdeal-alert', ttl: 43200, urgency: 'normal' });
         if (st && st < 300) { out.hits++; r.pushed = now; console.log('alerte envoyée (' + hits.length + ' carte' + (hits.length > 1 ? 's' : '') + ')'); }
         else if (st === 404 || st === 410) { AL.subs.delete(r.id); console.warn('alerte : ' + (r.sub.fcm ? 'jeton FCM périmé' : 'abonnement expiré') + ', retiré'); }
         else console.warn('alerte refusée (' + (st || 'réseau') + ')');
@@ -613,7 +624,7 @@ async function alertsApi(req, res, path, url) {
     }
     const cards = () => { let n = items.size; for (const r of AL.subs.values()) if (r.id !== rid) n += r.items.length; return n; };
     while (cards() > AL_MAX_CARDS) if (!alEvict(now, rid)) return json(res, 507, { error: 'alerts_full', message: 'Le serveur surveille déjà le maximum de cartes : réessaie plus tard.' }, { 'Retry-After': '3600' });
-    AL.subs.set(rid, { ...(old || {}), id: rid, sub: pu.sub, thr, at: now, items: [...items.values()], hits: (old && old.hits) || [] });
+    AL.subs.set(rid, { ...(old || {}), id: rid, sub: pu.sub, thr, lang: alLang(b.lang), at: now, items: [...items.values()], hits: (old && old.hits) || [] });
     if (net) { AL.ip.set(rid, net); if (AL.ip.size > 2 * AL_MAX_SUBS) for (const k of AL.ip.keys()) if (!AL.subs.has(k)) AL.ip.delete(k); }
     alSaveSoon(); alSeedSoon();
     return json(res, 200, { ok: true, id: rid, watching: items.size, thr, last: AL.last.at, next: AL.last.at ? AL.last.at + AL_EVERY : 0 });
@@ -1045,7 +1056,7 @@ async function sendFile(req, res, f, headers, compress) {
 /** Prépare la page et les gros fichiers dès le démarrage : le premier visiteur n'attend pas la compression. */
 function warmFiles() {
   if (PAGE) fileEntry(PAGE, true).catch(() => {});
-  for (const st of STATIC.values()) if (st[3] === true) fileEntry(join(PWA, st[0]), true).catch(() => {});
+  for (const st of STATIC.values()) if (st[3] === true) fileEntry(join(PWA, st[0]), true).catch(() => {});      // 'lazy' (catalogues des autres langues) : à la première demande
 }
 
 const server = http.createServer(async (req, res) => {

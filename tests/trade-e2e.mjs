@@ -35,6 +35,7 @@ const seed = `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t:
 const { p, errs } = await newPage(browser, world, { goto: false, init: seed }); errsOf.push(errs);
 await p.route('https://www.gstatic.com/**', r => r.abort());
 await routeRest(p);
+await p.route('**/prices.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values', body: '#MOPX1 2026-10-08T09:00:00Z 3\nSol Ring\t120\t100\nLlanowar Elves\t25\t25\nWrath of God\t300\t280\n' }));      // fichier de prix : Sol Ring à 1,20 € (Scryfall en donne 1,50)
 await p.exposeFunction('__share', (op, id, data) => { if (op === 'set') { shares.set(id, data); shareWrites++; } else shares.delete(id); });
 await p.exposeFunction('__meta', (id, data) => { meta[id] = data; });
 await p.goto(world.url); await p.waitForFunction(() => D.authReady, null, { timeout: 15000 });
@@ -56,7 +57,19 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   const have = await p.$$eval('.tr-list .tr-row', r => r.map(x => [x.dataset.k, x.querySelector('.tr-q b').textContent.trim()]));
   assert.deepEqual(have, [['llanowar elves', '× 2'], ['sol ring', '× 3']], 'réserve 1 : Sol Ring 5 − 1 (deck) − 1 ; Swords 2 − 1 − 1 = 0 ; Wrath 1 − 1 = 0 ; terrains de base exclus');
   assert.match(await txt(p, '.tr-list .tr-row[data-k="sol ring"] .row-name'), /Anneau solaire|Sol Ring/);
-  assert.match(await txt(p, '.tr-keep .hint'), /utilisées par ton deck − réserve/); await p.waitForTimeout(600); await p.screenshot({ path: 'shots/trade-1-echange.png' });
+  assert.equal(await txt(p, '.tr-keep .label'), 'Garder en plus de mes decks : 0–4 exemplaires'); assert.equal(await txt(p, '.tr-keep .hint'), 'Tu proposes seulement ce que tu as en trop.');
+  // valeurs : même base que « Pour toi » (fichier de prix : tendance Cardmarket de l'impression la moins chère, sinon Scryfall), total des doublons, tri, « ≥ X € »
+  await p.waitForFunction(() => /1,20/.test((document.querySelector('.tr-row[data-k="sol ring"] .tr-px') || {}).textContent || ''), null, { timeout: 8000 });
+  assert.match(await tc(p, '.tr-row[data-k="sol ring"] .tr-q'), /^≈ 1,20\s€\s*× 3/, 'prix unitaire du fichier de prix (Scryfall : 1,50 €)'); assert.match(await tc(p, '.tr-row[data-k="llanowar elves"] .tr-q'), /^≈ 0,25\s€\s*× 2/);
+  assert.match(await txt(p, '.tr-sum'), /^2 cartes · 5 exemplaires ≈ 4,10\s€ Prix à l'unité : tendance Cardmarket \(.+\)$/, '3 × 1,20 + 2 × 0,25, et sa base');
+  await p.selectOption('#trSort', 'price'); await p.waitForFunction(() => document.querySelector('.tr-list .tr-row').dataset.k === 'sol ring');
+  assert.deepEqual(await p.$$eval('.tr-list .tr-row', r => r.map(x => x.dataset.k)), ['sol ring', 'llanowar elves'], 'tri par prix');
+  await p.selectOption('#trMin', '100'); await p.waitForFunction(() => document.querySelectorAll('.tr-list .tr-row').length === 1);
+  assert.match(await txt(p, '.tr-sum'), /^1 carte sur 2 · 3 exemplaires ≈ 3,60\s€/, '≥ 1 € : Sol Ring seule'); assert.ok(await p.$('.tr-min.on'), 'filtre actif bien visible');
+  assert.deepEqual(await p.$$eval('#trMin option', o => o.map(x => x.textContent.replace(/\s/g, ' '))), ['Tous les prix', '≥ 1 €', '≥ 2 €', '≥ 5 €', '≥ 10 €', '≥ 20 €', '≥ 50 €']);
+  await p.selectOption('#trMin', '0'); await p.selectOption('#trSort', 'name');
+  await p.waitForFunction(() => document.querySelectorAll('.tr-list .tr-row').length === 2 && document.querySelector('.tr-list .tr-row').dataset.k === 'llanowar elves');
+  await p.waitForTimeout(600); await p.screenshot({ path: 'shots/trade-1-echange.png' });
   await p.click('#trKeep [data-v="0"]'); await p.waitForFunction(() => document.querySelectorAll('.tr-list .tr-row').length === 4);
   assert.deepEqual(await p.$$eval('.tr-list .tr-row', r => r.map(x => x.dataset.k + ' ' + x.querySelector('.tr-q b').textContent.trim())), ['llanowar elves × 3', 'sol ring × 4', 'swords to plowshares × 1', 'wrath of god × 1'], 'réserve 0 : tout ce que les decks n\'utilisent pas');
   await p.click('.tr-row[data-k="wrath of god"] [data-act="tkeep"]'); await p.waitForFunction(() => !document.querySelector('.tr-list .tr-row[data-k="wrath of god"]'));
@@ -80,7 +93,28 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   await p.click('[data-act="wcm"]'); await p.waitForTimeout(200);
   assert.equal((await p.evaluate(() => window.__clip))[0], '1 Arcane Signet\n1 Command Tower\n1 Craterhoof Behemoth\n1 Edgar Markov\n1 Wrath of God', 'Cardmarket : une ligne par carte recherchée');
   assert.match(await txt(p, '#toast'), /5 cartes copiées/);
-  ok('Je recherche : manquantes du deck + souhaits (ajout par le catalogue, quantité ajustable), copie pour Cardmarket');
+  await p.waitForFunction(() => /17,65/.test(document.querySelector('.tr-sum').textContent), null, { timeout: 8000 });
+  assert.match(await txt(p, '.tr-sum'), /^5 cartes · 5 exemplaires ≈ 17,65\s€ Prix à l'unité : tendance Cardmarket \(.+\)$/, 'Je recherche : ce que coûtent les cartes cherchées (Wrath of God au fichier de prix, les autres à Scryfall)');
+  assert.ok(!(await p.$('#trMin')), '« ≥ X € » : doublons seulement');
+  // plus de 150 lignes : Cardmarket refuse la liste → une Wants list par partie (« Partie 1/2 · Copier », puis « Copier la suite »)
+  const wish0 = await p.evaluate(() => { const w = JSON.stringify(TR.wish); for (let i = 0; i < 150; i++) TR.wish['vrombl card ' + i] = { n: 'Vrombl Card ' + i, q: 1 }; trChanged(); window.__clip = []; return w; });
+  assert.match(await txt(p, '.tr-sum'), /^155 cartes · 155 exemplaires ≈ 17,65\s€ .+ · 150 cartes sans prix$/, 'cartes sans prix comptées à part, jamais à 0 €');
+  await p.click('[data-act="wcm"]'); await p.waitForSelector('.sheet-wrap.open .cm-part');
+  assert.match(await txt(p, '.sheet-wrap.open .sheet-head'), /Copier pour Cardmarket 155 cartes · 2 parties/); assert.equal((await p.evaluate(() => window.__clip)).length, 0, 'rien de copié avant le geste');
+  assert.deepEqual(await p.$$eval('.cm-part .cm-main', r => r.map(x => x.innerText.replace(/\s+/g, ' ').trim())), ['Partie 1/2 150 cartes · Arcane Signet → Vrombl Card 95', 'Partie 2/2 5 cartes · Vrombl Card 96 → Wrath of God']);
+  assert.equal(await txt(p, '[data-act="cmnext"]'), 'Partie 1/2 · Copier');
+  await p.click('[data-act="cmnext"]'); await p.waitForFunction(() => window.__clip.length === 1);
+  assert.equal(await txt(p, '[data-act="cmnext"]'), 'Copier la suite · 2/2'); assert.match(await txt(p, '.cm-said'), /^Partie 1\/2 copiée : colle-la dans une nouvelle Wants list Cardmarket\.$/);
+  assert.equal(await p.$$eval('.cm-part.done', r => r.map(x => x.dataset.i).join()), '0');
+  await p.click('[data-act="cmnext"]'); await p.waitForFunction(() => window.__clip.length === 2);
+  const parts = await p.evaluate(() => window.__clip), all = await p.evaluate(() => cmText(trState().want));
+  assert.deepEqual(parts.map(t => t.split('\n').length), [150, 5], '150 lignes au plus par partie'); assert.equal(parts.join('\n'), all, 'toutes les lignes, une seule fois, dans l\'ordre');
+  assert.deepEqual(await p.$eval('[data-act="cmnext"]', b => [b.disabled, b.textContent]), [true, 'Toutes les parties sont copiées']);
+  await p.click('.cm-part[data-i="0"] [data-act="cmpart"]'); await p.waitForFunction(() => window.__clip.length === 3); assert.equal((await p.evaluate(() => window.__clip))[2], parts[0], 'une partie se recopie');
+  await p.waitForTimeout(300); await p.screenshot({ path: SHOTS + '/trade-cm-parts.png' });
+  await p.click('.sheet [data-close].icon-btn'); await p.waitForTimeout(450);
+  await p.evaluate(w => { TR.wish = JSON.parse(w); trChanged(); }, wish0); await p.waitForFunction(() => document.querySelectorAll('.tr-list .tr-row').length === 5);
+  ok('Je recherche : manquantes du deck + souhaits (ajout par le catalogue, quantité ajustable), valeur, copie pour Cardmarket (en parties de 150 lignes au-delà)');
 }
 {
   assert.equal(shareWrites, 0, 'rien n\'est partagé avant « Créer le lien »');
@@ -212,6 +246,7 @@ const tradeId = [...shares.keys()][0];
   assert.match(await tc(V.p, '.pub-row[data-k="command tower"] .row-meta'), /tu l'as · dans tes decks/);
   await V.p.click('#pubSub [data-v="have"]'); await V.p.waitForSelector('.pub-row[data-k="sol ring"]');
   assert.match(await tc(V.p, '.pub-row[data-k="sol ring"] .row-meta'), /tu la cherches × 1/);
+  assert.match(await tc(V.p, '.pub-row[data-k="sol ring"] .tr-q'), /^≈ 1,50\s€\s*× 4$/, 'liste complète : prix à l\'unité du visiteur (son fichier de prix), jamais écrit dans le partage'); assert.match(await txt(V.p, '.pubv .pm-note'), /tendance Cardmarket/);
   // un souhait ajouté ailleurs dans l'appli : « Pour toi » suit, sans rouvrir le lien
   await V.p.click('#pubSub [data-v="match"]'); await V.p.evaluate(() => { TR.wish['llanowar elves'] = { n: 'Llanowar Elves', q: 2 }; trChanged(); });
   await V.p.waitForFunction(() => /× 2/.test(document.querySelector('.pm-row[data-k="llanowar elves"] .tr-q').textContent), null, { timeout: 4000 });

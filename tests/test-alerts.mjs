@@ -110,6 +110,23 @@ r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub
 await sleep(500); set({ 'Delver of Secrets': '1.00', 'Mana Crypt': '60.00' });
 await check(B, ID);
 ps = pushesFor(A); m = decrypt(ps[ps.length - 1].body, A); assert.equal(m.title, '2 cartes en baisse', JSON.stringify(m)); assert.match(m.body, /Delver of Secrets \/\/ Insectile Aberration −50 %, Mana Crypt −40 %/, m.body); ok('plusieurs cartes : un seul message récapitulatif');
+// 4 bis) appli en anglais (lang: 'en') : notifications en anglais ; langue absente (appli plus ancienne) ou inconnue : français
+{
+  const E = browser('devEn');
+  set({ 'Ancient Tomb': '10.00', "Gaea's Cradle": '400.00', 'Mox Diamond': '50.00', 'Chrome Mox': '60.00', 'Lotus Petal': '5.00' });
+  const its = [{ k: 'ancient tomb', n: 'Ancient Tomb', d: ['Deck E'] }, { k: 'gaeas cradle', n: "Gaea's Cradle", t: 30000 }, { k: 'mox diamond', n: 'Mox Diamond' }, { k: 'chrome mox', n: 'Chrome Mox' }];
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'en', items: its }) }); assert.equal(r.s, 200); const IDE = r.o.id; await sleep(500);
+  set({ 'Ancient Tomb': '6.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 1); m = decrypt(ps[0].body, E); assert.equal(m.title, 'Ancient Tomb: −40%'); assert.equal(m.body, '€10.00 → €6.00 (Cardmarket trend). · missing from Deck E');
+  set({ "Gaea's Cradle": '290.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 2); m = decrypt(ps[1].body, E); assert.equal(m.title, "Gaea's Cradle at €290.00"); assert.equal(m.body, 'Below your target price of €300.00 (Cardmarket trend).');
+  set({ 'Mox Diamond': '25.00', 'Chrome Mox': '30.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 3); m = decrypt(ps[2].body, E); assert.equal(m.title, '2 cards down'); assert.equal(m.body, 'Mox Diamond −50%, Chrome Mox −50%');
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'xx', items: [{ k: 'lotus petal', n: 'Lotus Petal' }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
+  set({ 'Lotus Petal': '2.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 4); m = decrypt(ps[3].body, E); assert.equal(m.title, 'Lotus Petal : −60 %', 'langue inconnue : français');
+  ok('appli en anglais : notifications en anglais (baisse, prix cible, résumé) ; langue inconnue ou absente : français');
+}
 
 // 5) abonnement expiré
 const Bx = browser('devGone');
