@@ -632,7 +632,7 @@ function updateRow(el, c, v, st) {
   const nm = c.dn || c.name, hue = hash32(c.key) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase());      // nm : nom tapé en français, sinon l'anglais
   const top = pick && pick.parts[0] ? pick.parts[0].offer : null;
   const img = (top && top.img) || (st && st.img);
-  const thumb = `<span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
+  const thumb = `<span class="thumb" style="--h:${hue}"${v.s === 'notfound' ? '' : zoomAt('res', nm)}>${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
   const qty = c.need > 1 ? `<span class="tag accent">× ${c.need}</span>` : '';
   const ownTag = c.own > 0 && c.need > 0 ? `<span class="tag good">${TN(c.own, '{n} possédée', '{n} possédées')}</span>` : '';
   const langName = LANGS[S.opts.lang] || S.opts.lang;

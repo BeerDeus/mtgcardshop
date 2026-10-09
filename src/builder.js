@@ -194,7 +194,7 @@ function bdTags(k, q, ctx) {
 function bdRow(k, name, q, tgt, ctx, label) {
   const x = COLL.map[k], m = bdMeta(k), l = x ? x.l : '', nm = label || bdLabel(k, name), hue = hash32(k) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase());
   const img = m && m.im ? collImage(k, l, m.im).src : '', tags = bdTags(k, q, ctx);
-  return `<div class="crow bd-row" data-k="${esc(k)}" data-n="${esc(name)}" data-t="${tgt}"><span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow bd-row" data-k="${esc(k)}" data-n="${esc(name)}" data-t="${tgt}"><span class="thumb" style="--h:${hue}"${zoomAt('bd', nm)}>${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span></span>${tags ? `<span class="row-meta">${tags}</span>` : ''}</span>
     <span class="qstep"><button type="button" data-d="-1" aria-label="${T('Retirer un exemplaire de {name}', { name: esc(nm) })}">−</button><b>${q}</b><button type="button" data-d="1" aria-label="${T('Ajouter un exemplaire de {name}', { name: esc(nm) })}">+</button></span></div>`;
 }
@@ -288,12 +288,6 @@ function bdClick(e) {
     const row = st.closest('.bd-row'); if (!row) return;
     const d = Number(st.dataset.d), k = row.dataset.k, tgt = row.dataset.t;
     if (bdChange(tgt, k, row.dataset.n, d)) haptic('tap');
-    return;
-  }
-  const th = e.target.closest('.thumb');
-  if (th && th.querySelector('img.ok')) {
-    const rows = $$('.bd-row', BD.el), list = rows.map(bdViewItem), row = th.closest('.bd-row'), i = rows.indexOf(row);
-    if (i >= 0 && list[i]) { const L = list.filter(Boolean); openCardViewer(L, L.indexOf(list[i])); }
     return;
   }
   const b = e.target.closest('button[data-act]'); if (!b) return;

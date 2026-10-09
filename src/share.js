@@ -266,7 +266,7 @@ const trEur = c => new Intl.NumberFormat(LOC(), { style: 'currency', currency: '
 function trHaveRow(x) {
   const it = trItem(x.k, x.n, x.q, x.lines[0] ? x.lines[0][0] : ''), nm = it.dn || it.n, img = collImage(x.k, it.l, it.im).src;
   const langs = x.lines.map(([l, q]) => `<span class="tag">${l ? flag(l) : T('sans langue')}${x.lines.length > 1 ? ' × ' + q : ''}</span>`).join('');
-  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hash32(x.k) % 360}"${zoomAt('tr', nm)}>${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${langs}${it.dn ? `<span class="tag">${esc(x.n)}</span>` : ''}</span></span>
     <span class="tr-q">${trQxHtml(x)}<button class="link-btn" type="button" data-act="tkeep" aria-label="${T('Garder {name} (ne plus la proposer)', { name: esc(nm) })}">${T('Garder')}</button></span></div>`;
 }
@@ -274,7 +274,7 @@ function trWantRow(x, mine) {
   const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = x.p ? scrySmall(x.p.i) : it.im || '';
   const tags = (x.p && x.p.w ? `<span class="tag accent" title="${T('Illustration recherchée')}">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">${T('manque à tes decks')}${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">${T('souhait')}${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
   const ctl = `<span class="tr-q">${mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="${T('Un de moins')}">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="${T('Un de plus')}">+</button></span>${trPxHtml(x)}` : trQxHtml(x)}</span>`;
-  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}"${zoomAt('tr', nm)}>${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
 }
 /** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », total estimé, tri et prix minimal, listes filtrées (barre de recherche et filtres de la collection). */
@@ -550,7 +550,7 @@ function pubMatchRow(x, side) {
     ? `<span class="tag accent">${T('tu la cherches × {n}', { n: x.w.q })}</span>${x.w.p && x.w.p.w ? `<span class="tag" title="${T('Illustration recherchée')}">${T('illustration souhaitée : {name}', { name: esc(x.w.p.w) })}</span>` : ''}`
     : `<span class="tag good">${T('tu peux l\'échanger × {n}', { n: x.s.q })}</span>${it.pw ? `<span class="tag accent" title="${T('Illustration recherchée')}">${esc(it.pw)}</span>` : ''}`;
   const val = x.v != null ? '≈ ' + fmt(x.v, 'EUR') : '', cap = TN(x.q, '{n} exemplaire', '{n} exemplaires') + (val ? ' · ' + val : '');
-  return `<div class="crow pub-row pm-row" role="button" tabindex="0" data-k="${esc(x.k)}" data-ln="${esc(side === 'get' ? it.l || '' : '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(cap)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow pub-row pm-row" role="button" tabindex="0" data-zoom="pub" data-k="${esc(x.k)}" data-ln="${esc(side === 'get' ? it.l || '' : '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(cap)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${ls.map(flag).join('')}</span><span class="row-meta">${tags}${alt ? `<span class="tag">${esc(alt)}</span>` : ''}</span></span>
     <span class="tr-q"><b>× ${x.q}</b>${val ? `<small>${esc(val)}</small>` : ''}</span></div>`;
 }
@@ -573,7 +573,7 @@ function pubRow(it) {
     ? (it.spare ? `<span class="tag good">${T('tu peux l\'échanger × {n}', { n: it.spare })}</span>` : it.own ? `<span class="tag">${T(it.used ? 'tu l\'as · dans tes decks' : 'tu l\'as · gardée')}</span>` : '')
     : (it.wq ? `<span class="tag accent">${T('tu la cherches × {n}', { n: it.wq })}</span>` : it.own ? `<span class="tag good">${T('déjà à toi × {n}', { n: it.own })}</span>` : '');
   const x = TN(it.q, '{n} exemplaire', '{n} exemplaires') + (it.l ? ' · ' + (LANGS[it.l] || it.l) : '') + (it.pw ? ' · ' + T('illustration {name}', { name: it.pw }) : '');
-  return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
+  return `<div class="crow pub-row" role="button" tabindex="0" data-zoom="pub" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
     <span class="tr-q">${trQxHtml({ q: it.q, u: trPrice(it.k) })}</span></div>`;      // prix à l'unité de l'appareil du visiteur, comme sur l'onglet du propriétaire
 }

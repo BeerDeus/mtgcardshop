@@ -1,0 +1,7 @@
+/* zoom.css : vignettes qui ouvrent la carte en grand (zoom.js) : curseur, zone de toucher d'au moins 44 px, focus au clavier */
+.thumb[data-zoom]{cursor:zoom-in;overflow:visible}                                     /* pas de rognage : la zone de toucher déborde (::before) */
+.thumb[data-zoom] img{border-radius:inherit}
+.thumb[data-zoom]::before{content:'';position:absolute;inset:-4px}                     /* 48 × 64 px, dans la marge de la ligne */
+.thumb[data-zoom]:focus-visible{border-radius:5px}
+.sc-th[data-zoom]{cursor:zoom-in;box-sizing:content-box;padding:4px;margin:-4px;border-radius:8px;background-clip:content-box}      /* <img> : la marge intérieure agrandit la zone (44 × 58 px) sans bouger la ligne */
+.sc-item.maybe .sc-th[data-zoom]{border-radius:9px}
