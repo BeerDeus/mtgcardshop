@@ -5,7 +5,7 @@
      .sp-out (sortie) + .sp-morph (passage à l'accueil) ; --sp-out : durée de la sortie. <html>.sp-on : appli inerte, ses animations en pause.
    · [data-sp-to="sélecteur"] : vole sur cet élément de #app au passage (échelle fixe permise) ; [data-sp-sync="sélecteur"] : les boucles CSS de cet élément
      reprennent l'horloge du splash (même nom d'animation : aucun saut). · window.splashHandoffX(el, morph, done) : sortie propre à un autre concept (true = prise en charge). */
-const SPLASH_T = { min: 1600, cap: 2500, max: 8000, short: 600, rm: 1000, out: 600, outShort: 420, fast: 220, fade: 300 };
+const SPLASH_T = { min: 1600, cap: 2500, max: 8000, short: 600, rm: 1000, out: 600, outShort: 240, fast: 220, fade: 300 };
 const SPLASH_KEEP = /^(splash|lang|onboarding|source|ref|utm_\w+)$/;      // paramètres qui n'ouvrent aucun écran : ouverture normale
 /** 'full' : ouverture à froid · 'short' : lien profond (?p=, ?open=, partage, ?delete-account…), rechargement (« Recharger », langue), retour arrière sans bfcache
  *  · 'none' : navigateur piloté par les tests (sauf ?splash=1 ou ?splash=short), page ouverte cachée, ?splash=0. o : { search, webdriver, hidden, nav }. */
@@ -75,10 +75,20 @@ function splashHandoff(fast) {
   el.classList.add('sp-out'); if (pairs) { el.classList.add('sp-morph'); splashMorph(el, pairs, D); }
   SPL.tm = [setTimeout(splashPlay, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // vol : l'accueil entre quand l'orbe a quitté le centre (les tuiles ne passent pas dessous)
 }
+/** Décor généré (moins d'octets que du balisage) : 22 étoiles, 18 étincelles de l'allumage, lettres du nom (montée et reflet lettre à lettre). */
+function splashBuild(el) {
+  let z = 7, h = ''; const R = () => (z = z * 16807 % 2147483647) / 2147483647, F = n => +n.toFixed(2), K = ['#fff', '#ffd479', '#ff8fc3', '#7be8c8', '#7fb0ff', '#c79bff'], q = c => el.querySelector(c);
+  for (let i = 0; i < 18; i++) h += `<i style="--a:${i * 20 + R() * 14 | 0}deg;--d:${90 + R() * 120 | 0}px;--f:${70 + R() * 80 | 0}px;--u:${F(0.5 + R() * 0.4)}s;--k:${K[i % 6]}"></i>`;
+  q('.sp-p').innerHTML = h; h = '';
+  for (let i = 0; i < 22; i++) h += `<b style="left:${F(R() * 100)}%;top:${F(R() * 100)}%;--z:${F(1 + R() * 1.8)}px;--o:${F(0.35 + R() * 0.6)};--w:${F(0.55 + R() * 0.7)}s"></b>`;
+  q('.sp-sky').innerHTML = h;
+  const w = q('.sp-word'); if (w) w.innerHTML = [...w.textContent].map((l, i) => l === ' ' ? ' ' : `<span style="--i:${i};--k:${K[i % 5 + 1]}" data-l="${l}">${l}</span>`).join('');
+}
 function splashCheck() { if (SPL.ready && (SPL.min || SPL.skip)) splashHandoff(SPL.skip); }
 function splashStart() {
   const el = SPL.el; if (!el || SPL.end) return;
   el.classList.add('sp-in'); splashMark('in');
+  if (SPL.short && !SPL.rm) for (const a of el.getAnimations({ subtree: true })) if (a.effect.target !== el) { a.currentTime = 340; a.playbackRate = 2.2; }      // version courte : l'allumage tout de suite, comètes en place vers 0,4 s
   const T = SPLASH_T, min = SPL.rm ? T.rm : SPL.short ? T.short : T.min;
   SPL.tm.push(setTimeout(() => { SPL.min = true; splashCheck(); }, min),
     setTimeout(() => { if (!SPL.end) el.classList.add('sp-idle'); }, SPL.short || SPL.rm ? min : T.cap),      // appli pas prête : boucle d'attente calme
@@ -98,6 +108,7 @@ function splashReady() {
   if (m === 'none') { el.remove(); return; }
   SPL.el = el; SPL.short = m === 'short'; try { SPL.rm = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
   if (SPL.short) el.classList.add('sp-short'); if (SPL.rm) el.classList.add('sp-rm');
+  try { splashBuild(el); } catch (e) { /* décor seulement */ }
   de.classList.add('sp-on');
   try { SPL.mo = new MutationObserver(ms => ms.forEach(r => r.addedNodes.forEach(splashHold))); SPL.mo.observe(document.body, { childList: true }); } catch (e) { /* ignore */ }
   const skip = () => { if (SPL.el && !SPL.end) { SPL.skip = true; splashCheck(); } }, kill = () => { if (SPL.el) splashRemove(); };

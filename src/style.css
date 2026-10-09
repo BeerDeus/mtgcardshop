@@ -621,7 +621,7 @@ button.sync:active{background:var(--surface-2)}
 .hm-land:nth-child(4){left:24px;top:180px;--lc:#e49977;--lg:rgba(224,83,61,.7);--lb:linear-gradient(160deg,#ffb37a,#e0533d 40%,#3b140e)}
 .hm-land:nth-child(5){left:-17px;top:53px;--lc:#a3c095;--lg:rgba(58,154,94,.7);--lb:linear-gradient(180deg,#c8e6b0,#2f6b3e 60%,#163521)}
 .hm-halo{position:absolute;width:196px;height:196px;border-radius:50%;background:radial-gradient(circle,rgba(146,156,255,.5),transparent 70%);animation:hmHalo 3.4s ease-in-out infinite}
-.hm-orb{position:relative;width:170px;height:170px;border-radius:50%;padding:0;color:#fff;animation:hmOrbIn 1s cubic-bezier(.34,1.5,.5,1) both;transition:transform .4s var(--spring)}
+.hm-orb{position:relative;width:170px;height:170px;border-radius:50%;padding:0;border-color:transparent;background:none;color:#fff;animation:hmOrbIn 1s cubic-bezier(.34,1.5,.5,1) both;transition:transform .4s var(--spring)}      /* bordure du bouton du navigateur transparente (biseau gris autour de l'anneau en clair), même taille d'anneau */
 .hm-orb:active{transform:scale(.94)}
 .hm-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);animation:hmSpin 6s linear infinite}
 .hm-core{position:absolute;inset:3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#232b5c,#0b0f22 72%);box-shadow:inset 0 0 28px rgba(146,156,255,.3)}
@@ -669,7 +669,7 @@ button.sync:active{background:var(--surface-2)}
 .hm-new-ring{position:absolute;inset:0;border-radius:24px;overflow:hidden}
 .hm-new-ring::before{content:"";position:absolute;inset:-60%;background:conic-gradient(from 0deg,#ff8fc3,#ffd479,#7be8c8,#7fb0ff,#c79bff,#ff8fc3);animation:hmSpin 6s linear infinite}
 .hm-new-in{position:relative;border-radius:22px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
-.hm-glint{position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(90deg,transparent,var(--sheen,rgba(255,255,255,.4)),transparent);animation:hmGlint 4.5s ease-in-out 1.4s infinite;pointer-events:none}
+.hm-glint{position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(90deg,transparent,var(--sheen,rgba(255,255,255,.4)),transparent);animation:hmGlint 4.5s ease-in-out 1.4s infinite backwards;pointer-events:none}      /* backwards : hors champ pendant le délai (restait figé sur la gauche du titre) */
 .hm-new-h{display:flex;align-items:center;gap:10px}
 .hm-new-h b{font-family:var(--font-display);font-weight:700;font-size:21px;letter-spacing:-.02em}
 .hm-new-ico{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}

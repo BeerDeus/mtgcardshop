@@ -1,110 +1,100 @@
-/* ── Écran de lancement, concept A « Assemblage orbital » (logique : splash.js) ──────────────────────────────────────
-   L'en-tête et l'orbe de l'accueil en grand : l'anneau foil se trace, les 5 orbes arrivent sur une orbite inclinée qui s'ouvre, le logo puis le nom,
-   et tout se pose à sa place dans l'accueil. Seulement transform et opacity (le compositeur continue pendant que le gros script se lit). */
+/* ── Écran de lancement A+B (logique : splash.js) : nuit, l'étincelle inspire puis s'allume ; l'onde de choc devient l'anneau foil,
+   les 5 comètes de mana s'enroulent en orbite, logo et nom au-dessus, puis tout se pose dans l'accueil. transform / opacity seulement. */
 #splash{position:fixed;inset:0;z-index:200;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;animation:spSafe 0s 9s forwards}
 @keyframes spSafe{to{visibility:hidden;pointer-events:none}}      /* filet : script en panne, le splash ne reste jamais */
-html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-play-state:paused!important}      /* l'entrée de l'accueil attend la fin du splash */
-.sp-bg{position:absolute;inset:0;background:var(--bg)}
-.sp-stars{position:absolute;inset:0;margin:0;--sc:#fff}
-:root[data-theme="light"] .sp-stars{--sc:#8d96d8}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .sp-stars{--sc:#8d96d8}}
-.sp-stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--sc);opacity:.5;box-shadow:0 0 6px var(--sc)}
-.sp-stars i:nth-child(1){left:12%;top:18%}.sp-stars i:nth-child(2){left:30%;top:9%;width:3px;height:3px}.sp-stars i:nth-child(3){left:71%;top:14%}
-.sp-stars i:nth-child(4){left:88%;top:31%;width:3px;height:3px}.sp-stars i:nth-child(5){left:8%;top:52%}.sp-stars i:nth-child(6){left:92%;top:63%}
-.sp-stars i:nth-child(7){left:22%;top:77%;width:3px;height:3px}.sp-stars i:nth-child(8){left:64%;top:84%}.sp-stars i:nth-child(9){left:47%;top:93%;width:3px;height:3px}
+html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-play-state:paused!important}      /* l'entrée de l'accueil attend la sortie */
+#splash i,#splash b{position:absolute;display:block}
+.sp-bg,.sp-lit,.sp-sky{position:absolute;inset:0}
+.sp-bg{background:#0b0f1c}      /* la nuit : fond natif de lancement (Android) ; la lumière (thème) arrive à l'allumage */
+.sp-lit{background:var(--bg)}
+.sp-sky b{width:var(--z);height:var(--z);border-radius:50%;background:color-mix(in srgb,var(--accent) 35%,#fff);opacity:var(--o)}
 .sp-scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:52px;padding-bottom:9vh}
 .sp-brand{display:flex;align-items:center;gap:10px;transform:scale(1.6)}
-.sp-brand .word{display:block;overflow:hidden;line-height:1.45}
-.sp-word{display:block}
-.sp-mv{width:300px;height:272px;transform:scale(1.08)}
+.sp-brand .word{display:block;white-space:pre}
+.sp-word span{position:relative;display:inline-block}
+.sp-word span::after{content:attr(data-l);position:absolute;left:0;top:0;color:#fff;text-shadow:0 0 8px var(--k),0 0 18px var(--k);opacity:0}
+.sp-mv{width:300px;height:272px;transform:scale(1.1)}
 @media (max-width:359px){.sp-mv{transform:scale(.92)}.sp-brand{transform:scale(1.35)}.sp-scene{gap:34px}}
-.sp-stage{position:relative;width:300px;height:272px;display:grid;place-items:center}
-.sp-halo{position:absolute;width:196px;height:196px;border-radius:50%;background:radial-gradient(circle,rgba(146,156,255,.5),transparent 70%)}
-.sp-rbox{position:absolute;left:65px;top:51px;width:170px;height:170px}
-.sp-ring,.sp-spk,.sp-bloom,.sp-full{position:absolute;inset:0;border-radius:50%}
-.sp-h{position:absolute;top:0;left:50%;width:50%;height:100%;overflow:hidden;opacity:0}
-.sp-h+.sp-h{left:0}
-.sp-h>i{position:absolute;top:0;left:-100%;width:100%;height:100%;overflow:hidden;transform-origin:100% 50%;transform:rotate(180deg)}
-.sp-h+.sp-h>i{left:100%;transform-origin:0 50%}
-.sp-rim{position:absolute;top:0;left:0;width:200%;height:100%;border-radius:50%;transform:rotate(180deg);background:var(--foil-ring);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 3.4px),#000 calc(100% - 2.8px));mask:radial-gradient(closest-side,transparent calc(100% - 3.4px),#000 calc(100% - 2.8px))}
-.sp-h+.sp-h .sp-rim{left:-100%}
-.sp-full{width:auto;transform:none}
-.sp-core{position:absolute;inset:3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#232b5c,#0b0f22 72%);box-shadow:inset 0 0 28px rgba(146,156,255,.3)}
-.sp-spk{opacity:0}
+.sp-stage{position:relative;width:300px;height:272px}
+.sp-c{position:absolute;left:150px;top:136px}      /* centre de l'orbe de l'accueil (.hm-stage 300 × 272) */
+.sp-c>i,.sp-spk{width:var(--s);height:var(--s);margin:calc(var(--s)/-2);border-radius:50%}
+.sp-fl{--s:340px;background:radial-gradient(closest-side,#fff,rgba(255,244,250,.9) 10%,rgba(214,196,255,.5) 26%,rgba(127,176,255,.18) 50%,transparent);opacity:0}
+.sp-c>.sp-fx{width:380px;height:6px;margin:-3px -190px;border-radius:0;background:radial-gradient(closest-side,#fff,rgba(199,170,255,.6) 45%,transparent);opacity:0}
+.sp-sh{--s:166px;background:radial-gradient(closest-side,transparent 70%,rgba(255,255,255,.45) 86%,#fff 95%,transparent);opacity:0}
+.sp-sh+.sp-sh{background:radial-gradient(closest-side,transparent 62%,rgba(255,143,195,.35) 84%,rgba(127,176,255,.6) 94%,transparent)}
+.sp-ha{--s:196px}
+.sp-ha i{inset:0;border-radius:50%;background:radial-gradient(circle,rgba(146,156,255,.5),transparent 70%)}
+.sp-co{--s:160px;background:radial-gradient(circle at 35% 30%,#232b5c,#0b0f22 72%);box-shadow:inset 0 0 28px rgba(146,156,255,.3)}
+.sp-r{--s:166px;background:var(--foil-ring);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px));mask:radial-gradient(closest-side,transparent calc(100% - 3.4px),#000 calc(100% - 3px))}
+.sp-tr{--s:222px;border:1px solid rgba(199,206,255,.16)}      /* l'orbite elle-même : ellipse inclinée comme celle du logo, qui s'ouvre en cercle */
+:root[data-theme="light"] .sp-tr{border-color:rgba(58,70,214,.16)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .sp-tr{border-color:rgba(58,70,214,.16)}}
+.sp-pt{--s:96px;background:radial-gradient(closest-side,#fff 12%,rgba(255,255,255,.8) 18%,rgba(214,190,255,.45) 34%,rgba(127,176,255,.12) 60%,transparent);opacity:0}
+.sp-k{rotate:var(--a);transform:translateX(var(--r))}
+.sp-t{left:0;top:0;width:88px;height:14px;margin-top:-7px;transform-origin:0 50%;background:radial-gradient(farthest-side at 0 50%,#fff,var(--c) 18%,var(--g) 45%,transparent);opacity:0}
+.sp-o{width:44px;height:44px;margin:-22px;border-radius:50%;border:2px solid var(--c);background:linear-gradient(var(--b));box-shadow:0 0 18px var(--g);rotate:calc(-1*var(--a))}
+.sp-o::before,.sp-o::after{content:"";position:absolute;border-radius:50%;opacity:0}
+.sp-o::before{inset:-16px;background:radial-gradient(closest-side,#fff 22%,var(--c) 40%,var(--g) 62%,transparent)}
+.sp-o::after{inset:-3px;border:2px solid var(--c);box-shadow:0 0 12px var(--g)}
+.sp-p i{width:14px;height:2px;margin-top:-1px;transform-origin:0 50%;border-radius:2px;background:linear-gradient(90deg,transparent,var(--k));opacity:0}
+.sp-spk{--s:166px;opacity:0}      /* attente : une étincelle fait le tour de l'anneau */
 .sp-spk::before{content:"";position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(transparent 280deg,rgba(255,255,255,.95));-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 5px));mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 5px))}
-.sp-spk i{position:absolute;left:50%;top:-4px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px rgba(255,255,255,.9),0 0 26px 9px rgba(146,156,255,.75)}
-.sp-bloom{opacity:0;box-shadow:0 0 0 2px rgba(255,255,255,.8),0 0 36px 12px rgba(146,156,255,.6)}
-.sp-orbit{position:absolute;width:222px;height:222px;left:39px;top:25px}
-.sp-plane,.sp-f,.sp-o,.sp-u{position:absolute;inset:0}
-.sp-track{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(199,206,255,.16)}      /* l'orbite elle-même : une ellipse inclinée qui s'ouvre en cercle */
-:root[data-theme="light"] .sp-track{border-color:rgba(58,70,214,.16)}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .sp-track{border-color:rgba(58,70,214,.16)}}
-.sp-p{position:absolute;left:89px;top:89px;width:44px;height:44px;transform:rotate(var(--a))}
-.sp-f{transform:translateX(111px)}
-.sp-o{transform:rotate(calc(-1 * var(--a))) translate(var(--ex,0),var(--ey,0))}
-.sp-land{position:absolute;inset:0;border-radius:50%;border:2px solid var(--lc);box-shadow:0 0 18px var(--lg);background:var(--lb)}
-.sp-land::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--lc);opacity:0}
-.sp-p:nth-of-type(1){--a:-90deg;--d:.28s;--lc:#f8f6d8;--lg:rgba(248,246,216,.6);--lb:linear-gradient(180deg,#fff3c4,#f6d58a 48%,#a89a6c)}
-.sp-p:nth-of-type(2){--a:-18deg;--d:.35s;--ex:1.43px;--ey:-1.7px;--lc:#c1d7e9;--lg:rgba(63,143,224,.7);--lb:linear-gradient(180deg,#bfe2ff,#2f6fb5 52%,#173a6b)}
-.sp-p:nth-of-type(3){--a:54deg;--d:.42s;--ex:-.24px;--ey:1.2px;--lc:#bab1ab;--lg:rgba(186,177,171,.5);--lb:linear-gradient(180deg,#6b5a78,#2a2a22 52%,#141410)}
-.sp-p:nth-of-type(4){--a:126deg;--d:.49s;--ex:.24px;--ey:1.2px;--lc:#e49977;--lg:rgba(224,83,61,.7);--lb:linear-gradient(160deg,#ffb37a,#e0533d 40%,#3b140e)}
-.sp-p:nth-of-type(5){--a:198deg;--d:.56s;--ex:-.43px;--ey:-1.7px;--lc:#a3c095;--lg:rgba(58,154,94,.7);--lb:linear-gradient(180deg,#c8e6b0,#2f6b3e 60%,#163521)}
+.sp-spk i{left:50%;top:-3px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px rgba(255,255,255,.9),0 0 26px 9px rgba(146,156,255,.75)}
 
-/* Avant la première image (.sp-in) : le fond seul. Boucles (orbite, anneau, halo) sur l'horloge du splash, reprises par l'accueil (data-sp-sync). */
-#splash:not(.sp-in):not(.sp-rm) .sp-scene{opacity:0}
-.sp-in .sp-orbit{animation:hmSpin 32s linear infinite}
-.sp-in .sp-land{animation:hmSpinR 32s linear infinite}
-.sp-in .sp-ring{animation:hmSpin 6s linear infinite}
-.sp-in .sp-halo{animation:hmHalo 3.4s ease-in-out infinite}
-/* Ouverture complète */
-.sp-in:not(.sp-short) .sp-stars{animation:spFade .5s backwards}
-.sp-in:not(.sp-short) .sp-stars i{animation:hmTwinkle 2.6s ease-in-out infinite}
-.sp-stars i:nth-child(2n){animation-delay:-.9s!important}.sp-stars i:nth-child(3n){animation-delay:-1.7s!important}
-.sp-in:not(.sp-short) .sp-h>i{animation:spHalf .26s .06s cubic-bezier(.5,0,.75,.5) backwards}
-.sp-in:not(.sp-short) .sp-h+.sp-h>i{animation:spHalf .26s .32s cubic-bezier(.25,.5,.5,1) backwards}
-.sp-in:not(.sp-short) .sp-full{animation:spShow 0s .58s backwards}
-.sp-in:not(.sp-short) .sp-h{animation:spOn .58s}
-.sp-in:not(.sp-short) .sp-spk{opacity:1;animation:spSweep .52s .06s backwards}
-.sp-in:not(.sp-short) .sp-spk i{animation:spPop .45s .58s ease-out forwards}
-.sp-in:not(.sp-short) .sp-spk::before{animation:spOff .3s .56s forwards}
-.sp-in:not(.sp-short) .sp-core{animation:spCore .7s .22s cubic-bezier(.34,1.3,.5,1) backwards}
-.sp-in:not(.sp-short) .sp-halo{animation:spFade .8s .3s backwards,hmHalo 3.4s ease-in-out infinite}
-.sp-in:not(.sp-short) .sp-bloom{animation:spBloom .75s .56s cubic-bezier(.2,.7,.3,1)}
-.sp-in:not(.sp-short) .sp-plane{animation:spPlane 1s .25s linear backwards}
-.sp-in:not(.sp-short) .sp-u{animation:spUnsq 1s .25s linear backwards}
-.sp-in:not(.sp-short) .sp-track{animation:spTrack .9s .26s cubic-bezier(.2,.7,.3,1) backwards}
-.sp-in:not(.sp-short) .sp-f{animation:spFly .64s var(--d) backwards}
-.sp-in:not(.sp-short) .sp-land::after{animation:spPulse .7s calc(var(--d) + .44s) ease-out}
-.sp-in:not(.sp-short) .sp-brand .logo{animation:spLogo .7s .78s cubic-bezier(.34,1.45,.5,1) backwards}
-.sp-in:not(.sp-short) .sp-word{animation:spRise .7s .94s cubic-bezier(.16,1,.3,1) backwards}
-/* Lien profond, rechargement : l'ensemble déjà assemblé, en fondu */
-.sp-short.sp-in .sp-scene{animation:spIn .28s cubic-bezier(.2,.8,.2,1) backwards}
-/* Attente (appli lente) : l'étincelle tourne autour de l'anneau */
-.sp-idle .sp-spk{opacity:1;animation:hmSpin 1.5s linear infinite!important}
-.sp-idle .sp-spk i,.sp-idle .sp-spk::before{animation:spFade .4s backwards!important}
+/* Avant la première image (.sp-in) : la nuit seule. Boucles (orbite, anneau, halo, terrains) sur l'horloge du splash, reprises par l'accueil (data-sp-sync). */
+#splash:not(.sp-in):not(.sp-rm) :is(.sp-scene,.sp-lit,.sp-sky){opacity:0}
+.sp-in .sp-g{animation:hmSpin 32s linear infinite}
+.sp-in .sp-ha i{animation:hmHalo 3.4s ease-in-out infinite}
+.sp-in .sp-lit{animation:spLt .3s ease-out .38s backwards}
+.sp-in .sp-sky b{animation:spLt 1.4s ease-in-out var(--w) infinite alternate both}
+.sp-in .sp-pt{animation:spPt .48s ease-in-out .06s both}
+.sp-in .sp-p i{animation:spIm .3s cubic-bezier(.5,0,.9,.6) .08s both,spX var(--u) cubic-bezier(.08,.7,.25,1) .38s forwards}
+.sp-in .sp-fl{animation:spFl .55s cubic-bezier(.15,.7,.3,1) .36s both}
+.sp-in .sp-fx{animation:spFx .5s cubic-bezier(.2,.7,.3,1) .37s both}
+.sp-in .sp-sh{animation:spSh .75s cubic-bezier(.1,.6,.25,1) .38s both}
+.sp-in .sp-sh+.sp-sh{animation-delay:.44s;animation-duration:.85s}
+.sp-in .sp-r{animation:spR .78s .38s both,hmSpin 6s linear infinite}
+.sp-in .sp-co{animation:spCo .36s var(--out) .8s backwards}
+.sp-in .sp-ha{animation:spHa .5s ease-out .78s backwards}
+.sp-in .sp-tr{animation:spTr .8s cubic-bezier(.2,.7,.3,1) .62s backwards}
+.sp-in .sp-k{animation:spA .9s cubic-bezier(.35,0,.2,1) var(--w) backwards,spM .9s var(--w) backwards}
+.sp-in .sp-o{animation:spC .9s cubic-bezier(.35,0,.2,1) var(--w) backwards,spS .9s ease-out var(--w) backwards,hmSpinR 32s linear infinite}
+.sp-in .sp-o::before{animation:spHo .9s var(--w) both}
+.sp-in .sp-o::after{animation:spPi .3s ease-out calc(var(--w) + .6s) forwards}
+.sp-in .sp-t{animation:spT .9s linear var(--w) both}
+.sp-in .sp-brand .logo{animation:spLogo .7s .84s cubic-bezier(.34,1.45,.5,1) backwards}
+.sp-in .sp-word span{animation:spL .5s var(--out) calc(.96s + var(--i) * 30ms) backwards}
+.sp-in .sp-word span::after{animation:spGl .36s ease-in-out calc(1.08s + var(--i) * 28ms) both}
+/* Lien profond (splash.js rejoue l'intro ×2,2 depuis 0,34 s) : sans le nom, sortie en traversée */
+.sp-short .sp-brand{visibility:hidden}
+/* Attente (appli lente) */
+.sp-idle .sp-spk{opacity:1;transition:opacity .4s;animation:hmSpin 1.5s linear infinite}
 /* Sortie : fondu agrandi, ou vol vers l'accueil (fond qui s'efface, [data-sp-to] animés par splash.js) */
 #splash.sp-out{pointer-events:none}
 #splash.sp-out:not(.sp-morph){opacity:0;transition:opacity var(--sp-out) ease}
 #splash.sp-out:not(.sp-morph):not(.sp-rm) .sp-scene{transform:scale(1.07);transition:transform var(--sp-out) cubic-bezier(.4,0,.2,1)}
-.sp-morph .sp-bg{opacity:0;transition:opacity calc(var(--sp-out) * .6) ease calc(var(--sp-out) * .3)}      /* le fond s'efface une fois l'orbe lancée vers sa place */
+#splash.sp-short.sp-out .sp-scene{transform:scale(1.4);transition-timing-function:ease-in}
+.sp-morph .sp-bg{opacity:0;transition:opacity calc(var(--sp-out) * .6) ease calc(var(--sp-out) * .3)}
 
-@keyframes spFade{from{opacity:0}}
-@keyframes spShow{from{opacity:0}to{opacity:0}}
-@keyframes spOn{from,to{opacity:1}}
-@keyframes spIn{from{opacity:0;transform:scale(.96)}}
-@keyframes spHalf{from{transform:none}}
-@keyframes spSweep{0%{transform:none;animation-timing-function:cubic-bezier(.5,0,.75,.5)}50%{transform:rotate(180deg);animation-timing-function:cubic-bezier(.25,.5,.5,1)}100%{transform:rotate(360deg)}}
-@keyframes spPop{to{opacity:0;transform:scale(2.2)}}
-@keyframes spOff{to{opacity:0}}
-@keyframes spTrack{from{opacity:0;transform:scale(1.6)}}
-@keyframes spCore{from{opacity:0;transform:scale(.55)}}
-@keyframes spBloom{0%{opacity:0;transform:scale(.96)}15%{opacity:1}100%{opacity:0;transform:scale(1.5)}}
-@keyframes spPlane{0%{transform:rotate(-24deg) scaleY(.42)}25%{transform:rotate(-10.8deg) scaleY(.739)}50%{transform:rotate(-4.1deg) scaleY(.901)}75%{transform:rotate(-1deg) scaleY(.977)}100%{transform:none}}
-@keyframes spUnsq{0%{transform:scaleY(2.381)}25%{transform:scaleY(1.353)}50%{transform:scaleY(1.11)}75%{transform:scaleY(1.024)}100%{transform:none}}
-@keyframes spFly{0%{transform:rotate(-150deg) translateX(300px) rotate(150deg) scale(.35);opacity:0;animation-timing-function:cubic-bezier(.2,.75,.3,1)}
-  14%{opacity:1}72%{transform:rotate(6deg) translateX(104px) rotate(-6deg) scale(1.06);animation-timing-function:cubic-bezier(.45,0,.4,1)}
-  100%{transform:rotate(0deg) translateX(111px) rotate(0deg) scale(1)}}
-@keyframes spPulse{0%{opacity:.9;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes spLt{0%{opacity:0}}
+@keyframes spPt{0%{scale:0;opacity:0}20%{scale:.7;opacity:1}42%{scale:1.15}66%{scale:.42}76%{scale:2.4;opacity:1}100%{scale:3.2;opacity:0}}
+@keyframes spIm{0%{transform:rotate(var(--a)) translateX(var(--f)) scaleX(-.4);opacity:0}40%{opacity:.8}100%{transform:rotate(var(--a)) translateX(6px) scaleX(-1.4);opacity:0}}
+@keyframes spX{0%{transform:rotate(var(--a)) translateX(4px) scaleX(2.4);opacity:1}100%{transform:rotate(var(--a)) translateX(var(--d)) scaleX(.3);opacity:0}}
+@keyframes spFl{0%{scale:.08;opacity:0}12%{opacity:1}100%{scale:1.7;opacity:0}}
+@keyframes spFx{0%{scale:0 1;opacity:0}15%{opacity:1}100%{scale:1.15 .3;opacity:0}}
+@keyframes spSh{0%{scale:.06;opacity:1}100%{scale:3.4;opacity:0}}
+@keyframes spR{0%{scale:.05;rotate:-220deg;opacity:0;animation-timing-function:cubic-bezier(.12,.75,.3,1)}8%{opacity:1}52%{scale:1.1;rotate:-24deg;animation-timing-function:cubic-bezier(.45,0,.3,1)}100%{scale:1;rotate:0deg;opacity:1}}
+@keyframes spCo{0%{scale:.72;opacity:0}}
+@keyframes spHa{0%{scale:.5;opacity:0}}
+@keyframes spTr{0%{opacity:0;transform:rotate(-24deg) scale(1.3,.55)}}
+@keyframes spA{0%{rotate:calc(var(--a) - 110deg)}}
+@keyframes spM{0%{transform:translateX(0);animation-timing-function:cubic-bezier(.16,.8,.3,1)}50%{transform:translateX(calc(var(--r)*1.3));animation-timing-function:cubic-bezier(.45,0,.3,1)}}
+@keyframes spC{0%{rotate:calc(110deg - var(--a))}}
+@keyframes spS{0%{scale:.25}35%{scale:.5}}
+@keyframes spHo{0%,70%{opacity:1}}
+@keyframes spPi{0%{opacity:1}100%{opacity:0;scale:1.8}}
+@keyframes spT{0%{rotate:-180deg;scale:0 1;opacity:0}4%{rotate:-179deg;scale:1;opacity:1}8%{rotate:-172deg;scale:.85}13%{rotate:-148deg;scale:.6}20%{rotate:-109deg;scale:.7}28%{rotate:-97deg;scale:.8}36%{rotate:-94deg;scale:.7}45%{rotate:-91deg;scale:.55}55%{rotate:-83deg;scale:.4}65%{rotate:-47deg;scale:.3;opacity:.8}75%{rotate:-34deg;scale:.2;opacity:.5}86%{rotate:-42deg;scale:.1;opacity:.2}100%{rotate:-49deg;scale:0 1;opacity:0}}
 @keyframes spLogo{from{opacity:0;transform:rotate(-200deg) scale(.2)}50%{opacity:1}}
-@keyframes spRise{from{opacity:0;transform:translateY(105%)}}
+@keyframes spL{0%{opacity:0;translate:0 .4em;scale:.92}}
+@keyframes spGl{40%{opacity:1}}
 @media (prefers-reduced-motion:reduce){#splash *,#splash *::before,#splash *::after{animation:none!important}}
