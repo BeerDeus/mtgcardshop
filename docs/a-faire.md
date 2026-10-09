@@ -30,6 +30,15 @@
   - à terme : deck moyen « Mana Orbit » à partir des decks des utilisateurs, anonymisés (ligne à ajouter à la politique de confidentialité).
 
 ## Avant la publication sur le Play Store
+- **Nom de domaine à soi** (avant la publication : liens d'échange et QR partagés le contiennent) : aujourd'hui `card.m2s-photo.fr`.
+  - Choisir et réserver (pistes : `manaorbit.app`, `manaorbit.fr`, `mana-orbit.com`) ; vérifier que « Mana Orbit » n'est pas déjà déposé (INPI / EUIPO) ni pris sur le Play Store.
+  - Hostinger : domaine pointé sur l'hébergement, HTTPS ; e-mail pro (contact@…) pour la fiche Play.
+  - Firebase : domaine ajouté aux domaines autorisés (Authentication) ; lien de retour de l'e-mail de vérification.
+  - APK : `server.url` / hôte dans `android-app` (`capacitor.config`) → nouvelle APK ; liens d'app éventuels.
+  - Code : adresses en dur (`card.m2s-photo.fr`) dans `src/`, `proxy.mjs`, `pwa/` (manifest, privacy, sw), docs et fiche Play ; `shareUrl` des liens partagés.
+  - Ancien domaine : redirection 301 de `card.m2s-photo.fr` vers le nouveau en gardant le chemin et `?p=` (les liens et QR déjà partagés continuent de marcher).
+  - `app-ads.txt` à la racine du nouveau domaine (AdMob refuse souvent les sous-domaines) ; politique de confidentialité et site web de la fiche Play sur le nouveau domaine.
+  - Après la bascule : tests, CI, et un lien d'échange ouvert depuis l'ancien domaine pour vérifier la redirection.
 - **EDHREC et Archidekt** : réponses aux deux mails toujours en attente (`docs/mails-partenaires.md`).
   - Lancer le test fermé sans attendre (pas public, accord non nécessaire) ; envoyer la relance avec une échéance claire.
   - Sans réponse à la mise en production : publier avec crédit et lien (déjà là), lecture hebdomadaire par le serveur seulement, et l'interrupteur ci-dessus prêt. En cas de refus : basculer sur le plan B.
