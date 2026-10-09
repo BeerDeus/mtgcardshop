@@ -128,8 +128,10 @@ ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans 
   console.log('  ouverture avec serveur lent (6 s) :', dt, 'ms');
   assert.ok(dt < 2500, 'copie locale servie sans attendre le serveur : ' + dt + ' ms'); assert.equal(await build(), B0);
   assert.equal(await replied(), B0, 'le service worker répond après sa mise à jour'); assert.equal(fw.hits - h0, 1, 'page redemandée en arrière-plan');
-  assert.equal(await toldNew(), false, 'même version : aucun toast'); fw.delay = 0;
-  ok('ouverture normale : copie locale sans attendre le réseau, mise à jour en arrière-plan, pas de toast si rien n\'a changé');
+  assert.equal(await toldNew(), false, 'même version : aucun toast');
+  t0 = Date.now(); await q.goto(F + '?open=paste', { waitUntil: 'domcontentloaded' }); dt = Date.now() - t0;
+  assert.ok(dt < 2500, 'raccourci de l\'icône (?open=) : copie d\'emblée aussi (' + dt + ' ms)'); assert.equal(await replied(), B0); fw.delay = 0;
+  ok('ouverture normale (et raccourci ?open=) : copie locale sans attendre le réseau, mise à jour en arrière-plan, pas de toast si rien n\'a changé');
 
   // nouvelle version sur le serveur : la copie s'ouvre, la nouvelle est gardée, toast « Nouvelle version disponible · Recharger », un toucher la lance
   fw.build = 'b1e2e000'; await q.reload();

@@ -1,5 +1,5 @@
 /* Mana Orbit — service worker.
-   • Page (navigation) : ouverture normale (adresse sans paramètre) → copie locale tout de suite, rafraîchie en arrière-plan ;
+   • Page (navigation) : ouverture normale (adresse sans paramètre, ou ?open= des raccourcis de l'icône) → copie locale tout de suite, rafraîchie en arrière-plan ;
      si la version gardée diffère de celle qui tourne (DD_BUILD), la page l'apprend (message « dd-shell ») et propose « Recharger ».
      Réseau d'abord (copie locale si le réseau échoue ou traîne → l'app s'ouvre hors ligne) : adresse avec paramètres (partage ?p=,
      ?delete-account, notifications…), pas de copie, ou copie de plus de 7 jours (jamais bloqué sur une vieille version).
@@ -70,7 +70,8 @@ async function page(e) {
   shellCheck = net.catch(() => {});
   e.waitUntil(shellCheck);                                   // la mise à jour finit même si on a servi la copie
   const u = new URL(e.request.url), age = cached ? Date.now() - Number(cached.headers.get('x-dd-at')) : NaN;
-  if (!u.search && age >= 0 && age < SHELL_TTL) return cached;     // ouverture normale : copie locale tout de suite (rien à attendre du réseau)
+  const plain = !u.search || /^\?open=[a-z]+$/.test(u.search);    // ouverture normale, ou raccourci de l'icône de la PWA (?open=scan…)
+  if (plain && age >= 0 && age < SHELL_TTL) return cached;   // copie locale tout de suite (rien à attendre du réseau)
   const share = /[?&]p=/.test(u.search);                     // lien de partage : il faut la version à jour (une ancienne copie ne sait pas l'ouvrir)
   const wait = new Promise((_, no) => setTimeout(no, cached && !share ? 4000 : 25000));
   try { const r = await Promise.race([net, wait]); if (r.ok || !cached) return r; } catch (_) { /* réseau absent ou trop lent */ }
