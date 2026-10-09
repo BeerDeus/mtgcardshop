@@ -13,7 +13,7 @@ function netErr(code, msg, extra) { const e = new Error(msg); e.code = code; Obj
 /** File d'attente cadencée : `rate` requêtes/s, `conc` en parallèle, ralentit seule sur 429/503. */
 class Limiter {
   constructor({ rate = 6, conc = 4, min = 1, max = 10 } = {}) {
-    Object.assign(this, { rate, conc, min, max, queue: [], active: 0, next: 0, count: 0, stamps: [], cool: 0 });
+    Object.assign(this, { rate, conc, min, max, queue: [], active: 0, next: 0, count: 0, stamps: [], cool: 0, waitEnd: 0, waitKind: '' });
   }
   /** prio : requête demandée par un geste (aperçu d'une carte…) : passe devant les lectures de fond (collection, catalogue) qui attendent. */
   schedule(fn, signal, prio) {
@@ -59,42 +59,67 @@ const scryUntil = () => { try { return Number(localStorage.getItem(SCRY_KEY)) ||
 const setScryUntil = t => { try { localStorage.setItem(SCRY_KEY, String(Math.min(t, Date.now() + BACKOFF.maxGate))); } catch (e) { /* stockage indisponible */ } };
 const scryLeft = () => Math.max(0, Math.min(scryUntil() - Date.now(), BACKOFF.maxGate));
 
+/** Délai maximal d'une requête Scryfall, réponse comprise : sans lui, une requête pendue bloquait toute la file (une à la fois) sans erreur ni fin. Dépassé → erreur réseau : même ralentissement, mêmes nouveaux essais. Modifiable par les tests. */
+const HTTP_TIMEOUT = { scry: 20000 };
+/** Signal d'une tentative : suit celui de l'appelant, et coupe la requête si rien n'arrive dans les ms qui suivent arm() (départ de la requête, pas l'attente dans la file ; puis de nouveau pour lire la réponse). Sans AbortSignal.any (absent des WebView avant la 116). late : coupée par le délai. */
+function reqTimer(signal, ms) {
+  if (!ms) return { late: false, arm: () => signal, end() {} };
+  const ctrl = new AbortController(), stop = () => ctrl.abort(), t = { late: false, id: 0 };
+  if (signal) { if (signal.aborted) ctrl.abort(); else signal.addEventListener('abort', stop, { once: true }); }
+  t.arm = () => { clearTimeout(t.id); t.id = setTimeout(() => { t.late = true; ctrl.abort(); }, ms); return ctrl.signal; };
+  t.end = () => { clearTimeout(t.id); if (signal) signal.removeEventListener('abort', stop); };
+  return t;
+}
+/** Attente annoncée à l'écran qui lit (onWait) et gardée sur la file (waitEnd : ligne « Scryfall en pause » de la collection). */
+function limWait(lim, ms, kind) { lim.waitEnd = Date.now() + ms; lim.waitKind = kind; if (lim.onWait) lim.onWait(ms, kind); }
+
 async function httpJson(lim, url, init, signal, retries = 4, prio = false) {
   const host = hostOf(url), scry = /scryfall/.test(host);
-  for (let a = 0, n = 0; ;) {
+  let n = 0;
+  // Coupure passagère (réseau mobile, 429 sans en-têtes CORS, délai dépassé…) : on ralentit puis on retente, sauf si l'appareil est hors ligne.
+  const netFail = async (e, timeout) => {
+    lim.slow();
+    const waits = scry ? BACKOFF.scry : BACKOFF.net;
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (n < waits.length && !offline) { const w = waits[n++]; limWait(lim, w, 'net'); await sleep(w, signal); return; }
+    if (scry && !offline) setScryUntil(Date.now() + BACKOFF.coolNet); // blocage probable : on évite de marteler à la relance
+    throw netErr('network', T('Connexion impossible'), { cause: e, host, offline, timeout });
+  };
+  for (let a = 0; ;) {
+    const tm = reqTimer(signal, scry ? HTTP_TIMEOUT.scry : 0), mine = e => e && e.name === 'AbortError' && tm.late && !(signal && signal.aborted);      // coupée par le délai, pas par l'appelant
     let r;
-    try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal })), signal, prio); }
+    try { r = await lim.schedule(() => fetch(url, Object.assign({}, init, { signal: tm.arm() })), signal, prio); }
     catch (e) {
-      if (e.name === 'AbortError') throw e;
-      // Coupure passagère (réseau mobile, 429 sans en-têtes CORS…) : on ralentit puis on retente, sauf si l'appareil est hors ligne.
-      lim.slow();
-      const waits = scry ? BACKOFF.scry : BACKOFF.net;
-      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      if (n < waits.length && !offline) { const w = waits[n++]; if (lim.onWait) lim.onWait(w, 'net'); await sleep(w, signal); continue; }
-      if (scry && !offline) setScryUntil(Date.now() + BACKOFF.coolNet); // blocage probable : on évite de marteler à la relance
-      throw netErr('network', T('Connexion impossible'), { cause: e, host, offline });
+      tm.end();
+      if (e.name === 'AbortError' && !mine(e)) throw e;
+      await netFail(e, mine(e)); continue;
     }
-    if (r.status === 429 || r.status === 503) {
-      lim.slow();
-      if (a >= (scry ? 2 : retries)) throw netErr('rate', T('Trop de requêtes, réessaie dans un instant'), { status: r.status, host });
-      const ra = Number(r.headers.get('retry-after'));
-      const wait = r.status === 429 && scry ? (Number.isFinite(ra) && r.headers.has('retry-after') ? Math.min(60000, ra * 1000) : BACKOFF.cool429) : 900 * (a + 1);
-      lim.pause(wait); if (scry) setScryUntil(Date.now() + wait); if (lim.onWait) lim.onWait(wait, 'rate');
-      await sleep(wait, signal); a++; continue;
-    }
-    if (r.status === 401 || r.status === 403) {
-      let reason = ''; try { const b = await r.json(); reason = (b && b.error) || ''; } catch (e) { /* corps absent */ }
-      throw netErr('auth', T('Accès refusé'), { status: r.status, host, reason });   // reason : auth_required · forbidden · bad_token · token_expired · bad_app_key
-    }
-    if (r.status === 404) throw netErr('404', T('Introuvable'), { status: 404 });
-    if (!r.ok) {
-      if (r.status >= 500 && a < retries) { await sleep(700 * (a + 1), signal); a++; continue; }
-      let detail = '';
-      try { const b = await r.json(); const m = b && (b.error || b.message || b.errors); detail = m ? (typeof m === 'string' ? m : JSON.stringify(m)).slice(0, 160) : ''; } catch (e) { /* corps absent */ }
-      throw netErr('http', detail ? T('Erreur {status} : {detail}', { status: r.status, detail }) : T('Erreur {status}', { status: r.status }), { status: r.status, host, detail });
-    }
-    lim.speedUp();
-    return r.json();
+    try {
+      tm.arm();
+      if (r.status === 429 || r.status === 503) {
+        lim.slow();
+        if (a >= (scry ? 2 : retries)) throw netErr('rate', T('Trop de requêtes, réessaie dans un instant'), { status: r.status, host });
+        const ra = Number(r.headers.get('retry-after'));
+        const wait = r.status === 429 && scry ? (Number.isFinite(ra) && r.headers.has('retry-after') ? Math.min(60000, ra * 1000) : BACKOFF.cool429) : 900 * (a + 1);
+        tm.end(); lim.pause(wait); if (scry) setScryUntil(Date.now() + wait); limWait(lim, wait, 'rate');
+        await sleep(wait, signal); a++; continue;
+      }
+      if (r.status === 401 || r.status === 403) {
+        let reason = ''; try { const b = await r.json(); reason = (b && b.error) || ''; } catch (e) { /* corps absent */ }
+        throw netErr('auth', T('Accès refusé'), { status: r.status, host, reason });   // reason : auth_required · forbidden · bad_token · token_expired · bad_app_key
+      }
+      if (r.status === 404) throw netErr('404', T('Introuvable'), { status: 404 });
+      if (!r.ok) {
+        if (r.status >= 500 && a < retries) { tm.end(); await sleep(700 * (a + 1), signal); a++; continue; }
+        let detail = '';
+        try { const b = await r.json(); const m = b && (b.error || b.message || b.errors); detail = m ? (typeof m === 'string' ? m : JSON.stringify(m)).slice(0, 160) : ''; } catch (e) { /* corps absent */ }
+        throw netErr('http', detail ? T('Erreur {status} : {detail}', { status: r.status, detail }) : T('Erreur {status}', { status: r.status }), { status: r.status, host, detail });
+      }
+      lim.speedUp();
+      return await r.json();
+    } catch (e) { if (!mine(e)) throw e; }                 // réponse coupée en cours de lecture par le délai : comme une coupure
+    finally { tm.end(); }
+    await netFail(new Error('timeout'), true);
   }
 }
 

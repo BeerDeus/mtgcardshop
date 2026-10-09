@@ -773,6 +773,7 @@ i.mc.mc-c,.fcol.mc-c{background:#cbc5c0 url("data:image/svg+xml,<svg xmlns='http
 .coll-status[data-k="run"]{flex-direction:column;align-items:stretch;gap:8px}
 .coll-status[data-k="err"]{background:var(--warn-soft);color:var(--warn)}
 .coll-status .track{height:6px}
+.coll-status .coll-wait{font-size:12px;color:var(--ink-2)}
 .coll-list{display:flex;flex-direction:column;gap:8px}
 .crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
 .crow.has-px{grid-template-columns:40px minmax(0,1fr) auto;row-gap:4px}

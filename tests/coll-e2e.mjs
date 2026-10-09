@@ -260,7 +260,7 @@ assert.deepEqual(Object.fromEntries(['import', 'alerts', 'alerts/check', 'info',
 ok('token CardTrader : envoyé aux relais et recherches CardTrader, jamais à l\'import ni aux alertes');
 await sh.ctx.close();
 
-/* ── 11) grosse collection : « Afficher plus » ajoute sans tout repeindre, repaints de fond espacés ───── */
+/* ── 11) grosse collection : « Afficher plus » ajoute sans tout repeindre, repaints de fond espacés ; Scryfall qui ne répond pas ───── */
 const bg = await newPage(browser, world), q = bg.p;
 const shownKeys = () => q.$$eval('.coll-list .crow', r => r.map(x => x.dataset.k + '|' + x.dataset.ln));
 const freshKeys = n => q.evaluate(n => collSorted(filterItems(collItems(), COLL.f)).slice(0, n).flatMap(collRowItems).map(it => it.k + '|' + it.l), n);      // ce qu'un repaint complet afficherait
@@ -292,6 +292,41 @@ const paints = await q.evaluate(async () => {
 });
 assert.equal(paints.n, 2, 'deux rafales de 20 : deux repaints'); assert.ok(paints.first < 600, 'premier repaint aussitôt (' + paints.first + ' ms)'); assert.ok(paints.gap >= 1990, 'second repaint 2 s après le premier (' + paints.gap + ' ms)');
 ok('lecture de fond : repaints de la liste espacés (au plus un toutes les 2 s)');
+// Scryfall qui ne répond pas : la requête est coupée (délai), relancée, et la file n'est pas bloquée pour les autres
+await q.keyboard.press('Escape'); await q.waitForFunction(() => !document.querySelector('.coll'));
+let hung = 0, hangAll = false, off = false;
+await q.route('https://api.scryfall.com/cards/collection', route => { if (off) return route.abort('internetdisconnected'); if (hangAll || !hung++) return new Promise(() => {}); return route.fallback(); });      // off : les routes répondent même hors ligne
+await q.evaluate(() => { HTTP_TIMEOUT.scry = 900; localStorage.removeItem(SCRY_KEY); COLL.meta = {}; collAdd([{ k: 'sol ring', n: 'Sol Ring', q: 2 }, { k: 'wrath of god', n: 'Wrath of God', q: 1 }], 'replace'); });
+await q.evaluate(() => openCollection('list'));
+const prio = await q.evaluate(async () => { const t = performance.now(); await httpJson(limScry, 'https://api.scryfall.com/cards/named?exact=Sol%20Ring', SCRY_JSON, null, 4, true).catch(() => {}); return performance.now() - t; });
+assert.ok(prio < 3000, 'une autre requête Scryfall passe malgré la requête pendue (' + Math.round(prio) + ' ms)');
+await q.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length === 2, null, { timeout: 8000 });
+assert.ok(hung >= 2, 'requête pendue coupée puis relancée'); assert.equal(await q.evaluate(() => COLL.enrichErr), '');
+ok('Scryfall pendu : requête coupée au bout du délai, nouvel essai réussi, autres requêtes jamais bloquées');
+// toutes les tentatives pendent : erreur réseau (même message, bouton Réessayer) au lieu d'un « 0 / 2 » sans fin
+await q.keyboard.press('Escape'); await q.waitForFunction(() => !document.querySelector('.coll'));
+hangAll = true;
+await q.evaluate(() => { HTTP_TIMEOUT.scry = 250; localStorage.removeItem(SCRY_KEY); delete COLL.meta['sol ring']; openCollection('list'); });
+await q.waitForFunction(() => /Scryfall injoignable/.test(document.querySelector('.coll-status').textContent), null, { timeout: 8000 });
+assert.equal(await q.$eval('.coll-status', e => e.dataset.k), 'err'); assert.ok(await q.$('.coll-status [data-act="enrich"]'));
+ok('Scryfall pendu à chaque essai : erreur claire et « Réessayer » après les nouveaux essais');
+// 429 : « Scryfall en pause · n s » sous la barre pendant l'attente, puis la lecture reprend seule
+hangAll = false; hung = 1; let n429 = 0;
+await q.route('https://api.scryfall.com/cards/collection', route => n429++ ? route.fallback() : route.fulfill({ status: 429, headers: { 'access-control-allow-origin': '*' }, json: { object: 'error' } }));
+await q.evaluate(() => { HTTP_TIMEOUT.scry = 20000; localStorage.removeItem(SCRY_KEY); BACKOFF.cool429 = 3500; COLL.enrichErr = ''; collEnrich(); });
+await q.waitForFunction(() => /Scryfall en pause · [1-4] s/.test((document.querySelector('.coll-status .coll-wait') || {}).textContent || ''), null, { timeout: 4000 });
+await q.screenshot({ path: 'shots/coll-scry-pause.png' });
+await q.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length === 2, null, { timeout: 9000 }); assert.equal(await q.$('.coll-wait'), null);
+ok('429 : ligne « Scryfall en pause · n s » pendant l\'attente, puis lecture reprise');
+// hors ligne : message « hors ligne », et la lecture reprend seule au retour du réseau (collWake)
+await q.keyboard.press('Escape'); await q.waitForFunction(() => !document.querySelector('.coll'));
+await bg.ctx.setOffline(true); off = true;
+await q.evaluate(() => { localStorage.removeItem(SCRY_KEY); delete COLL.meta['wrath of god']; COLL.enrichErr = ''; openCollection('list'); });
+await q.waitForFunction(() => /Hors ligne : la lecture reprendra au retour du réseau/.test(document.querySelector('.coll-status').textContent), null, { timeout: 8000 });
+await q.screenshot({ path: 'shots/coll-scry-horsligne.png' });
+await bg.ctx.setOffline(false); off = false;
+await q.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length === 2 && !COLL.enrichErr, null, { timeout: 8000 });
+ok('hors ligne : message clair, lecture des infos reprise seule au retour du réseau');
 assert.deepEqual(bg.errs, []); await bg.ctx.close();
 
 console.log('erreurs page :', errs.length ? errs : 'aucune'); assert.deepEqual(errs, []);

@@ -4,7 +4,7 @@
 const COLL_KEY = 'deckdeal:coll:v1', COLL_SRC_KEY = 'deckdeal:coll:src', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
 const COLL_RETRY = { off: 15000, err: 20000, live: 12000 };       // délais (ms) : nouvel essai hors ligne / en erreur, attente du serveur au démarrage
 const PX_KEY = 'deckdeal:px:v1', PX_TTL = 2 * DAY, PX_CHUNK = 40;
-const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'cm', topN: 10, topBy: 'lot', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', fb: null, cmdrSeen: '', freshAt: 0, names: null, namesP: null, pushT: 0, runId: 0, seq: 0, view: null, painted: null, paintT: 0, paintAt: 0 };
+const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'cm', topN: 10, topBy: 'lot', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', fb: null, cmdrSeen: '', freshAt: 0, names: null, namesP: null, pushT: 0, runId: 0, seq: 0, view: null, painted: null, paintT: 0, paintAt: 0, resumeT: 0 };
 try { if (localStorage.getItem(COLL_SRC_KEY) === 'ct') COLL.src = 'ct'; } catch (e) { /* stockage indisponible */ }
 const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
@@ -202,7 +202,7 @@ function collRemoteApplied(before, after, o = {}) {
   else if (add || del) toast(T('Autre appareil : {changes}', { changes: [add && '+' + plural(add), del && '−' + plural(del)].filter(Boolean).join(' · ') }));
 }
 /** Retour au premier plan / réseau revenu : on envoie ce qui attend et on relit le compte (les navigateurs mobiles endorment la connexion en arrière-plan). */
-function collWake() { if (cloudOn()) collSyncNow(); }
+function collWake() { if (cloudOn()) collSyncNow(); collEnrichResume(); }
 function collSleep() { if (cloudOn() && COLL.pushT) collPush(); }       // on part : envoyer sans attendre le délai
 
 /* ── Prix réels : l'offre CardTrader la moins chère de chaque carte, lue avec le moteur de la recherche ───────────
@@ -322,7 +322,8 @@ async function collEnrich() {
   const miss = collMissing(), lm = collLangMissing(), lmN = Object.values(lm).reduce((a, x) => a + x.length, 0); if (!miss.length && !lmN) return;
   if (scryLeft() > 0) { COLL.enrichErr = T('Scryfall demande une pause : réessaie dans {s} s', { s: Math.ceil(scryLeft() / 1000) }); collPaintHead(); return; }
   const full = miss.length > 0 && miss.length >= collCount();      // toute la collection relue : les prix Cardmarket sont à jour
-  const st = COLL.enrich = { done: 0, total: miss.length + lmN, ctrl: new AbortController(), ph: miss.length ? 'info' : 'img' };
+  const st = COLL.enrich = { done: 0, total: miss.length + lmN, ctrl: new AbortController(), ph: miss.length ? 'info' : 'img', wait: '' };
+  st.tick = setInterval(() => { const w = collScryWait(); if (w !== st.wait) { st.wait = w; collPaintHead(); } }, 1000);      // pause de la file : décompte chaque seconde
   COLL.enrichErr = '';
   st.p = (async () => {
     try {
@@ -339,15 +340,22 @@ async function collEnrich() {
         for (const k of keys) COLL.li[liKey(l, k)] = got.get(k) || '';
         st.done = base + keys.length; collMetaSave(); collPaintHead(); collPaintSoon(); scanPaintList();
       }
-    } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? T('Scryfall limite les requêtes : réessaie dans une minute') : T('Scryfall injoignable : réessaie plus tard'); }
+    } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? T('Scryfall limite les requêtes : réessaie dans une minute') : e.offline || collOffline() ? T('Hors ligne : la lecture reprendra au retour du réseau') : T('Scryfall injoignable : réessaie plus tard'); }
     finally {
-      COLL.enrich = null; VAL.memo = null; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true);
+      clearInterval(st.tick); COLL.enrich = null; VAL.memo = null; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true);
       if (!COLL.enrichErr && !st.ctrl.signal.aborted && (collMissing().length || collLangMissingCount())) setTimeout(collEnrich, 50);      // cartes ajoutées ou langues changées pendant la lecture : on enchaîne
       else if (!COLL.enrichErr && !st.ctrl.signal.aborted) valMaybe();
     }
   })();
   collPaintHead();
   return st.p;
+}
+/** Lecture des infos arrêtée par une erreur (réseau coupé, Scryfall injoignable ou en pause) : reprise au retour du réseau ou au premier plan (collWake), une fois la pause Scryfall finie. */
+function collEnrichResume() {
+  clearTimeout(COLL.resumeT); COLL.resumeT = 0;
+  if (!COLL.enrichErr || COLL.enrich || collOffline() || !(collMissing().length || collLangMissingCount())) return;
+  const wait = scryLeft(); if (wait > 0) { COLL.resumeT = setTimeout(collEnrichResume, wait + 500); return; }
+  COLL.enrichErr = ''; collEnrich();
 }
 
 /** Catalogue des noms de cartes (Scryfall) : saisie assistée et reconnaissance OCR. Chargé une fois, gardé 14 jours. */
@@ -513,13 +521,18 @@ function collPaintHead() {
   const px = COLL.pxRun;
   if (px) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix réels · {a} / {b}', { a: nf0(Math.floor(px.done)), b: nf0(px.total) })}${px.step ? ' · ' + esc(px.step) : ''}</span><span class="track"><span class="fill" style="width:${Math.round(100 * px.done / Math.max(1, px.total))}%"></span></span><button class="link-btn" type="button" data-act="pxstop">${T('Arrêter')}</button>`; }
   else if (COLL.pxMsg) { stt.hidden = false; stt.dataset.k = COLL.pxMsg.bad ? 'err' : 'idle'; stt.innerHTML = `<span>${esc(COLL.pxMsg.t)}</span><button class="link-btn" type="button" data-act="pxok">OK</button>`; }
-  else if (e) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${e.ph === 'img' ? T('Images dans la langue des cartes') : T('Lecture des cartes sur Scryfall')} · ${nf0(e.done)} / ${nf0(e.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * e.done / Math.max(1, e.total))}%"></span></span>`; }
+  else if (e) { const w = e.wait; stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${e.ph === 'img' ? T('Images dans la langue des cartes') : T('Lecture des cartes sur Scryfall')} · ${nf0(e.done)} / ${nf0(e.total)}</span><span class="track"><span class="fill" style="width:${Math.round(100 * e.done / Math.max(1, e.total))}%"></span></span>${w ? `<small class="coll-wait">${esc(w)}</small>` : ''}`; }
   else if (VAL.run) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix Cardmarket · {a} / {b}', { a: nf0(VAL.run.done), b: nf0(VAL.run.total) })}</span><span class="track"><span class="fill" style="width:${Math.round(100 * VAL.run.done / Math.max(1, VAL.run.total))}%"></span></span>`; }
   else if (COLL.enrichErr) { stt.hidden = false; stt.dataset.k = 'err'; stt.innerHTML = `<span>${esc(COLL.enrichErr)}</span><button class="link-btn" type="button" data-act="enrich">${T('Réessayer')}</button>`; }
   else if (miss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(miss, '{n} carte sans infos (coût, type, image)', '{n} cartes sans infos (coût, type, image)')}</span><button class="link-btn" type="button" data-act="enrich">${T('Compléter')}</button>`; }
   else if (lmiss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(lmiss, '{n} carte sans image dans sa langue', '{n} cartes sans image dans sa langue')}</span><button class="link-btn" type="button" data-act="enrich">${T('Charger')}</button>`; }
   else stt.hidden = true;
   valPaintAlert();
+}
+/** Pause de la file Scryfall (429, nouvel essai après une coupure ou un délai dépassé) : « Scryfall en pause · 28 s » sous la barre de lecture des infos, au lieu d'un compteur figé ('' : pas de pause). */
+function collScryWait() {
+  const gate = scryLeft(), left = Math.max(gate, (limScry.waitEnd || 0) - Date.now());
+  return left >= 1000 ? T(gate <= 0 && limScry.waitKind === 'net' ? 'Nouvelle tentative · {n} s' : 'Scryfall en pause · {n} s', { n: Math.ceil(left / 1000) }) : '';
 }
 function collPaint() { COLL.seq++; collPaintHead(); if (COLL.el) collPaintBody(true); }
 /** Repaint de la liste pendant une lecture de fond (infos Scryfall, prix réels) : au plus un toutes les 2 s. Avec 5 000 cartes, chaque repaint coûte ~1 s sur un téléphone moyen : à chaque lot, l'écran figeait et la lecture elle-même ralentissait. */
