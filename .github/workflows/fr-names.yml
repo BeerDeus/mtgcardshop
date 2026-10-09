@@ -1,6 +1,7 @@
-# Catalogue des noms de cartes en français (pwa/fr-names.tsv), régénéré chaque semaine depuis l'API Scryfall.
-# L'app le télécharge en une requête ; s'il manque, elle pagine l'API Scryfall elle-même (plus lent). Lancement manuel : onglet Actions › Run workflow.
-name: Catalogue des noms français
+# Catalogues des noms de cartes imprimés (pwa/fr-names.tsv pour le français, pwa/names-<langue>.tsv pour les autres), régénérés chaque semaine depuis l'API Scryfall.
+# L'app télécharge celui de sa langue en une requête ; s'il manque, elle pagine l'API Scryfall elle-même (plus lent). Lancement manuel : onglet Actions › Run workflow.
+# Langues : français + allemand, espagnol, italien (≈ 2,8 Mo de texte, ≈ 1,3 Mo compressé chacune) ; en ajouter une = l'ajouter à LANGS (codes Scryfall : pt ja zhs zht ko ru).
+name: Catalogues des noms imprimés
 on:
   schedule:
     - cron: '17 3 * * 1'
@@ -10,19 +11,25 @@ permissions:
 jobs:
   fr-names:
     runs-on: ubuntu-latest
+    env:
+      LANGS: fr de es it
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Générer pwa/fr-names.tsv
-        run: node gen-fr-names.mjs 2>&1 | tee gen.log; exit ${PIPESTATUS[0]}
-      - name: Erreur (dernières lignes du journal en annotation)
-        if: failure()
-        run: echo "::error title=gen-fr-names::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"
-      - name: Commit si le fichier a changé
+      # Une langue en échec n'empêche pas les autres d'être mises à jour (son fichier existant est gardé) ; le job échoue à la fin pour le signaler.
+      - name: Générer les catalogues
+        run: |
+          fail=''
+          for l in $LANGS; do if node gen-fr-names.mjs --lang "$l" 2>&1 | tee -a gen.log; then :; else fail="$fail $l"; fi; done      # « if » : le bash -eo pipefail des Actions n'arrête pas la boucle
+          echo "FAIL=$fail" >> "$GITHUB_ENV"
+      - name: Commit si un fichier a changé
         run: |
           git config user.name "deck-deal-bot"
           git config user.email "deck-deal-bot@users.noreply.github.com"
-          git add pwa/fr-names.tsv
-          if git diff --cached --quiet; then echo "Aucun changement."; else git commit -m "Catalogue FR : mise à jour automatique" && git push; fi
+          for f in pwa/fr-names.tsv pwa/names-*.tsv; do [ -e "$f" ] && git add "$f"; done; true
+          if git diff --cached --quiet; then echo "Aucun changement."; else git commit -m "Catalogues des noms imprimés : mise à jour automatique" && git push; fi
+      - name: Erreur (langues en échec, dernières lignes du journal en annotation)
+        if: env.FAIL != ''
+        run: echo "::error title=gen-fr-names (${FAIL# })::$(tail -c 900 gen.log | sed ':a;N;$!ba;s/\n/ | /g')"; exit 1

@@ -60,13 +60,13 @@ const alSubJson = () => pushTarget();
 /** Envoie la liste au serveur (rien si inchangée depuis moins de 12 h). */
 async function alSync(force) {
   if (!AC.on || AC.busy || !alAvail()) return;
-  const items = alItems(), sig = AC.thr + '|' + JSON.stringify(items);
+  const items = alItems(), sig = AC.thr + '|' + I18N.lang + '|' + JSON.stringify(items);      // langue dans la signature : le serveur réapprend la langue des notifications quand elle change
   if (!force && sig === AC.sig && Date.now() - AC.at < AL_RESYNC) return;
   if (!items.length && !AC.id) { AC.sig = sig; return; }
   AC.busy = true;
   try {
     const sub = await alSubJson(); if (!sub) { AC.err = 'push'; return; }
-    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, items: items.map(({ h, ...x }) => x) } }), prev = AC.id;
+    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, lang: I18N.lang, items: items.map(({ h, ...x }) => x) } }), prev = AC.id;
     if (prev && j.id && j.id !== prev) ct('alerts', { method: 'DELETE', params: { id: prev } }).catch(() => {});   // nouvel abonnement ou jeton FCM renouvelé : l'ancien ne doit plus notifier
     AC.id = items.length ? (j.id || AC.id) : ''; AC.sig = sig; AC.at = Date.now(); AC.err = ''; AC.info = { watching: j.watching | 0 }; alWrite();
   } catch (e) { AC.err = e && e.code === 'auth' ? 'auth' : 'net'; }

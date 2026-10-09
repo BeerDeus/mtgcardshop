@@ -195,12 +195,12 @@ function trDeckGone(id) {
 }
 
 /* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
-const CM_WANTS = 'https://www.cardmarket.com/fr/Magic/Wants';
+const cmWants = () => 'https://www.cardmarket.com/' + cmSite(userLang()) + '/Magic/Wants';      // site Cardmarket dans la langue de l'utilisateur
 function cmCopy(items, what) {
   const text = cmText(items), n = text ? text.split('\n').length : 0;
   if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
   haptic('ok');
-  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(cmWants(), '_blank', 'noopener') });
   try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
 }
 
