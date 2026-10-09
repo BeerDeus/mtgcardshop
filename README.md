@@ -157,7 +157,7 @@ Chaque recherche live d'un deck enregistré garde les prix carte par carte (cart
 ## Carte en grand
 
 Toucher l'image d'une carte l'affiche en grand (précédent / suivant dans l'ordre de la liste), dans la langue de l'offre retenue (Scryfall `/cards/<ext>/<n°>/<langue>`) ; si Scryfall n'a pas la version française, l'anglaise est affichée avec une mention. Cartes double face : bouton « Retourner ».
-<!-- CARDZOOM (à venir) : toucher n'importe quelle vignette de carte l'agrandit. -->
+Toute vignette de carte (résultats CardTrader et Cardmarket, collection, Stats, échange, page publique, scan et fiche « Ajouter », éditeur, deck viewer, main de départ) s'ouvre en grand au toucher, ou avec Entrée / Espace ; précédente et suivante parcourent la liste affichée. Sans image, la carte est chargée par son nom, dans la langue voulue. Le reste de la ligne garde son action (offres, prix, +/−). Un mécanisme unique : `src/zoom.js`.
 
 ## Ma collection (cartes possédées)
 
