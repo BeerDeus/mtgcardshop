@@ -72,19 +72,23 @@ const fakePrompt = outcome => {
   assert.deepEqual(errs, [], 'aucune erreur page'); await c.close();
 }
 
-// 1b) réseau très lent : la copie locale est servie au bout de ~4 s au lieu d'attendre le serveur
+// 1b) réseau très lent : ouverture normale → copie locale tout de suite ; adresse avec paramètres → réseau d'abord, copie au bout de ~4 s
 {
   let slow = 0;
-  const fwd = http.createServer((q, r) => { const go = () => { const u = http.request({ host: '127.0.0.1', port: 18801, path: q.url, method: q.method, headers: q.headers }, x => { r.writeHead(x.statusCode, x.headers); x.pipe(r); }); u.on('error', () => r.destroy()); q.pipe(u); }; (q.url === '/' && slow) ? setTimeout(go, slow) : go(); });
+  const fwd = http.createServer((q, r) => { const go = () => { const u = http.request({ host: '127.0.0.1', port: 18801, path: q.url, method: q.method, headers: q.headers }, x => { r.writeHead(x.statusCode, x.headers); x.pipe(r); }); u.on('error', () => r.destroy()); q.pipe(u); }; (q.url.split('?')[0] === '/' && slow) ? setTimeout(go, slow) : go(); });
   await new Promise(r => fwd.listen(18802, '127.0.0.1', r));
   const { c, pg, errs } = await mk();
   await pg.goto('http://127.0.0.1:18802/'); await pg.evaluate(() => navigator.serviceWorker.ready); await pg.waitForTimeout(600);
-  slow = 7000; const t0 = Date.now(); await pg.reload({ waitUntil: 'domcontentloaded', timeout: 20000 }); const dt = Date.now() - t0;
-  console.log('rechargement avec serveur très lent (7 s) :', dt, 'ms');
-  assert.ok(dt > 3000 && dt < 6500, 'copie locale servie après ~4 s, pas 7 s'); assert.ok(await pg.$('#deckText'));
+  await pg.reload(); await pg.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 8000 });
+  slow = 7000; let t0 = Date.now(); await pg.reload({ waitUntil: 'domcontentloaded', timeout: 20000 }); let dt = Date.now() - t0;
+  console.log('ouverture avec serveur très lent (7 s) :', dt, 'ms');
+  assert.ok(dt < 2500, 'copie locale servie tout de suite, sans attendre le serveur'); assert.ok(await pg.$('#deckText'));
+  t0 = Date.now(); await pg.goto('http://127.0.0.1:18802/?x=1', { waitUntil: 'domcontentloaded', timeout: 20000 }); dt = Date.now() - t0;
+  console.log('adresse avec paramètre, serveur très lent (7 s) :', dt, 'ms');
+  assert.ok(dt > 3000 && dt < 6500, 'adresse avec paramètre : réseau d\'abord, copie locale après ~4 s, pas 7 s'); assert.ok(await pg.$('#deckText'));
   slow = 0; await pg.waitForTimeout(3500); // la mise à jour se termine en arrière-plan sans erreur
   assert.deepEqual(errs, []); await c.close(); fwd.close();
-  console.log('✓ serveur lent : la copie locale prend le relais');
+  console.log('✓ serveur lent : copie locale d\'emblée (ouverture normale) ou après ~4 s (adresse avec paramètres)');
 }
 
 // 2) bannière + bouton Installer (événement beforeinstallprompt simulé)
