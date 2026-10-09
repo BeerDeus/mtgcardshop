@@ -3,7 +3,7 @@
    · aperçu de l'appareil photo dans l'app : AUCUN calcul pendant l'aperçu ; le cercle prend la photo de la bande « nom · mana » ; on enchaîne ;
    · « Appareil » (appareil photo du téléphone, <input capture>) ou « Photos » (galerie) : photo de la carte entière en portrait, seul le tiers haut est lu.
    Seul le NOM est lu, puis comparé au catalogue Scryfall : on n'ajoute jamais le texte brut, toujours la carte officielle. Français d'abord (catalogue des noms imprimés Scryfall, local), puis anglais,
-   puis, si rien n'est sûr, les autres langues (catalogues du serveur) ; la langue de la carte est enregistrée.
+   puis, si rien n'est sûr, les autres langues (catalogue de l'appareil, sinon celui du serveur) ; la langue de la carte est enregistrée.
    ≥ 84 % de ressemblance = ajoutée (miniature Scryfall pour vérifier) · 72–84 % = à confirmer avec la miniature · en dessous = rien.
    Les photos ne sont jamais enregistrées : décodées au moment de la lecture, puis vidées (il ne reste, en mémoire le temps du scan, qu'une vignette de ~3 Ko de la zone lue et, pour les cartes à vérifier ou non reconnues, une photo lisible de la bande du nom).
    Tesseract.js est chargé à la demande depuis un CDN (modèle français d'abord, ≈ 3 Mo, gardé ensuite par le navigateur ; l'anglais seulement si le français ne trouve rien). */
@@ -95,6 +95,7 @@ function scanTotals() { let n = 0, maybe = 0; for (const e of SC.items.values())
 function scanAdd(m, d, maybe, shot) {
   const l = m.card || 'en', id = scanId(m.key, l), cur = SC.items.get(id);      // une ligne par carte ET par langue : la même carte lue en français puis en anglais fait deux lignes
   if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); }       // image de la carte dans sa langue, vue pendant la lecture : gardée pour la collection
+  else if (m.via && l !== 'en') langImgFor(m.key, m.name, l);      // trouvée sur l'appareil (catalogue sans images) : celle de sa langue demandée à Scryfall, l'anglaise en attendant
   if (cur) { cur.q = Math.max(1, cur.q + d); if (!maybe) { cur.maybe = false; cur.shot = ''; } else if (cur.maybe && shot) cur.shot = shot; if (m.score > cur.score) { cur.score = m.score; cur.raw = m.raw; } if (m.via) cur.via = m.via; }
   else SC.items.set(id, { id, key: m.key, name: m.name, q: Math.max(1, d), score: m.score, raw: m.raw, maybe: !!maybe, l, shot: maybe ? shot || '' : '', via: m.via || '' });      // via : langue trouvée par la recherche des autres langues
   scanPaintList();
@@ -223,7 +224,7 @@ function scanPriceAdd(m) {
   const l = m.card || 'en'; let e = SC.pq.find(x => x.key === m.key);
   if (e) { SC.pq = [e, ...SC.pq.filter(x => x !== e)]; e.n = (e.n || 1) + 1; e.maybe = m.score < 0.84; e.raw = m.raw; e.l = l; if (e.cm === 'err') e.cm = undefined; }
   else { e = { key: m.key, name: m.name, l, maybe: m.score < 0.84, raw: m.raw, cm: undefined, ct: undefined, t: Date.now() }; SC.pq.unshift(e); if (SC.pq.length > 40) SC.pq.length = 40; }
-  if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); }
+  if (m.img && l !== 'en') { COLL.li[liKey(l, m.key)] = m.img; collMetaSave(); } else if (m.via && l !== 'en') langImgFor(m.key, m.name, l);
   scanPaintList(); scanPriceFetch(e);
 }
 async function scanPriceFetch(e) {
@@ -343,8 +344,8 @@ async function scanMatch(lines, cat, lang) {
   return m;
 }
 /* ── Autres langues : nom ni dans le catalogue de la langue des noms ni en anglais (carte italienne lue avec l'appli en français) ──────────────
-   Les lignes lues partent au serveur, qui les cherche dans les catalogues des autres langues (proxy.mjs › /api/names/find, une requête) : la carte trouvée
-   garde sa langue (drapeau, image, exemplaire de la collection). Seulement quand rien n'est sûr : une carte de la langue de l'appli ou anglaise n'en déclenche pas. */
+   Les lignes lues sont cherchées dans les catalogues des autres langues : sur l'appareil (names-all.tsv, ci-dessous) s'il y est, sinon au serveur (proxy.mjs › /api/names/find,
+   une requête) ; la carte trouvée garde sa langue (drapeau, image, exemplaire de la collection). Seulement quand rien n'est sûr : une carte de la langue de l'appli ou anglaise n'en déclenche pas. */
 const OTH = { off: 0, memo: new Map() };      // off : heure jusqu'à laquelle le serveur n'est plus redemandé (route absente : serveur pas encore redémarré après une mise en ligne)
 /** Petits mots de liaison des langues latines (di, del, de, der, el, do…). */
 const LINK_WORDS = new Set(['di', 'del', 'della', 'delle', 'dello', 'dei', 'degli', 'dal', 'dalla', 'il', 'lo', 'gli', 'nel', 'nella', 'da', 'de', 'des', 'du', 'la', 'le', 'les', 'el', 'los', 'las', 'do', 'dos', 'das', 'der', 'die', 'den', 'dem', 'und', 'von', 'zu', 'zum', 'zur', 'al', 'en', 'em', 'com', 'con', 'per', 'sur', 'aux', 'au', 'ein', 'eine']);
@@ -357,13 +358,63 @@ function looksForeign(raw, ref) {
 }
 /** Lecture douteuse : reconnue de justesse (< 0,92) dans la langue des noms ou en anglais, sur un texte qui n'a pas l'air de cette langue : les autres langues d'abord (gardée si elles ne font pas mieux). */
 const scanDoubt = m => !!m && m.score < 0.92 && looksForeign(m.raw, m.card === 'en' ? m.name : frName(m.key, m.card) || m.name);
-/** Lignes lues → carte trouvée dans une autre langue (serveur) : { name, key, score, raw, card, img, via } ou null. st : budget de la carte (2 requêtes au plus). */
+/* ── Autres langues sur l'appareil, comme l'anglais : names-all.tsv (data.js › namesAllFetch), téléchargé en arrière-plan à l'ouverture du scan, en Wi-Fi seulement
+   (réseau mobile : rien de nouveau n'est demandé, le serveur cherche à la place), mis à jour tous les 14 jours. Index d'une langue (≈ 3 à 5 Mo) construit par tranches
+   à la première carte qui en a besoin, libéré à la fermeture du scan. Mêmes catalogues, même comparaison, même arbitrage entre langues que le serveur (core.js › nmMatch, nmPick). */
+const OTHX = { at: -1, cats: {}, p: null, dl: null, gen: 0 };      // at : date du fichier gardé (0 : aucun, -1 : pas encore lue) ; cats : langue → catalogue (null : aucun nom dans cette langue)
+const othTick = gen => new Promise(r => setTimeout(() => r(OTHX.gen === gen && !!SC.el), 0));      // false : scan fermé ou nouveau fichier, on abandonne
+/** Ouverture du scan : fichier téléchargé s'il manque ou a plus de 14 jours (en ligne, hors réseau mobile). */
+function othWarm() {
+  if (OTHX.dl) return OTHX.dl;
+  const p = OTHX.dl = (async () => {
+    if (OTHX.at < 0) OTHX.at = await namesAllAt();
+    if (OTHX.at && Date.now() - OTHX.at < FR_FRESH) return;
+    if ((typeof navigator !== 'undefined' && navigator.onLine === false) || frcMetered()) return;
+    const at = await namesAllFetch(); if (!at) return;      // absent du site, hors ligne : l'ancien fichier (s'il y en a un) sert encore
+    OTHX.at = at; OTHX.gen++; OTHX.cats = {}; OTHX.p = null;      // nouveau fichier : index reconstruits à la prochaine carte
+  })().catch(() => {}).finally(() => { if (OTHX.dl === p) OTHX.dl = null; });
+  return p;
+}
+/** Scan fermé : index libérés (le fichier reste sur l'appareil). */
+function othFree() { OTHX.gen++; OTHX.cats = {}; OTHX.p = null; }
+/** Catalogues des langues ls, construits à la première demande (une construction à la fois) : { langue: catalogue | null }, ou null (pas de fichier sur l'appareil, construction abandonnée). */
+async function othCats(ls) {
+  if (OTHX.at < 0) OTHX.at = await namesAllAt();
+  if (!OTHX.at) return null;
+  if (ls.some(l => !(l in OTHX.cats))) {
+    const gen = OTHX.gen;
+    await (OTHX.p = (OTHX.p || Promise.resolve()).then(async () => {
+      const need = ls.filter(l => !(l in OTHX.cats)); if (!need.length || OTHX.gen !== gen || !SC.el) return;
+      const t = await namesAllText(); if (OTHX.gen !== gen) return;
+      if (!t) { OTHX.at = 0; return; }      // stockage effacé : retéléchargé à la prochaine ouverture du scan, le serveur cherche en attendant
+      const c = await namesAllCats(t, need, () => othTick(gen));
+      if (c && OTHX.gen === gen) for (const l of need) OTHX.cats[l] = c[l] || null;
+    }).catch(() => {}));
+  }
+  return OTHX.at && ls.every(l => l in OTHX.cats) ? OTHX.cats : null;
+}
+/** Lignes lues → carte d'une autre langue trouvée sur l'appareil : { name, key, score, raw, card, img: '', via, amb? } ou null ; undefined : rien sur l'appareil (le serveur cherche). */
+async function othLocal(qs, skip) {
+  const ls = NAMES_LANGS.filter(l => l !== skip), cats = await othCats(ls);
+  if (!cats || !ls.some(l => cats[l])) return undefined;
+  const lines = qs.map(text => ({ text })), found = [], gen = OTHX.gen;
+  for (const l of ls) {
+    const m = cats[l] && nmMatch(cats[l], lines); if (m) found.push({ ...m, lang: l });
+    if (!(await othTick(gen))) return undefined;      // une langue à la fois : l'écran respire entre deux
+  }
+  const h = nmPick(found);
+  return h && h.score >= 0.72 ? { name: h.name, key: ownKey(h.name), score: h.score, raw: h.raw, card: h.lang, img: '', via: h.lang, ...(h.amb ? { amb: true } : {}) } : null;
+}
+/** Lignes lues → carte trouvée dans une autre langue : { name, key, score, raw, card, img, via } ou null. Sur l'appareil d'abord (names-all.tsv, sans réseau ni budget) ;
+ *  sans fichier sur l'appareil : le serveur. st : budget de la carte pour le serveur (2 requêtes au plus). */
 async function scanOther(lines, st) {
-  if (Date.now() < OTH.off || !CTX.proxy || !(st.n < 2)) return null;
   const qs = [...new Set(lines.map(l => String(l.text || '').trim()).filter(t => t.length >= 3 && t.length <= 60 && (t.match(/[A-Za-zÀ-ÿ]/g) || []).length >= t.length * 0.6))].slice(0, 4);      // mêmes lignes que core.js › ocrMatches
   if (!qs.length) return null;
-  const skip = FRC.cat ? FRC.cat.l || FRX.l : '', k = skip + '\n' + qs.join('\n');      // langue des noms déjà comparée sur l'appareil ; catalogue pas encore là : le serveur la cherche aussi
+  const skip = FRC.cat ? FRC.cat.l || FRX.l : '', k = skip + '\n' + qs.join('\n');      // langue des noms déjà comparée sur l'appareil ; catalogue pas encore là : cherchée aussi
   if (OTH.memo.has(k)) return OTH.memo.get(k);
+  const loc = await othLocal(qs, skip);
+  if (loc !== undefined) { if (OTH.memo.size > 200) OTH.memo.clear(); OTH.memo.set(k, loc); return loc; }
+  if (!SC.el || Date.now() < OTH.off || !CTX.proxy || !(st.n < 2)) return null;
   st.n++; let hit = null;
   try {
     const r = await fetch('api/names/find?' + new URLSearchParams([...qs.map(q => ['q', q]), ['skip', skip]]), { headers: { Accept: 'application/json' } });
@@ -379,8 +430,8 @@ async function scanOther(lines, st) {
   return hit;
 }
 /** Lit une zone « nom » : français d'abord (la plupart des cartes), puis anglais ; le texte lu est comparé aux noms français ET anglais (une carte anglaise lue par le moteur français est reconnue aussi).
- *  Rien de sûr (ou anglais douteux) : les mêmes lignes sont cherchées dans les autres langues (serveur). Polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr.
- *  st : { n } requêtes « autres langues » déjà faites pour cette carte. */
+ *  Rien de sûr (ou anglais douteux) : les mêmes lignes sont cherchées dans les autres langues (appareil, sinon serveur). Polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr.
+ *  st : { n } requêtes « autres langues » au serveur déjà faites pour cette carte. */
 async function readNameAuto(src, box, outW, psm, cat, retry, st) {
   const langs = ocrLangs();
   let best = null, inv;
@@ -566,7 +617,7 @@ async function scanWarm() {
     await Promise.all([collCatalog(), frcWarm()]);
     if (!SC.el || SC.session !== s || natOcr()) return; await ocrWorker(ocrLangs()[0]);      // appli Android : ML Kit, pas de moteur à télécharger      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
   } catch (e) { /* hors ligne ou CDN bloqué : le premier appui retentera et dira pourquoi */ }
-  finally { SC.warm = false; SC.workEnd = performance.now(); }
+  finally { SC.warm = false; SC.workEnd = performance.now(); if (SC.el && SC.session === s) othWarm(); }      // autres langues : téléchargées après le moteur OCR (la 1re lecture d'abord)
 }
 const CAM_HINT = T('Cadre le haut de la carte : le nom et le mana dans la bande, puis appuie sur le cercle. Tu peux enchaîner');
 /* — Appli Android (Capacitor) : appareil photo natif, comme les applis photo (aperçu Camera1 du plugin camera-preview placé derrière la page, sous la bande du guide),
@@ -678,7 +729,7 @@ function openScan() {
   const stop = () => { SC.alive = false; SC.warm = false; clearInterval(SC.diagT); clearTimeout(SC.hintT); SC.queue.forEach(j => scanFree(j.src)); SC.queue = []; SC.pend = []; if (SC.stream) { SC.stream.getTracks().forEach(t => t.stop()); SC.stream = null; } natStop(); };
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
-    if (SC.el !== wrap) return; SC.el = null; stop(); document.removeEventListener('keydown', onKey, true);
+    if (SC.el !== wrap) return; SC.el = null; stop(); othFree(); document.removeEventListener('keydown', onKey, true);
     wrap.classList.remove('on'); setTimeout(() => wrap.remove(), reduceMotion() ? 0 : 240); releaseApp();
     try { if (prevFocus && prevFocus.focus && prevFocus.isConnected) prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   };

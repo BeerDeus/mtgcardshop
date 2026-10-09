@@ -814,6 +814,50 @@ test('gen-fr-names.mjs : la ligne générée est identique à frRow() de l\'app 
   assert.equal(frRow(cards[0]), 'Anneau solaire\tSol Ring\tfront/a/b/ab.jpg'); assert.equal(frRow(cards[1]), 'Explorateur de secrets // Aberration insectoïde\tDelver of Secrets // Insectile Aberration\tfront/c/d/cd.jpg'); assert.equal(frRow(cards[3]), ''); assert.equal(frRow(null), '');
 });
 
+/* Noms imprimés des autres langues : names-all.tsv (appli) et names-*.tsv (serveur) donnent la même carte, la même langue, le même score */
+const NM_FIX = async () => {
+  const { readFileSync } = await import('node:fs'), fill = l => Array.from({ length: 600 }, (_, i) => `Vrombl ${l} ${i} Quarnax\tVrombl Card ${i}\t`).join('\n') + '\n';
+  return Object.fromEntries(['de', 'es', 'it', 'pt'].map(l => [l, readFileSync(new URL(`./fixtures/names-${l}.tsv`, import.meta.url), 'utf8') + fill(l)]));
+};
+test('gen-names-all.mjs : une ligne par nom anglais, une colonne par langue, noms identiques à l\'anglais et catalogues tronqués laissés de côté, ordre stable', async () => {
+  const { namesAll, ALL_LANGS } = await import('../gen-names-all.mjs'), texts = await NM_FIX();
+  assert.deepEqual(ALL_LANGS, C.NAMES_LANGS, 'mêmes langues que l\'appli');
+  const { text, lines } = namesAll({ ...texts, fr: 'Foudre\tLightning Bolt\tx.jpg\n' }), rows = text.split('\n');
+  assert.equal(rows[0], '# anglais\tfr\tde\tes\tit\tpt', 'langues des colonnes'); assert.equal(rows.length - 2, lines); assert.equal(rows[rows.length - 1], '', 'fin de ligne finale');
+  const by = Object.fromEntries(rows.slice(1, -1).map(r => [r.split('\t')[0], r.split('\t').slice(1)]));
+  assert.deepEqual(by['Lightning Bolt'], ['', 'Blitzschlag', 'Relámpago', 'Fulmine', 'Raio'], 'français tronqué (< 500 lignes) : colonne vide');
+  assert.deepEqual(by['Edgar Markov'], undefined, 'même nom dans toutes les langues : rien à chercher ailleurs (le catalogue anglais le lit)');
+  assert.deepEqual(by.Famine, undefined); assert.deepEqual(by['Swords to Plowshares'], ['', 'Schwerter zu Pflugscharen', 'Espadas en guadañas', 'Da Spade a Spighe!', 'Espadas em Arados']);
+  assert.deepEqual(by['Vrombl Card 7'], ['', 'Vrombl de 7 Quarnax', 'Vrombl es 7 Quarnax', 'Vrombl it 7 Quarnax', 'Vrombl pt 7 Quarnax']);
+  const keys = rows.slice(1, -1).map(r => r.split('\t')[0]); assert.deepEqual(keys, [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)), 'trié par nom anglais');
+  assert.equal(namesAll(texts).text, text, 'catalogue tronqué ignoré : même fichier qu\'en son absence');
+  const two = namesAll({ it: texts.it + 'Fulmine Antico\tLightning Bolt\t\nFulmine\tLightning Bolt\t\n' }).text;
+  assert.match(two, /^Lightning Bolt\t\t\t\tFulmine\|Fulmine Antico\t$/m, 'plusieurs noms imprimés : « | », sans doublon, ordre du catalogue');
+});
+test('namesAllCats / nmMatch / nmPick : carte d\'une autre langue lue sur l\'appareil, même résultat que le serveur (names-*.tsv)', async () => {
+  const { namesAll } = await import('../gen-names-all.mjs'), texts = await NM_FIX(), LS = ['de', 'es', 'it', 'pt'];
+  let ticks = 0; const loc = await C.namesAllCats(namesAll(texts).text, LS, async () => { ticks++; return true; });
+  assert.deepEqual(Object.keys(loc), LS); assert.ok(ticks >= 2, 'construit par tranches (' + ticks + ')'); assert.equal(loc.it.first, null, 'table de construction libérée');
+  const srv = {};
+  for (const l of LS) { const c = C.nmCat(); for (const r of texts[l].split('\n')) { if (!r || r[0] === '#') continue; const t = r.split('\t'); C.nmPut(c, t[0].trim(), (t[1] || '').trim(), (t[2] || '').trim()); } srv[l] = C.nmDone(c); }
+  const pick = (cats, q) => { const f = []; for (const l of LS) { const m = C.nmMatch(cats[l], [{ text: q }]); if (m) f.push({ ...m, lang: l }); } const h = C.nmPick(f); return h && { name: h.name, lang: h.lang, score: h.score, amb: !!h.amb, alt: h.alt || [] }; };
+  const want = { Fulmine: ['Lightning Bolt', 'it', 1, false], Contromagia: ['Counterspell', 'it', 1, false], Blitzschlag: ['Lightning Bolt', 'de', 1, false], 'Espadas en guadañas': ['Swords to Plowshares', 'es', 1, false],
+    'Espadas en guadahas': ['Swords to Plowshares', 'es', 0.974, false], 'Fulmlne': ['Lightning Bolt', 'it', 0.929, false], Relampago: ['Lightning Bolt', 'es', 0.83, true], 'Relâmpago': ['Thunderbolt', 'pt', 1, false], 'Relámpago': ['Lightning Bolt', 'es', 1, false] };
+  for (const [q, [name, lang, score, amb]] of Object.entries(want)) {
+    const a = pick(loc, q), b = pick(srv, q);
+    assert.deepEqual([a.name, a.lang, a.amb], [name, lang, amb], q); assert.ok(Math.abs(a.score - score) < 0.02, q + ' : ' + a.score); assert.deepEqual(a, b, q + ' : même résultat que le serveur');
+  }
+  assert.deepEqual(pick(loc, 'Elfos de Llanowar').alt, ['pt'], 'même carte, même nom en espagnol et en portugais'); assert.equal(pick(loc, 'Qzxvbnm Plrtkgh'), null);
+  assert.equal(C.nmMatch(loc.it, [{ text: 'Fulmine' }]).img, '', 'appli : catalogue sans images'); assert.equal(C.nmMatch(srv.it, [{ text: 'Fulmine' }]).img, 'front/it/lightning-bolt.jpg', 'serveur : chemin de l\'image');
+  const amb = C.nmCat(); for (let i = 0; i < 600; i++) C.nmPut(amb, 'Nom ' + i, 'Name ' + i); C.nmPut(amb, 'Dépérissement', 'Sicken'); C.nmPut(amb, 'Deperissement', 'Waste Away'); C.nmPut(amb, 'Nom 3', 'Name 3');
+  const d = C.nmMatch(C.nmDone(amb), [{ text: 'Dépérissement' }]); assert.deepEqual([d.name, d.score, d.amb], ['Sicken', 0.83, true], 'nom imprimé partagé par deux cartes : la 1re, à vérifier');
+  assert.equal(C.nmMatch(amb, [{ text: 'Nom 3' }]).amb, undefined, 'même carte deux fois : pas ambigu');
+  assert.equal(C.nmDone(C.nmCat()), null, 'catalogue tronqué (< 500 noms) : rien');
+  assert.equal(await C.namesAllCats(namesAll(texts).text, LS, async () => false), null, 'abandon (scan fermé)');
+  const cols = await C.namesAllCats('# anglais\tit\n' + texts.it.split('\n').filter(Boolean).map(r => r.split('\t')[1] + '\t' + r.split('\t')[0]).join('\n'), ['it', 'de'], null);
+  assert.deepEqual(Object.keys(cols), ['it'], 'colonnes lues d\'après la 1re ligne ; langue absente : pas de catalogue'); assert.equal(C.nmMatch(cols.it, [{ text: 'Fulmine' }]).name, 'Lightning Bolt');
+});
+
 /* ── Commander : éligibilité, fichier EDHREC, decks à compléter ───────────────────────────────── */
 test('canBeCommander : légendaire créature, véhicule/vaisseau avec F/E, texte « can be your commander », double faces, légalité', () => {
   const T = (type_line, extra = {}) => ({ type_line, legalities: { commander: 'legal' }, ...extra });

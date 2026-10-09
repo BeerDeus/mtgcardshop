@@ -138,21 +138,25 @@ const Cache = (() => {
     });
     return dbp;
   }
-  async function get(k, maxAge) {
+  // noMem : gros texte relu de l'appareil quand il sert (catalogue de toutes les langues, ≈ 7 Mo en mémoire), jamais gardé ici ; set renvoie alors true une fois écrit
+  async function get(k, maxAge, noMem) {
     const m = mem.get(k); if (m && Date.now() - m.t < maxAge) return m.v;
     const d = await db(); if (!d) return null;
     return new Promise(res => {
       try {
         const rq = d.transaction('kv').objectStore('kv').get(k);
-        rq.onsuccess = () => { const v = rq.result; if (v && Date.now() - v.t < maxAge) { mem.set(k, v); res(v.v); } else res(null); };
+        rq.onsuccess = () => { const v = rq.result; if (v && Date.now() - v.t < maxAge) { if (!noMem) mem.set(k, v); res(v.v); } else res(null); };
         rq.onerror = () => res(null);
       } catch (e) { res(null); }
     });
   }
-  async function set(k, v) {
-    const rec = { v, t: Date.now() }; mem.set(k, rec);
-    const d = await db(); if (!d) return;
-    try { d.transaction('kv', 'readwrite').objectStore('kv').put(rec, k); } catch (e) { /* quota */ }
+  async function set(k, v, noMem) {
+    const rec = { v, t: Date.now() }; if (noMem) mem.delete(k); else mem.set(k, rec);
+    const d = await db(); if (!d) return false;
+    if (!noMem) { try { d.transaction('kv', 'readwrite').objectStore('kv').put(rec, k); } catch (e) { /* quota */ } return true; }
+    return new Promise(res => {
+      try { const tx = d.transaction('kv', 'readwrite'); tx.objectStore('kv').put(rec, k); tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); }      // quota : rien d'écrit
+    });
   }
   async function clear() {
     mem.clear(); const d = await db(); if (!d) return;
@@ -386,6 +390,23 @@ async function scryFrCatalog(signal, onProgress, l = 'fr') {
   if (rows.length < 500) throw netErr('http', l === 'fr' ? T('Catalogue français incomplet') : T('Catalogue des noms incomplet ({lang})', { lang: LANGS[l] || l }));
   const rec = { rows, at: Date.now() }; await Cache.set(nmKey(l), rec); await Cache.set(nmPart(l), null);
   return rec;
+}
+/* ── Noms imprimés de toutes les langues (scan d'une carte d'une autre langue que celle de l'appli, sans le serveur) : names-all.tsv (gen-names-all.mjs),
+   « anglais \t fr \t de \t es \t it \t pt », ≈ 3,5 Mo de texte, ≈ 1,4 Mo compressé. Gardé sur l'appareil (jamais en mémoire : relu quand le scan en a besoin) ; date à part. */
+const NA_KEY = 'sc:nm:all', NA_AT = 'sc:nm:all:at', NA_FILE = 'names-all.tsv';
+/** Date du fichier gardé sur l'appareil (ms), 0 s'il n'y en a pas. */
+async function namesAllAt() { const c = await Cache.get(NA_AT, 3650 * DAY); return c && c.at > 0 ? c.at : 0; }
+/** Texte gardé sur l'appareil, ou null. */
+async function namesAllText() { const t = await Cache.get(NA_KEY, 3650 * DAY, true); return typeof t === 'string' && t.length > 1000 ? t : null; }
+/** Télécharge le fichier du site et le garde : date (ms), ou 0 (absent, illisible, trop court, hors ligne, appareil plein). */
+async function namesAllFetch(signal) {
+  if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return 0;
+  let r; try { r = await fetch(new URL(NA_FILE, location.href).href, { signal, cache: 'no-cache' }); } catch (e) { if (e.name === 'AbortError') throw e; return 0; }
+  if (!r.ok) return 0;
+  let t; try { t = await r.text(); } catch (e) { if (e.name === 'AbortError') throw e; return 0; }
+  if (!/^#[^\n]*\t/.test(t) || t.split('\n', 502).length < 502) return 0;      // 1re ligne : langues des colonnes ; au moins 500 noms (sinon : page d'erreur, fichier tronqué)
+  if (!(await Cache.set(NA_KEY, t, true))) return 0;
+  const at = Date.now(); await Cache.set(NA_AT, { at }); return at;
 }
 /** Images (petites) de cartes dans une autre langue que l'anglais : Map(clé de collection → url, '' si Scryfall n'a pas la carte dans cette langue). Une recherche pour 12 noms. */
 async function scryLangImages(names, lang, signal, onProgress, prio = false) {

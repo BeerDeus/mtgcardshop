@@ -4,7 +4,7 @@ import './setup-env.mjs';
 import http from 'node:http';
 import https from 'node:https';
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright-core');
@@ -43,6 +43,13 @@ await p.goto(URL0);
 await p.evaluate(() => navigator.serviceWorker.ready);
 await p.reload(); await p.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 8000 });
 ok('service worker actif et page contrôlée');
+{ // catalogue des noms de toutes les langues (scan) : demandé à la demande par l'appli, jamais gardé par le service worker (l'appli le garde elle-même dans IndexedDB)
+  const body = '# anglais\tfr\tde\tes\tit\tpt\n' + Array.from({ length: 600 }, (_, i) => `Name ${i}\t\tName ${i} de\t\tNome ${i}\t`).join('\n') + '\n';
+  writeFileSync(process.env.PWA_DIR + '/names-all.tsv', body);
+  const r = await p.evaluate(async () => { const x = await fetch('names-all.tsv', { cache: 'no-cache' }), t = await x.text(), kept = []; for (const k of await caches.keys()) for (const q of await (await caches.open(k)).keys()) if (/\.tsv$/.test(q.url)) kept.push(q.url); return [x.status, t.length, kept]; });
+  assert.deepEqual(r, [200, body.length, []], 'servi tel quel sous le service worker, jamais mis dans ses caches');
+  ok('names-all.tsv : téléchargé normalement sous le service worker, jamais mis en cache par lui');
+}
 
 const base = 'https://cards.scryfall.io/small/front/a/b/';
 const load = urls => p.evaluate(us => Promise.all(us.map(u => new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }))), urls);
