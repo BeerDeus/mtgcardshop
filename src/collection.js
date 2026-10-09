@@ -364,15 +364,33 @@ function collCatalog() {
   if (!COLL.namesP) COLL.namesP = scryCatalogNames().then(list => { COLL.names = { list, idx: nameIndex(list), norm: list.map(n => normPart(n)) }; return COLL.names; }).catch(e => { COLL.namesP = null; throw e; });
   return COLL.namesP;
 }
-/** Suggestions de noms pour un texte saisi : commence par · contient tous les mots. */
-function collSuggest(cat, text, n = 12) {
+/** Suggestions de noms pour un texte saisi, en anglais ou en français (index chargé) : commence par · contient tous les mots. [{ n (anglais), p? (nom imprimé français, quand c'est lui qui correspond) }], une fois par carte. */
+function collSuggestX(cat, text, n = 12) {
   const q = normPart(text); if (q.length < 2) return [];
-  const words = q.split(' ').filter(Boolean), a = [], b = [];
+  if (!FRX.ix) frLoad();      // noms français : dès que l'index est là (la frappe suivante en profite)
+  const words = q.split(' ').filter(Boolean), a = [], b = [], seen = new Set();
+  const take = (arr, x) => { const k = ownKey(x.n); if (!seen.has(k)) { seen.add(k); arr.push(x); } };
   for (let i = 0; i < cat.norm.length && a.length < n; i++) {
     const s = cat.norm[i];
-    if (s.startsWith(q)) a.push(cat.list[i]); else if (b.length < n && words.every(w => s.includes(w))) b.push(cat.list[i]);
+    if (s.startsWith(q)) take(a, { n: cat.list[i] }); else if (b.length < n && words.every(w => s.includes(w))) take(b, { n: cat.list[i] });
+  }
+  const fl = FRX.ix ? FRX.ix.list : [];
+  for (let i = 0; i < fl.length && a.length < n; i++) {
+    const e = fl[i];
+    if (e.k.startsWith(q)) take(a, { n: e.en, p: e.n }); else if (b.length < n && words.every(w => e.k.includes(w))) take(b, { n: e.en, p: e.n });
   }
   return a.concat(b).slice(0, n);
+}
+/** Mêmes suggestions, noms anglais seuls (liste de souhaits, éditeur de deck) : un nom français tapé y trouve aussi sa carte. */
+const collSuggest = (cat, text, n = 12) => collSuggestX(cat, text, n).map(x => x.n);
+/** Libellé HTML (échappé) d'une suggestion : le nom imprimé français, l'anglais en petit, quand c'est le français qui correspond au texte tapé ; sinon le nom anglais.
+ *  p : nom français déjà connu (collSuggestX) ; sans lui, retrouvé depuis le nom anglais et le texte q. */
+function sugHtml(n, q, p) {
+  if (p === undefined) {
+    const f = enToFr(n), t = normPart(q), w = t.split(' ').filter(Boolean), hit = s => !!t && (s.startsWith(t) || w.every(x => s.includes(x)));
+    p = f && hit(normPart(f)) && !hit(normPart(n)) ? f : '';
+  }
+  return p ? `${esc(p)} <small class="ca-en">${esc(n)}</small>` : esc(n);
 }
 
 /* ── Section de la page de saisie ─────────────────────────────────────────────────────────────── */
@@ -391,11 +409,12 @@ function collInit() {
   window.addEventListener('offline', () => { if (cloudOn() && COLL.cloud !== 'error') { COLL.cloud = 'offline'; collPaintHead(); } });
   window.addEventListener('pagehide', collSleep);
   const sec = $('#collSec'); if (sec) sec.hidden = false;
+  setTimeout(() => frLoad(true), 2500);      // noms français déjà sur l'appareil (scan, collection) : prêts pour une decklist française, sans aucune requête
 }
 
 /* ── Écran « Ma collection » ──────────────────────────────────────────────────────────────────── */
 /* ── Noms français : une carte marquée FR s'affiche sous son nom imprimé (« Anneau solaire »), les autres sous leur nom anglais ───── */
-const FRN = { map: null, p: null, fail: 0 };
+const FRN = { map: null, p: null, fail: 0, local: false, on: new Set() };
 /** Nom imprimé français d'une carte, quelle que soit la langue de l'exemplaire ('' si le catalogue ne la connaît pas) : sert à la recherche (« anneau solaire » trouve aussi une Sol Ring anglaise). */
 function frOf(k) {
   const m = FRN.map || (typeof FRC !== 'undefined' && FRC.cat && FRC.cat.fr) || null;
@@ -403,15 +422,32 @@ function frOf(k) {
 }
 /** Nom affiché d'une ligne de la collection : l'imprimé français pour un exemplaire FR ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas). */
 const frName = (k, l) => (l === 'fr' ? frOf(k) : '');
-/** Charge les noms imprimés dès que la collection a des cartes (affichage des cartes FR et recherche en français) : catalogue déjà sur l'appareil, sinon fichier du site (1 requête, gardé ensuite). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. */
-function collFrLoad() {
-  if (FRN.map || FRN.p || Date.now() - FRN.fail < 60000) return;
-  if (!collCount()) return;
+/** Charge l'index des noms français (affichage des cartes FR, noms français tapés dans une decklist, à l'import ou à la saisie) : catalogue déjà sur l'appareil, sinon fichier du site (1 requête, gardé ensuite).
+ *  local : appareil seulement (démarrage : aucun réseau). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. Index construit par tranches (≈ 31 000 noms) : l'écran ne fige pas. */
+function frLoad(local) {
+  if (FRX.ix) return Promise.resolve(true);
+  if (FRN.p) return FRN.local && !local ? FRN.p.then(ok => ok || frLoad()) : FRN.p;      // lecture locale en cours, réseau permis : on enchaîne
+  if (!local && Date.now() - FRN.fail < 60000) return Promise.resolve(false);
+  FRN.local = !!local;
   FRN.p = (async () => {
-    const rec = (await scryFrCached().catch(() => null)) || (await scryFrStatic().catch(() => null));
-    if (rec) { FRN.map = frNames(rec.rows); collPaint(); } else FRN.fail = Date.now();
-  })().catch(() => { FRN.fail = Date.now(); }).finally(() => { FRN.p = null; });
+    const rec = (await scryFrCached().catch(() => null)) || (local ? null : await scryFrStatic().catch(() => null));
+    if (!rec || FRX.ix) { if (!rec && !local) FRN.fail = Date.now(); return !!FRX.ix; }
+    const ix = frIndex([]);
+    for (let i = 0; i < rec.rows.length; i += 2500) { frIndex(rec.rows.slice(i, i + 2500), ix); await new Promise(r => setTimeout(r, 0)); }
+    frUse(ix); FRN.map = ix.fr; frReady(); return true;
+  })().catch(() => { if (!local) FRN.fail = Date.now(); return !!FRX.ix; }).finally(() => { FRN.p = null; });
+  return FRN.p;
 }
+/** Index français prêt : les écrans qui l'attendaient se mettent à jour (collection, saisie de la decklist si aucune recherche n'est affichée, feuilles ouvertes). */
+function frReady() {
+  collPaint();
+  if (typeof refreshDeck === 'function' && (!S.run || S.view === 'input')) refreshDeck();
+  for (const f of [...FRN.on]) { try { f(); } catch (e) { /* feuille fermée entre-temps */ } }
+}
+/** Attend l'index en cours de chargement (au plus ms) : une recherche lancée juste après avoir collé une liste française la lit avec. */
+const frWait = (ms = 4000) => (FRX.ix || !FRN.p ? Promise.resolve() : Promise.race([FRN.p, sleep(ms)]).catch(() => {}));
+/** Noms imprimés dès que la collection a des cartes (affichage des cartes FR et recherche en français). */
+function collFrLoad() { if (collCount()) frLoad(); }
 const SORT_OPTS = [['name', T('Nom')], ['qty', T('Quantité')], ['price', T('Prix')], ['cmc', T('Coût')], ['decks', T('Decks EDHREC')], ['new', T('Ajout : récentes en haut')], ['old', T('Ajout : anciennes en haut')]];
 const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
 /** Cartes de l'écran, gardées tant que rien ne change (5 000 cartes : liste, filtre et tri coûtent ~0,3 s sur un téléphone moyen). Clé : COLL.seq, monté à chaque changement des cartes, des infos ou des prix (collChanged, collPaint, collPaintSoon), et les objets remplacés ailleurs (compte, noms français, EDHREC). */
@@ -517,7 +553,9 @@ function collPaintHead() {
   const sy = $('.coll-sync', el), si = collSyncInfo();
   if (!si) sy.hidden = true;
   else { sy.hidden = false; sy.dataset.k = si.k; sy.innerHTML = `<span class="sy-d" aria-hidden="true"></span><span class="sy-t">${esc(si.t)}</span>${si.acts.map(([a, l]) => `<button class="link-btn" type="button" data-act="${a}">${esc(l)}</button>`).join('')}`; }
+  if (GLANCE.api) paintGlance();
   const stt = $('.coll-status', el), e = COLL.enrich, miss = collMissing().length, lmiss = collLangMissingCount();
+  let unk = 0;
   const px = COLL.pxRun;
   if (px) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix réels · {a} / {b}', { a: nf0(Math.floor(px.done)), b: nf0(px.total) })}${px.step ? ' · ' + esc(px.step) : ''}</span><span class="track"><span class="fill" style="width:${Math.round(100 * px.done / Math.max(1, px.total))}%"></span></span><button class="link-btn" type="button" data-act="pxstop">${T('Arrêter')}</button>`; }
   else if (COLL.pxMsg) { stt.hidden = false; stt.dataset.k = COLL.pxMsg.bad ? 'err' : 'idle'; stt.innerHTML = `<span>${esc(COLL.pxMsg.t)}</span><button class="link-btn" type="button" data-act="pxok">OK</button>`; }
@@ -525,6 +563,7 @@ function collPaintHead() {
   else if (VAL.run) { stt.hidden = false; stt.dataset.k = 'run'; stt.innerHTML = `<span>${T('Prix Cardmarket · {a} / {b}', { a: nf0(VAL.run.done), b: nf0(VAL.run.total) })}</span><span class="track"><span class="fill" style="width:${Math.round(100 * VAL.run.done / Math.max(1, VAL.run.total))}%"></span></span>`; }
   else if (COLL.enrichErr) { stt.hidden = false; stt.dataset.k = 'err'; stt.innerHTML = `<span>${esc(COLL.enrichErr)}</span><button class="link-btn" type="button" data-act="enrich">${T('Réessayer')}</button>`; }
   else if (miss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(miss, '{n} carte sans infos (coût, type, image)', '{n} cartes sans infos (coût, type, image)')}</span><button class="link-btn" type="button" data-act="enrich">${T('Compléter')}</button>`; }
+  else if ((unk = collUnknown().length)) { stt.hidden = false; stt.dataset.k = 'warn'; stt.innerHTML = `<span>${TN(unk, '{n} nom inconnu', '{n} noms inconnus')}</span><button class="link-btn" type="button" data-act="unknown">${T('Corriger')}</button>`; }      // fautes de frappe, lignes d'en-tête, noms ambigus : plus jamais silencieux
   else if (lmiss && collCount()) { stt.hidden = false; stt.dataset.k = 'idle'; stt.innerHTML = `<span>${TN(lmiss, '{n} carte sans image dans sa langue', '{n} cartes sans image dans sa langue')}</span><button class="link-btn" type="button" data-act="enrich">${T('Charger')}</button>`; }
   else stt.hidden = true;
   valPaintAlert();
@@ -556,11 +595,12 @@ function collToggleSrc() {
   const t = $('.cs-val', COLL.el); if (t) t.focus({ preventScroll: true });
 }
 function collStatsHtml(items) {
-  const st = collStats(items, COLL.src), miss = st.unknown, cm = st.src === 'cm';
+  const ctOff = !(typeof ctReady === 'function' && ctReady()) && !items.some(i => i.rp > 0);      // CardTrader indisponible et aucun prix lu : pas de bascule CT / CM, juste la valeur Cardmarket
+  const st = collStats(items, ctOff ? 'cm' : COLL.src), miss = st.unknown, cm = st.src === 'cm';
   const colorRows = [['W', T('Blanc')], ['U', T('Bleu')], ['B', T('Noir')], ['R', T('Rouge')], ['G', T('Vert')]].map(([c, n]) => [`<i class="mc mc-${c.toLowerCase()}">${c}</i>${n}`, st.colors[c], 'k-' + c.toLowerCase()])
     .concat([['<i class="mc mc-m">M</i>' + T('Multicolore'), st.colors.M, 'k-m'], ['<i class="mc mc-n">C</i>' + T('Incolore'), st.colors.C, 'k-n']]);
   const typeRows = TYPE_ORDER.map(t => [esc(T(t)), st.types[t], 'k-t']);
-  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>${TN(st.unique, 'carte différente', 'cartes différentes')}</span></div><div><b>${nf0(st.copies)}</b><span>${TN(st.copies, 'exemplaire', 'exemplaires')}</span></div><div class="cs-val" role="button" tabindex="0" data-act="pxsrc" aria-label="${T('Valeur de la collection, source {a} : touche pour passer à {b}', { a: cm ? 'Cardmarket' : 'CardTrader', b: cm ? 'CardTrader' : 'Cardmarket' })}"><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? T('valeur · tendance Cardmarket') + (st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '') : st.real ? (st.valued > st.real ? T('valeur · {n} au prix réel CardTrader, {m} estimées Cardmarket', { n: nf0(st.real), m: nf0(st.valued - st.real) }) : T('valeur · {n} au prix réel CardTrader', { n: nf0(st.real) })) : T('valeur ≈ tendance Cardmarket') + (st.valued && st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '')}</span><div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${cm && !items.some(i => i.rp > 0) ? T('CT : aucun prix lu · touche pour changer') : st.alt.valued ? T('{src} : {v} · touche pour changer', { src: cm ? 'CT' : 'CM', v: esc(fmt(st.alt.value, 'EUR')) }) : T('touche pour changer')}</small></div></div></div>`;      // aucune offre CardTrader lue : le chiffre « CT » ne serait que l'estimation Cardmarket
+  const nums = `<div class="cs-tiles"><div><b>${nf0(st.unique)}</b><span>${TN(st.unique, 'carte différente', 'cartes différentes')}</span></div><div><b>${nf0(st.copies)}</b><span>${TN(st.copies, 'exemplaire', 'exemplaires')}</span></div><div class="cs-val${ctOff ? ' ro' : ''}"${ctOff ? '' : ` role="button" tabindex="0" data-act="pxsrc" aria-label="${T('Valeur de la collection, source {a} : touche pour passer à {b}', { a: cm ? 'Cardmarket' : 'CardTrader', b: cm ? 'CardTrader' : 'Cardmarket' })}"`}><b>${st.valued ? esc(fmt(st.value, 'EUR')) : '—'}</b><span>${cm ? T('valeur · tendance Cardmarket') + (st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '') : st.real ? (st.valued > st.real ? T('valeur · {n} au prix réel CardTrader, {m} estimées Cardmarket', { n: nf0(st.real), m: nf0(st.valued - st.real) }) : T('valeur · {n} au prix réel CardTrader', { n: nf0(st.real) })) : T('valeur ≈ tendance Cardmarket') + (st.valued && st.valued < st.known ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : '')}</span>${ctOff ? '' : `<div class="cs-src"><div class="cs-sw" aria-hidden="true"><i${cm ? '' : ' class="on"'}>CT</i><i${cm ? ' class="on"' : ''}>CM</i></div><small>${cm && !items.some(i => i.rp > 0) ? T('CT : aucun prix lu · touche pour changer') : st.alt.valued ? T('{src} : {v} · touche pour changer', { src: cm ? 'CT' : 'CM', v: esc(fmt(st.alt.value, 'EUR')) }) : T('touche pour changer')}</small></div>`}</div></div>`;      // aucune offre CardTrader lue : le chiffre « CT » ne serait que l'estimation Cardmarket
   const note = miss ? `<p class="hint">${T('Stats sur {a} cartes lues ; {b} sans infos pour l\'instant.', { a: nf0(st.known), b: nf0(miss) })}</p>` : '';
   const byLot = COLL.topBy !== 'one', list = byLot ? st.top : st.topUnit, shown = list.slice(0, COLL.topN), cur = i => (i.rl ? i.rc || 'EUR' : 'EUR');
   const top = list.length ? `<h3 class="cs-h">${T('Les plus chères')} <span class="cs-sw" role="group" aria-label="${T('Classer par')}"><button type="button" data-act="topby" data-v="lot" aria-pressed="${byLot}" class="${byLot ? 'on' : ''}">${T('Par lot')}</button><button type="button" data-act="topby" data-v="one" aria-pressed="${!byLot}" class="${byLot ? '' : 'on'}">${T('Par carte')}</button></span></h3><p class="hint cs-topnote">${byLot ? T('Classées par valeur du lot : prix × exemplaires.') : T('Classées par prix d\'un exemplaire.')}</p><div class="cs-top">${shown.map(i => `<div class="crow ro" data-k="${esc(i.k)}"><span class="thumb" style="--h:${hash32(i.k) % 360}">${esc((i.n.trim()[0] || '?').toUpperCase())}${i.im ? `<img alt="" loading="lazy" decoding="async" src="${esc(i.im)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(i.dn || i.n)}</span><span class="row-meta">${i.q > 1 ? `<span class="tag accent">× ${nf0(i.q)}</span>` : ''}${i.rl ? '<span class="tag real">' + T('prix réel') + '</span>' : ''}</span></span><span class="row-price"><b>${esc(fmt(byLot ? i.lot : i.up, cur(i)))}</b>${i.q > 1 ? `<small>${byLot ? `${esc(fmt(i.up, cur(i)))} × ${nf0(i.q)}` : `× ${nf0(i.q)} = ${esc(fmt(i.lot, cur(i)))}`}</small>` : ''}</span></div>`).join('')}</div>${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="topmore">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(10, list.length - shown.length)), b: nf0(list.length - shown.length) })}</button>` : ''}` : '';
@@ -593,7 +633,7 @@ function collPaintBody(keep) {
     const { filtered, sorted } = collListOf(v), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
     const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '' || COLL.f.cmdr) && known < all.length;
     const undated = isDateSort() ? all.filter(i => !i.d).length : 0;
-    host.innerHTML = `${undated ? `<p class="hint coll-count">${TN(undated, '{n} carte sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', '{n} cartes sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', { pos: COLL.sort === 'new' ? T('en bas') : T('en haut') })}</p>` : ''}${act ? `<p class="hint coll-count">${TN(filtered.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}${hid ? ' · ' + T('les cartes sans infos sont masquées par ces filtres') : ''}</p>` : ''}
+    host.innerHTML = `${collNoLangHtml(v)}${undated ? `<p class="hint coll-count">${TN(undated, '{n} carte sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', '{n} cartes sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', { pos: COLL.sort === 'new' ? T('en bas') : T('en haut') })}</p>` : ''}${act ? `<p class="hint coll-count">${TN(filtered.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}${hid ? ' · ' + T('les cartes sans infos sont masquées par ces filtres') : ''}</p>` : ''}
       ${shown.length ? `<div class="coll-list">${shown.flatMap(collRowItems).map(crowHtml).join('')}</div>` : '<p class="hint listempty">' + T('Aucune carte ne correspond.') + '</p>'}
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(COLL_PAGE, sorted.length - shown.length)), b: nf0(sorted.length - shown.length) })}</button>` : ''}`;
     COLL.painted = sorted;
@@ -654,19 +694,21 @@ function openCollection(tab) {
   wrap.addEventListener('change', e => {
     const bud = e.target.closest && e.target.closest('select[data-act="dbudget"]');
     if (bud) { EDH.budget = Number(bud.value) || 0; EDH.shown = 30; haptic('tap'); collPaintBody(true); return; }
+    const nls = e.target.closest && e.target.closest('select[data-act="nolangsel"]');
+    if (nls) { const l = nls.value; nls.value = ''; nls.blur(); collBulkLang(l); return; }
     const sel = e.target.closest && e.target.closest('.lchip select'); if (!sel) return;
     const k = sel.dataset.lk, l = sel.value, from = sel.closest('.lchip').dataset.l || ''; haptic('tap'); sel.blur(); COLL.dirty = false;
     collSetLang(k, l, from); collPaintBody(true);      // la ligne change de langue : son nom, son image, et elle peut rejoindre la ligne de l'autre langue
   });
   wrap.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    if (e.target.closest && e.target.closest('.cs-val')) { e.preventDefault(); collToggleSrc(); }
+    if (e.target.closest && e.target.closest('.cs-val[data-act="pxsrc"]')) { e.preventDefault(); collToggleSrc(); }
     else if (e.target.matches && e.target.matches('.crow.dk')) { e.preventDefault(); edhClick(e); }
   });
   wrap.addEventListener('focusout', e => { if (COLL.dirty && e.target.matches && e.target.matches('.lchip select')) setTimeout(() => { COLL.dirty = false; collPaintBody(true); }, 0); });
   wrap.addEventListener('click', e => {
     if (e.target.closest('.lchip')) return;
-    if (e.target.closest('.cs-val')) { collToggleSrc(); return; }
+    if (e.target.closest('.cs-val[data-act="pxsrc"]')) { collToggleSrc(); return; }
     if (edhClick(e) || valClick(e) || trClick(e)) return;
     const b = e.target.closest('button[data-act]');
     if (b) {
@@ -676,6 +718,8 @@ function openCollection(tab) {
       else if (act === 'scan') openScan();
       else if (act === 'import') openCollImport();
       else if (act === 'enrich') { COLL.enrichErr = ''; collEnrich(); }
+      else if (act === 'unknown') openCollUnknown();
+      else if (act === 'nolang') collBulkLang(b.dataset.l);
       else if (act === 'prices') openCollPrices();
       else if (act === 'login') openAccount();
       else if (act === 'export') collExport();
@@ -725,30 +769,120 @@ function collViewItem(k, ln) {
   return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, wl: l && l !== 'en' ? l : '', small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · ' + T('réf. Cardmarket {v}', { v: fmt(m.eu, 'EUR') }) : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · ' + T('offre CardTrader {v}', { v: fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') }) : ''}${fr}` };
 }
 
+/* ── Noms inconnus de Scryfall (faute de frappe, ligne d'en-tête, nom français de plusieurs cartes) : signalés, noms proches proposés ── */
+/** Cartes que Scryfall n'a pas trouvées (infos lues : null). */
+const collUnknown = () => Object.keys(COLL.map).filter(k => COLL.meta[k] === null);
+/** Remplace une carte par une autre (nom anglais) : ses exemplaires rejoignent ceux de la nouvelle, langue par langue ; fr : nom français choisi → exemplaires sans langue en français.
+ *  Retourne l'annulation (remet les deux entrées comme avant). */
+function collRename(k, en, fr) {
+  const cur = COLL.map[k], nk = ownKey(en); if (!cur || !nk) return null;
+  const had = nk !== k ? COLL.map[nk] || null : null, m = { ...COLL.map }, lines = collLines(had).map(e => e.slice());
+  for (const [l, q] of collLines(cur)) { const g = l || (fr ? 'fr' : ''), e = lines.find(x => x[0] === g); if (e) e[1] = Math.min(9999, e[1] + q); else lines.push([g, q]); }
+  delete m[k];
+  m[nk] = collFromLines({ ...(had || {}), n: (had && had.n) || en, d: (had && had.d) || cur.d || dateNowSec() }, lines);
+  COLL.map = m; collChanged(); collEnrich();
+  return () => { const r = { ...COLL.map }; delete r[nk]; if (had) r[nk] = had; r[k] = cur; COLL.map = r; collChanged(); };
+}
+/** Retire une carte de la collection ; retourne l'annulation. */
+function collDrop(k) {
+  const cur = COLL.map[k]; if (!cur) return null;
+  const m = { ...COLL.map }; delete m[k]; COLL.map = m; collChanged();
+  return () => { COLL.map = { ...COLL.map, [k]: cur }; collChanged(); };
+}
+const ukLabel = s => (s.p ? `${esc(s.p)} <small>${esc(s.n)}</small>` : esc(s.n));
+/** Feuille « Noms inconnus » : chaque nom avec 1 à 3 noms proches (fautes de frappe, noms français), « Remplacer » ou « Supprimer ». */
+function openCollUnknown() {
+  const keys = collUnknown().sort((a, b) => NAME_CMP(COLL.map[a].n, COLL.map[b].n)); if (!keys.length) { collPaintHead(); return; }
+  frLoad();
+  openSheet(T('Noms inconnus'), TN(keys.length, 'Scryfall ne connaît pas ce nom : remplace-le par la bonne carte ou retire-le.', 'Scryfall ne connaît pas ces noms : remplace-les par la bonne carte ou retire-les.'), api => {
+    const rows = keys.slice(0, 40), sug = new Map();
+    const rowHtml = k => {
+      const x = COLL.map[k], ls = collLines(x);
+      return `<div class="uk-row" data-k="${esc(k)}"><div class="uk-top"><b>${esc(x.n)}</b><span class="tag accent">× ${nf0(x.q)}</span>${ls.filter(e => e[0]).map(e => `<span class="tag">${esc(langCode(e[0]))}</span>`).join('')}</div>
+        <div class="uk-sug" role="radiogroup" aria-label="${T('Noms proches de {name}', { name: esc(x.n) })}"><span class="hint">${T('Recherche de noms proches…')}</span></div>
+        <div class="uk-acts"><button class="btn small" type="button" data-uk="rep" disabled>${T('Remplacer')}</button><button class="btn ghost small" type="button" data-uk="del">${T('Supprimer')}</button></div></div>`;
+    };
+    api.body.innerHTML = `<div class="uk-list">${rows.map(rowHtml).join('')}</div>${keys.length > rows.length ? `<p class="hint">${T('Et {n} autres : corrige d\'abord ceux-ci, la liste se complète ensuite.', { n: nf0(keys.length - rows.length) })}</p>` : ''}`;
+    api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Fermer')}</button>`);
+    const paintSug = k => {
+      const el = $(`.uk-row[data-k="${CSS.escape(k)}"]`, api.body); if (!el) return;
+      const s = sug.get(k) || [], box = $('.uk-sug', el), rep = $('[data-uk="rep"]', el);
+      box.innerHTML = s.length ? s.map((x, i) => `<button type="button" class="uk-opt" role="radio" aria-checked="${!i}" data-i="${i}">${ukLabel(x)}</button>`).join('') : `<span class="hint">${T('Aucune carte proche : vérifie le nom, ou retire la ligne.')}</span>`;
+      rep.disabled = !s.length; rep.hidden = !s.length;
+    };
+    (async () => {      // noms proches, un nom après l'autre (≈ 20 ms chacun sur un téléphone) : la feuille reste fluide
+      const cat = await collCatalog().catch(() => null); await frLoad();
+      for (const k of rows) { if (!api.body.isConnected) return; const x = COLL.map[k]; if (!x) continue; sug.set(k, nameSuggest(x.n, cat && cat.idx, 3)); paintSug(k); await sleep(0); }
+    })();
+    api.body.addEventListener('click', e => {
+      const o = e.target.closest('.uk-opt'); if (o) { $$('.uk-opt', o.parentNode).forEach(b => b.setAttribute('aria-checked', String(b === o))); haptic('tap'); return; }
+      const b = e.target.closest('[data-uk]'); if (!b) return;
+      const row = b.closest('.uk-row'), k = row.dataset.k, x = COLL.map[k]; if (!x) { row.remove(); return; }
+      let undo, msg;
+      if (b.dataset.uk === 'rep') {
+        const sel = $('.uk-opt[aria-checked="true"]', row), s = (sug.get(k) || [])[sel ? Number(sel.dataset.i) : 0]; if (!s) return;
+        undo = collRename(k, s.n, !!s.p); msg = T('{a} → {b}', { a: x.n, b: s.p && frKey(s.p) !== frKey(x.n) ? s.p : s.n });      // nom français différent de celui tapé : on le montre ; sinon (nom ambigu) la carte anglaise choisie
+      } else { undo = collDrop(k); msg = T('{name} retirée de la collection', { name: x.n }); }
+      haptic('ok'); row.remove();
+      if (!$('.uk-row', api.body)) api.close();
+      toast(msg, undo ? { label: T('Annuler'), fn: undo } : undefined);
+    });
+  });
+}
+
+/* ── Langue des cartes « non précisée » : en une fois (import de texte sans langue) ── */
+/** Une carte a-t-elle des exemplaires sans langue ? */
+const collNoLang = x => (x.x ? x.x[''] > 0 : !x.l);
+/** Tous les exemplaires sans langue passent dans la langue l (ils rejoignent la ligne de cette langue si la carte en a déjà une). Annulable. */
+function collBulkLang(l) {
+  if (!l || !LANGS[l]) return;
+  const before = COLL.map, m = {}; let n = 0;
+  for (const [k, x] of Object.entries(before)) {
+    if (!collNoLang(x)) { m[k] = x; continue; }
+    const lines = []; for (const [g, q] of collLines(x)) { const to = g || l, e = lines.find(y => y[0] === to); if (e) e[1] += q; else lines.push([to, q]); }
+    m[k] = collFromLines(x, lines); n++;
+  }
+  if (!n) return;
+  COLL.map = m; haptic('ok'); collChanged(); collEnrich();      // images dans la langue choisie
+  toast(TN(n, '{n} carte passée en {lang}', '{n} cartes passées en {lang}', { lang: T(LANGS[l]) }), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); } });
+}
+/** Bandeau en tête de la liste quand des cartes n'ont pas de langue (« Langue ? ») : les passer toutes en français, en anglais ou dans une autre langue. */
+function collNoLangHtml(v) {
+  if (v.nl === undefined) { let n = 0; for (const k in COLL.map) if (collNoLang(COLL.map[k])) n++; v.nl = n; }
+  if (!v.nl) return '';
+  const LN = l => { const s = T(LANGS[l]); return s[0].toUpperCase() + s.slice(1); };
+  return `<div class="coll-nolang"><span>${TN(v.nl, '<b>{n}</b> carte sans langue', '<b>{n}</b> cartes sans langue')} →</span><button class="btn ghost small" type="button" data-act="nolang" data-l="fr">${LN('fr')}</button><button class="btn ghost small" type="button" data-act="nolang" data-l="en">${LN('en')}</button>
+    <label class="sortsel nl-more"><select data-act="nolangsel" aria-label="${T('Toutes les cartes sans langue dans une autre langue')}"><option value="">${T('Autre…')}</option>${CARD_LANG_LIST.filter(l => l !== 'fr' && l !== 'en').map(l => `<option value="${l}">${esc(LN(l))}</option>`).join('')}</select></label></div>`;
+}
+
 /* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
 function openCollAdd() {
-  openSheet(T('Ajouter une carte'), T('Nom anglais ou français déjà connu de Scryfall'), api => {
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">${T('Nom de la carte')}</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Sol Ring" enterkeyhint="search"></div>
+  frLoad();
+  openSheet(T('Ajouter une carte'), T('Tape son nom en anglais ou en français'), api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">${T('Nom de la carte')}</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${T('Sol Ring ou Anneau solaire')}" enterkeyhint="search"></div>
       <div class="field-in"><label class="label" for="caLang">${T('Langue des exemplaires ajoutés')}</label><div class="sel"><select id="caLang"><option value="">${T('Celle de la carte (sinon non précisée)')}</option>${CARD_LANG_LIST.map(x => { const n = T(LANGS[x]); return `<option value="${x}">${esc(n[0].toUpperCase() + n.slice(1))}</option>`; }).join('')}</select></div></div>
       <div class="status" id="caStatus" data-ok="0" hidden><span class="dot"></span><span></span></div>
       <div class="ca-list" id="caList" role="listbox" aria-label="${T('Suggestions')}"></div>`;
     const inp = $('#caName', api.body), list = $('#caList', api.body), stt = $('#caStatus', api.body), lang = $('#caLang', api.body);
-    let cat = null, added = new Map();
+    let cat = null;
     const say = (t, ok) => { stt.hidden = !t; if (t) { $('span:last-child', stt).textContent = t; stt.dataset.ok = ok ? '1' : '0'; } };
     const paint = () => {
       const q = inp.value.trim();
       if (!cat) { list.innerHTML = ''; return; }
-      const sug = collSuggest(cat, q);
-      list.innerHTML = sug.map(n => { const k = ownKey(n), have = collQty(k); return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${have ? `× ${have}` : '+'}</i></button>`; }).join('')
-        || (q.length >= 2 ? '<p class="hint">' + T('Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).') + '</p>' : '');
+      const sug = collSuggestX(cat, q);
+      list.innerHTML = sug.map(x => { const k = ownKey(x.n), have = collQty(k); return `<button type="button" class="ca-opt" role="option" data-n="${esc(x.n)}"${x.p ? ` data-p="${esc(x.p)}"` : ''}><span>${sugHtml(x.n, q, x.p || '')}</span><i>${have ? `× ${have}` : '+'}</i></button>`; }).join('')
+        || (q.length >= 2 ? '<p class="hint">' + (FRX.ix ? T('Aucune carte de ce nom. Vérifie l\'orthographe.') : T('Aucune carte de ce nom. Vérifie l\'orthographe (les noms français arrivent dès que leur liste est chargée).')) + '</p>' : '');
     };
     list.onclick = e => {
       const b = e.target.closest('.ca-opt'); if (!b) return;
-      const n = b.dataset.n, k = ownKey(n); collBump(k, n, 1, lang.value ? { lang: lang.value } : undefined); const q = collQty(k); haptic('ok'); added.set(k, q);
+      const n = b.dataset.n, p = b.dataset.p || '', k = ownKey(n), l = lang.value || (p ? 'fr' : '');      // nom français choisi : exemplaire français (sauf langue choisie au-dessus)
+      collBump(k, n, 1, l ? { lang: l } : undefined); const q = collQty(k); haptic('ok');
       const i = $('i', b); i.textContent = '× ' + q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
-      say(T('{name} · {q} dans ta collection', { name: n, q }), true); collEnrich();
+      say(T('{name} · {q} dans ta collection', { name: p || n, q }), true); collEnrich();
     };
     inp.oninput = paint;
+    const onFr = () => { if (inp.isConnected) paint(); else FRN.on.delete(onFr); };      // index français arrivé pendant la saisie
+    FRN.on.add(onFr);
     say(T('Chargement du catalogue (une seule fois)…'), false);
     collCatalog().then(c => { cat = c; say(''); paint(); }).catch(e => say(e && e.code === 'rate' ? T('Scryfall demande une pause, réessaie dans une minute.') : T('Catalogue Scryfall injoignable : réessaie plus tard.'), false));
     setTimeout(() => inp.focus(), 380);
@@ -756,28 +890,44 @@ function openCollAdd() {
 }
 
 /* ── Importer (fichier CSV, texte collé, texte partagé) ───────────────────────────────────────── */
+/** Langue proposée pour les cartes importées sans langue : celle de l'interface (français → cartes françaises). */
+const collImportLang = () => (I18N.lang === 'en' ? 'en' : 'fr');
+const GLANCE_MIN = 10;      // « coup d'œil » après un import d'au moins 10 cartes (pas après 2 cartes ajoutées)
 function openCollImport(initial) {
+  frLoad();      // noms français reconnus dès que l'index est là (aperçu repeint à son arrivée)
   openSheet(T('Importer ma collection'), T('ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield… ou une liste « 3 Sol Ring »'), api => {
+    const opt = (v, t, on) => `<option value="${v}"${on ? ' selected' : ''}>${esc(t)}</option>`, LN = l => { const s = T(LANGS[l]); return s[0].toUpperCase() + s.slice(1); }, l0 = collImportLang();
     api.body.innerHTML = `<p class="hint">${T('Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l\'appli que tu utilises, puis choisis le fichier. Les quantités d\'une même carte (éditions différentes) s\'additionnent ; une ligne par langue si le fichier la donne.')}</p>
       <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>${T('Choisir un fichier')}<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
-      <div class="field-in"><label class="label" for="ciText">${T('ou colle le texte')}</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Swords to Plowshares"></textarea></div>
+      <div class="field-in"><label class="label" for="ciText">${T('ou colle le texte')}</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Anneau solaire"></textarea></div>
       <div class="ci-sum" id="ciSum" hidden></div>
+      <div class="ci-flag" id="ciFlag" hidden></div>
+      <div class="field-in"><label class="label" for="ciLang">${T('Langue de ces cartes')}</label><div class="sel"><select id="ciLang">${CARD_LANG_LIST.map(l => opt(l, LN(l), l === l0)).join('')}${opt('', T('Non précisée'), false)}</select></div>
+        <p class="hint ci-lhint">${T('Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l\'emporte, et un nom français compte comme une carte française.')}</p></div>
       <div class="seg" id="ciMode" role="radiogroup" aria-label="${T('Mode d\'import')}"></div>`;
     mountSeg($('#ciMode', api.body), [{ v: 'add', label: T('Ajouter') }, { v: 'replace', label: T('Remplacer ma collection') }], collCount() ? 'add' : 'replace', () => paint());
     api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="ciGo" disabled>${T('Importer')}</button>`);
-    const ta = $('#ciText', api.body), sum = $('#ciSum', api.body), go = $('#ciGo', api.foot), mode = () => $('#ciMode', api.body)._v || 'add';
-    let parsed = null;
+    const ta = $('#ciText', api.body), sum = $('#ciSum', api.body), flag = $('#ciFlag', api.body), lang = $('#ciLang', api.body), go = $('#ciGo', api.foot), mode = () => $('#ciMode', api.body)._v || 'add';
+    let parsed = null, catAsked = false;
     const paint = () => {
-      const t = ta.value; parsed = t.trim() ? parseCollection(t) : null;
-      sum.hidden = !parsed;
+      const t = ta.value; parsed = t.trim() ? parseCollection(t, { fr: true, lang: lang.value }) : null;
+      sum.hidden = !parsed; flag.hidden = true;
       go.disabled = !parsed || !parsed.items.length;
       if (!parsed) { go.textContent = T('Importer'); return; }
       if (!parsed.items.length) { sum.className = 'ci-sum bad'; sum.textContent = parsed.format === 'csv' ? T('Aucune carte lue dans ce CSV : il faut une colonne « Name » (ou « Nom »).') : T('Aucune ligne reconnue. Une carte par ligne : « 3 Sol Ring ».'); return; }
       const rep = mode() === 'replace' && collCount();
-      sum.className = 'ci-sum'; sum.innerHTML = `${TN(parsed.items.length, '<b>{n}</b> carte différente', '<b>{n}</b> cartes différentes')} · ${TN(parsed.copies, '<b>{n}</b> exemplaire', '<b>{n}</b> exemplaires')}<span>${parsed.format === 'csv' ? T('Fichier CSV') : T('Liste texte')}${parsed.skipped ? ' · ' + TN(parsed.skipped, '{n} ligne ignorée', '{n} lignes ignorées') : ''}${rep ? ' · ' + T('remplace les {n} cartes actuelles', { n: nf0(collCount()) }) : ''}</span>`;
+      sum.className = 'ci-sum'; sum.innerHTML = `<div>${TN(parsed.items.length, '<b>{n}</b> carte différente', '<b>{n}</b> cartes différentes')} · ${TN(parsed.copies, '<b>{n}</b> exemplaire', '<b>{n}</b> exemplaires')}</div><span>${parsed.format === 'csv' ? T('Fichier CSV') : T('Liste texte')}${parsed.fr ? ' · ' + TN(parsed.fr, '{n} nom français reconnu', '{n} noms français reconnus') : ''}${parsed.skipped ? ' · ' + TN(parsed.skipped, '{n} ligne ignorée', '{n} lignes ignorées') : ''}${rep ? ' · ' + T('remplace les {n} cartes actuelles', { n: nf0(collCount()) }) : ''}</span>`;      // un bloc par ligne : la carte .ci-sum est une colonne flex
       go.textContent = TN(parsed.items.length, 'Importer {n} carte', 'Importer {n} cartes');
+      // noms que Scryfall ne connaîtra pas (catalogue des noms anglais + index français) : signalés avant l'import, corrigeables après
+      if (!COLL.names) { if (!catAsked) { catAsked = true; collCatalog().then(() => { if (ta.isConnected) paint(); }).catch(() => {}); } return; }
+      const unk = parsed.items.filter(x => !BASIC_NAMES.has(x.k) && !COLL.names.idx.by.has(x.k)).map(x => x.n), amb = new Set(parsed.amb);
+      if (!unk.length) return;
+      const show = unk.slice(0, 4).map(n => '<b>' + esc(n) + '</b>' + (amb.has(n) ? ' ' + T('(nom français de plusieurs cartes)') : '')).join(', ') + (unk.length > 4 ? ' ' + T('et {n} autres', { n: nf0(unk.length - 4) }) : '');
+      flag.hidden = false; flag.innerHTML = `<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span>${TN(unk.length, '{n} nom inconnu de Scryfall : {list}. Tu pourras le corriger après l\'import.', '{n} noms inconnus de Scryfall : {list}. Tu pourras les corriger après l\'import.', { list: show })}</span>`;
     };
-    ta.oninput = paint;
+    ta.oninput = paint; lang.onchange = () => { haptic('tap'); paint(); };
+    const onFr = () => { if (ta.isConnected) { if (ta.value.trim()) paint(); } else FRN.on.delete(onFr); };
+    FRN.on.add(onFr);
     $('#ciFile', api.body).onchange = async e => {
       const f = e.target.files && e.target.files[0]; if (!f) return;
       if (f.size > 8 * 1024 * 1024) { toast(T('Fichier trop gros (8 Mo maximum)')); return; }
@@ -785,11 +935,55 @@ function openCollImport(initial) {
     };
     go.onclick = () => {
       if (!parsed || !parsed.items.length) return;
-      const before = COLL.map, m = mode(), n = parsed.items.length;
-      collAdd(parsed.items, m); api.close(); haptic('ok');
-      toast(m === 'replace' ? TN(n, '{n} carte dans ta collection', '{n} cartes dans ta collection') : TN(n, '{n} carte ajoutée', '{n} cartes ajoutées'), { label: T('Annuler'), fn: () => { COLL.map = before; collChanged(); } });
+      const before = COLL.map, m = mode(), n = parsed.items.length, undo = () => { COLL.map = before; collChanged(); };
+      collAdd(parsed.items, m); api.close(); haptic('ok'); FRN.on.delete(onFr);
+      toast(m === 'replace' ? TN(n, '{n} carte dans ta collection', '{n} cartes dans ta collection') : TN(n, '{n} carte ajoutée', '{n} cartes ajoutées'), { label: T('Annuler'), fn: undo });
       collEnrich();
+      if (n >= GLANCE_MIN) setTimeout(() => openCollGlance(n, m, undo), reduceMotion() ? 0 : 480);      // après la fermeture de l'import ; l'annulation reste possible depuis le coup d'œil
     };
     if (initial) { ta.value = initial; paint(); }
   });
+}
+
+/* ── Après un import : « Ta collection en un coup d'œil » (valeur, la plus chère, decks EDHREC à finir), mise à jour pendant la lecture Scryfall ── */
+const GLANCE = { api: null, n: 0, m: 'add', undo: null, edh: null };
+const GLANCE_BUDGET = 6000;      // decks à finir pour moins de 60 € (un palier du filtre « Budget » de l'onglet Decks)
+function openCollGlance(n, m, undo) {
+  if (sheets.length || !collCount()) return;      // une autre feuille est ouverte entre-temps : on ne s'impose pas
+  edhEnsure(); if (EDH.p) EDH.p.then(paintGlance, () => {});
+  Object.assign(GLANCE, { n, m, undo, edh: null });
+  openSheet(T('Ta collection en un coup d\'œil'), m === 'replace' ? TN(n, '{n} carte importée', '{n} cartes importées') : TN(n, '{n} carte ajoutée', '{n} cartes ajoutées'), api => {
+    GLANCE.api = api;
+    api.wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);      // vignette : affichée une fois chargée, comme dans la liste
+    api.setFoot(`<button class="btn ghost" type="button" data-g="undo">${T('Annuler l\'import')}</button><button class="btn" type="button" data-close>${T('Voir mes cartes')}</button>`);
+    api.wrap.addEventListener('click', e => {
+      const b = e.target.closest('[data-g]'); if (!b) return;
+      const g = b.dataset.g; api.close();
+      if (g === 'undo') { if (GLANCE.undo) GLANCE.undo(); toast(T('Import annulé')); }
+      else if (g === 'stats' || g === 'decks') {
+        if (g === 'decks') { EDH.budget = GLANCE_BUDGET; EDH.sort = 'have'; EDH.then = 'cost'; EDH.shown = 30; EDH.memo = null; }
+        if (COLL.el) { COLL.tab = g; const s = $('#collSeg', COLL.el), sc = $('.dv-scroll', COLL.el); if (s && s.setValue) s.setValue(g); collPaintBody(false); if (sc) sc.scrollTop = 0; } else openCollection(g);
+      }
+    });
+    paintGlance();
+  });
+}
+/** Contenu du coup d'œil (repeint à chaque lot lu sur Scryfall, et à l'arrivée des decks EDHREC). */
+function paintGlance() {
+  const api = GLANCE.api; if (!api || !sheets.includes(api)) { GLANCE.api = null; return; }
+  const items = collAll().all, st = collStats(items, 'cm'), e = COLL.enrich, top = st.topUnit[0];
+  const reading = e && e.ph === 'info';
+  const val = st.valued ? `<b>${esc(fmt(st.value, 'EUR'))}</b><span>${T('valeur · tendance Cardmarket')}${st.valued < st.unique ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : ''}</span>` : `<b>—</b><span>${reading ? T('lecture des prix…') : T('aucun prix connu')}</span>`;
+  const prog = reading ? `<p class="hint gl-prog">${T('Lecture des cartes sur Scryfall · {a} / {b}', { a: nf0(e.done), b: nf0(e.total) })}</p>` : '';
+  const best = top ? `<h3 class="cs-h">${T('La plus chère')}</h3><div class="crow ro gl-top"><span class="thumb" style="--h:${hash32(top.k) % 360}">${esc(((top.dn || top.n).trim()[0] || '?').toUpperCase())}${top.im ? `<img alt="" decoding="async" src="${esc(collImage(top.k, top.l, top.im).src)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(top.dn || top.n)}</span>${top.q > 1 ? `<span class="row-meta"><span class="tag accent">× ${nf0(top.q)}</span></span>` : ''}</span><span class="row-price"><b>${esc(fmt(top.up, 'EUR'))}</b></span></div>` : '';
+  let dk = '';
+  if (EDH.data && !reading) {
+    const sig = COLL.seq + '|' + EDH.at;
+    if (!GLANCE.edh || GLANCE.edh.sig !== sig) GLANCE.edh = { sig, n: edhRank(EDH.data, collQty, { budget: GLANCE_BUDGET, sort: 'have' }).filter(r => r.have >= r.total * 0.3).length };      // au moins 30 % du deck déjà là : un vrai deck « à finir »
+    const nd = GLANCE.edh.n;
+    if (nd) dk = `<div class="gl-edh"><span>${TN(nd, '<b>{n}</b> deck EDHREC à moins de {v} de finir', '<b>{n}</b> decks EDHREC à moins de {v} de finir', { v: esc(new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(GLANCE_BUDGET / 100)) })}</span><button class="btn ghost small" type="button" data-g="decks">${T('Voir ces decks')}</button></div>`;
+  } else if (EDH.p || reading) dk = `<p class="hint gl-edh-wait">${T('Decks EDHREC à finir : calcul après la lecture des prix…')}</p>`;
+  const html = `<div class="cs-tiles gl-tiles"><div><b>${nf0(collCount())}</b><span>${TN(collCount(), 'carte différente', 'cartes différentes')}</span></div><div><b>${nf0(collCopies())}</b><span>${TN(collCopies(), 'exemplaire', 'exemplaires')}</span></div><div class="cs-val ro">${val}</div></div>${prog}${best}${dk}
+    <button class="btn ghost block gl-stats" type="button" data-g="stats">${T('Voir les stats de ma collection')}</button>`;
+  if (api.body._h !== html) { api.body._h = html; api.body.innerHTML = html; }      // repeint seulement si quelque chose a changé (la vignette ne clignote pas à chaque lot lu)
 }

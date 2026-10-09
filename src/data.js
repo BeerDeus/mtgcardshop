@@ -728,20 +728,65 @@ async function runCm(cards, opts, hooks, signal) {
   const tab = await pxTable(signal);
   if (tab) for (const c of todo) { const p = tab.map.get(ownKey(c.name)); if (p && p.e) price.set(c.key, p.e); }
   hooks.step('prints', tab ? 'done' : 'skip', tab ? new Date(tab.at).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' }) : T('Indisponible')); hooks.progress(0.15);
-  const miss = todo.filter(c => !price.has(c.key));
+  const miss = todo.filter(c => !price.has(c.key)), imgs = new Map(), mem = await cmImgMap();
   if (miss.length) {
     hooks.step('catalog', 'run', '0 / ' + miss.length);
     const got = await scryCollection(miss.map(c => c.name), signal, (d, t) => { hooks.step('catalog', 'run', d + ' / ' + t); hooks.progress(0.15 + 0.75 * d / t); hooks.rate(0, Math.ceil(d / 75)); });
-    for (const c of miss) { const m = got.get(ownKey(c.name)); if (m && m.eu) price.set(c.key, m.eu); else if (!m) notFound.add(c.key); }
+    for (const c of miss) { const m = got.get(ownKey(c.name)); if (m && m.eu) price.set(c.key, m.eu); else if (!m) notFound.add(c.key); if (m && m.im) { imgs.set(c.key, m.im); mem.set(ownKey(c.key), m.im); } }
     hooks.step('catalog', 'done', T(miss.length > 1 ? '{n} cartes' : '{n} carte', { n: miss.length }));
   } else hooks.step('catalog', 'skip', T('Inutile'));
+  const late = await cmImages(cards.filter(c => !notFound.has(c.key)), imgs, opts.lang);
   hooks.step('offers', 'run', '');
+  const sent = new Map();
   for (const c of cards) {
-    if (skip.has(c.key)) hooks.card(c.key, { offers: [], bps: [], img: null, skipped: true });
-    else if (price.has(c.key)) hooks.card(c.key, { offers: [cmOffer(c, price.get(c.key), opts)], bps: [], img: null });
-    else hooks.card(c.key, { offers: [], bps: [], img: null, notFound: notFound.has(c.key) });
+    const img = imgs.get(c.key) || null, p = skip.has(c.key) ? { offers: [], bps: [], img, skipped: true } : price.has(c.key) ? { offers: [cmOffer(c, price.get(c.key), opts)], bps: [], img } : { offers: [], bps: [], img, notFound: notFound.has(c.key) };
+    sent.set(c.key, p); hooks.card(c.key, p);
   }
-  hooks.step('offers', 'done', price.size === 1 ? T('1 prix') : T('{n} prix', { n: price.size }));      // « prix » : invariable en français, pas en anglais hooks.step('fallback', 'skip', T('Inutile')); hooks.progress(1);
+  hooks.step('offers', 'done', price.size === 1 ? T('1 prix') : T('{n} prix', { n: price.size }));      // « prix » : invariable en français, pas en anglais
+  hooks.step('fallback', 'skip', T('Inutile')); hooks.progress(1);
+  cmImagesLate(late, sent, hooks, signal);      // prix déjà affichés : les vignettes encore inconnues arrivent ensuite, sans retarder la fin de la recherche
+}
+/* Vignettes des lignes au prix Cardmarket. Images anglaises lues sur Scryfall gardées sur l'appareil (« cm:img », 60 jours) : la vérification suivante ne coûte rien. */
+const CMIMG = { m: null, p: null, t: 0 };
+async function cmImgMap() {
+  if (CMIMG.m) return CMIMG.m;
+  if (!CMIMG.p) CMIMG.p = (async () => { const m = new Map(); try { const o = await Cache.get('cm:img', 60 * DAY); if (o && typeof o === 'object' && !Array.isArray(o)) for (const k in o) if (typeof o[k] === 'string') m.set(k, o[k]); } catch (e) { /* cache absent */ } CMIMG.m = m; return m; })();
+  return CMIMG.p;
+}
+function cmImgSave() {
+  clearTimeout(CMIMG.t);
+  CMIMG.t = setTimeout(() => { if (!CMIMG.m) return; const o = {}; for (const [k, v] of [...CMIMG.m].slice(-4000)) o[k] = v; Cache.set('cm:img', o).catch(() => {}); }, 600);      // les 4 000 dernières (≈ 300 Ko)
+}
+/** Vignettes sans requête : dans la langue de la recherche si on l'a (miniature française du catalogue pour une recherche en français), sinon l'anglaise
+ *  (lue avec les prix, collection, images gardées, impressions d'une recherche CardTrader). imgs : Map clé → url, complétée sur place. Retourne les cartes encore sans image. */
+async function cmImages(cards, imgs, lang) {
+  const meta = typeof COLL !== 'undefined' ? COLL.meta : {}, fr = typeof FRX !== 'undefined' && FRX.ix ? FRX.ix.img : null, mem = await cmImgMap();
+  const frImg = k => { const f = fr && fr.get(k); return f ? (/^https?:/.test(f) ? f : FR_IMG + f) : ''; };
+  const rest = [];
+  for (const c of cards) {
+    const k = ownKey(c.key), en = imgs.get(c.key) || (meta[k] && meta[k].im) || mem.get(k) || '', u = (lang === 'fr' && frImg(k)) || en;
+    if (u) imgs.set(c.key, u); else rest.push(c);
+  }
+  await pool(rest, 6, async c => {
+    const pr = await Cache.get('sc:' + c.key, 30 * DAY).catch(() => null), u = (pr && pr[0] && pr[0].img) || frImg(ownKey(c.key));      // autre langue : l'impression française vaut mieux qu'une lettre
+    if (u) imgs.set(c.key, u);
+  });
+  return rest.filter(c => !imgs.has(c.key));
+}
+/** Images encore inconnues, lues en arrière-plan sur Scryfall (75 par requête : 2 pour un deck de 100 cartes), puis lignes repeintes (même réponse, avec l'image) et images gardées. */
+function cmImagesLate(cards, sent, hooks, signal) {
+  if (!cards.length) return;
+  (async () => {
+    const mem = await cmImgMap();
+    for (let i = 0; i < cards.length && !(signal && signal.aborted); i += 75) {
+      const chunk = cards.slice(i, i + 75), got = await scryCollection(chunk.map(c => c.name), signal);
+      for (const c of chunk) {
+        const m = got.get(ownKey(c.name)), p = sent.get(c.key); if (!m || !m.im) continue;
+        mem.set(ownKey(c.key), m.im); if (p && !(signal && signal.aborted)) hooks.card(c.key, { ...p, img: m.im });
+      }
+      cmImgSave();
+    }
+  })().catch(() => { /* hors ligne, Scryfall en pause : les lettres restent, la prochaine vérification réessaie */ });
 }
 
 /* ── Panier ───────────────────────────────────────────────────────────────────────────────── */

@@ -71,8 +71,16 @@ const langCode = l => (l === 'zh-CN' ? 'ZH' : String(l || '').toUpperCase());
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
-/** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête : + quiet ; invalide : signalée) · { qty, name, key }. */
-function parseLine(raw) {
+/* ── Noms français tapés ou importés → carte anglaise : index construit depuis le catalogue français (fr-names.tsv) ; tant qu'il n'est pas chargé, les noms restent tels qu'écrits ── */
+const FRX = { ix: null };
+/** Clé d'un nom pour l'index français : accents, casse, apostrophes, tirets et espaces ignorés (« L'Aquilon », « l aquilon », « Laquilon » se rejoignent). */
+const frKey = s => normPart(s).replace(/ /g, '');
+const frUse = ix => { FRX.ix = ix || null; };
+
+/** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête : + quiet ; invalide : signalée) · { qty, name, key }.
+ *  Nom français reconnu (index chargé, sauf o.fr === false) : name et key de la carte anglaise, dn = nom imprimé français, fr = 1 ; nom français de plusieurs cartes : amb = [noms anglais], le nom reste tel qu'écrit.
+ *  o.prefer === 'fr' (ou « *FR* » sur la ligne) : un nom qui existe dans les deux langues pour deux cartes différentes est lu en français. */
+function parseLine(raw, o) {
   const line = String(raw == null ? '' : raw).trim();
   if (!line) return undefined;
   if (/^(\/\/|#)/.test(line) || /^SB:/i.test(line) || HEADER_RE.test(line)) return { ignored: true, quiet: true };   // commentaire, banc, en-tête : volontaire, pas signalé
@@ -84,8 +92,13 @@ function parseLine(raw) {
     .replace(/\s+\([A-Za-z0-9]{2,8}\)(\s+[A-Za-z0-9★-]+)?\s*$/, '')
     .trim();
   if (!name || qty < 1 || qty > 999) return { ignored: true };
-  const key = normName(name);
-  return key ? (lang ? { qty, name, key, lang } : { qty, name, key }) : { ignored: true };
+  const key = normName(name); if (!key) return { ignored: true };
+  const out = lang ? { qty, name, key, lang } : { qty, name, key };
+  if (FRX.ix && !(o && o.fr === false)) {
+    const f = frLookup(name, lang === 'fr' || !!(o && o.prefer === 'fr'), key.replace(/[ /]/g, ''));
+    if (f && f.en) { out.name = f.en; out.key = normName(f.en); out.dn = f.p; out.fr = 1; } else if (f && f.amb) out.amb = f.amb;
+  }
+  return out;
 }
 
 /** Lit une decklist (EDHREC, Moxfield, Archidekt, MTGO). Terrains de base séparés. */
@@ -100,7 +113,7 @@ function parseDeck(text) {
     if (p.ignored) { if (!p.quiet) ignored++; continue; }
     const bucket = BASIC_NAMES.has(p.key) ? basics : cards;
     const cur = bucket.get(p.key);
-    if (cur) cur.qty += p.qty; else bucket.set(p.key, { key: p.key, name: p.name, qty: p.qty });
+    if (cur) cur.qty += p.qty; else bucket.set(p.key, { key: p.key, name: p.name, qty: p.qty, ...(p.dn ? { dn: p.dn } : {}), ...(p.amb ? { amb: p.amb } : {}) });      // dn : nom français à afficher (name reste l'anglais : prix, collection, liens)
   }
   const c = [...cards.values()], b = [...basics.values()];
   const copies = c.reduce((a, x) => a + x.qty, 0);
@@ -862,7 +875,9 @@ const collSig = x => collLines(x).map(e => e[0] + ':' + e[1]).join(',');
 
 /**
  * Lit une collection : export CSV (ManaBox, Moxfield, Archidekt, Deckbox, Dragon Shield, TCGplayer…) ou texte « 3 Sol Ring ».
- * Retourne { items:[{k, n, q, l?, d?}] (l : langue si le fichier la donne : colonne « Language », ou « *FR* » en fin de ligne ; d : date d'ajout en secondes, seulement avec o.dates : repère « (Dxxxxxx) » écrit par collToText), lines, skipped, format:'csv'|'text', copies }. Les quantités d'une même carte (impressions différentes) s'additionnent.
+ * Retourne { items:[{k, n, q, l?, d?}] (l : langue si le fichier la donne : colonne « Language », ou « *FR* » en fin de ligne ; d : date d'ajout en secondes, seulement avec o.dates : repère « (Dxxxxxx) » écrit par collToText), lines, skipped, format:'csv'|'text', copies, fr, amb }. Les quantités d'une même carte (impressions différentes) s'additionnent.
+ * Import (o.fr, index français chargé) : un nom français devient la carte anglaise, exemplaire français sauf langue donnée par la ligne (fr : nombre de lignes lues ainsi ; amb : noms français de plusieurs cartes, laissés tels quels).
+ * o.lang : langue des lignes qui n'en donnent pas (choix « Langue de ces cartes »). Sans o.fr ni o.lang (texte enregistré de la collection) : lecture inchangée, quel que soit l'index.
  */
 function parseCollection(text, o) {
   const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/);
@@ -879,9 +894,14 @@ function parseCollection(text, o) {
     if (qtyCol < 0) qtyCol = cols.findIndex(c => /(quantity|qty|count)/.test(c) && !/(trade|tradelist|wish)/.test(c));
     break;
   }
-  const map = new Map(); let n = 0, skipped = 0;
+  const map = new Map(), fr = !!(o && o.fr && FRX.ix), dl = (o && cardLang(o.lang)) || '', amb = []; let n = 0, skipped = 0, nfr = 0;
   const add = (name, q, l, d) => {
     name = String(name || '').trim(); q = Math.max(1, Math.min(9999, Math.round(q) || 1));
+    if (fr && name) {
+      const f = frLookup(name, (l || dl) === 'fr');
+      if (f && f.en) { name = f.en; if (!l) l = 'fr'; nfr++; } else if (f && f.amb && amb.length < 50 && !amb.includes(name)) amb.push(name);
+    }
+    if (!l) l = dl;
     const k = ownKey(name); if (!name || !k) { skipped++; return; }
     const cur = map.get(k), lg = l || ''; if (cur) { cur.b.set(lg, Math.min(9999, (cur.b.get(lg) || 0) + q)); if (d && !(cur.d <= d)) cur.d = d; } else if (map.size < COLL_MAX) map.set(k, { k, n: name, b: new Map([[lg, q]]), ...(d ? { d } : {}) });      // une ligne par langue
   };
@@ -896,13 +916,13 @@ function parseCollection(text, o) {
     for (let raw of lines) {
       let d = 0;
       if (o && o.dates) raw = raw.replace(DATE_MARK_RE, (_, t) => { d = parseInt(t, 36) || 0; return ''; });
-      const p = parseLine(raw); if (!p) continue; n++;
+      const p = parseLine(raw, { fr: false }); if (!p) continue; n++;      // noms français lus par add(), comme ceux d'un CSV
       if (p.ignored) { skipped++; continue; }
       add(p.name, p.qty, p.lang, d);
     }
   }
   const items = [...map.values()].map(({ b, ...base }) => collFromLines(base, [...b]));
-  return { items, lines: n, skipped, format: delim ? 'csv' : 'text', copies: items.reduce((a, x) => a + x.q, 0) };
+  return { items, lines: n, skipped, format: delim ? 'csv' : 'text', copies: items.reduce((a, x) => a + x.q, 0), fr: nfr, amb };
 }
 
 /** Export CSV au format Moxfield (« Count,Tradelist Count,Name,Edition,Condition,Language,Foil ») : relu par Moxfield, ManaBox, Archidekt, Deckbox… et par cette appli.
@@ -1566,6 +1586,66 @@ function matchFr(lines, fc) {
   const dup = !!(fc.amb && fc.amb.has(frontName(m.name)));      // nom français partagé par plusieurs cartes : jamais « sûr », la photo permet de trancher
   return { name: e.en, key: ownKey(e.en), score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, card: 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '', ...(dup ? { amb: true } : {}) };
 }
+/** Index des noms français tapés (decklist, import, saisie) depuis les lignes du catalogue « imprimé \t anglais \t image » :
+ *  by : clé frKey (nom entier, et face avant d'une carte double) → { en, p } (anglais, imprimé) ou { amb: [anglais…], p } (même nom français pour plusieurs cartes : jamais choisi à la place de l'utilisateur) ;
+ *  en : clés frKey des noms anglais (un nom anglais reste anglais) ; fr : ownKey anglais → nom imprimé (comme frNames) ; img : ownKey anglais → chemin de la miniature française ;
+ *  list : [{ k (normPart), n (imprimé), en }] pour la saisie assistée et les suggestions.
+ *  ix : index à compléter (construction par tranches, sans bloquer l'écran : ≈ 31 000 lignes). */
+function frIndex(rows, ix) {
+  ix = ix || { by: new Map(), en: new Set(), fr: new Map(), img: new Map(), list: [], n: 0 };
+  const { by, en, fr, img, list } = ix, fk = s => normPart(s.split('//')[0]) || frontName(s);
+  for (const r of rows || []) {
+    const t = String(r).split('\t'), p = t[0], e = t[1]; if (!p || !e) continue;
+    const ek = fk(e); if (!ek) continue;
+    en.add(ek.replace(/ /g, '')); if (e.includes('//')) en.add(frKey(e));
+    const pf = frFront(p), pn = normPart(pf);
+    if (!fr.has(ek)) { fr.set(ek, pf); if (t[2]) img.set(ek, t[2]); }
+    for (let i = 0; i < (pf === p ? 1 : 2); i++) {
+      const k = i ? frKey(p) : pn.replace(/ /g, ''); if (k.length < 2) continue;
+      const cur = by.get(k), pp = i ? p : pf;      // nom entier tapé (« Feu // Glace ») : affiché entier ; face avant seule (« Feu ») : affichée seule
+      if (!cur) { by.set(k, { en: e, p: pp }); if (!i) list.push({ k: pn, n: pf, en: e }); }
+      else if (cur.amb) { if (!cur.amb.some(x => fk(x) === ek)) { cur.amb.push(e); if (!i) list.push({ k: pn, n: pf, en: e }); } }
+      else if (fk(cur.en) !== ek) { by.set(k, { amb: [cur.en, e], p: cur.p }); if (!i) list.push({ k: pn, n: pf, en: e }); }
+    }
+  }
+  ix.n = by.size; return ix;
+}
+/** Nom tapé → { en, p } (nom français d'une autre carte anglaise) · { amb: [anglais…], p } (plusieurs cartes) · null (pas un nom français connu, ou le même en anglais).
+ *  Un nom qui est aussi le nom anglais d'une autre carte reste anglais (« Desolation », « Endurance ») sauf preferFr (exemplaire dit français) ou accents du nom imprimé tapés tels quels (« Désolation » = Badlands).
+ *  ck : clé frKey déjà calculée. */
+const frAccent = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+function frLookup(name, preferFr, ck) {
+  const ix = FRX.ix; if (!ix) return null;
+  const k = ck || frKey(name); if (k.length < 2) return null;
+  const e = ix.by.get(k); if (!e) return null;
+  if (ix.en.has(k)) {
+    if (!preferFr && !(e.p && /[^\x00-\x7f]/.test(name) && frAccent(name) === frAccent(e.p))) return null;
+    if (!e.amb && frKey(String(e.en).split('//')[0]) === k) return null;      // même nom dans les deux langues (« Aberrant ») : rien à changer
+  }
+  return e.amb ? { amb: e.amb.slice(), p: e.p } : { en: e.en, p: e.p };
+}
+/** Nom anglais d'un nom français connu sans ambiguïté, sinon '' (pour les autres écrans : liste de souhaits…). */
+const frToEn = name => { const f = frLookup(name); return f && f.en ? f.en : ''; };
+/** Nom imprimé français d'une carte (nom anglais ou clé), '' si l'index ne la connaît pas. */
+const enToFr = name => (FRX.ix && FRX.ix.fr.get(ownKey(name))) || '';
+/** Noms proches d'un nom inconnu (faute de frappe, nom français approché) : [{ n (anglais), p? (imprimé français), score }], les meilleurs d'abord, sans doublon de carte.
+ *  idx : nameIndex des noms anglais (ou null) ; les noms français de l'index chargé sont aussi essayés. Nom français exact mais ambigu : ses cartes d'abord. */
+function nameSuggest(raw, idx, n = 3, minScore = 0.6) {
+  const name = String(raw || '').trim(), key = normPart(name.split('//')[0]); if (key.length < 2) return [];
+  const out = new Map(), put = (en, p, score) => { const k = ownKey(en); const cur = out.get(k); if (!cur || score > cur.score) out.set(k, { n: en, ...(p ? { p } : {}), score: Math.round(score * 1000) / 1000 }); };
+  const f = frLookup(name, true); if (f && f.en) put(f.en, f.p, 1); else if (f && f.amb) f.amb.forEach(en => put(en, f.p, 0.99));
+  const max = Math.max(1, Math.floor(key.length * (1 - minScore)));
+  const scan = (list, get) => {
+    for (const e of list) {
+      const dl = e.k.length - key.length; if (dl > max || -dl > max) continue;
+      const d = lev(key, e.k, max); if (d > max) continue;
+      const s = 1 - d / Math.max(key.length, e.k.length); if (s >= minScore) get(e, s);
+    }
+  };
+  if (idx && idx.list) scan(idx.list, (e, s) => put(e.n, '', s));
+  if (FRX.ix) scan(FRX.ix.list, (e, s) => put(e.en, e.n, s));
+  return [...out.values()].sort((a, b) => b.score - a.score || a.n.localeCompare(b.n)).slice(0, n);
+}
 /** Départage une lecture française et une lecture anglaise du même texte : la plus sûre ; à égalité (nom identique dans les deux langues) le français, langue de la plupart des cartes. */
 const bestOf = (fr, en) => (fr && (!en || fr.score >= en.score) ? fr : en || null);
 /** Rectangle d'écran (x, y, w, h) dans un conteneur cw×ch qui affiche une vidéo vw×vh en « object-fit: cover » → rectangle en pixels de la vidéo. */
@@ -1774,3 +1854,5 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Tri des noms (test.mjs) : exporté à part, hors de la grande liste que d'autres modifient
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { NAME_CMP, byName });
+// Noms français tapés ou importés (frnames) : exportés à part, hors de la grande liste que d'autres modifient
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { FRX, frKey, frUse, frIndex, frLookup, frToEn, enToFr, nameSuggest });
