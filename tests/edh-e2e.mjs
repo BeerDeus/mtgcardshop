@@ -134,7 +134,7 @@ await typeQ('plains'); assert.equal((await dks()).length, 0, 'terrains de base e
 await typeQ('edgar markov'); assert.equal((await dks()).length, 2, 'le commandant compte comme carte du deck');
 await typeQ('arcane'); await tierBtn('A'); assert.equal((await dks()).length, 0, 'combiné au tier A : Craterhoof n\'a pas Arcane Signet'); assert.equal(await p.inputValue('#dkQ'), 'arcane'); await tierBtn('A'); assert.equal((await dks()).length, 2, 'les deux decks d\'Edgar contiennent Arcane Signet');
 await typeQ('swords'); await p.click('.crow.dk >> nth=0'); await p.waitForSelector('.sheet .ci-sum');
-assert.deepEqual(await p.$$eval('.sheet-body > h3.cs-h', h => h.map(x => x.textContent.replace(/\s+/g, ' ').trim())), ['Commandant', 'Carte cherchée', 'À acheter 22 cartes'], 'commandant, puis la carte cherchée, puis le reste');
+assert.deepEqual(await p.$$eval('.sheet-body > h3.cs-h', h => h.map(x => x.textContent.replace(/\s+/g, ' ').trim())), ['Commandant', 'Carte cherchée', 'Autres cartes à acheter 22 cartes'], 'commandant, puis la carte cherchée, puis le reste');
 assert.deepEqual(await p.$$eval('.dk-hit .crow', r => r.map(x => [x.querySelector('.row-name').textContent, x.querySelector('.row-price b').textContent.replace(/\s+/g, ' ').trim()])), [['Swords to Plowshares', '1,90 €']]); assert.ok(!(await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent))).includes('Swords to Plowshares'), 'pas en double dans « À acheter »');
 await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet .ci-sum'));
 await p.click('[data-act="dqx"]'); await p.click('[data-act="dqm"][data-v="cmd"]'); assert.equal((await dks()).length, 4); assert.equal(await p.getAttribute('#dkQ', 'placeholder'), 'Rechercher un commandant');
@@ -165,14 +165,17 @@ assert.deepEqual((await acts())[1], ['dkwish', 'Manquantes dans Je recherche', '
 assert.equal(await p.evaluate(() => trState().want.filter(x => /^filler /.test(x.k)).length), 20, '« Je recherche » de l\'onglet Échange : les 20 fillers y sont');
 await p.click('#toast .toast-act'); assert.deepEqual(Object.keys(await p.evaluate(() => TR.wish)).sort(), ['mana crypt', 'swords to plowshares'], 'Annuler : liste d\'avant'); assert.equal((await acts())[1][3], false);
 // ajoutées puis deck enregistré : le deck recherche lui-même ses manquantes, les souhaits ajoutés par la feuille sont retirés (pas de doublon)
-await p.click('.dk-act[data-act="dkwish"]'); await p.click('.dk-act[data-act="dksave"]'); assert.equal(await txt(p, '#toast'), '« Edgar Markov » ajouté à Mes decks');
+await p.click('.dk-act[data-act="dkwish"]'); await p.click('.dk-act[data-act="dksave"]'); assert.equal(await txt(p, '#toast'), '« Edgar Markov » ajouté à Mes decks Voir');
 const saved = await p.evaluate(() => allDecks().map(d => ({ name: d.name, text: d.text, n: dkCountText(d.text), eng: engIsOn(d.id) })));
 assert.equal(saved.length, 1); assert.equal(saved[0].name, 'Edgar Markov'); assert.match(saved[0].text, /^Commander\n1 Edgar Markov\n\n1 Sol Ring\n/); assert.equal(saved[0].n, '34/100 cartes'); assert.equal(saved[0].eng, false, 'pas monté : ses cartes ne sont pas réservées');
 assert.deepEqual(await acts(), [['dksave', 'Dans mes decks', 'Enregistré sous « Edgar Markov »', true], ['dkwish', 'Manquantes dans Je recherche', 'Ta liste d\'échange les recherche déjà', true]]);
 assert.deepEqual(Object.keys(await p.evaluate(() => TR.wish)).sort(), ['mana crypt', 'swords to plowshares'], 'souhaits ajoutés ici retirés');
 assert.equal(await p.evaluate(() => trState().want.find(x => x.k === 'command tower').q), 1, 'Command Tower recherchée une fois, pas deux');
 await p.screenshot({ path: 'shots/edh-3b-actions.png' });
-await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.click('#toast .toast-act'); await p.waitForSelector('.dks.on .deck', { timeout: 4000 }); await p.waitForFunction(() => !document.querySelector('.sheet-wrap') && !document.querySelector('.coll'), null, { timeout: 3000 });
+assert.equal(await txt(p, '.dks .deck-name'), 'Edgar Markov'); assert.match(await txt(p, '.dks .deck-line'), /^34\/100 cartes/, '« Voir » : Mes decks, le deck enregistré y est');
+await p.evaluate(() => closeDecks()); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 });
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk');
 await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.dk-acts2 .dk-act'); assert.deepEqual((await acts())[0], ['dksave', 'Dans mes decks', 'Enregistré sous « Edgar Markov »', true], 'reconnu à la réouverture (même liste)');
 await p.evaluate(() => { TR.wish = {}; trChanged(); });
 ok('feuille d\'un deck : « Ajouter les manquantes à Je recherche » (22 + Swords déjà là, sans doublon, Annuler), « Enregistrer dans mes decks » (34/100, non monté, souhaits de la feuille repris par le deck), état gardé');

@@ -196,7 +196,7 @@ async function openAlertSheet() {
       const hits = (data && data.hits || []).slice(0, 5), muted = Object.keys(AC.mute).filter(k => !AC.watch[k]).length;
       const last = data && data.last && data.last.at ? T('Dernier contrôle {when}', { when: relTime(data.last.at) }) + (data.last.miss ? ' · ' + T('{n} sans prix', { n: nf0(data.last.miss) }) : '') : T('Premier contrôle dans quelques minutes.');
       const rowHtml = r => {
-        const tags = [...(r.d || []).map(d => T('Manque à {deck}', { deck: esc(d) })), r.h ? (r.t ? T('Cible {p}', { p: esc(fmt(r.t)) }) : T('Suivie à la main')) : ''].filter(Boolean).join(' · ');
+        const tags = [...(r.d || []).map(d => T('Manque à {deck}', { deck: esc(d) })), r.h ? (r.t ? T('Cible {p}', { p: esc(fmt(r.t)) }) : (AC.watch[r.k] || {}).d ? '' : T('Suivie à la main')) : ''].filter(Boolean).join(' · ');
         return `<div class="al-row" data-k="${esc(r.k)}"><span class="al-n"><b>${esc(r.n)}</b><small>${tags}</small></span>
           <span class="al-px">${r.c ? `<b>${esc(fmt(r.c))}</b>${r.b && r.pct ? `<small class="${r.pct < 0 ? 'dn' : 'up'}">${r.pct > 0 ? '+' : '−'}${Math.abs(r.pct)} %</small>` : ''}` : `<small>${T('pas encore de prix')}</small>`}</span>
           <button class="ib-x" type="button" data-rm="${esc(r.k)}" aria-label="${T(r.h ? 'Ne plus suivre {name}' : 'Exclure de la surveillance {name}', { name: esc(r.n) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`;

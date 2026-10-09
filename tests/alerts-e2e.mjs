@@ -170,6 +170,10 @@ assert.deepEqual(await watchRow(), ['Prix surveillés', 'Une notification en cas
 assert.ok(await p.evaluate(() => alItems().some(i => i.k === 'edgar markov' && i.d && i.d.includes('Edgar Markov'))), 'envoyée avec le nom du deck (« manque à Edgar Markov »)');
 await p.waitForTimeout(3500); srv = await server(await myId()); assert.equal(srv.o.watching, 4, '+ Edgar Markov');
 await p.screenshot({ path: 'shots/alerts-2-edh-surveiller.png' });
+await p.evaluate(() => openAlertSheet()); await p.waitForSelector('.al-row[data-k="edgar markov"]', { timeout: 6000 });
+assert.equal(await txt(p, '.al-row[data-k="edgar markov"] small'), 'Manque à Edgar Markov', 'feuille des alertes : le deck, pas « Suivie à la main »');
+assert.match(await txt(p, '.al-row[data-k="craterhoof behemoth"] small'), /Cible 5,50/, 'suivi à la main avec cible : inchangé');
+await p.keyboard.press('Escape'); await p.waitForFunction(() => document.querySelectorAll('.sheet-wrap').length === 1, null, { timeout: 4000 }); await p.waitForTimeout(300);
 await p.keyboard.press('Escape'); await sheetGone();
 await p.evaluate(() => collAdd([{ k: 'edgar markov', n: 'Edgar Markov', q: 1 }], 'add')); await p.waitForTimeout(3800);
 srv = await server(await myId()); assert.equal(srv.o.watching, 3, 'Edgar désormais possédée : plus surveillée'); assert.ok(await p.evaluate(() => !!AC.watch['edgar markov']), 'le suivi reste (revendue, elle le serait à nouveau)');
