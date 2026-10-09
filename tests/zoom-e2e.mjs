@@ -33,7 +33,10 @@ const viewer = async () => ({ name: await txt(p, '.imgv.on .imgv-cap b'), count:
 const closeV = async () => { await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 }); };
 /** Touche sel (au doigt) et attend la carte en grand. */
 const into = async sel => { await p.$eval(sel, e => e.scrollIntoView({ block: 'center', behavior: 'instant' })); await p.waitForTimeout(60); return p.$eval(sel, e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }); };      // défilement immédiat (la page défile en douceur)
-const tap = async sel => { const r = await into(sel); await p.touchscreen.tap(r.x + r.w / 2, r.y + r.h / 2); await p.waitForSelector('.imgv.on', { timeout: 4000 }); await p.waitForTimeout(150); return viewer(); };
+const tap = async sel => {
+  let r = await into(sel);
+  for (let i = 0; i < 20 && !(await p.$eval(sel, (e, [x, y]) => { const h = document.elementFromPoint(x, y); return !!h && (h === e || e.contains(h)); }, [r.x + r.w / 2, r.y + r.h / 2])); i++) { await p.waitForTimeout(100); r = await into(sel); }      // écran encore en mouvement (entrée animée) : on attend que la vignette soit sous le doigt
+  await p.touchscreen.tap(r.x + r.w / 2, r.y + r.h / 2); await p.waitForSelector('.imgv.on', { timeout: 4000 }); await p.waitForTimeout(150); return viewer(); };
 /** La vignette est un bouton au clavier : rôle, tabindex, nom lu ; Entrée l'ouvre et le focus y revient à la fermeture. */
 async function keyboard(sel, name, key = 'Enter') {
   const a = await p.$eval(sel, e => [e.getAttribute('role'), e.tabIndex, e.getAttribute('aria-label')]);
