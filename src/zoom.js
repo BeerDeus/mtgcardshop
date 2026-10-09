@@ -25,7 +25,7 @@ const ZOOM_LISTS = {
     const row = th.closest('.rw'); if (!row || !S.run) return null;
     return zoomFrom($$('#list .rw').filter(r => !r.hidden), row, r => {
       const k = r.dataset.key, c = S.deck.cards.find(x => x.key === k), st = S.run.cards[k] || {}; if (!c || st.notFound) return null;
-      return cardImageItem(k) || zoomNamed(k, c.name, c.name, viewLang(k, c.own > 0));
+      return cardImageItem(k) || zoomNamed(k, c.dn || c.name, c.name, viewLang(k, c.own > 0));      // dn : nom tapé (« Foudre ») en titre, l'anglais pour l'image
     });
   },
   /* Collection : liste (une ligne par carte et par langue), « Les plus chères » et « Variations des prix » (Stats). */

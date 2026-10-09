@@ -25,6 +25,9 @@ const { p, errs } = await newPage(browser, world, { init: seed, ctx: { colorSche
   await p.route('https://cards.scryfall.io/**', svg);
   await p.route(u => u.hostname === 'api.scryfall.com' && u.pathname === '/cards/named' && u.searchParams.get('format') === 'image', svg);
 }
+// catalogue des noms français (« Anneau solaire » → Sol Ring) ; il n'est accepté qu'à partir de 500 noms
+const FRCAT = ['# fr-names', 'Anneau solaire\tSol Ring\tfront/fr/sol-ring.jpg', ...Array.from({ length: 600 }, (_, i) => `Vrombl ${i}\tVrombl Card ${i}\t`)].join('\n') + '\n';
+await p.route(world.url + 'fr-names.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: FRCAT }));
 
 const viewer = async () => ({ name: await txt(p, '.imgv.on .imgv-cap b'), count: (await p.$('.imgv.on .imgv-count')) ? await txt(p, '.imgv.on .imgv-count') : '1 / 1', lang: await txt(p, '.imgv.on .imgv-lang') });
 const closeV = async () => { await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 }); };
@@ -50,10 +53,10 @@ let v = await tap('.row[data-key="craterhoof behemoth"] .thumb');
 assert.equal(v.name, 'Craterhoof Behemoth'); assert.match(v.lang, /français/); assert.match(v.count, /^\d \/ 3$/, 'précédente / suivante parmi les 3 cartes trouvées (nom introuvable exclu)');
 await p.click('.imgv-nav.next:not([disabled]), .imgv-nav.prev:not([disabled])'); await p.waitForTimeout(150); assert.notEqual(await txt(p, '.imgv-cap b'), 'Craterhoof Behemoth', 'on passe à la carte voisine');
 await closeV();
-await p.click('.row[data-key="craterhoof behemoth"] .row-name'); await p.waitForSelector('.sheet-wrap.open .offer'); assert.equal(await p.$('.imgv'), null, 'le reste de la ligne ouvre la fiche des offres, pas la carte en grand');
+await p.click('.row[data-key="craterhoof behemoth"] .row-name'); await p.waitForSelector('.sheet-wrap.open .offer'); assert.equal(!!(await p.$('.imgv')), false, 'le reste de la ligne ouvre la fiche des offres, pas la carte en grand');
 await p.keyboard.press('Escape'); await p.waitForTimeout(350);
 await keyboard('.row[data-key="sol ring"] .thumb', 'Sol Ring'); await keyboard('.row[data-key="sol ring"] .thumb', 'Sol Ring', ' ');
-assert.equal(await p.$('.sheet-wrap.open'), null, 'Entrée / Espace sur la vignette n\'ouvrent pas la fiche de la ligne');
+assert.equal(!!(await p.$('.sheet-wrap.open')), false, 'Entrée / Espace sur la vignette n\'ouvrent pas la fiche de la ligne');
 assert.equal(await p.$eval('.row[data-key="carte qui n existe pas"] .thumb', e => e.hasAttribute('data-zoom')), false, 'nom introuvable : rien à agrandir');
 { // zone de toucher ≥ 44 px : un appui juste à côté de l'image compte
   const r = await into('.row[data-key="arcane signet"] .thumb');
@@ -73,35 +76,35 @@ v = await tap('.dv.on .dvc[data-s="basic"]'); assert.equal(v.name, 'Plains'); as
 await closeV(); await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
 ok('deck viewer : tuile → carte en grand ; terrain sans image → la carte par son nom (rien ne se passait)');
 
-/* ── 3) Résultats Cardmarket : pas d'image dans la ligne → la carte par son nom, dans la langue de la recherche ─────────────── */
+/* ── 3) Résultats Cardmarket (ni extension ni numéro) : la carte en grand dans la langue de la recherche, cherchée par le nom ─────────────── */
 await p.click('#btnBack'); await p.waitForSelector('#segSrcRun'); await p.click('#segSrcRun [data-v="cm"]'); await p.waitForTimeout(150);
 await p.click('#btnRun'); await p.waitForFunction(() => S.run && S.run.status === 'done', null, { timeout: 30000 }); await p.waitForTimeout(500);
-assert.equal(await p.$('.row[data-key="craterhoof behemoth"] .thumb img'), null, 'Cardmarket : vignette sans image');
 v = await tap('.row[data-key="craterhoof behemoth"] .thumb'); assert.equal(v.name, 'Craterhoof Behemoth'); assert.match(v.count, /^\d \/ 3$/);
 await p.waitForFunction(() => /\/fr\/craterhoof-behemoth/.test((document.querySelector('.imgv-img.ok') || {}).src || ''), null, { timeout: 8000 }); assert.match(await txt(p, '.imgv-lang'), /français/, 'version française cherchée par le nom');
 await p.waitForTimeout(500); await p.screenshot({ path: SHOTS + '/zoom-2-cardmarket.png' });
 await closeV();
-await p.click('.row[data-key="craterhoof behemoth"] .row-name'); await p.waitForSelector('.sheet-wrap.open .cm-price'); assert.equal(await p.$('.imgv'), null, 'le reste de la ligne : fiche Cardmarket');
+await p.click('.row[data-key="craterhoof behemoth"] .row-name'); await p.waitForSelector('.sheet-wrap.open .cm-price'); assert.equal(!!(await p.$('.imgv')), false, 'le reste de la ligne : fiche Cardmarket');
 await p.keyboard.press('Escape'); await p.waitForTimeout(350);
-ok('résultats Cardmarket : vignette (sans image) → carte en grand en français par son nom ; ligne → fiche du prix (avant : la fiche, jamais la carte)');
+ok('résultats Cardmarket : vignette → carte en grand en français (cherchée par le nom) ; ligne → fiche du prix (avant : la fiche, jamais la carte)');
 
 /* ── 4) Collection : liste, Stats (plus chères, variations des prix) ─────────────────────────── */
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.waitForFunction(() => document.querySelectorAll('.coll .crow .thumb img.ok').length >= 4, null, { timeout: 10000 });
-v = await tap('.coll .crow[data-k="sol ring"] .thumb'); assert.equal(v.name, 'Sol Ring'); assert.match(v.lang, /français/, 'exemplaire français : carte en français'); assert.match(v.count, /\/ 6$/, 'toutes les lignes affichées');
+const solFr = await p.evaluate(() => frName('sol ring', 'fr') || 'Sol Ring');      // nom imprimé de l'exemplaire français, comme la ligne
+v = await tap('.coll .crow[data-k="sol ring"] .thumb'); assert.equal(v.name, solFr); assert.equal(v.name, await txt(p, '.coll .crow[data-k="sol ring"] .row-name')); assert.match(v.lang, /français/, 'exemplaire français : carte en français'); assert.match(v.count, /\/ 6$/, 'toutes les lignes affichées');
 await closeV();
 await keyboard('.coll .crow[data-k="wrath of god"] .thumb', 'Wrath of God');
 v = await tap('.coll .crow[data-k="wrath of god"] .thumb');      // exemplaire allemand, sans image allemande chez ce faux Scryfall : la note nomme l'allemand (plus « française »)
 await p.waitForFunction(() => /Pas d'image en allemand sur Scryfall : version anglaise/.test(document.querySelector('.imgv-sub').textContent), null, { timeout: 6000 });
 assert.doesNotMatch(await txt(p, '.imgv-sub'), /française/); await closeV();
 await p.click('.coll .crow[data-k="wrath of god"] .qstep [data-d="1"]'); await p.waitForTimeout(200);
-assert.equal(await txt(p, '.coll .crow[data-k="wrath of god"] .qstep b'), '2', 'le « + » de la ligne marche toujours'); assert.equal(await p.$('.imgv'), null);
+assert.equal(await txt(p, '.coll .crow[data-k="wrath of god"] .qstep b'), '2', 'le « + » de la ligne marche toujours'); assert.equal(!!(await p.$('.imgv')), false);
 await p.click('#collSeg [data-v="stats"]'); await p.waitForSelector('.cs-top .crow .thumb[data-zoom]'); await p.waitForTimeout(400);
 v = await tap('.cs-top .crow .thumb'); assert.equal(v.name, 'Craterhoof Behemoth', 'Les plus chères : la première'); assert.match(v.count, /^1 \/ \d$/);
 await closeV();
 await p.evaluate(() => { const now = Date.now(); VAL.base = { cur: { t: now - 8 * 864e5, p: { 'sol ring': 100, 'craterhoof behemoth': 600 } }, prev: null }; VAL.at = now; VAL.memo = null; collPaintBody(true); });
 await p.waitForSelector('.vl-top .crow .thumb[data-zoom]');
-v = await tap('.vl-top .crow[data-k="sol ring"] .thumb'); assert.equal(v.name, 'Sol Ring'); assert.match(v.lang, /français/); assert.match(v.count, /\/ 2$/, 'variations : les deux cartes qui ont bougé');
+v = await tap('.vl-top .crow[data-k="sol ring"] .thumb'); assert.equal(v.name, solFr); assert.match(v.lang, /français/); assert.match(v.count, /\/ 2$/, 'variations : les deux cartes qui ont bougé');
 await closeV();
 ok('collection : liste (exemplaire français montré en français, 6 lignes), exemplaire allemand : « Pas d\'image en allemand », « + » intact, Stats « Les plus chères » et « Variations des prix »');
 
@@ -140,7 +143,18 @@ v = await tap('.sc-item.pr[data-k="arcane signet"] .sc-th'); assert.equal(v.name
 await p.evaluate(() => SC.el.__close()); await p.waitForTimeout(300);
 ok('scan : miniatures (liste, prix rapide) au doigt et au clavier, zone ≥ 44 px ; fiche « Ajouter » : les plus chères s\'ouvrent en grand (rien avant)');
 
-/* ── 8) Éditeur de deck ────────────────────────────────────────────────────────────────────── */
+/* ── 8) Nom tapé en français (« Anneau solaire ») : la carte en grand le garde en titre ; image et Scryfall sur le nom anglais ─────── */
+await toInput(p); await p.fill('#deckText', '1 Anneau solaire\n1 Arcane Signet');
+await p.waitForFunction(() => S.deck.cards.some(c => c.dn === 'Anneau solaire'), null, { timeout: 10000 });
+await p.click('#btnRun'); await p.waitForFunction(() => S.run && S.run.status === 'done', null, { timeout: 30000 }); await p.waitForTimeout(400);
+v = await tap('.row[data-key="sol ring"] .thumb'); assert.equal(v.name, 'Anneau solaire', 'résultats : titre = nom tapé');
+assert.match(await p.$eval('.imgv-ph', i => i.src), /sol-ring|Sol%20Ring/, 'image lue sur le nom anglais'); await closeV();
+await p.evaluate(() => openDeckViewer({ text: '1 Anneau solaire\n1 Arcane Signet', name: 'FR' })); await p.waitForSelector('.dv.on .dvc');
+v = await tap('.dv.on .dvc[aria-label^="Sol Ring"]'); assert.equal(v.name, 'Anneau solaire', 'deck viewer : titre = nom tapé'); await closeV();
+await p.evaluate(() => closeDeckViewer()); await p.waitForTimeout(300);
+ok('nom tapé en français : « Anneau solaire » en titre de la carte en grand (résultats, deck viewer), image sur le nom anglais');
+
+/* ── 9) Éditeur de deck ────────────────────────────────────────────────────────────────────── */
 await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on'); await p.click('#btnNewDeck'); await p.waitForSelector('#ndName');
 await p.fill('#ndName', 'Zoom'); await p.click('#ndFmt .seg-opt[data-v="standard"]'); await p.click('#ndGo'); await p.waitForSelector('.bd.on');
 await p.click('#bdSeg .seg-opt[data-v="coll"]');

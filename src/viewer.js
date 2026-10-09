@@ -14,8 +14,9 @@ function cardImageItem(key) {
   const c = S.deck.cards.find(x => x.key === key); if (!c || !S.run) return null;
   const st = S.run.cards[key] || {}, v = cardView(c);
   const o = v.pick && v.pick.parts[0] ? v.pick.parts[0].offer : null, bp = (st.bps || [])[0] || {};
-  const small = (o && o.img) || st.img || bp.img; if (!small) return null;
-  return { key, name: c.name, small, lang: o && o.lang ? o.lang : 'en', set: o ? (o.sset || o.set) : bp.set, num: o ? o.num : bp.num, setName: o && o.setName, extra: '' };
+  const small = (o && o.img) || st.img || bp.img, set = o ? (o.sset || o.set) : bp.set; if (!small) return null;
+  if (!set) return { key, name: c.dn || c.name, ln: c.name, small, lang: 'en', plain: true, wl: viewLang(key, c.own > 0), extra: '' };      // prix Cardmarket (ni extension ni numéro) : image de la carte, version dans la langue voulue cherchée par le nom
+  return { key, name: c.dn || c.name, ln: c.name, small, lang: o && o.lang ? o.lang : 'en', set, num: o ? o.num : bp.num, setName: o && o.setName, extra: '' };
 }
 /** Depuis la liste de résultats : la carte touchée, et on peut passer aux suivantes dans l'ordre affiché. */
 function openCardImage(key) {
@@ -482,6 +483,14 @@ function dvRender() {
   foot.hidden = false; edit.hidden = DV.live || !DV.deckId; refresh.hidden = DV.live || !DV.deckId || (ref && !todo);
   close.hidden = !DV.live && !DV.adhoc;
 }
+/** Noms affichés des cartes de la liste (nom tapé en français, « Foudre ») : clé anglaise → nom affiché. Les relevés ne gardent que l'anglais ; relu de la liste, une fois par texte et par index des noms. */
+function dvShown(it) {
+  if (DV.dnOf !== DV.text || DV.dnIx !== FRX.ix) {
+    DV.dnOf = DV.text; DV.dnIx = FRX.ix; DV.dn = new Map();
+    for (const raw of String(DV.text || '').split(/\r?\n/)) { const p = parseLine(raw.trim().replace(/^SB:\s*/i, '')); if (p && !p.ignored && p.dn) { DV.dn.set(p.key, p.dn); DV.dn.set(ownKey(p.name), p.dn); } }      // réserve (« SB: ») comprise
+  }
+  return DV.dn.get(String(it.k).replace(/^sb:/, '')) || '';
+}
 function dvItemFor(it) {
   if (it.s === 'nf') return null;
   const dl = DV.dl && DV.dl.get(it.k), mv = dl && dvMoved(dl) ? ' · ' + T('{delta} par exemplaire', { delta: (dl.diff < 0 ? '▼ −' : '▲ +') + fmt(Math.abs(dl.diff)) }) : '';
@@ -492,7 +501,7 @@ function dvItemFor(it) {
     : it.s === 'own' ? T('Dans ta collection') : T('Aucune offre avec tes critères');
   const ol = !!it.ol;      // image de ta propre carte (sa langue) : pas la version de l'offre, donc ni extension ni numéro à relire sur Scryfall
   const nm = it.im ? null : zoomNamed(it.k, it.n, it.n, '');      // fiche pas encore lue (terrain de base, deck jamais cherché) : la carte par son nom
-  return { key: it.k, name: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: nm ? nm.small : it.im, ...(nm && nm.big ? { big: nm.big } : {}), lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
+  return { key: it.k, name: dvShown(it) || it.n, ln: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: nm ? nm.small : it.im, ...(nm && nm.big ? { big: nm.big } : {}), lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
 }
 function dvOpenCard(i) {
   const list = [], at = new Map();
