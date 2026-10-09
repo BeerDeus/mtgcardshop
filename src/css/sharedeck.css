@@ -1,0 +1,2 @@
+/* Viewer d'un deck venu d'ailleurs (lien partagé, EDHREC) : « ✓ Dans mes decks » est un état acquis, pas un bouton grisé */
+.dv-foot .btn.dv-done[disabled]{opacity:1;color:var(--good);cursor:default}

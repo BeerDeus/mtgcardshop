@@ -386,7 +386,7 @@ function openEdhDeck(r) {
     edhDeckActs(api, r, name);
     $('.dk-acts', api.body).onclick = e => {
       const b = e.target.closest('[data-act]'); if (!b) return; haptic('tap');
-      if (b.dataset.act === 'dkview') { api.close(); openDeckViewer({ text: edhDeckText(r.deck), name }); }      // viewer : images, courbe, main de départ, partage
+      if (b.dataset.act === 'dkview') { api.close(); openDeckViewer({ text: edhDeckText(r.deck), name, saveAs: edhSaveName(r) }); }      // viewer : images, courbe, main de départ, partage, « Enregistrer dans mes decks » (même nom que la feuille)
       else shareDeck({ text: edhDeckText(r.deck), name });
     };
     let imgs = new Map(), settled = false;
