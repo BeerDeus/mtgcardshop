@@ -195,8 +195,8 @@ function collRemoteApplied(before, after, o = {}) {
   let add = 0, del = 0;
   for (const k in after) if (!before[k]) add++;
   for (const k in before) if (!after[k]) del++;
-  const n0 = Object.keys(before).length, plural = n => T(n > 1 ? '{n} cartes' : '{n} carte', { n });
-  if (del >= 10 && del * 2 >= n0) toast(T(del > 1 ? '{n} cartes retirées depuis un autre appareil' : '{n} carte retirée depuis un autre appareil', { n: del }), { label: T('Annuler'), fn: () => { COLL.map = unionColl(COLL.map, before); collChanged(); } });
+  const n0 = Object.keys(before).length, plural = n => TN(n, '{n} carte', '{n} cartes', { n });
+  if (del >= 10 && del * 2 >= n0) toast(TN(del, '{n} carte retirée depuis un autre appareil', '{n} cartes retirées depuis un autre appareil', { n: del }), { label: T('Annuler'), fn: () => { COLL.map = unionColl(COLL.map, before); collChanged(); } });
   else if (o.first && o.had) toast(T('Collection de l\'appareil et du compte fusionnées'));
   else if (o.first) toast(T('Collection de ton compte chargée : {cards}', { cards: plural(add) }));
   else if (add || del) toast(T('Autre appareil : {changes}', { changes: [add && '+' + plural(add), del && '−' + plural(del)].filter(Boolean).join(' · ') }));
@@ -803,7 +803,7 @@ function collViewItem(k, ln) {
   const x = COLL.map[k], m = COLL.meta[k]; if (!x || !m || !m.im) return null;
   const ls = collLines(x), line = ls.find(e => e[0] === (ln || '')) || ls[0] || [x.l || '', x.q], l = line[0], n = line[1];
   const im = collImage(k, l, m.im), fr = l && l !== 'en' && im.lang === 'en' ? ' · ' + T('image anglaise (pas d\'image {lang} sur Scryfall)', { lang: LANGS[l] ? T(LANGS[l]) : l }) : '';
-  const own = ls.length > 1 ? T(n > 1 ? '{n} exemplaires {lang} · {total} au total' : '{n} exemplaire {lang} · {total} au total', { n, lang: l ? langCode(l) : T('sans langue'), total: x.q }) : T(x.q > 1 ? '{n} exemplaires dans ta collection' : '{n} exemplaire dans ta collection', { n: x.q });
+  const own = ls.length > 1 ? TN(n, '{n} exemplaire {lang} · {total} au total', '{n} exemplaires {lang} · {total} au total', { n, lang: l ? langCode(l) : T('sans langue'), total: x.q }) : TN(x.q, '{n} exemplaire dans ta collection', '{n} exemplaires dans ta collection', { n: x.q });
   return { key: k, lid: k + '|' + l, name: frName(k, l) || x.n, ln: x.n, wl: l && l !== 'en' ? l : '', small: im.src, lang: im.lang, plain: true, extra: `${own}${Number.isFinite(m.eu) ? ' · ' + T('réf. Cardmarket {v}', { v: fmt(m.eu, 'EUR') }) : ''}${COLL.px[k] && Number.isFinite(COLL.px[k].p) ? ' · ' + T('offre CardTrader {v}', { v: fmt(COLL.px[k].p, COLL.px[k].c || 'EUR') }) : ''}${fr}` };
 }
 

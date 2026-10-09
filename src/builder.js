@@ -186,9 +186,9 @@ function bdTags(k, q, ctx) {
   if (BASIC_NAMES.has(k)) return '';
   const own = collQty(k), eg = engTotal(XS.eng, k, BD.id), out = [];
   if (ctx !== 'deck' && BD.cmdr.some(c => c.key === k)) out.push(`<span class="tag accent">${T('Commandant')}</span>`);
-  if (ctx === 'deck') out.push(own >= q ? `<span class="tag good">${T('Possédée')}</span>` : own > 0 ? `<span class="tag warn">${T(own > 1 ? '{n} possédées sur {q}' : '{n} possédée sur {q}', { n: own, q })}</span>` : `<span class="tag">${T('À acheter')}</span>`);
-  else out.push(own ? `<span class="tag good">${T(own > 1 ? '× {n} possédées' : '× {n} possédée', { n: own })}</span>` : `<span class="tag">${T('Pas dans ta collection')}</span>`);
-  if (own && eg) out.push(`<span class="tag warn" title="${T('Réservées par un autre deck monté')}">${T(eg > 1 ? '{n} engagées ailleurs' : '{n} engagée ailleurs', { n: eg })}</span>`);
+  if (ctx === 'deck') out.push(own >= q ? `<span class="tag good">${T('Possédée')}</span>` : own > 0 ? `<span class="tag warn">${TN(own, '{n} possédée sur {q}', '{n} possédées sur {q}', { n: own, q })}</span>` : `<span class="tag">${T('À acheter')}</span>`);
+  else out.push(own ? `<span class="tag good">${TN(own, '× {n} possédée', '× {n} possédées', { n: own })}</span>` : `<span class="tag">${T('Pas dans ta collection')}</span>`);
+  if (own && eg) out.push(`<span class="tag warn" title="${T('Réservées par un autre deck monté')}">${TN(eg, '{n} engagée ailleurs', '{n} engagées ailleurs', { n: eg })}</span>`);
   return out.join('');
 }
 function bdRow(k, name, q, tgt, ctx, label) {
@@ -278,7 +278,7 @@ function bdViewItem(row) {
   const k = row.dataset.k, m = bdMeta(k); if (!m || !m.im) return null;
   const x = COLL.map[k], l = x ? x.l : '', im = collImage(k, l, m.im), own = collQty(k);
   return { key: k, lid: k + '|' + row.dataset.t, name: bdLabel(k, row.dataset.n), ln: row.dataset.n, wl: viewLang(k, true), small: im.src, lang: im.lang, plain: true,
-    extra: `${own ? T(own > 1 ? '{n} exemplaires dans ta collection' : '{n} exemplaire dans ta collection', { n: own }) : T('Pas dans ta collection')}${Number.isFinite(m.eu) ? ' · ' + T('réf. Cardmarket {p}', { p: fmt(m.eu, 'EUR') }) : ''}` };
+    extra: `${own ? TN(own, '{n} exemplaire dans ta collection', '{n} exemplaires dans ta collection', { n: own }) : T('Pas dans ta collection')}${Number.isFinite(m.eu) ? ' · ' + T('réf. Cardmarket {p}', { p: fmt(m.eu, 'EUR') }) : ''}` };
 }
 
 /* ── Interactions ─────────────────────────────────────────────────────────────────────────────── */

@@ -735,7 +735,7 @@ async function runCm(cards, opts, hooks, signal) {
     hooks.step('catalog', 'run', '0 / ' + miss.length);
     const got = await scryCollection(miss.map(c => c.name), signal, (d, t) => { hooks.step('catalog', 'run', d + ' / ' + t); hooks.progress(0.15 + 0.75 * d / t); hooks.rate(0, Math.ceil(d / 75)); });
     for (const c of miss) { const m = got.get(ownKey(c.name)); if (m && m.eu) price.set(c.key, m.eu); else if (!m) notFound.add(c.key); if (m && m.im) { imgs.set(c.key, m.im); mem.set(ownKey(c.key), m.im); } }
-    hooks.step('catalog', 'done', T(miss.length > 1 ? '{n} cartes' : '{n} carte', { n: miss.length }));
+    hooks.step('catalog', 'done', TN(miss.length, '{n} carte', '{n} cartes', { n: miss.length }));
   } else hooks.step('catalog', 'skip', T('Inutile'));
   const late = await cmImages(cards.filter(c => !notFound.has(c.key)), imgs, opts.lang);
   hooks.step('offers', 'run', '');
@@ -852,7 +852,7 @@ async function cartFill(parts, mode, address, signal, onItem, demo) {
         if (used.length) {
           gone.push(offer.productId); handled = true;
           replaced.push({ name, from: offer, n, to: used, missing: Math.max(0, need) });
-          if (need > 0) failed.push({ name, reason: T(need > 1 ? '{n} exemplaires sans remplacement disponible' : '{n} exemplaire sans remplacement disponible', { n: need }) });
+          if (need > 0) failed.push({ name, reason: TN(need, '{n} exemplaire sans remplacement disponible', '{n} exemplaires sans remplacement disponible', { n: need }) });
           else ok++;
           streak = 0;
         } else if (altFailed && lastMsg === e.message) { if (++streak >= 2) noAlt = true; }   // même erreur partout : probablement pas l'offre

@@ -600,7 +600,7 @@ function agoDay(day, now) {
   if (d < 1) return T('aujourd\'hui'); if (d < 2) return T('hier'); if (d < 14) return T('il y a {n} jours', { n: d });
   if (d < 60) return T('il y a {n} semaines', { n: Math.floor(d / 7) });
   if (d < 365) { const m = Math.floor(d / 30.44); return m === 1 ? T('il y a 1 mois') : T('il y a {n} mois', { n: m }); }      // « mois » : même mot au singulier et au pluriel en français, pas en anglais
-  const y = Math.floor(d / 365.25); return T(y > 1 ? 'il y a {n} ans' : 'il y a {n} an', { n: y });
+  const y = Math.floor(d / 365.25); return TN(y, 'il y a {n} an', 'il y a {n} ans', { n: y });
 }
 
 /** Identifiant de document : valable pour Firestore, sans dépendre d'une API. */
@@ -852,8 +852,8 @@ function dkCheck(fmt, d, metaOf) {
   if (fmt === 'commander') {
     if (!cmdr.length) issues.push({ lv: 'bad', t: T('Aucun commandant : choisis-en un.') });
     else if (cmdr.length > 2) issues.push({ lv: 'bad', t: T('Deux commandants au maximum (partenaires).') });
-    if (n < f.size) issues.push({ lv: 'warn', t: T(f.size - n > 1 ? 'Il manque {n} cartes pour arriver à {size}.' : 'Il manque {n} carte pour arriver à {size}.', { n: f.size - n, size: f.size }) });
-    else if (n > f.size) issues.push({ lv: 'bad', t: T(n - f.size > 1 ? '{n} cartes en trop ({size} exactement).' : '{n} carte en trop ({size} exactement).', { n: n - f.size, size: f.size }) });
+    if (n < f.size) issues.push({ lv: 'warn', t: TN(f.size - n, 'Il manque {n} carte pour arriver à {size}.', 'Il manque {n} cartes pour arriver à {size}.', { n: f.size - n, size: f.size }) });
+    else if (n > f.size) issues.push({ lv: 'bad', t: TN(n - f.size, '{n} carte en trop ({size} exactement).', '{n} cartes en trop ({size} exactement).', { n: n - f.size, size: f.size }) });
     for (const c of main) {
       if (BASIC_NAMES.has(c.key)) continue;
       if (c.qty > 1) issues.push({ lv: 'bad', t: T('{name} : {n} exemplaires (un seul en Commander).', { name: c.name, n: c.qty }) });
@@ -864,7 +864,7 @@ function dkCheck(fmt, d, metaOf) {
     for (const c of cmdr) { const m = metaOf && metaOf(c.key); if (m && typeof m.ci === 'string') for (const x of m.ci) ci.add(x); else known = false; }
     if (known) for (const c of main) { const m = metaOf(c.key); if (m && typeof m.ci === 'string' && [...m.ci].some(x => !ci.has(x))) issues.push({ lv: 'warn', t: T('{name} sort de l\'identité de couleur du commandant.', { name: c.name }) }); }
   } else {
-    if (n < f.size) issues.push({ lv: 'warn', t: T(f.size - n > 1 ? 'Il manque {n} cartes ({size} minimum).' : 'Il manque {n} carte ({size} minimum).', { n: f.size - n, size: f.size }) });
+    if (n < f.size) issues.push({ lv: 'warn', t: TN(f.size - n, 'Il manque {n} carte ({size} minimum).', 'Il manque {n} cartes ({size} minimum).', { n: f.size - n, size: f.size }) });
     if (ns > f.side) issues.push({ lv: 'bad', t: T('Réserve de {n} cartes ({max} au maximum).', { n: ns, max: f.side }) });
     const tot = new Map(), nm = new Map();
     for (const c of [...main, ...side]) { if (BASIC_NAMES.has(c.key)) continue; tot.set(c.key, (tot.get(c.key) || 0) + c.qty); nm.set(c.key, c.name); }

@@ -24,9 +24,11 @@ const EN = merged('en');
 // Game Changer, Tier…), mots identiques dans la langue. '*' : toutes les langues ; sinon la liste d'une langue. Un texte sans lettre ({a} → {b}, {n} %) passe toujours.
 const SAME = {
   '*': ['Mana Orbit', 'OK', 'Commander', 'cEDH', 'Archidekt', 'Game Changer', '{n} Game Changer', '{n} Game Changers', 'Planeswalkers', 'Deck', 'Decks', 'deck', '{n} deck', '{n} decks',
-    'Tier', 'Tier {t}', 'tier {t}', 'Premium', 'Budget', 'Widget', 'Auto', 'web', 'Version {v}', 'non-foil', 'Format', 'Stats'],
-  de: ['Profil', 'Liste', 'Mana', 'Standard', 'Decklist'],
+    'Tier', 'Tier {t}', 'tier {t}', 'Premium', 'Budget', 'Widget', 'Auto', 'web', 'Version {v}', 'non-foil', 'Format', 'Stats', 'Standard', 'QR code'],
+  de: ['Profil', 'Liste', 'Mana', 'Decklist'],
   es: [],
+  it: ['Mana', 'Test…', 'non foil', 'Multicolore', 'Incolore', 'incolore'],
+  pt: ['Mana', 'Decklist', 'E-mail', 'ou', 'CardTrader ou Scryfall', 'Decks EDHREC', '{n} decks EDHREC', 'Standard ou Commander', 'Sol Ring ou Anneau solaire', 'Lightning Bolt ou {name}'],
 };
 const sameOk = (l, k) => SAME['*'].includes(k) || (SAME[l] || []).includes(k) || !/\p{L}/u.test(k.replace(/\{\w+\}/g, '').replace(/<[^>]+>/g, ''));
 const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
