@@ -2,7 +2,7 @@
    · Orbe « Ma collection » : valeur (prix tendance Cardmarket), cartes, variation sur 7 jours ; les 5 terrains de base tournent autour
      (illustration de ceux de la collection s'ils y sont, sinon la fiche Scryfall, lue une fois).
    · « Mes decks » : les cartes de présentation des 3 derniers decks en éventail.
-   · Prix rapide · Deck à monter (le deck EDHREC dont tu as déjà la plus grande part) · Échange (doublons, cartes recherchées, lien en direct).
+   · Prix rapide · Deck à monter (le deck EDHREC le plus intéressant à finir : part possédée et coût pour finir, voir homePick) · Échange (doublons, cartes recherchées, lien en direct).
    · « Nouveau panier » : ouvre la saisie (coller une liste, exemple, ou reprendre la liste en cours).
    · « Prochaines extensions » (sets.js, cachée tant qu'elle n'a rien à montrer) et « Comment ça marche ? » (aide, help.js) en bas.
    Tout est repeint en différé (homeSoon) quand la collection, les decks, les prix ou la liste d'échange changent. */
@@ -47,7 +47,7 @@ function homePaint() {
   // Mes decks
   const list = allDecks().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), top = list.slice(0, 3);
   $('#hmDecksN').textContent = list.length ? nf0(list.length) : '';
-  { const ds = $('#decksSub'); ds.hidden = !!list.length && !/complet|Chargement| · |…/.test(ds.textContent); }      // « 7 decks » répète le nombre du titre : seulement « · 2 complets » (« · » et « … » : mêmes cas dans toutes les langues)
+  { const ds = $('#decksSub'); ds.hidden = !!list.length && !/Chargement| · |…/.test(ds.textContent); }      // « 7 decks » répète le nombre du titre : seulement « · 2 montés » (« · » et « … » : mêmes cas dans toutes les langues)
   $('#hmDeckNames').textContent = top.length ? top.map(d => d.name).join(', ') + (list.length > 3 ? '…' : '') : '';
   const fan = $$('#hmFan i'), need = [];
   fan.forEach((el, i) => {
@@ -98,26 +98,45 @@ function homeCovers(decks) {
     try { await dmLoad(); const cv = decks.map(d => dkCoverCard(d.text, dmOf)).filter(c => c && !dmOf(c.key)); if (cv.length && await dmFetch(cv)) homeSoon(); } catch (e) { /* hors ligne : dégradés */ }
   }, 1200);
 }
-/** Deck à monter : parmi les decks EDHREC, celui dont la collection couvre la plus grande part (fichier EDHREC chargé en différé, seulement s'il y a une collection). */
+/** Deck à monter : le deck EDHREC le plus intéressant à finir, parmi ceux dont tu as au moins 10 % des cartes (listes d'au moins 60 cartes).
+ *  Score = % possédé − 10 points chaque fois que le coût pour finir double au-delà de 10 € (≤ 10 € : 0 · 20 € : −10 · 40 € : −20 · 80 € : −30 · 160 € : −40 · 320 € : −50…) :
+ *  62 % à 84 € (31) passe devant 40 % à 20 € (30) et devant 80 % à 900 € (15) ; un deck déjà complet (100 %, 0 €) l'emporte.
+ *  Coût = prix Cardmarket du fichier EDHREC, déjà sur l'appareil (le chiffre de la liste et de la feuille du deck) ; une carte sans prix compte 1 €.
+ *  Égalité : le moins cher à finir, puis le commandant le plus joué. rows : résultat d'edhRank → { r, p, s } ou null. */
+const HM_MIN = 0.1, HM_FREE = 1000;
+const homeScore = r => 100 * r.have / r.total - 10 * Math.log2(Math.max(1, (r.cost + 100 * r.unpriced) / HM_FREE));
+function homePick(rows) {
+  let best = null;
+  for (const r of rows) {
+    if (r.total < 60) continue; const p = r.have / r.total; if (p < HM_MIN) continue;
+    const s = homeScore(r);
+    if (!best || s > best.s + 1e-9 || (Math.abs(s - best.s) <= 1e-9 && (r.cost - best.r.cost || r.cmd.rank - best.r.cmd.rank) < 0)) best = { r, p, s };
+  }
+  return best;
+}
+/** Ce qu'il reste à payer, pour la tuile : « ≈ 84 € pour finir », « Rien à acheter », ou le nombre de cartes s'il n'y a aucun prix. */
+function homeCostText(r) {
+  if (!r.miss) return T('Rien à acheter');
+  if (!r.cost) return TN(r.miss, '{n} carte à trouver', '{n} cartes à trouver');
+  return T('≈ {eur} pour finir', { eur: r.cost < 1000 ? fmt(r.cost, 'EUR') : hmEur(r.cost) });      // moins de 10 € : au centime (« ≈ 0 € » serait faux)
+}
+/** Tuile « Deck à monter » (fichier EDHREC chargé en différé, seulement s'il y a une collection) : pourcentage en haut, commandant puis coût pour finir. */
 function homeBuild() {
-  const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), n = collCount();
-  if (!n) { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); HM.best = null; return; }
+  const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), btn = $('#btnBuild'), n = collCount();
+  const idle = () => { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); btn.removeAttribute('aria-label'); };
+  if (!n) { idle(); HM.best = null; return; }
   if (!EDH.data) {
     if (!EDH.p && !EDH.err && !HM.edhAsk) HM.edhAsk = setTimeout(() => { edhLoad().then(homeSoon, () => {}); }, 2500);
-    pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); return;
+    idle(); return;
   }
   const sig = [COLL.u, n, EDH.at, engSig()].join('|');
-  if (sig !== HM.bestSig) {
-    HM.bestSig = sig; HM.best = null;
-    for (const r of edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), sort: 'have' }).slice(0, 400)) {
-      if (r.total < 60) continue; const p = r.have / r.total;
-      if (!HM.best || p > HM.best.p + 1e-9) HM.best = { r, p };
-    }
-  }
+  if (sig !== HM.bestSig) { HM.bestSig = sig; HM.best = homePick(edhRank(EDH.data, collQty, { held: k => engTotal(XS.eng, k), sort: 'have' })); }
   const b = HM.best;
-  if (!b) { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); return; }
-  const p = Math.floor(b.p * 100), name = b.r.cmd.names.join(' + ');
-  pct.textContent = T('{n} %', { n: p }); sub.textContent = T('{name} : tu as déjà {p} % des cartes', { name, p });
+  if (!b) { idle(); return; }
+  const p = Math.floor(b.p * 100), name = b.r.cmd.names.join(' + '), cost = homeCostText(b.r);
+  pct.textContent = T('{n} %', { n: p });
+  sub.innerHTML = `<span class="hm-bn">${esc(name)}</span><span class="hm-bc">${esc(cost)}</span>`;
+  btn.setAttribute('aria-label', T('Deck à monter : {name}, {p} % des cartes déjà possédées, {cost}', { name, p, cost }));
 }
 
 function homeInit() {

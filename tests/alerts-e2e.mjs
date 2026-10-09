@@ -135,6 +135,51 @@ await p.waitForFunction(() => AC.watch['sol ring'], null, { timeout: 5000 }); as
 await p.click('.watchbtn'); await p.waitForFunction(() => !AC.watch['sol ring']); assert.match(await txt(p, '.watchbtn'), /Prévenir si le prix baisse/);
 ok('fiche d\'une carte : suivi du prix en un toucher, retiré de même');
 
+/* ── Deck enregistré, alertes coupées : « Me prévenir des baisses ? » → Activer ─────────────────── */
+await p.keyboard.press('Escape'); await sheetGone();      // fiche de Sol Ring fermée
+await p.evaluate(() => alDisable()); await p.waitForFunction(() => !AC.on && !AC.id);
+await toInput(p); await p.evaluate(() => detachDeck()); await p.fill('#deckText', '1 Sol Ring\n1 Wrath of God\n1 Arcane Signet'); await p.waitForTimeout(300);
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName'); await p.fill('#svName', 'Deck C'); await p.click('#svGo'); await sheetGone();
+assert.equal(await txt(p, '#toast'), 'Deck enregistré · Me prévenir des baisses ? Activer');
+await p.click('#toast .toast-act'); await p.waitForFunction(() => AC.on && AC.id && AC.info, null, { timeout: 8000 });
+await p.waitForFunction(() => /Alertes de prix activées/.test(document.querySelector('#toast').textContent), null, { timeout: 5000 });
+srv = await server(await myId()); assert.equal(srv.s, 200); assert.equal(srv.o.watching, 3, 'Sol Ring et Wrath (decks A, B, C) + Craterhoof suivie à la main');
+await toInput(p); await p.evaluate(() => detachDeck()); await p.fill('#deckText', '1 Sol Ring\n1 Wrath of God'); await p.waitForTimeout(300);
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName'); await p.fill('#svName', 'Deck D'); await p.click('#svGo'); await sheetGone();
+assert.equal(await txt(p, '#toast'), 'Deck enregistré', 'alertes déjà actives : plus de question');
+await p.evaluate(() => alDisable()); await p.waitForFunction(() => !AC.on);
+await toInput(p); await p.evaluate(() => detachDeck()); await p.fill('#deckText', '1 Arcane Signet'); await p.waitForTimeout(300);
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName'); await p.fill('#svName', 'Deck E'); await p.click('#svGo'); await sheetGone();
+assert.equal(await txt(p, '#toast'), 'Deck enregistré', 'rien ne manque à ce deck : pas de question');
+ok('deck enregistré, alertes coupées : « Deck enregistré · Me prévenir des baisses ? » [Activer] → alertes actives, ses manquantes surveillées ; aucune question si actives ou si rien ne manque');
+
+/* ── Feuille d'un deck EDHREC : « Surveiller leurs prix » (active les alertes, seulement ce qui n'est pas déjà surveillé) ─────────── */
+const EDHF = ['#edh\t1\t2026-10-03T04:00:00Z', 'C\tedgar-markov\t12345\tWBR\tEdgar Markov', 'D\tedgar-markov\tedhrec\tDeck moyen\t',
+  'K\t1\tSol Ring', 'K\t1\tWrath of God', 'K\t1\tCraterhoof Behemoth', 'K\t1\tArcane Signet', ...Array.from({ length: 20 }, (_, i) => `K\t1\tFiller ${i}`),
+  'P\t500\tEdgar Markov', 'P\t300\tSol Ring', 'P\t250\tWrath of God', 'P\t900\tCraterhoof Behemoth', 'P\t100\tArcane Signet', ...Array.from({ length: 20 }, (_, i) => `P\t40\tFiller ${i}`)].join('\n') + '\n';
+await p.evaluate(t => { EDH.data = parseEdh(t); EDH.at = Date.now(); EDH.memo = null; }, EDHF);      // fichier EDHREC posé directement (le service worker est actif dans ce test)
+await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk', { timeout: 8000 });
+await p.click('.crow.dk'); await p.waitForSelector('.dk-act[data-act="dkwatch"]');
+const watchRow = () => p.$eval('.dk-act[data-act="dkwatch"]', x => [x.querySelector('b').textContent, x.querySelector('small').textContent, x.disabled]);
+assert.deepEqual(await watchRow(), ['Surveiller leurs prix', '4 cartes à 1 € ou plus · active les alertes', false], 'Edgar, Sol Ring, Wrath, Craterhoof (Arcane Signet possédée, fillers à 0,40 €)');
+await p.click('.dk-act[data-act="dkwatch"]'); await p.waitForFunction(() => AC.on && AC.id, null, { timeout: 8000 });
+await p.waitForFunction(() => /surveillée/.test(document.querySelector('#toast').textContent), null, { timeout: 5000 });
+assert.equal(await txt(p, '#toast'), '1 carte surveillée : tu seras prévenu en cas de forte baisse Régler', 'Sol Ring et Wrath (decks enregistrés) et Craterhoof (à la main) l\'étaient déjà : Edgar seule');
+assert.deepEqual(await p.evaluate(() => AC.watch['edgar markov']), { n: 'Edgar Markov', d: 'Edgar Markov' });
+assert.deepEqual(await watchRow(), ['Prix surveillés', 'Une notification en cas de forte baisse', true]);
+assert.ok(await p.evaluate(() => alItems().some(i => i.k === 'edgar markov' && i.d && i.d.includes('Edgar Markov'))), 'envoyée avec le nom du deck (« manque à Edgar Markov »)');
+await p.waitForTimeout(3500); srv = await server(await myId()); assert.equal(srv.o.watching, 4, '+ Edgar Markov');
+await p.screenshot({ path: 'shots/alerts-2-edh-surveiller.png' });
+await p.evaluate(() => openAlertSheet()); await p.waitForSelector('.al-row[data-k="edgar markov"]', { timeout: 6000 });
+assert.equal(await txt(p, '.al-row[data-k="edgar markov"] small'), 'Manque à Edgar Markov', 'feuille des alertes : le deck, pas « Suivie à la main »');
+assert.match(await txt(p, '.al-row[data-k="craterhoof behemoth"] small'), /Cible 5,50/, 'suivi à la main avec cible : inchangé');
+await p.keyboard.press('Escape'); await p.waitForFunction(() => document.querySelectorAll('.sheet-wrap').length === 1, null, { timeout: 4000 }); await p.waitForTimeout(300);
+await p.keyboard.press('Escape'); await sheetGone();
+await p.evaluate(() => collAdd([{ k: 'edgar markov', n: 'Edgar Markov', q: 1 }], 'add')); await p.waitForTimeout(3800);
+srv = await server(await myId()); assert.equal(srv.o.watching, 3, 'Edgar désormais possédée : plus surveillée'); assert.ok(await p.evaluate(() => !!AC.watch['edgar markov']), 'le suivi reste (revendue, elle le serait à nouveau)');
+ok('feuille EDHREC : « Surveiller leurs prix » active les alertes, ajoute seulement Edgar (le reste l\'était déjà), nom du deck envoyé, « Prix surveillés » ; une fois possédée, plus surveillée');
+await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+
 /* ── Lien de notification ────────────────────────────────────────────────────────────────── */
 await p.goto(world.url + '/?alerts=1'); await p.waitForSelector('.sheet-wrap .al-list, .sheet-wrap .hint', { timeout: 8000 });
 assert.match(await txt(p, '.sheet-head h2'), /Alertes de prix/); ok('notification touchée : la feuille des alertes s\'ouvre');

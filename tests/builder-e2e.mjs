@@ -63,7 +63,7 @@ assert.match(await txt(p, '#toast'), /Deck créé · 3 cartes réservées de ta 
 const dk = await p.evaluate(() => { const d = allDecks()[0]; return { id: d.id, name: d.name, text: d.text, cards: d.cards, eng: XS.eng[d.id] && XS.eng[d.id].q }; });
 assert.equal(dk.name, 'Vampires Boros v1'); assert.match(dk.text, /^\/\/ Deck Deal : commander\nCommander\n1 Edgar Markov\n\nDeck\n/); assert.deepEqual(dk.eng, { 'edgar markov': 1, 'sol ring': 1, 'arcane signet': 1 });
 assert.equal(dk.cards, 5, 'Edgar + Sol Ring + Signet + Craterhoof + Wrath (terrains de base à part)');
-assert.match(await txt(p, '#deckList'), /Vampires Boros v1/); assert.match(await txt(p, '#deckList'), /complet/);
+assert.match(await txt(p, '#deckList'), /Vampires Boros v1/); assert.match(await txt(p, '#deckList'), /8\/100 cartes · .* · monté/, 'exemplaires comptés comme le viewer (5 cartes + 3 terrains de base), « monté »');
 ok('Commander : enregistré (texte lisible par l\'app), monté automatiquement, incomplet autorisé');
 
 /* ── B) Standard : 4 exemplaires, réserve facultative, cartes engagées ailleurs ───────────── */

@@ -59,7 +59,7 @@ const errsOf = [];
   await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
   assert.deepEqual(await need(), [['sol ring', 1, 1], ['llanowar elves', 0, 1]], 'liste non rattachée : les cartes du deck A ne sont plus déduites');
   assert.match(await txt(p, '#collHint'), /2 exemplaires réservés par Deck A ne sont pas comptés/);
-  assert.match(await txt(p, '#deckList'), /complet/, 'étiquette « complet » dans la liste des decks');
+  assert.match(await txt(p, '#deckList'), /monté/, 'étiquette « monté » dans la liste des decks');
   // le deck A lui-même : ses cartes lui restent
   await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkOpen'); await p.click('#dkOpen'); await p.waitForTimeout(300);
   assert.deepEqual(await need(), [['sol ring', 1, 0], ['llanowar elves', 1, 0]], 'rattaché au deck A : il utilise ses propres cartes');
