@@ -1,6 +1,6 @@
 # Passation — reprise dans un nouveau chat
 
-**À lire en premier : `docs/a-faire.md`** (section « Pour reprendre », puis « Prochaines améliorations »). Ce fichier-ci résume où on en est au 9 octobre 2026 au soir.
+**À lire en premier : `docs/a-faire.md`** (section « Pour reprendre », puis « Prochaines améliorations »). Ce fichier-ci résume où on en est au 9 octobre 2026 au soir (mis à jour en fin de soirée : widget QR d'échange, emplacement de la pub).
 
 ## Le projet
 - **Mana Orbit** : appli Magic: The Gathering (collection, scan, prix Cardmarket/CardTrader, decks EDHREC/Archidekt, échanges, alertes).
@@ -39,8 +39,14 @@
 - Correctifs : notification push sans contenu (service worker), tests instables en CI (sw, trade, motion, extras, de), workflow des catalogues qui se recale sur `main` avant d'envoyer.
 - `docs/a-faire.md` mis à jour : 2e widget (QR du lien d'échange), emplacement de la bannière de pub, plan B EDHREC/Archidekt, nom de domaine, achat « Soutenir ».
 
+## Fait ensuite (9 octobre, fin de soirée)
+- **Widget Android « QR code d'échange »** (`TradeWidget.java`, `widget_trade*.xml`) : QR du lien public de la liste d'échange, pseudo et « Liste d'échange » dessous, fond blanc ; sans lien « Crée ton lien d'échange » ; toucher → onglet Échange. Le site envoie la matrice du QR (`src/widget.js`, `setTradeWidget`) quand le compte est connu et que le lien, le pseudo ou la langue changent. Astuces dans Réglages › Widget et la feuille du QR code. **Nouvelle APK à faire.**
+  - Vérifié ici sans SDK Android : Java compilé contre le framework Android (Robolectric `android-all`), rendu du bitmap décodé par un lecteur QR indépendant (jsQR) = bon lien ; ressources XML relues (aapt2 inaccessible : dl.google.com bloqué). La vraie compilation des XML se fait à la construction de l'APK.
+- **Pub : emplacement « C » choisi** : en haut, seulement sur les écrans de consultation (accueil, collection, Mes decks, liste d'un autre joueur) ; masquée pendant saisie, recherche, résultats, éditeur de deck (`adsBusy`, `src/ads.js`).
+- Scan de « Fulmine » (italien, appli en français) : reconnu après le redémarrage Node.
+
 ## Actions du propriétaire en attente
-- **Redémarrer l'app Node sur Hostinger** (nouveau `proxy.mjs` : `/names-all.tsv` et `/api/names/find`). Puis ouvrir le scan en Wi‑Fi et retester la carte italienne « Fulmine » avec l'appli en français. Si « Nom non reconnu » : noter le texte « lu « … » » affiché dessous.
+- **Refaire l'APK** (`android-app` : `git pull`, `npm run setup`, puis `npm run apk` ou Run ▶) et tester le widget « QR code d'échange » : liste de contrôle dans `docs/a-faire.md`. Puis vérifier que le bandeau de pub n'apparaît plus pendant la saisie et les résultats.
 - Firebase › Authentication › Modèles › Vérification de l'adresse e-mail : nom d'expéditeur « Mana Orbit », langue française.
 - Firebase › Authentication › Domaines autorisés : `card.m2s-photo.fr` (et le futur domaine).
 - **Mails EDHREC et Archidekt toujours sans réponse** (`docs/mails-partenaires.md`). Stratégie retenue :
@@ -50,6 +56,6 @@
   - en cas de refus : plan B (decks préconstruits MTGJSON, decks générés depuis Scryfall, EDHTop16 pour le cEDH) — détail dans `docs/a-faire.md`.
 
 ## Prochaine étape proposée
-1. Confirmer avec le propriétaire que le scan de « Fulmine » marche après le redémarrage Node.
-2. Attaquer `docs/a-faire.md` › « Prochaines améliorations » : **2e widget Android avec le QR code du lien d'échange** (nouvelle APK à prévoir), puis **emplacement de la bannière de pub** (captures à comparer, choix du propriétaire).
-3. Ensuite : interrupteur serveur EDHREC/Archidekt et préparation Play Store (nom de domaine, test fermé, AdMob réel).
+1. Retour du propriétaire sur le widget QR (nouvelle APK) et le bandeau « par moments ».
+2. **Interrupteur serveur EDHREC / Archidekt** (`docs/a-faire.md` › plan B) : variables Hostinger annoncées par `/__ping`, l'appli cache la fonction, sans nouvelle APK.
+3. Préparation Play Store : nom de domaine, test fermé, AdMob réel (`docs/a-faire.md` › « Avant la publication »).
