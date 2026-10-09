@@ -200,7 +200,7 @@ function trDeckGone(id) {
 }
 
 /* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
-const cmWantsUrl = () => 'https://www.cardmarket.com/' + (I18N.lang === 'fr' ? 'fr' : 'en') + '/Magic/Wants';      // Cardmarket dans la langue de l'appli
+const cmWantsUrl = () => 'https://www.cardmarket.com/' + cmSite(userLang()) + '/Magic/Wants';      // Cardmarket dans la langue de l'utilisateur (fr de es it, sinon en)
 /** Presse-papiers ; refusé ou absent : copyText (repli, son propre message). done() seulement quand l'API a copié. */
 function cmClip(text, done) { try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); } }
 function cmCopy(items, what) {

@@ -5,7 +5,7 @@
 name: Tests
 on:
   push:
-    paths-ignore: ['pwa/edh.bin.gz', 'pwa/fr-names.tsv', '**.md']
+    paths-ignore: ['pwa/edh.bin.gz', 'pwa/fr-names.tsv', 'pwa/names-*.tsv', '**.md']
   pull_request:
   workflow_dispatch:
 concurrency:
