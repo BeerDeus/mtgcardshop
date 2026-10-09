@@ -258,6 +258,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheets.len
 let draftT;
 function refreshDeck() {
   const d = parseDeck($('#deckText').value); S.deck = d;
+  if (d.cards.length && !FRX.ix && !S.isSample && S.view === 'input') frLoad();      // noms français (« 4 Foudre ») : index chargé quand on saisit une liste (pas pour l'exemple, ni au démarrage)
   applyOwned(d.cards, S.useColl ? engOwned : null);
   const buy = d.cards.filter(c => c.need > 0).length, owned = d.cards.length - buy;
   const chips = [];
@@ -378,7 +379,7 @@ function flip(mutate) {
 function applyView(force) {
   if (!S.run) return;
   const list = $('#list');
-  const items = S.deck.cards.map((c, i) => { const v = cardView(c); return { c, i, v, name: c.name, cost: v.s === 'ok' ? v.pick.cost : null }; });
+  const items = S.deck.cards.map((c, i) => { const v = cardView(c); return { c, i, v, name: c.dn || c.name, cost: v.s === 'ok' ? v.pick.cost : null }; });
   const counts = {}; for (const [k] of FILTERS) counts[k] = items.filter(x => filterMatch(k, x.c, x.v)).length;
   if (S.filter !== 'all' && !counts[S.filter]) S.filter = 'all';
   const fc = $('#fchips'), shownF = FILTERS.filter(([k]) => k === 'all' || counts[k] > 0);
@@ -440,6 +441,7 @@ function authHint(e, svc = 'CardTrader') {
 }
 async function startRun(fresh) {
   fresh = fresh === true;                                    // true : « Actualiser les prix » (ignore le cache du serveur)
+  if (!FRX.ix && !S.isSample) frLoad(); await frWait(3000);      // index des noms français (appareil, sinon fichier du site) : la liste est lue avec
   readOpts(); refreshDeck();
   const cards = S.deck.cards; if (!cards.length) return;
   if (!cards.some(c => c.need > 0)) { toast(T('Tout est déjà dans ta collection')); return; }
@@ -627,7 +629,7 @@ function updateRow(el, c, v, st) {
   if (el._sig === sig) return; el._sig = sig;
   const rw = el.parentNode; if (rw && rw.classList && rw.classList.contains('rw')) rw.classList.toggle('scanned', v.s !== 'loading');
   const prevCost = el._cost; el._cost = v.s === 'ok' ? pick.cost : null;
-  const hue = hash32(c.key) % 360, letter = esc((c.name.trim()[0] || '?').toUpperCase());
+  const nm = c.dn || c.name, hue = hash32(c.key) % 360, letter = esc((nm.trim()[0] || '?').toUpperCase());      // nm : nom tapé en français, sinon l'anglais
   const top = pick && pick.parts[0] ? pick.parts[0].offer : null;
   const img = (top && top.img) || (st && st.img);
   const thumb = `<span class="thumb" style="--h:${hue}">${letter}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>`;
@@ -637,12 +639,12 @@ function updateRow(el, c, v, st) {
   el.classList.toggle('is-missing', v.s === 'none' || v.s === 'notfound' || v.s === 'nohub');
   el.classList.toggle('is-own', v.s === 'own');
   if (v.s === 'loading') {
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span><span class="sk meta"></span></span><span class="row-price"><span class="sk price"></span></span>`;
   } else if (v.s === 'own') {
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">${T('Dans ta collection')}</span></span></span><span class="row-price"><span class="tag good">${T('Possédée')}</span></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${c.qty > 1 ? `<span class="tag accent">× ${c.qty}</span>` : ''}<span class="tag good">${T('Dans ta collection')}</span></span></span><span class="row-price"><span class="tag good">${T('Possédée')}</span></span>`;
   } else if (v.s === 'ok' && top.cm) {
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}<span class="tag">Cardmarket</span></span><span class="row-seller">${T('Tendance')}${n > 1 ? ' · ' + n + ' × ' + fmt(top.price) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost)}</b></span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${qty}${ownTag}<span class="tag">Cardmarket</span></span><span class="row-seller">${T('Tendance')}${n > 1 ? ' · ' + n + ' × ' + fmt(top.price) : ''}</span></span><span class="row-price"><b>${fmt(pick.cost)}</b></span>`;
   } else if (v.s === 'ok') {
     const tags = [];
     tags.push(`<span class="tag">${esc((top.set || '').toUpperCase())}${top.num ? ' ' + esc(top.num) : ''}</span>`);
@@ -654,20 +656,20 @@ function updateRow(el, c, v, st) {
     if (ri) tags.push(`<span class="tag ref ${ri.level}" title="${esc(T('Prix de référence Cardmarket par exemplaire (donné par Scryfall) : {ref}. Ton prix : {unit}.', { ref: fmt(ri.ref), unit: fmt(ri.unit) }))}">CM ${esc(fmt(ri.ref))}${ri.level === 'warn' ? ' · +' + T('{n} %', { n: ri.pct }) : ''}</span>`);
     const n = pick.parts.reduce((a, p) => a + p.n, 0);
     const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
-    const msg = v.s === 'notfound' ? T('Nom introuvable, vérifie l\'orthographe')
+    const msg = v.s === 'notfound' ? (c.amb ? T('Nom français de plusieurs cartes : {list}. Écris le nom anglais.', { list: c.amb.join(' · ') }) : T('Nom introuvable, vérifie l\'orthographe'))
       : v.s === 'none' && isCm() ? T('Pas de prix Cardmarket connu')
       : v.s === 'stale' ? T('Collection modifiée : relance la recherche')
       : v.s === 'nohub' ? T('Aucune offre compatible Zero')
         : (st && st.fellBack ? T('Aucune offre, même en anglais') : T('Aucune offre en {lang}', { lang: langName }));
-    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(c.name)}</span>${ownTag ? `<span class="row-meta">${ownTag}</span>` : ''}<span class="row-miss">${esc(msg)}</span></span><span class="row-price">${v.s === 'stale' ? '' : `<span class="tag">${v.s === 'notfound' ? T('Erreur') : T('Voir')}</span>`}</span>`;
+    el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span>${ownTag ? `<span class="row-meta">${ownTag}</span>` : ''}<span class="row-miss">${esc(msg)}</span></span><span class="row-price">${v.s === 'stale' ? '' : `<span class="tag">${v.s === 'notfound' ? T('Erreur') : T('Voir')}</span>`}</span>`;
   }
 }
 
 /* ── Rendu : vendeurs ─────────────────────────────────────────────────────────────────────── */
 function renderSellers(animate) {
-  const r = curRes(), host = $('#sellers'); const nameOf = k => (S.deck.cards.find(c => c.key === k) || {}).name || k;
+  const r = curRes(), host = $('#sellers'); const nameOf = k => { const c = S.deck.cards.find(x => x.key === k) || {}; return c.dn || c.name || k; };
   host.innerHTML = r.sellers.map((g, i) => {
     const items = g.items.slice().sort((a, b) => nameOf(a.key).localeCompare(nameOf(b.key))).map(it =>
       `<div class="gi"><span>${it.n > 1 ? it.n + ' × ' : ''}${esc(nameOf(it.key))}${it.offer.lang ? flag(it.offer.lang) : ''}</span><span>${fmt(it.offer.price * it.n, it.offer.cur)}</span></div>`).join('');
@@ -688,7 +690,7 @@ function updateAlerts() {
     for (const c of S.deck.cards) {
       const v = cardView(c), st = S.run.cards[c.key], cand = S.opts.lang !== 'en' && !!st && !st.fellBack && !S.enBusy; // repli anglais encore possible
       if (v.s === 'none') { none++; if (cand) enNone++; } else if (v.s === 'nohub') { nohub++; if (cand) enHub++; }
-      else if (v.s === 'notfound') nf.push(c.name); else if (v.s === 'stale') stale++; else if (v.s === 'ok' && v.pick.short > 0) short++;
+      else if (v.s === 'notfound') nf.push(c.dn || c.name); else if (v.s === 'stale') stale++; else if (v.s === 'ok' && v.pick.short > 0) short++;
     }
     const ln = LANGS[S.opts.lang] || S.opts.lang, en = S.opts.fallbackEn && S.opts.lang !== 'en';
     const enBtn = n => n ? ` <button type="button" data-act="en-all">${T('Trouver en anglais')}</button>` : '';
@@ -784,7 +786,7 @@ function openCardSheet(key) {
     api.body.appendChild(b);
   };
   if (isCm()) {
-    openSheet(c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
+    openSheet(c.dn || c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
       const o = (S.fo[key] || [])[0];
       api.body.innerHTML = `${o ? `<div class="cm-price"><b>${fmt(o.price)}</b><span>${T('Prix tendance Cardmarket de l\'impression la moins chère, par exemplaire.')}</span></div>` : `<p class="hint">${st.notFound ? T('Scryfall ne connaît pas ce nom. Corrige-le dans la liste.') : T('Aucun prix Cardmarket connu pour cette carte.')}</p>`}
         <a class="btn ghost small" href="${esc(cmUrl(c.name, userLang()))}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">${T('Voir sur Cardmarket ↗')}</a>
@@ -793,7 +795,7 @@ function openCardSheet(key) {
     });
     return;
   }
-  openSheet(c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
+  openSheet(c.dn || c.name, c.qty > 1 ? T('{n} exemplaires', { n: c.qty }) : null, api => {
     if (!list.length) {
       const canEn = S.opts.lang !== 'en' && !st.fellBack && !st.notFound;
       const hubOnly = !st.notFound && (S.fo[key] || []).length > 0; // des offres existent, mais aucune compatible Zero

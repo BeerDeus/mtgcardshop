@@ -45,7 +45,8 @@ const run = async p => { await toInput(p); await p.fill('#deckText', DECK); awai
   await p.goto(world.url); await p.waitForTimeout(700);
   await run(p);
   await amt(p, /17,20/);      // 1,20 + 2 × 8,00 (relevé)
-  assert.equal(world.scry.filter(s => s.startsWith('POST /cards/collection')).length, 1, 'Scryfall seulement pour la carte absente du relevé');
+  await p.waitForFunction(() => document.querySelectorAll('#list .row .thumb img').length === 2, null, { timeout: 8000 });      // vignettes des 2 cartes du relevé : lues après les prix
+  assert.equal(world.scry.filter(s => s.startsWith('POST /cards/collection')).length, 2, 'Scryfall : la carte absente du relevé (prix), puis les vignettes en arrière-plan');
   assert.match(await txt(p, '.step[data-id="prints"]'), /8 oct/);
   ok('relevé du serveur : prix « à partir de » sans Scryfall (sauf carte absente), date du relevé affichée');
 

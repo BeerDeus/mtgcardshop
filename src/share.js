@@ -361,7 +361,7 @@ function openWishAdd() {
     const paint = () => {
       if (!cat) { list.innerHTML = ''; return; }
       const q = inp.value.trim(), sug = collSuggest(cat, q);
-      list.innerHTML = sug.map(n => { const k = ownKey(n), w = TR.wish[k]; return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${esc(n)}</span><i>${w ? '× ' + w.q : '+'}</i></button>`; }).join('')
+      list.innerHTML = sug.map(n => { const k = ownKey(n), w = TR.wish[k]; return `<button type="button" class="ca-opt" role="option" data-n="${esc(n)}"><span>${sugHtml(n, q)}</span><i>${w ? '× ' + w.q : '+'}</i></button>`; }).join('')
         || (q.length >= 2 ? '<p class="hint">' + T('Aucune carte de ce nom. Vérifie l\'orthographe (nom anglais).') + '</p>' : '');
     };
     list.onclick = e => {
