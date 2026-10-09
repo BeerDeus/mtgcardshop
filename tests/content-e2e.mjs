@@ -139,7 +139,7 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   assert.equal(hits.n, 2, 'cache périmé : nouvelle lecture'); ok('cache de plus de 24 h : relu chez Scryfall');
   await ctx.close();
 }
-{ // anglais : « Pre-order » / « Buy », site Cardmarket anglais ; interface anglaise sur un téléphone allemand : site allemand (langue de l'utilisateur)
+{ // anglais : « Pre-order » / « Buy », site Cardmarket anglais ; anglais choisi sur un téléphone allemand (l'interface allemande existe) : site anglais aussi
   const { p, ctx } = await page({ sets: 'ok', path: '?lang=en' });
   await p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 });
   const r = await rows(p);
@@ -150,10 +150,10 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   await ctx.close();
   const de = await page({ sets: 'ok', path: '?lang=en', ctx: { locale: 'de-DE' } });
   await de.p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 });
-  assert.equal((await rows(de.p))[2].cm.href, CM('de', 'Alpha Future'), 'téléphone allemand : cardmarket.com/de');
+  assert.equal((await rows(de.p))[2].cm.href, CM('en', 'Alpha Future'), 'anglais choisi sur un téléphone allemand : cardmarket.com/en (langue de l\'utilisateur)');
   await de.ctx.close();
 }
-ok('Cardmarket en anglais : « Pre-order » / « Buy », site /en/ (site /de/ sur un téléphone allemand)');
+ok('Cardmarket en anglais : « Pre-order » / « Buy », site /en/ (même sur un téléphone allemand : l\'anglais y est un choix)');
 { // Scryfall en erreur (500, puis un nouvel essai) : carte cachée, sans message
   const { p, ctx, hits, errs } = await page({ sets: 'err' });
   await p.waitForFunction(() => SETS.st === 'fail', null, { timeout: 9000 });

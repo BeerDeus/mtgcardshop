@@ -1,4 +1,4 @@
-// E2E langue des cartes : par défaut celle de l'utilisateur (interface, sinon téléphone : allemand → offres allemandes, repli anglais), choix explicite gardé,
+// E2E langue des cartes : par défaut celle de l'utilisateur (interface : allemande → offres allemandes, repli anglais ; sinon téléphone : japonais → cartes japonaises), choix explicite gardé,
 // changement de langue de l'interface suivi tant que rien n'a été choisi, anciens réglages (« fr » enregistré par défaut) recalculés, decks enregistrés,
 // liens Cardmarket (fiche, Wants) dans la langue de l'utilisateur. Captures 390 px, thème sombre : SHOTS=dossier (facultatif).
 import './setup-env.mjs';
@@ -25,15 +25,15 @@ const cmLink = async p => {      // recherche au prix Cardmarket, fiche de Sol R
   return href;
 };
 
-{ // 1) téléphone allemand, interface anglaise (repli : pas d'interface allemande) → offres allemandes, puis anglaises par le repli
-  const { p, errs } = await page('de-DE', { ui: 'en' });
+{ // 1) téléphone allemand, interface allemande → offres allemandes, puis anglaises par le repli (comme le français)
+  const { p, errs } = await page('de-DE', { ui: 'de' });
   let s = await state(p);
-  assert.equal(s.ui, 'en'); assert.equal(await p.evaluate(() => navigator.languages[0]), 'de-DE');
+  assert.equal(s.ui, 'de'); assert.equal(await p.evaluate(() => navigator.languages[0]), 'de-DE');
   assert.equal(s.lang, 'de', 'langue des cartes : allemand'); assert.equal(s.set, false, 'pas un choix : elle suivra la langue de l\'utilisateur'); assert.equal(s.sel, 'de');
   await toInput(p);
-  assert.equal(await p.$eval('#optLang', e => e.selectedOptions[0].textContent.trim()), 'German'); assert.equal(await p.$eval('#optFallback', e => e.checked), true, 'repli anglais gardé');
+  assert.equal(await p.$eval('#optLang', e => e.selectedOptions[0].textContent.trim()), 'Deutsch'); assert.equal(await p.$eval('#optFallback', e => e.checked), true, 'repli anglais gardé');
   if (SHOTS) { await p.$eval('#optLang', e => e.closest('.panel').scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); await p.screenshot({ path: SHOTS + '/intl-de-new-cart.png' }); }
-  ok('téléphone allemand (interface anglaise) : « Language » = German, repli anglais actif');
+  ok('téléphone allemand (interface allemande) : « Sprache » = Deutsch, repli anglais actif');
   assert.match(await cmLink(p), /^https:\/\/www\.cardmarket\.com\/de\/Magic\/Products\/Search\?searchString=Sol%20Ring$/);
   assert.match(await txt(p, '#recap'), /Cardmarket/);
   await p.evaluate(() => { window.__open = ''; window.open = u => { window.__open = u; }; window.__clip = ''; navigator.clipboard.writeText = t => { window.__clip = t; return Promise.resolve(); }; });
@@ -75,13 +75,13 @@ const cmLink = async p => {      // recherche au prix Cardmarket, fiche de Sol R
   ok('premier lancement : le choix de la langue de l\'interface déplace aussi celle des cartes');
   assert.deepEqual([...errs, ...o.errs], []); await o.p.context().close();
 }
-{ // 4) téléphone anglais : anglais ; téléphone italien avec réglages d'avant (« fr » enregistré par défaut, sans drapeau) : recalculé → italien
+{ // 4) téléphone anglais : anglais ; téléphone japonais (pas d'interface japonaise) avec réglages d'avant (« fr » enregistré par défaut, sans drapeau) : recalculé → japonais
   const { p, errs } = await page('en-US', { ui: 'en' });
   let s = await state(p); assert.deepEqual([s.lang, s.sel], ['en', 'en']);
   assert.match(await cmLink(p), /cardmarket\.com\/en\/Magic\//); assert.deepEqual(errs, []); await p.context().close();
   const old = JSON.stringify({ opts: { lang: 'fr', cond: 'Near Mint', foil: 'any', mode: 'zero', ship: 280, fallbackEn: true } });
-  const it = await page('it-IT', { ui: 'en', seed: `localStorage.setItem('deckdeal:v1', ${JSON.stringify(old)});` });
-  s = await state(it.p); assert.deepEqual([s.lang, s.set, s.sel], ['it', false, 'it'], 'ancien défaut « fr » : recalculé'); assert.equal(await it.p.evaluate(() => S.opts.cond + '|' + S.opts.foil), 'Near Mint|any', 'autres critères gardés');
+  const it = await page('ja-JP', { ui: 'en', seed: `localStorage.setItem('deckdeal:v1', ${JSON.stringify(old)});` });
+  s = await state(it.p); assert.deepEqual([s.lang, s.set, s.sel], ['jp', false, 'jp'], 'ancien défaut « fr » : recalculé'); assert.equal(await it.p.evaluate(() => S.opts.cond + '|' + S.opts.foil), 'Near Mint|any', 'autres critères gardés');
   assert.deepEqual(it.errs, []); await it.p.context().close();
   const chosen = JSON.stringify({ opts: { lang: 'jp', cond: 'Near Mint', foil: 'no', mode: 'zero', ship: 280, fallbackEn: true } });
   const jp = await page('de-DE', { ui: 'en', seed: `localStorage.setItem('deckdeal:v1', ${JSON.stringify(chosen)});` });

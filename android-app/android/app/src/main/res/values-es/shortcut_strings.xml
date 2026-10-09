@@ -5,8 +5,8 @@
     <string name="shortcut_scan_long">Escanear</string>
     <string name="shortcut_quick">Precio rápido</string>
     <string name="shortcut_quick_long">Precio rápido</string>
-    <string name="shortcut_trade">Intercambio</string>
-    <string name="shortcut_trade_long">Intercambio</string>
+    <string name="shortcut_trade">Cambios</string>
+    <string name="shortcut_trade_long">Cambios</string>
     <string name="shortcut_paste">Carrito</string>
     <string name="shortcut_paste_long">Nuevo carrito</string>
 </resources>

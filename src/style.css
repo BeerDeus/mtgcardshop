@@ -1538,7 +1538,7 @@ button,.btn,select,summary{touch-action:manipulation}
 .ex-opt{display:flex;flex-direction:column;gap:3px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--surface-3);color:var(--ink);font:inherit;cursor:pointer}
 .ex-opt b{font-size:16px}.ex-opt span{color:var(--ink-2);font-size:13.5px}
 .ex-opt:active{transform:scale(.99)}
-.ob-lang{display:flex;justify-content:center;gap:8px;margin-top:-30px}
+.ob-lang{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:-30px}      /* plus de 3 langues : deux rangées plutôt qu'une ligne qui sort de l'écran */
 .ob-chip{padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#cfd5e6;font:600 13.5px/1 var(--font-body,inherit);cursor:pointer}
 .ob-chip.on{background:#fff;color:#0b0f1c;border-color:#fff}
 /* Appli Android : aperçu natif de l'appareil photo placé DERRIÈRE la page (CameraPreview toBack) → tout ce qui est au-dessus de la zone d'aperçu devient transparent */

@@ -26,7 +26,7 @@ const CDN = [
 ];
 
 const { ctx, p, errs } = await newPage(browser, world, { goto: false, ctx: { locale: 'de-DE', colorScheme: 'dark' },
-  init: `try { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('deckdeal:lang', 'en'); localStorage.setItem('deckdeal:onboard', '1'); } } catch (e) {}` });
+  init: `try { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('deckdeal:lang', 'en'); localStorage.setItem('deckdeal:onboard', '1'); localStorage.setItem('deckdeal:v1', JSON.stringify({ opts: { lang: 'de', langSet: true } })); } } catch (e) {}` });      // interface anglaise choisie, cartes allemandes choisies (l'anglais choisi sur un téléphone allemand donnerait des cartes anglaises)
 let deHits = 0, frHits = 0; const tess = [];
 await ctx.route('**/names-de.tsv', r => { deHits++; r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: BODY }); });
 await ctx.route('**/fr-names.tsv', r => { frHits++; r.fulfill({ status: 404, body: 'nf' }); });
@@ -41,7 +41,7 @@ await ctx.route('https://cdn.jsdelivr.net/**', route => {
 });
 await p.goto(world.url); await p.waitForTimeout(700); await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
 const sheetGone = () => p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 4000 });
-assert.deepEqual(await p.evaluate(() => [I18N.lang, S.opts.lang, namesLang(), !!FRX.ix]), ['en', 'de', 'de', false], 'téléphone allemand : cartes et noms allemands, rien de chargé au démarrage');
+assert.deepEqual(await p.evaluate(() => [I18N.lang, S.opts.lang, namesLang(), !!FRX.ix]), ['en', 'de', 'de', false], 'cartes allemandes : noms allemands, rien de chargé au démarrage');
 
 /* ── 1) decklist en allemand, prix Cardmarket, vignettes allemandes ──────────────────────────── */
 await toInput(p); await p.fill('#deckText', '4 Blitzschlag\n1 Sol Ring\n1 Schwerter zu Pflugscharen\n2 Gebirge\n1 Edgar Markov');
@@ -72,7 +72,7 @@ ok('langue des cartes changée : anglais → aucun catalogue ; retour à l\'alle
 /* ── 2) import d'une liste allemande ───────────────────────────────────────────────────────── */
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
-assert.equal(await p.$eval('#ciLang', s => s.value), 'de', 'langue de ces cartes : allemand'); assert.equal(await p.$eval('#ciText', t => t.placeholder), '3 Sol Ring\n1 Blitzschlag');
+assert.equal(await p.$eval('#ciLang', s => s.value), 'en', 'langue de ces cartes : celle de l\'utilisateur (anglais choisi)'); await p.selectOption('#ciLang', 'de'); assert.equal(await p.$eval('#ciText', t => t.placeholder), '3 Sol Ring\n1 Blitzschlag');
 assert.match(await txt(p, '.ci-lhint'), /a German name counts as a German card/);
 await p.fill('#ciText', '2 Blitzschlag\n1 Zorn Gottes\n1 Rhystische Studien\n3 Sol Ring');
 await p.waitForFunction(() => /German names recognised/.test(document.querySelector('#ciSum').textContent), null, { timeout: 8000 });
