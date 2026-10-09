@@ -57,11 +57,13 @@ function splashPairs(el) {
 }
 function splashMorph(el, pairs, D) {
   for (const [s, d] of pairs) {
-    for (const a of d.getAnimations({ subtree: true })) if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish();      // entrée de la cible (l'orbe qui grossit) : déjà en place
+    const fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };      // entrées de la cible et de ses parents (orbe qui grossit, écran qui glisse) : déjà en place, mesure juste
+    d.getAnimations({ subtree: true }).forEach(fin); for (let n = d.parentElement; n && n.id !== 'app'; n = n.parentElement) n.getAnimations().forEach(fin);
     const a = s.getBoundingClientRect(), b = d.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(s).transform);
-    s.animate([{ transform: m.toString() }, { transform: `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})` }], { duration: D, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'forwards' });
-    s.animate([{ opacity: 1 }, { opacity: 1, offset: 0.74 }, { opacity: 0 }], { duration: D, fill: 'forwards' });
-    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.74 }, { opacity: 1, offset: 0.741 }, { opacity: 1 }], { duration: D });      // posé : la cible apparaît d'un coup sous le splash identique, qui s'efface dessus (pas de creux de fondu croisé)
+    const to = `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})`;
+    s.animate([{ transform: m.toString(), easing: 'cubic-bezier(.45,.05,.2,1)' }, { transform: to, offset: 0.8 }, { transform: to }], { duration: D, fill: 'forwards' });      // vol sur 80 % du temps, puis posé
+    s.animate([{ opacity: 1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: D, fill: 'forwards' });
+    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1, offset: 0.801 }, { opacity: 1 }], { duration: D });      // posé : la cible apparaît d'un coup sous le splash identique, qui s'efface dessus (ni creux de fondu ni double image)
   }
 }
 /** Sortie : vol vers l'accueil si tout est en place, sinon fondu (agrandi). fast : toucher, plafond absolu. */
