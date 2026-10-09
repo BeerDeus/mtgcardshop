@@ -12,6 +12,7 @@ BROWSER=(
   sharedeck-e2e.mjs de-e2e.mjs
   natshare-e2e.mjs
   gate-e2e.mjs
+  splash-e2e.mjs
 )
 T=("$@")
 if [ ${#T[@]} -eq 0 ]; then T=("${NODE[@]}" "${BROWSER[@]}"); elif [ "$1" = --node ]; then T=("${NODE[@]}"); fi

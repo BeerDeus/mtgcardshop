@@ -36,6 +36,9 @@ html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-p
 .sp-bloom{opacity:0;box-shadow:0 0 0 2px rgba(255,255,255,.8),0 0 36px 12px rgba(146,156,255,.6)}
 .sp-orbit{position:absolute;width:222px;height:222px;left:39px;top:25px}
 .sp-plane,.sp-f,.sp-o,.sp-u{position:absolute;inset:0}
+.sp-track{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(199,206,255,.16)}      /* l'orbite elle-même : une ellipse inclinée qui s'ouvre en cercle */
+:root[data-theme="light"] .sp-track{border-color:rgba(58,70,214,.16)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .sp-track{border-color:rgba(58,70,214,.16)}}
 .sp-p{position:absolute;left:89px;top:89px;width:44px;height:44px;transform:rotate(var(--a))}
 .sp-f{transform:translateX(111px)}
 .sp-o{transform:rotate(calc(-1 * var(--a))) translate(var(--ex,0),var(--ey,0))}
@@ -69,6 +72,7 @@ html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-p
 .sp-in:not(.sp-short) .sp-bloom{animation:spBloom .75s .56s cubic-bezier(.2,.7,.3,1)}
 .sp-in:not(.sp-short) .sp-plane{animation:spPlane 1s .25s linear backwards}
 .sp-in:not(.sp-short) .sp-u{animation:spUnsq 1s .25s linear backwards}
+.sp-in:not(.sp-short) .sp-track{animation:spTrack .9s .26s cubic-bezier(.2,.7,.3,1) backwards}
 .sp-in:not(.sp-short) .sp-f{animation:spFly .64s var(--d) backwards}
 .sp-in:not(.sp-short) .sp-land::after{animation:spPulse .7s calc(var(--d) + .44s) ease-out}
 .sp-in:not(.sp-short) .sp-brand .logo{animation:spLogo .7s .78s cubic-bezier(.34,1.45,.5,1) backwards}
@@ -92,6 +96,7 @@ html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-p
 @keyframes spSweep{0%{transform:none;animation-timing-function:cubic-bezier(.5,0,.75,.5)}50%{transform:rotate(180deg);animation-timing-function:cubic-bezier(.25,.5,.5,1)}100%{transform:rotate(360deg)}}
 @keyframes spPop{to{opacity:0;transform:scale(2.2)}}
 @keyframes spOff{to{opacity:0}}
+@keyframes spTrack{from{opacity:0;transform:scale(1.6)}}
 @keyframes spCore{from{opacity:0;transform:scale(.55)}}
 @keyframes spBloom{0%{opacity:0;transform:scale(.96)}15%{opacity:1}100%{opacity:0;transform:scale(1.5)}}
 @keyframes spPlane{0%{transform:rotate(-24deg) scaleY(.42)}25%{transform:rotate(-10.8deg) scaleY(.739)}50%{transform:rotate(-4.1deg) scaleY(.901)}75%{transform:rotate(-1deg) scaleY(.977)}100%{transform:none}}

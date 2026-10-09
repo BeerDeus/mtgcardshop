@@ -101,7 +101,7 @@ function splashReady() {
   de.classList.add('sp-on');
   try { SPL.mo = new MutationObserver(ms => ms.forEach(r => r.addedNodes.forEach(splashHold))); SPL.mo.observe(document.body, { childList: true }); } catch (e) { /* ignore */ }
   const skip = () => { if (SPL.el && !SPL.end) { SPL.skip = true; splashCheck(); } }, kill = () => { if (SPL.el) splashRemove(); };
-  el.addEventListener('pointerdown', skip); addEventListener('keydown', skip, true);
+  el.addEventListener('pointerdown', skip); addEventListener('keydown', e => { if (SPL.el && !SPL.end) { e.preventDefault(); skip(); } }, true);      // la touche passe le splash, sans agir sur l'appli dessous
   el.addEventListener('wheel', e => e.preventDefault(), { passive: false });
   document.addEventListener('visibilitychange', () => { if (document.hidden) kill(); });      // arrière-plan, bfcache : jamais au retour
   addEventListener('pagehide', kill);
