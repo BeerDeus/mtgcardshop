@@ -1,7 +1,7 @@
 # À faire
 
 ## Pour reprendre (nouvelle session)
-- Lire d'abord ce fichier, puis `README.md` (fonctionnement), `DEV.md` (build, tests, CI), `docs/android.md` (APK, widget, natif) et `docs/store/` (fiche Play Store, test fermé).
+- Lire d'abord ce fichier et `docs/passation.md` (état au 9 octobre, actions du propriétaire en attente), puis `README.md` (fonctionnement), `DEV.md` (build, tests, CI), `docs/android.md` (APK, widget, natif) et `docs/store/` (fiche Play Store, test fermé).
 - Branche de travail, puis `main` (Hostinger déploie `main`). `node build.mjs` après chaque changement de `src/` ; `deck-deal.html` est committé.
 - Tests : `bash tests/run-tests.sh` (tous, ~30 min) ou une sélection ; la CI GitHub (`tests.yml`, `rules.yml`) les relance à chaque push.
 - Jamais dans le dépôt : `google-services.json`, la clé FCM, les variables Hostinger (voir `README.md`).
