@@ -276,7 +276,7 @@ function edhRowHtml(r, i) {
   const right = r.miss ? `<b>${nf0(r.miss)}</b><small>${T('à acheter')}</small><em>${r.cost ? '≈ ' + esc(fmt(r.cost, 'EUR')) : T('prix inconnu')}</em>${r.cost && r.unpriced ? `<small>${T('+ {n} sans prix', { n: nf0(r.unpriced) })}</small>` : ''}` : `<b class="ok">✓</b>${T('<small>complet</small>')}`;
   const aria = T('{name} : tier {tier}, {have} cartes sur {total}{eng}, {miss} à acheter', { name: esc(name), tier: esc(r.tier), have: r.have, total: r.total, miss: r.miss, eng: r.eng ? ' ' + T(r.eng > 1 ? '(dont {n} engagées dans un deck)' : '(dont {n} engagée dans un deck)', { n: r.eng }) : '' });
   return `<div class="crow dk" role="button" tabindex="0" data-dk="${i}" aria-label="${aria}">${r.tier ? `<i class="dk-tier t-${esc(r.tier.toLowerCase())}" aria-hidden="true">${esc(r.tier)}</i>` : ''}<span class="thumb" style="--h:${hash32(c.slug) % 360}">${esc((name.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
-    <span class="row-main"><span class="row-name">${esc(name)}${c.rank ? ` <small class="dk-rank" title="${mo ? T('Rang de popularité du commandant sur EDHREC ce mois-ci') : T('Rang de popularité du commandant sur EDHREC')}">#${nf0(c.rank)}</small>` : ''}</span><span class="dk-pips">${edhPips(c.ci)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${T('{have} / {total} possédées', { have: nf0(r.have), total: nf0(r.total) })}${r.eng ? ` <em class="dk-eng" title="${T('Exemplaires déjà réservés par un de tes decks complets')}">· ${TN(r.eng, 'dont {n} engagée', 'dont {n} engagées')}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">${T('Contient : {list}', { list: esc(r.hit.slice(0, 2).map(h => h[1]).join(' · ')) + (r.hit.length > 2 ? ' +' + (r.hit.length - 2) : '') })}</span>` : ''}</span>
+    <span class="row-main"><span class="row-name">${esc(name)}${c.rank ? ` <small class="dk-rank" title="${mo ? T('Rang de popularité du commandant sur EDHREC ce mois-ci') : T('Rang de popularité du commandant sur EDHREC')}">#${nf0(c.rank)}</small>` : ''}</span><span class="dk-pips">${edhPips(c.ci)}</span><span class="row-meta">${tags.join('')}</span><span class="dk-bar" aria-hidden="true"><i style="width:${pct}%"></i>${r.eng ? `<i class="eng" style="width:${pe}%"></i>` : ''}</span><span class="dk-have">${T('{have} / {total} possédées', { have: nf0(r.have), total: nf0(r.total) })}${r.eng ? ` <em class="dk-eng" title="${T('Exemplaires déjà réservés par un de tes decks montés')}">· ${TN(r.eng, 'dont {n} engagée', 'dont {n} engagées')}</em>` : ''}</span>${c.th.length ? `<span class="dk-th">${c.th.slice(0, 3).map(([i, n]) => { const t = EDH.data.themes[i]; return EDH.themes.has(t.slug) ? '<b>' + esc(edhThemeName(t)) + '</b>' : esc(edhThemeName(t)); }).join(' · ')}</span>` : ''}${r.hit ? `<span class="dk-lab dk-hitl">${T('Contient : {list}', { list: esc(r.hit.slice(0, 2).map(h => h[1]).join(' · ')) + (r.hit.length > 2 ? ' +' + (r.hit.length - 2) : '') })}</span>` : ''}</span>
     <span class="row-px dk-px">${right}</span></div>`;
 }
 
@@ -305,12 +305,69 @@ function edhPaintThumbs(root, m) {
 }
 const edhBracketNote = r => r.gc.length ? T('Game Changers : {list}', { list: r.gc.join(', ') }) : T('Aucun Game Changer');
 
-/** Feuille d'un deck : cartes à acheter (les plus chères d'abord), déjà possédées, aperçu de chaque carte (appui = en grand, glisser = carte suivante) et deux actions. */
+/* ── Actions de la feuille d'un deck : l'enregistrer, ajouter ses manquantes à « Je recherche », surveiller leurs prix ──────────────────────────────
+   Chacune dit si elle est déjà faite (deck au même texte dans Mes decks, manquantes déjà recherchées, prix déjà surveillés) : un second toucher n'ajoute rien en double. */
+const EDH_WATCH_MIN = 100;      // 1 € : en dessous, une baisse n'atteint jamais les 0,50 € qu'exige une alerte
+const EDH_BELL = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>';
+/** Nom du deck enregistré : le commandant, et le type s'il y a plusieurs listes possibles (« Edgar Markov · Budget »). */
+const edhSaveName = r => { const n = r.cmd.names.join(' + '), k = r.deck.k; return (k && k !== 'avg' && EDH_KIND_NAMES[k] ? n + ' · ' + edhKindName(k) : n).slice(0, 120); };
+const edhSavedDeck = text => allDecks().find(d => String(d.text || '').trim() === text.trim()) || null;
+/** Exemplaires à ajouter à « Je recherche » : pour chaque manquante, ce qui dépasse ce que la liste recherche déjà (decks enregistrés et souhaits) → [{ k, n, q }]. */
+function edhWishTodo(r) {
+  let want = new Map(); try { want = new Map(trState().want.map(w => [w.k, w.q])); } catch (e) { /* liste d'échange pas encore prête */ }
+  const out = [];
+  for (const x of r.missing) { const k = ownKey(x.n) || x.k, q = x.q - (want.get(k) || 0); if (q > 0) out.push({ k, n: x.n, q }); }
+  return out;
+}
+/** Manquantes à 1 € ou plus : celles qu'une alerte peut concerner ; todo : seulement celles que les alertes ne surveillent pas encore. */
+function edhWatchCards(r, todo) {
+  const all = r.missing.filter(x => x.u >= EDH_WATCH_MIN); if (!todo || !AC.on) return all;
+  const seen = new Set(alItems().map(i => i.k)); return all.filter(x => !seen.has(ownKey(x.n) || x.k));
+}
+/** Bloc d'actions sous « Voir le deck · Partager », repeint après chaque toucher. name : nom affiché du deck (gardé avec les cartes surveillées). */
+function edhDeckActs(api, r, name) {
+  const el = $('.dk-acts2', api.body), text = edhDeckText(r.deck), added = new Map(); let saved = '';      // saved : enregistré ici (dans le compte, le deck n'apparaît qu'au retour de la synchro) · added : souhaits ajoutés par cette feuille
+  const row = (act, icon, title, sub, done) => `<button type="button" class="dk-act${done ? ' done' : ''}" data-act="${act}"${done ? ' disabled' : ''}>${icon}<span class="dk-act-t"><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>${done ? '<svg class="i dk-act-ok" aria-hidden="true"><use href="#i-check"/></svg>' : ''}</button>`;
+  const paint = () => {
+    const d = edhSavedDeck(text), sv = saved || (d && d.name) || '', wish = r.miss ? edhWishTodo(r) : [], wq = wish.reduce((a, x) => a + x.q, 0);
+    const watch = alAvail() ? edhWatchCards(r) : [], wTodo = watch.length ? edhWatchCards(r, true) : [];
+    el.innerHTML = row('dksave', '<svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg>', sv ? T('Dans mes decks') : T('Enregistrer dans mes decks'), sv ? T('Enregistré sous « {name} »', { name: sv }) : dkCountText(text), !!sv)
+      + (r.miss ? row('dkwish', '<svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>', wq ? T('Ajouter les manquantes à Je recherche') : T('Manquantes dans Je recherche'), wq ? TN(wq, '{n} carte', '{n} cartes') + ' · ' + T('liste d\'échange') : T('Ta liste d\'échange les recherche déjà'), !wq) : '')
+      + (watch.length ? row('dkwatch', EDH_BELL, wTodo.length ? T('Surveiller leurs prix') : T('Prix surveillés'), wTodo.length ? TN(wTodo.length, '{n} carte à 1 € ou plus', '{n} cartes à 1 € ou plus') + (AC.on ? '' : ' · ' + T('active les alertes')) : T('Une notification en cas de forte baisse'), !wTodo.length) : '');
+  };
+  el.onclick = async e => {
+    const b = e.target.closest('button[data-act]'); if (!b || b.disabled) return; const act = b.dataset.act;
+    if (act === 'dksave') {
+      const nm = edhSaveName(r), id = newIdFor(); putDeck(id, deckDoc({ name: nm, text, opts: { ...S.opts } })); saved = nm; haptic('ok');
+      if (added.size) {      // le deck enregistré met lui-même ses manquantes dans « Je recherche » : les souhaits ajoutés juste avant feraient doublon
+        for (const [k, q] of added) { const cur = TR.wish[k]; if (!cur) continue; if (cur.q > q) TR.wish[k] = { ...cur, q: cur.q - q }; else delete TR.wish[k]; }
+        added.clear(); trChanged();
+      }
+      paint();
+      const msg = T('« {name} » ajouté à Mes decks', { name: nm }), al = alSaveOffer(text, id);      // alertes possibles mais coupées : proposées ici aussi (alerts.js)
+      toast(al ? msg + ' · ' + T('Me prévenir des baisses ?') : msg, al);
+    } else if (act === 'dkwish') {
+      const todo = edhWishTodo(r); if (!todo.length) { paint(); return; }
+      const before = { ...TR.wish }, n = todo.reduce((a, x) => a + x.q, 0);
+      for (const x of todo) { const cur = TR.wish[x.k], q = Math.min(99, ((cur && cur.q) || 0) + x.q); TR.wish[x.k] = { ...(cur || {}), n: cur ? cur.n : x.n, q }; added.set(x.k, (added.get(x.k) || 0) + q - ((cur && cur.q) || 0)); }
+      trChanged(); haptic('ok'); paint();
+      toast(TN(n, '{n} carte ajoutée à Je recherche', '{n} cartes ajoutées à Je recherche'), { label: T('Annuler'), fn: () => { TR.wish = before; added.clear(); trChanged(); if (api.wrap.isConnected) paint(); } });
+    } else if (act === 'dkwatch') {
+      b.disabled = true;
+      if (!AC.on) { const res = await alEnable(); if (!res.ok) { b.disabled = false; toast(alWhy(res)); return; } }
+      const n = alWatchMany(edhWatchCards(r, true), name); haptic('ok'); if (api.wrap.isConnected) paint();
+      toast(n ? TN(n, '{n} carte surveillée : tu seras prévenu en cas de forte baisse', '{n} cartes surveillées : tu seras prévenu en cas de forte baisse') : T('Leurs prix sont déjà surveillés'), { label: T('Régler'), fn: () => openAlertSheet() });
+    }
+  };
+  paint();
+}
+
+/** Feuille d'un deck : cartes à acheter (les plus chères d'abord), déjà possédées, aperçu de chaque carte (appui = en grand, glisser = carte suivante), Voir / Partager et les actions ci-dessus. */
 function openEdhDeck(r) {
   const c = r.cmd, name = c.names.join(' + '), url = r.deck.url || (r.deck.src === 'edhrec' ? 'https://edhrec.com/average-decks/' + encodeURIComponent(c.slug) : '');
   openSheet(name, `${r.tier ? T('Tier {t} · n° {n}', { t: r.tier, n: nf0(r.rank) }) + ' · ' : ''}${T('{have} / {total} possédées', { have: nf0(r.have), total: nf0(r.total) })}${r.eng ? ` (${TN(r.eng, 'dont {n} engagée', 'dont {n} engagées')})` : ''} · ${edhSrcLabel(r.deck)}`, api => {
     const row = (x, own) => {
-      const tg = (c.keys.includes(x.k) ? `<span class="tag accent">${T('Commandant')}</span>` : '') + (own && x.eg ? `<span class="tag warn" title="${T('Déjà réservé par un de tes decks complets')}">${TN(x.eg, 'dont {n} engagée', 'dont {n} engagées')}</span>` : '') + (x.gc ? `<span class="tag warn" title="${T('Liste Game Changers (brackets Commander)')}">${T('Game Changer')}</span>` : '');
+      const tg = (c.keys.includes(x.k) ? `<span class="tag accent">${T('Commandant')}</span>` : '') + (own && x.eg ? `<span class="tag warn" title="${T('Déjà réservé par un de tes decks montés')}">${TN(x.eg, 'dont {n} engagée', 'dont {n} engagées')}</span>` : '') + (x.gc ? `<span class="tag warn" title="${T('Liste Game Changers (brackets Commander)')}">${T('Game Changer')}</span>` : '');
       const ex = own ? T('Dans ta collection') + (x.q > 1 ? ' · × ' + x.q : '') + (x.eg ? ' · ' + TN(x.eg, 'dont {n} engagée', 'dont {n} engagées') : '') : T('À acheter') + (x.q > 1 ? ' × ' + x.q : '') + (x.u ? ' · ≈ ' + fmt(x.u * x.q, 'EUR') : '');
       return `<div class="crow ro dk-card" role="button" tabindex="0" data-ik="${esc(x.k)}" data-nm="${esc(x.n)}" data-ex="${esc(ex)}" aria-label="${T('{name} : voir en grand', { name: esc(x.n) })}"><span class="thumb" data-ik="${esc(x.k)}" style="--h:${hash32(x.k) % 360}">${esc((x.n.trim()[0] || '?').toUpperCase())}</span><span class="row-main"><span class="row-name">${esc(x.n)}</span>${tg ? `<span class="row-meta">${tg}</span>` : ''}</span><span class="row-price"><b>${own ? '✓' : x.u ? esc(fmt(x.u * x.q, 'EUR')) : '—'}</b>${x.q > 1 ? `<small>× ${x.q}${!own && x.u ? ' · ' + esc(fmt(x.u, 'EUR')) : ''}</small>` : ''}</span></div>`;
     };
@@ -325,7 +382,8 @@ function openEdhDeck(r) {
       ${buy.length ? `<h3 class="cs-h">${T('À acheter')} <small>${T('{n} cartes', { n: nf0(buy.length) })}</small></h3><div class="cs-top dk-miss">${buy.map(x => row(x, false)).join('')}</div>` : r.miss ? '' : `<p class="hint">${T('Tu as déjà toutes les cartes de ce deck.')}</p>`}
       ${have.length ? `<details class="dk-own" open><summary>${T('Déjà dans ta collection ({n})', { n: nf0(have.length) })}</summary><div class="cs-top dk-have-l">${have.map(x => row(x, true)).join('')}</div></details>` : ''}
       <p class="hint dk-tap">${T('Touche une carte pour la voir en grand.')}</p>`;
-    $('.ci-sum', api.body).insertAdjacentHTML('afterend', `<div class="tr-acts dk-acts"><button class="btn ghost" type="button" data-act="dkview"><svg class="i"><use href="#i-grid"/></svg>${T('Voir le deck')}</button><button class="btn ghost" type="button" data-act="dkshare"><svg class="i"><use href="#i-share"/></svg>${T('Partager')}</button></div>`);
+    $('.ci-sum', api.body).insertAdjacentHTML('afterend', `<div class="tr-acts dk-acts"><button class="btn ghost" type="button" data-act="dkview"><svg class="i"><use href="#i-grid"/></svg>${T('Voir le deck')}</button><button class="btn ghost" type="button" data-act="dkshare"><svg class="i"><use href="#i-share"/></svg>${T('Partager')}</button></div><div class="dk-acts2" role="group" aria-label="${T('Ce deck')}"></div>`);
+    edhDeckActs(api, r, name);
     $('.dk-acts', api.body).onclick = e => {
       const b = e.target.closest('[data-act]'); if (!b) return; haptic('tap');
       if (b.dataset.act === 'dkview') { api.close(); openDeckViewer({ text: edhDeckText(r.deck), name }); }      // viewer : images, courbe, main de départ, partage

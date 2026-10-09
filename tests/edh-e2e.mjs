@@ -145,12 +145,37 @@ ok('recherche par carte : « swords » → 1 deck (étiquette « Contient »), �
 await p.click('.dk-ctl [data-act="dsort"][data-v="have"]');
 await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum');
 assert.match(await txt(p, '.sheet-head'), /Edgar Markov/); assert.match(await txt(p, '.sheet .ci-sum'), /23 cartes à acheter · ≈ 15,60 €/);
-assert.equal(await p.$eval('.sheet-body > *:nth-child(1)', e => e.className), 'ci-sum'); assert.equal(await p.$eval('.sheet-body > *:nth-child(2)', e => e.className), 'tr-acts dk-acts', 'Voir le deck · Partager sous le résumé'); assert.equal(await p.$eval('.sheet-body > *:nth-child(3)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandant', 'le commandant est la 1re section');
+assert.equal(await p.$eval('.sheet-body > *:nth-child(1)', e => e.className), 'ci-sum'); assert.equal(await p.$eval('.sheet-body > *:nth-child(2)', e => e.className), 'tr-acts dk-acts', 'Voir le deck · Partager sous le résumé'); assert.equal(await p.$eval('.sheet-body > *:nth-child(3)', e => e.className), 'dk-acts2', 'puis les actions (enregistrer, Je recherche…)'); assert.equal(await p.$eval('.sheet-body > *:nth-child(4)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandant', 'le commandant est la 1re section');
 assert.deepEqual(await p.$$eval('.dk-cmd .row-name', n => n.map(x => x.textContent)), ['Edgar Markov']); assert.equal(await p.$eval('.dk-cmd .row-price b', e => e.textContent.trim()), '✓', 'commandant possédé : coche');
 const miss = await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent)); assert.equal(miss.length, 23); assert.equal(miss[0], 'Swords to Plowshares', 'la plus chère d\'abord'); assert.ok(!miss.includes('Sol Ring'));
 assert.match(await txt(p, '.dk-own summary'), /Déjà dans ta collection \(2\)/);
 assert.equal(await p.$eval('.sheet-foot a', a => a.href), 'https://edhrec.com/average-decks/edgar-markov'); assert.equal(await p.$eval('.sheet-foot a', a => a.rel), 'noopener noreferrer');
 await p.screenshot({ path: 'shots/edh-3-feuille.png' });
+/* ── 4a) actions de la feuille : « Je recherche » (sans doublon, annulable), enregistrer dans Mes decks ; pas d'alertes sans serveur de notifications ── */
+const acts = () => p.$$eval('.dk-acts2 .dk-act', b => b.map(x => [x.dataset.act, x.querySelector('b').textContent, (x.querySelector('small') || { textContent: '' }).textContent, x.disabled]));
+assert.deepEqual(await acts(), [['dksave', 'Enregistrer dans mes decks', '34/100 cartes', false], ['dkwish', 'Ajouter les manquantes à Je recherche', '23 cartes · liste d\'échange', false]], 'exemplaires (8 Plains compris), « /100 » ; pas de « Surveiller leurs prix » : alertes indisponibles ici');
+await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.evaluate(() => { TR.wish = { 'swords to plowshares': { n: 'Swords to Plowshares', q: 1 }, 'mana crypt': { n: 'Mana Crypt', q: 2 } }; trChanged(); });      // Swords déjà recherchée
+await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.dk-acts2 .dk-act');
+assert.deepEqual((await acts())[1], ['dkwish', 'Ajouter les manquantes à Je recherche', '22 cartes · liste d\'échange', false], 'Swords déjà dans « Je recherche » : pas comptée');
+await p.click('.dk-act[data-act="dkwish"]'); assert.equal(await txt(p, '#toast'), '22 cartes ajoutées à Je recherche Annuler');
+let wish = await p.evaluate(() => TR.wish);
+assert.equal(Object.keys(wish).length, 24); assert.equal(wish['swords to plowshares'].q, 1, 'pas en double'); assert.equal(wish['mana crypt'].q, 2, 'souhait sans rapport : intact'); assert.deepEqual(wish['command tower'], { n: 'Command Tower', q: 1 }); assert.equal(wish['filler 19'].n, 'Filler 19');
+assert.deepEqual((await acts())[1], ['dkwish', 'Manquantes dans Je recherche', 'Ta liste d\'échange les recherche déjà', true], 'fait : coché, inactif');
+assert.equal(await p.evaluate(() => trState().want.filter(x => /^filler /.test(x.k)).length), 20, '« Je recherche » de l\'onglet Échange : les 20 fillers y sont');
+await p.click('#toast .toast-act'); assert.deepEqual(Object.keys(await p.evaluate(() => TR.wish)).sort(), ['mana crypt', 'swords to plowshares'], 'Annuler : liste d\'avant'); assert.equal((await acts())[1][3], false);
+// ajoutées puis deck enregistré : le deck recherche lui-même ses manquantes, les souhaits ajoutés par la feuille sont retirés (pas de doublon)
+await p.click('.dk-act[data-act="dkwish"]'); await p.click('.dk-act[data-act="dksave"]'); assert.equal(await txt(p, '#toast'), '« Edgar Markov » ajouté à Mes decks');
+const saved = await p.evaluate(() => allDecks().map(d => ({ name: d.name, text: d.text, n: dkCountText(d.text), eng: engIsOn(d.id) })));
+assert.equal(saved.length, 1); assert.equal(saved[0].name, 'Edgar Markov'); assert.match(saved[0].text, /^Commander\n1 Edgar Markov\n\n1 Sol Ring\n/); assert.equal(saved[0].n, '34/100 cartes'); assert.equal(saved[0].eng, false, 'pas monté : ses cartes ne sont pas réservées');
+assert.deepEqual(await acts(), [['dksave', 'Dans mes decks', 'Enregistré sous « Edgar Markov »', true], ['dkwish', 'Manquantes dans Je recherche', 'Ta liste d\'échange les recherche déjà', true]]);
+assert.deepEqual(Object.keys(await p.evaluate(() => TR.wish)).sort(), ['mana crypt', 'swords to plowshares'], 'souhaits ajoutés ici retirés');
+assert.equal(await p.evaluate(() => trState().want.find(x => x.k === 'command tower').q), 1, 'Command Tower recherchée une fois, pas deux');
+await p.screenshot({ path: 'shots/edh-3b-actions.png' });
+await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.dk-acts2 .dk-act'); assert.deepEqual((await acts())[0], ['dksave', 'Dans mes decks', 'Enregistré sous « Edgar Markov »', true], 'reconnu à la réouverture (même liste)');
+await p.evaluate(() => { TR.wish = {}; trChanged(); });
+ok('feuille d\'un deck : « Ajouter les manquantes à Je recherche » (22 + Swords déjà là, sans doublon, Annuler), « Enregistrer dans mes decks » (34/100, non monté, souhaits de la feuille repris par le deck), état gardé');
 // « Voir le deck » : la fiche se ferme, le viewer s'ouvre (images, courbe, main de départ)
 await p.click('.sheet [data-act="dkview"]'); await p.waitForSelector('.dv.on[aria-label="Deck viewer · Edgar Markov"]');
 await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
@@ -175,7 +200,7 @@ assert.equal(posts(), p0, 'images gardées sur l\'appareil : pas de nouvelle lec
 ok('feuille : Tier S · n° 1, bracket ≈ 4 (4 Game Changers, pastilles), vignettes lues sur Scryfall puis gardées ; appui = visionneuse (2 / 6, grande image, extra « À acheter · ≈ 1,90 € »), flèche = carte suivante, Échap garde la feuille, carte sans image : message');
 /* commandants partenaires : tous les deux en tête, avec prix (non possédé) ou « — » (prix inconnu) */
 await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet .ci-sum')); await p.click('.crow.dk:has-text("Tymna")'); await p.waitForSelector('.sheet .ci-sum');
-assert.equal(await p.$eval('.sheet-body > *:nth-child(3)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandants');
+assert.equal(await p.$eval('.sheet-body > *:nth-child(4)', e => e.tagName + ' ' + e.textContent.trim()), 'H3 Commandants');
 const tc = await p.$$eval('.dk-cmd .crow', r => r.map(x => [x.querySelector('.row-name').textContent, x.querySelector('.row-price b').textContent.replace(/\s+/g, ' ').trim(), x.querySelector('.tag').textContent])); assert.deepEqual(tc, [['Tymna the Weaver', '9,00 €', 'Commandant'], ['Thrasios, Triton Hero', '—', 'Commandant']]);
 assert.ok(!(await p.$$eval('.dk-miss .row-name', n => n.map(x => x.textContent))).some(t => /Tymna|Thrasios/.test(t)), 'pas de doublon dans « À acheter »');
 await p.click('.sheet [data-close].icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet .ci-sum')); await p.click('.crow.dk >> nth=1'); await p.waitForSelector('.sheet .ci-sum'); assert.match(await txt(p, '.sheet-head'), /Edgar Markov/);
@@ -330,6 +355,39 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   await openDecks(d.p); assert.equal(await d.p.$$eval('.dk-themes', x => x.length), 0); assert.equal(await d.p.$$eval('.dk-th', x => x.length), 0); assert.equal((await names(d.p)).length, 4);
   await d.p.click('.crow.dk >> nth=0'); await d.p.waitForSelector('.sheet .ci-sum'); assert.equal(await d.p.$$eval('.sheet .ci-thd', x => x.length), 0);
   ok('fichier sans thèmes : ni puces ni lignes de thèmes, decks inchangés'); await d.ctx.close();
+}
+
+/* ── 7) accueil, « Deck à monter » : part possédée et coût pour finir (règle de homePick), decks d'au moins 60 cartes ─────────────── */
+{
+  // de bout en bout : Edgar 40/60 (20 manquantes à 5 €) bat Craterhoof 54/60 (6 manquantes à 100 €) ; Tymna (3/60) écarté
+  const fill = (a, b) => Array.from({ length: b - a }, (_, i) => `K\t1\tFiller ${a + i}`), px = (a, b, c) => Array.from({ length: b - a }, (_, i) => `P\t${c}\tFiller ${a + i}`);
+  const FILE60 = ['#edh\t1\t2026-10-03T04:00:00Z', 'C\tedgar-markov\t12345\tWBR\tEdgar Markov', 'C\tcraterhoof-behemoth\t9000\tG\tCraterhoof Behemoth', 'C\ttymna-thrasios\t4000\tWUBG\tTymna the Weaver\tThrasios, Triton Hero',
+    'D\tedgar-markov\tedhrec\tDeck moyen\t', ...fill(0, 59), 'D\tcraterhoof-behemoth\tedhrec\tDeck moyen\t', ...fill(100, 159), 'D\ttymna-thrasios\tedhrec\tDeck moyen\t', ...fill(200, 258),
+    ...px(39, 59, 500), ...px(153, 159, 10000), ...px(203, 258, 10)].join('\n') + '\n';
+  const own = ['1 Edgar Markov', '1 Craterhoof Behemoth', ...Array.from({ length: 39 }, (_, i) => `1 Filler ${i}`), ...Array.from({ length: 53 }, (_, i) => `1 Filler ${100 + i}`), '1 Filler 200', '1 Filler 201', '1 Filler 202'].join('\n');
+  const h = await newPage(browser, world, { goto: false, init: `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: ${JSON.stringify(own)}, u: 1, s: '', b: null })); } catch (e) {}` });
+  await h.p.route('**/edh.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: FILE60 }));
+  await h.p.goto(world.url); await h.p.waitForTimeout(500); await toHome(h.p);
+  assert.equal(await txt(h.p, '#hmBuildSub'), 'Decks EDHREC comparés à ta collection', 'avant le fichier (lu 2,5 s après l\'accueil) : la phrase d\'attente');
+  await h.p.waitForFunction(() => HM.best, null, { timeout: 12000 }); await h.p.waitForTimeout(200);
+  assert.equal(await txt(h.p, '#hmBuildPct'), '66 %'); assert.equal(await h.p.$eval('#hmBuildSub .hm-bn', e => e.textContent), 'Edgar Markov'); assert.equal((await h.p.$eval('#hmBuildSub .hm-bc', e => e.textContent)).replace(/\s/g, ' '), '≈ 100 € pour finir');
+  assert.equal((await h.p.$eval('#btnBuild', e => e.getAttribute('aria-label'))).replace(/\s/g, ' '), 'Deck à monter : Edgar Markov, 66 % des cartes déjà possédées, ≈ 100 € pour finir');
+  await h.p.$eval('#btnBuild', e => e.scrollIntoView({ block: 'center' })); await h.p.waitForTimeout(300); await h.p.screenshot({ path: 'shots/edh-7-accueil.png' });
+  await h.p.click('#btnBuild'); await h.p.waitForSelector('.sheet .ci-sum', { timeout: 6000 });
+  assert.match(await txt(h.p, '.sheet-head h2'), /^Edgar Markov$/); assert.match(await txt(h.p, '.sheet .ci-sum'), /^20 cartes à acheter · ≈ 100,00 €/, 'la feuille donne le même coût');
+  ok('accueil : « 66 % · Edgar Markov · ≈ 100 € pour finir » (Craterhoof à 90 % mais 600 € à payer : derrière), feuille du deck au toucher');
+  // règle seule : 62 % à 84 € (score 31) devant 40 % à 20 € (30) et 90 % à 900 € (25) ; moins de 10 % ou moins de 60 cartes : écartés ; un deck complet l'emporte
+  const R = (name, total, have, cost, rank, unpriced = 0) => ({ total, have, cost, unpriced, miss: total - have, cmd: { names: [name], rank } });
+  const pick = rows => h.p.evaluate(rs => { const b = homePick(rs); return b && b.r.cmd.names[0]; }, rows);
+  assert.equal(await pick([R('A90', 100, 90, 90000, 1), R('B62', 100, 62, 8400, 2), R('C40', 100, 40, 2000, 3), R('D9', 100, 9, 0, 4), R('E50', 50, 50, 0, 5)]), 'B62');
+  assert.equal(await pick([R('B62', 100, 62, 8400, 2), R('F100', 100, 100, 0, 9)]), 'F100', 'deck déjà complet');
+  assert.equal(await pick([R('D9', 100, 9, 0, 4), R('E50', 50, 50, 0, 5)]), null, 'rien d\'assez avancé');
+  assert.equal(await pick([R('G1', 100, 50, 4000, 7), R('G2', 100, 50, 4000, 3)]), 'G2', 'à égalité : le commandant le plus joué');
+  assert.equal(await pick([R('H1', 100, 50, 900, 7, 30)]), 'H1', 'cartes sans prix comptées 1 € pièce, sans écarter le deck');
+  const cost = (miss, c) => h.p.evaluate(([m, c]) => homeCostText({ miss: m, cost: c }).replace(/\s/g, ' '), [miss, c]);
+  assert.equal(await cost(0, 0), 'Rien à acheter'); assert.equal(await cost(3, 0), '3 cartes à trouver'); assert.equal(await cost(2, 450), '≈ 4,50 € pour finir', 'moins de 10 € : au centime'); assert.equal(await cost(9, 123456), '≈ 1 235 € pour finir');
+  ok('Deck à monter : règle part possédée − 10 points par doublement du coût au-delà de 10 € (62 % à 84 € > 40 % à 20 € > 90 % à 900 €), seuil 10 %, ≥ 60 cartes, complet d\'abord, coût en mots');
+  assert.deepEqual(h.errs, []); await h.ctx.close();
 }
 
 console.log('erreurs page :', [...errs, ...b.errs].length ? [...errs, ...b.errs] : 'aucune'); assert.deepEqual([...errs, ...b.errs], []);
