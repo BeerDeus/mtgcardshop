@@ -44,11 +44,11 @@ html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-p
 .sp-o{transform:rotate(calc(-1 * var(--a))) translate(var(--ex,0),var(--ey,0))}
 .sp-land{position:absolute;inset:0;border-radius:50%;border:2px solid var(--lc);box-shadow:0 0 18px var(--lg);background:var(--lb)}
 .sp-land::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--lc);opacity:0}
-.sp-p:nth-child(1){--a:-90deg;--d:.28s;--lc:#f8f6d8;--lg:rgba(248,246,216,.6);--lb:linear-gradient(180deg,#fff3c4,#f6d58a 48%,#a89a6c)}
-.sp-p:nth-child(2){--a:-18deg;--d:.35s;--ex:1.43px;--ey:-1.7px;--lc:#c1d7e9;--lg:rgba(63,143,224,.7);--lb:linear-gradient(180deg,#bfe2ff,#2f6fb5 52%,#173a6b)}
-.sp-p:nth-child(3){--a:54deg;--d:.42s;--ex:-.24px;--ey:1.2px;--lc:#bab1ab;--lg:rgba(186,177,171,.5);--lb:linear-gradient(180deg,#6b5a78,#2a2a22 52%,#141410)}
-.sp-p:nth-child(4){--a:126deg;--d:.49s;--ex:.24px;--ey:1.2px;--lc:#e49977;--lg:rgba(224,83,61,.7);--lb:linear-gradient(160deg,#ffb37a,#e0533d 40%,#3b140e)}
-.sp-p:nth-child(5){--a:198deg;--d:.56s;--ex:-.43px;--ey:-1.7px;--lc:#a3c095;--lg:rgba(58,154,94,.7);--lb:linear-gradient(180deg,#c8e6b0,#2f6b3e 60%,#163521)}
+.sp-p:nth-of-type(1){--a:-90deg;--d:.28s;--lc:#f8f6d8;--lg:rgba(248,246,216,.6);--lb:linear-gradient(180deg,#fff3c4,#f6d58a 48%,#a89a6c)}
+.sp-p:nth-of-type(2){--a:-18deg;--d:.35s;--ex:1.43px;--ey:-1.7px;--lc:#c1d7e9;--lg:rgba(63,143,224,.7);--lb:linear-gradient(180deg,#bfe2ff,#2f6fb5 52%,#173a6b)}
+.sp-p:nth-of-type(3){--a:54deg;--d:.42s;--ex:-.24px;--ey:1.2px;--lc:#bab1ab;--lg:rgba(186,177,171,.5);--lb:linear-gradient(180deg,#6b5a78,#2a2a22 52%,#141410)}
+.sp-p:nth-of-type(4){--a:126deg;--d:.49s;--ex:.24px;--ey:1.2px;--lc:#e49977;--lg:rgba(224,83,61,.7);--lb:linear-gradient(160deg,#ffb37a,#e0533d 40%,#3b140e)}
+.sp-p:nth-of-type(5){--a:198deg;--d:.56s;--ex:-.43px;--ey:-1.7px;--lc:#a3c095;--lg:rgba(58,154,94,.7);--lb:linear-gradient(180deg,#c8e6b0,#2f6b3e 60%,#163521)}
 
 /* Avant la première image (.sp-in) : le fond seul. Boucles (orbite, anneau, halo) sur l'horloge du splash, reprises par l'accueil (data-sp-sync). */
 #splash:not(.sp-in):not(.sp-rm) .sp-scene{opacity:0}

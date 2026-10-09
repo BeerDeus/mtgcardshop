@@ -120,7 +120,7 @@ for (const q of ['?splash=1&open=trade', '?splash=1&p=abc123']) {
   const { ctx, p } = await open(q, { wait: 'domcontentloaded' });
   await gone(p);
   const m = await marks(p), cls = (await p.evaluate(() => window.__sp)).join(' ');
-  assert.ok(/sp-short/.test(cls), q + ' : version courte');
+  assert.ok(/sp-short/.test(cls) && !/sp-morph/.test(cls), q + ' : version courte, en fondu (l\'écran demandé, pas l\'accueil)');
   assert.ok(m.out - m.in >= SPLASH_T.short - 30 && m.out - m.in < 1300 && m.end - m.in < 1800, q + ' : ' + JSON.stringify(m));
   await ctx.close();
 }

@@ -13,10 +13,14 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Fenêtre derrière la WebView avant sa première image : le fond de l'écran de lancement web, jamais un flash blanc (thème clair du système) -->
+        <item name="android:windowBackground">@color/launch_bg</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- Écran de lancement du système (icône) : même fond que la WebView (capacitor.config.json) et que l'écran de lancement web -->
+        <item name="windowSplashScreenBackground">@color/launch_bg</item>
     </style>
 </resources>

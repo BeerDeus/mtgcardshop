@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fond de lancement : --bg sombre de l'appli (#0b0f1c), comme android.backgroundColor de capacitor.config.json et l'écran de lancement web en sombre -->
+    <color name="launch_bg">#0B0F1C</color>
+</resources>

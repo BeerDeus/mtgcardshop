@@ -71,7 +71,7 @@ function splashHandoff(fast) {
   const quick = fast || SPL.rm, D = SPL.rm ? SPLASH_T.fade : fast ? SPLASH_T.fast : SPL.short ? SPLASH_T.outShort : SPLASH_T.out;
   el.style.setProperty('--sp-out', D + 'ms');
   if (typeof window.splashHandoffX === 'function') { try { if (window.splashHandoffX(el, !quick, splashRemove)) { splashPlay(); return; } } catch (e) { /* sortie par défaut */ } }
-  const pairs = quick ? null : splashPairs(el);
+  const pairs = quick || SPL.short ? null : splashPairs(el);      // lien profond : il mène ailleurs que l'accueil (l'écran s'ouvre pendant la sortie), simple fondu
   el.classList.add('sp-out'); if (pairs) { el.classList.add('sp-morph'); splashMorph(el, pairs, D); }
   SPL.tm = [setTimeout(splashPlay, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // vol : l'accueil entre quand l'orbe a quitté le centre (les tuiles ne passent pas dessous)
 }
