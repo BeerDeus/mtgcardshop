@@ -13,6 +13,8 @@ html.sp-on #app *,html.sp-on #app *::before,html.sp-on #app *::after{animation-p
 .sp-brand .word{display:block;white-space:pre}
 .sp-word span{position:relative;display:inline-block}
 .sp-word span::after{content:attr(data-l);position:absolute;left:0;top:0;color:#fff;text-shadow:0 0 8px var(--k),0 0 18px var(--k);opacity:0}
+:root[data-theme="light"] .sp-word span::after{color:var(--k)}      /* clair : reflet coloré (un blanc effaçait la lettre) */
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .sp-word span::after{color:var(--k)}}
 .sp-mv{width:300px;height:272px;transform:scale(1.1)}
 @media (max-width:359px){.sp-mv{transform:scale(.92)}.sp-brand{transform:scale(1.35)}.sp-scene{gap:34px}}
 .sp-stage{position:relative;width:300px;height:272px}

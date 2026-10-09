@@ -61,7 +61,7 @@ function splashMorph(el, pairs, D) {
     const a = s.getBoundingClientRect(), b = d.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(s).transform);
     s.animate([{ transform: m.toString() }, { transform: `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})` }], { duration: D, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'forwards' });
     s.animate([{ opacity: 1 }, { opacity: 1, offset: 0.74 }, { opacity: 0 }], { duration: D, fill: 'forwards' });
-    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.74 }, { opacity: 1 }], { duration: D });      // fondu croisé une fois posé : même dessin, même place
+    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.74 }, { opacity: 1, offset: 0.741 }, { opacity: 1 }], { duration: D });      // posé : la cible apparaît d'un coup sous le splash identique, qui s'efface dessus (pas de creux de fondu croisé)
   }
 }
 /** Sortie : vol vers l'accueil si tout est en place, sinon fondu (agrandi). fast : toucher, plafond absolu. */

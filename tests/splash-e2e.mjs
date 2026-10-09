@@ -59,7 +59,7 @@ const bg = (p, sel) => p.$eval(sel, e => getComputedStyle(e).backgroundColor);
   const { ctx, p } = await open('slow900/?splash=1');
   await p.waitForSelector('#splash.sp-in', { timeout: 3000 });
   assert.equal(await p.evaluate(() => !!document.getElementById('app')), false, 'splash peint et animé avant que le reste de la page (le gros script) soit arrivé');
-  assert.equal(await bg(p, '.sp-bg'), 'rgb(11, 15, 28)', 'fond sombre du thème');
+  assert.deepEqual([await bg(p, '.sp-bg'), await bg(p, '.sp-lit')], ['rgb(11, 15, 28)', 'rgb(11, 15, 28)'], 'nuit (fond natif) puis lumière du thème sombre');
   assert.ok(await p.evaluate(() => document.documentElement.classList.contains('sp-on')));
   await gone(p);
   assert.deepEqual(await p.evaluate(() => window.__dcl), { splash: true, app: true, root: true, hit: true, sw: true }, 'page lue (DOMContentLoaded), splash encore là : appli et feuilles inertes, touchers pris par le splash, aucun défilement horizontal');
@@ -140,12 +140,12 @@ ok('lien profond (?open=, ?p=) : version courte de 0,6 s, puis l\'écran demand�
 // ── Thème clair (système) et thème forcé dans l'appli, appliqué dès la première image (avant app.js) ──
 {
   const { ctx, p } = await open('slow900/?splash=1', { scheme: 'light' });
-  await p.waitForSelector('#splash.sp-in'); assert.equal(await bg(p, '.sp-bg'), 'rgb(241, 243, 248)', 'fond clair');
+  await p.waitForSelector('#splash.sp-in'); assert.deepEqual([await bg(p, '.sp-bg'), await bg(p, '.sp-lit')], ['rgb(11, 15, 28)', 'rgb(241, 243, 248)'], 'clair : la nuit (comme le fond natif) puis la lumière du thème à l\'allumage');
   await ctx.close();
   const o = await open('slow900/?splash=1', { scheme: 'dark', theme: 'light' });
   await o.p.waitForSelector('#splash.sp-in');
   assert.deepEqual(await o.p.evaluate(() => [document.documentElement.dataset.theme, !!document.getElementById('app')]), ['light', false], 'thème choisi appliqué avant le gros script');
-  assert.equal(await bg(o.p, '.sp-bg'), 'rgb(241, 243, 248)', 'thème clair forcé sur un système sombre : aucun flash sombre');
+  assert.equal(await bg(o.p, '.sp-lit'), 'rgb(241, 243, 248)', 'thème clair forcé sur un système sombre : la lumière est celle du thème choisi');
   await o.ctx.close();
   ok('thèmes : clair et sombre selon le système, thème choisi dans l\'appli dès la première image');
 }
