@@ -168,7 +168,7 @@ function renderDecks() {
   btn.dataset.empty = list.length ? '0' : '1';
   $('#decksSub').textContent = loading ? T('Chargement…') : list.length ? `${TN(list.length, '{n} deck', '{n} decks')}${mounted ? ' · ' + TN(mounted, '{n} monté', '{n} montés') : ''}` : T('Crée ou colle un deck');
   dksPaint();
-  paintSync(); updateSaveButtons(); homeSoon();
+  paintSync(); updateSaveButtons(); homeSoon(); dvDecksChanged();      // deck d'un lien ou d'EDHREC ouvert : « ✓ Dans mes decks » suit la liste
 }
 let dvT = 0;
 /** Lit en arrière-plan les fiches des cartes des decks affichés (hors collection) : image de présentation d'abord, puis prix pour la valeur estimée. */

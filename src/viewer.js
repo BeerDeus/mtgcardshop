@@ -229,7 +229,7 @@ function openCardViewer(items, index) {
 
 /* ── Deck viewer ──────────────────────────────────────────────────────────────────────────────── */
 const DV_SORT_KEY = 'deckdeal:dv-sort';
-const DV = { anim: false, el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [] };
+const DV = { anim: false, el: null, sort: 'mana', snap: null, deckId: null, name: '', live: false, adhoc: false, pub: false, prevFocus: null, flat: [], f: newFilter(), framed: null, fb: null, text: '', loading: false, sb: [], saveName: '', savedId: '', savedName: '' };
 try { const v = localStorage.getItem(DV_SORT_KEY); if (['mana', 'price', 'type'].includes(v)) DV.sort = v; } catch (e) { /* stockage indisponible */ }
 
 /** Commandants de la liste : cartes sous un en-tête « Commander », sinon la première carte si elle est légendaire (export EDHREC). */
@@ -473,7 +473,7 @@ function dvRender() {
   if (!snap) {
     DV.framed = null;
     $('.dv-body', el).innerHTML = '<div class="dv-empty"><b>' + T('Ce deck est vide') + '</b><p>' + T('Ajoute des cartes à la liste pour les voir ici.') + '</p></div>';
-    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live && !DV.adhoc; return;
+    $('.dv-title span', el).textContent = ''; foot.hidden = !DV.deckId; edit.hidden = DV.live || !DV.deckId; refresh.hidden = true; close.hidden = !DV.live && !DV.adhoc; dvSavePaint(); return;
   }
   if (DV.framed !== snap) { dvFrame(snap); DV.framed = snap; }
   dvGroups();
@@ -482,7 +482,43 @@ function dvRender() {
   refresh.textContent = ref ? T('Chercher les offres') : T('Actualiser');
   foot.hidden = false; edit.hidden = DV.live || !DV.deckId; refresh.hidden = DV.live || !DV.deckId || (ref && !todo);
   close.hidden = !DV.live && !DV.adhoc;
+  dvSavePaint();
 }
+
+/* ── Deck venu d'ailleurs (lien partagé, deck EDHREC) : « Enregistrer dans mes decks », une seule copie ──────────────────────────
+   Le panier en cours (live) n'en a pas : la page de saisie l'enregistre déjà, avec ses prix et son rattachement (S.deckId). */
+/** Copie de ce deck dans Mes decks : celle enregistrée depuis ce viewer (dans le compte, elle n'arrive qu'avec la synchro), sinon un deck à la même liste. */
+const dvCopy = () => (DV.savedId ? findDeck(DV.savedId) || { id: DV.savedId, name: DV.savedName } : edhSavedDeck(DV.text));
+/** Pied du viewer : « Enregistrer dans mes decks », ou « ✓ Dans mes decks » + « Ouvrir ». Repeint aussi quand Mes decks change (renderDecks). */
+function dvSavePaint() {
+  const el = DV.el; if (!el) return;
+  const foot = $('.dv-foot', el), save = $('[data-act="save"]', foot), open = $('[data-act="open"]', foot), on = DV.adhoc && !!DV.snap, d = on ? dvCopy() : null;
+  save.hidden = !on; open.hidden = !d; $('[data-act="close"]', foot).classList.toggle('ghost', on);
+  if (!on) return;
+  save.disabled = !!d || (!!D.hint && !D.authReady);      // compte en cours de restauration : ses decks ne sont pas encore là, on attend pour ne pas faire de doublon
+  save.classList.toggle('ghost', !!d); save.classList.toggle('dv-done', !!d);
+  save.textContent = d ? '✓ ' + T('Dans mes decks') : T('Enregistrer dans mes decks');
+  save.title = d ? T('Enregistré sous « {name} »', { name: d.name }) : '';
+  if (d) open.setAttribute('aria-label', T('Ouvrir « {name} »', { name: d.name }));
+}
+/** Enregistre la liste telle qu'affichée (commandant, cartes, réserve) avec les critères de cet appareil, jamais ceux de l'auteur ; nom : celui donné par l'ouvreur (EDHREC : comme sa feuille), sinon celui du deck. */
+function dvSave() {
+  if (!DV.adhoc || !DV.snap || dvCopy() || (D.hint && !D.authReady)) { dvSavePaint(); return; }
+  const doc = deckDoc({ name: DV.saveName || DV.name, text: DV.text, opts: { ...S.opts } }), id = newIdFor();
+  putDeck(id, doc);
+  if (!cloudOn() && !localRead().some(x => x.id === id)) { dvSavePaint(); return; }      // stockage de l'appareil plein : le message de localWrite reste affiché
+  DV.savedId = id; DV.savedName = doc.name; haptic('ok'); dvSavePaint();
+  const open = DV.el && $('.dv-foot [data-act="open"]', DV.el); if (open) open.focus({ preventScroll: true });      // le bouton touché devient inactif : le focus passe à « Ouvrir »
+  const msg = T('« {name} » ajouté à Mes decks', { name: doc.name }), al = alSaveOffer(doc.text, id);      // alertes possibles mais coupées : proposées ici aussi (alerts.js)
+  toast(al ? msg + ' · ' + T('Me prévenir des baisses ?') : msg, al || { label: T('Voir'), fn: () => { closeDeckViewer(); closeCollection(); setTimeout(openDecks, 260); } });
+}
+/** « Ouvrir » : le viewer de la copie enregistrée (pas encore arrivée de la synchro : Mes decks). */
+function dvOpenCopy() {
+  const d = dvCopy(); if (!d) return;
+  if (findDeck(d.id)) openDeckViewer({ id: d.id }); else { closeDeckViewer(); openDecks(); }
+}
+/** Mes decks a changé (synchro, suppression, compte) : le pied du viewer suit. */
+function dvDecksChanged() { if (DV.el && DV.adhoc) dvSavePaint(); }
 /** Noms affichés des cartes de la liste (nom tapé en français, « Foudre ») : clé anglaise → nom affiché. Les relevés ne gardent que l'anglais ; relu de la liste, une fois par texte et par index des noms. */
 function dvShown(it) {
   if (DV.dnOf !== DV.text || DV.dnIx !== FRX.ix) {
@@ -510,11 +546,11 @@ function dvOpenCard(i) {
 }
 function closeDeckViewer() { if (DV.el) DV.el.__close(); }
 /** Ouvre le viewer d'un deck enregistré ({ id }), de la recherche en cours ({ live: true }) ou d'une liste quelconque ({ text, name } : deck EDHREC ;
- *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil). */
-function openDeckViewer({ id, live, text, name, pub, by, sid } = {}) {
+ *  pub : deck reçu par un lien public, en lecture seule, sans rien de la collection de cet appareil ; saveAs : nom de la copie enregistrée, si autre que name). */
+function openDeckViewer({ id, live, text, name, pub, by, sid, saveAs } = {}) {
   closeDeckViewer(); closeCardImage();
   const adhoc = !id && !live && typeof text === 'string', d = id ? findDeck(id) : null;
-  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.by = pub && by ? String(by) : ''; DV.sid = pub && sid ? String(sid) : ''; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
+  DV.live = !!live; DV.adhoc = adhoc; DV.pub = !!pub; DV.by = pub && by ? String(by) : ''; DV.sid = pub && sid ? String(sid) : ''; DV.saveName = adhoc && saveAs ? String(saveAs) : ''; DV.savedId = ''; DV.savedName = ''; DV.deckId = adhoc ? null : id || (live ? S.deckId : null) || null;
   DV.snap = adhoc ? null : live ? buildSnap() : snapOf(d); DV.framed = null; DV.dl = null; DV.f = newFilter(); DV.anim = true; DV.shownTotal = null;
   DV.name = adhoc ? String(name || 'Deck') : d ? d.name : (live && findDeck(S.deckId) ? findDeck(S.deckId).name : T('Liste en cours'));
   if (live && !DV.snap) { toast(T('Lance une recherche pour voir le deck')); return; }
@@ -526,7 +562,7 @@ function openDeckViewer({ id, live, text, name, pub, by, sid } = {}) {
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer le viewer')}"><svg class="i"><use href="#i-back"/></svg></button>
       <div class="dv-title"><b>${esc(DV.name)}</b><span></span></div>${DV.pub ? '' : '<button class="icon-btn" type="button" data-act="share" aria-label="' + T('Partager ce deck (lien en lecture seule)') + '" title="' + T('Partager') + '"><svg class="i"><use href="#i-share"/></svg></button>'}</header>
     <div class="dv-scroll"><div class="dv-body"></div></div>
-    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">${T('Modifier la liste')}</button><button class="btn" type="button" data-act="refresh">${T('Actualiser')}</button><button class="btn" type="button" data-act="close">${T('Fermer')}</button></footer>`;
+    <footer class="dv-foot"><button class="btn ghost" type="button" data-act="edit">${T('Modifier la liste')}</button><button class="btn" type="button" data-act="refresh">${T('Actualiser')}</button><button class="btn" type="button" data-act="close">${T('Fermer')}</button><button class="btn" type="button" data-act="save" hidden>${T('Enregistrer dans mes decks')}</button><button class="btn" type="button" data-act="open" hidden>${T('Ouvrir')}</button></footer>`;
   DV.el = wrap; DV.prevFocus = document.activeElement;
   const onKey = e => { if (e.key === 'Escape' && !imgView && !sheets.length) { e.stopPropagation(); wrap.__close(); } };
   wrap.__close = () => {
@@ -553,6 +589,8 @@ function openDeckViewer({ id, live, text, name, pub, by, sid } = {}) {
     else if (act === 'share') shareDeck(DV.deckId && !DV.live ? { id: DV.deckId } : { text: DV.text, name: DV.name });
     else if (act === 'edit' && deck) { wrap.__close(); loadDeck(deck); }
     else if (act === 'refresh' && deck && !DV.live) { wrap.__close(); refreshDeckPrices(deck); }
+    else if (act === 'save') dvSave();
+    else if (act === 'open') dvOpenCopy();
   });
   document.body.appendChild(wrap); holdApp(); dvRender();
   dvMetaLoad(wrap);
