@@ -13,6 +13,18 @@ const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM ||
 const COLLTXT = '5 Sol Ring *FR*\n2 Swords to Plowshares\n1 Wrath of God *DE*\n3 Llanowar Elves *EN*\n1 Craterhoof Behemoth\n12 Plains';
 const seed = `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: ${JSON.stringify(COLLTXT)}, u: 1, s: '', b: null })); } catch (e) {}`;
 const { p, errs } = await newPage(browser, world, { init: seed, ctx: { colorScheme: 'dark' } });
+{ // images factices lisibles sur les captures : cadre de carte avec le nom (ou l'extension et le numéro) et la langue tirés de l'adresse
+  const card = u => {
+    const named = u.searchParams.get('exact'), seg = decodeURIComponent(u.pathname.split('/').pop().replace(/\.\w+$/, '')), lang = (/\/front\/([a-z]{2})\//.exec(u.pathname) || [])[1] || '';
+    const label = (named || (/^\d+-[a-z]+$/.test(seg) ? u.pathname.split('/')[3].toUpperCase() + ' ' + seg.replace('-', ' · ').toUpperCase() : seg.replace(/-v\d+$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))) + (lang && lang !== 'a' ? ' · ' + lang.toUpperCase() : '');
+    let h = 0; for (const c of label) h = (h * 31 + c.charCodeAt(0)) % 360;
+    const t = label.replace(/[<&]/g, ''), fs = t.length > 22 ? 26 : 34;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="672" height="936" viewBox="0 0 672 936"><rect width="672" height="936" rx="34" fill="#17181d"/><rect x="26" y="26" width="620" height="884" rx="22" fill="hsl(${h} 28% 34%)"/><rect x="50" y="56" width="572" height="66" rx="10" fill="#ece5d2"/><text x="70" y="101" font-family="sans-serif" font-size="${fs}" font-weight="700" fill="#1d1d1f">${t}</text><rect x="50" y="138" width="572" height="430" rx="6" fill="hsl(${h} 50% 52%)"/><circle cx="336" cy="356" r="128" fill="hsl(${(h + 50) % 360} 70% 72%)" opacity=".85"/><rect x="50" y="586" width="572" height="296" rx="10" fill="#ece5d2"/><rect x="80" y="620" width="400" height="16" rx="8" fill="#b9b2a0"/><rect x="80" y="652" width="470" height="16" rx="8" fill="#b9b2a0"/><rect x="80" y="684" width="330" height="16" rx="8" fill="#b9b2a0"/></svg>`;
+  };
+  const svg = route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'image/svg+xml', body: card(new URL(route.request().url())) });
+  await p.route('https://cards.scryfall.io/**', svg);
+  await p.route(u => u.hostname === 'api.scryfall.com' && u.pathname === '/cards/named' && u.searchParams.get('format') === 'image', svg);
+}
 
 const viewer = async () => ({ name: await txt(p, '.imgv.on .imgv-cap b'), count: (await p.$('.imgv.on .imgv-count')) ? await txt(p, '.imgv.on .imgv-count') : '1 / 1', lang: await txt(p, '.imgv.on .imgv-lang') });
 const closeV = async () => { await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 }); };

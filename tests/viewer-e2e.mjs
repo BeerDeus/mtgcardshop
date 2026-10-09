@@ -143,17 +143,17 @@ await p.$eval('.dv-scroll', s => { s.scrollTop = 0; });
 // 4) carte en grand depuis le viewer : navigation, prix, langue
 const scryBefore = scry.length;
 await p.click('.dv-g[data-g="m1"] .dvc >> nth=0'); await p.waitForSelector('.imgv-img.ok', { timeout: 6000 });
-assert.equal(await p.$eval('.imgv-cap b', e => e.textContent), 'Llanowar Elves'); assert.equal(await txt(p, '.imgv-count'), '1 / 8', '8 cartes avec image (hors basiques et introuvable)');
+assert.equal(await p.$eval('.imgv-cap b', e => e.textContent), 'Llanowar Elves'); assert.equal(await txt(p, '.imgv-count'), '1 / 9', '8 cartes avec image + Forest sans image (ouverte par son nom), hors introuvable');
 assert.match(await txt(p, '.imgv-extra'), /^0,40 € pour 2 · NM · seller_a · FR$/); assert.match(await txt(p, '.imgv-sub'), /français/i);
 assert.match(await p.$eval('.imgv-img', i => i.src), /cmm\/\d+-fr\.jpg/, 'image française (offre FR)');
 assert.equal(await p.$eval('.imgv-nav.prev', b => b.disabled), true);
 await p.keyboard.press('ArrowRight'); await p.waitForFunction(() => document.querySelector('.imgv-cap b').textContent === 'Ranger\'s Hawk');
-assert.equal(await txt(p, '.imgv-count'), '2 / 8'); assert.match(await txt(p, '.imgv-extra'), /Aucune offre avec tes critères/);
+assert.equal(await txt(p, '.imgv-count'), '2 / 9'); assert.match(await txt(p, '.imgv-extra'), /Aucune offre avec tes critères/);
 await p.click('.imgv-nav.next'); await p.waitForFunction(() => document.querySelector('.imgv-cap b').textContent === 'Sol Ring'); await p.waitForSelector('.imgv-img.ok');
 assert.match(await txt(p, '.imgv-extra'), /^1,50 €/); await p.screenshot({ path: 'shots/viewer-4-carte.png' });
 // glissement vers la gauche = carte suivante
 await p.evaluate(() => { const w = document.querySelector('.imgv'); const t = (x, type) => w.dispatchEvent(new TouchEvent(type, { bubbles: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: w, clientX: x, clientY: 400 })], changedTouches: [new Touch({ identifier: 1, target: w, clientX: x, clientY: 400 })] })); t(300, 'touchstart'); t(120, 'touchend'); });
-await p.waitForFunction(() => document.querySelector('.imgv-cap b').textContent === 'Swords to Plowshares'); assert.equal(await txt(p, '.imgv-count'), '4 / 8');
+await p.waitForFunction(() => document.querySelector('.imgv-cap b').textContent === 'Swords to Plowshares'); assert.equal(await txt(p, '.imgv-count'), '4 / 9');
 await p.keyboard.press('ArrowLeft'); await p.waitForFunction(() => document.querySelector('.imgv-cap b').textContent === 'Sol Ring');
 assert.ok(scry.length > scryBefore, 'images lues par Scryfall, une carte à la fois');
 await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 2000 });
