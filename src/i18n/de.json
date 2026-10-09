@@ -1,0 +1,22 @@
+{
+  "Ajoute tes cartes (import, photo, saisie) : elles seront déduites du panier.": "Füge deine Karten hinzu (Import, Foto, Eingabe): Sie werden vom Warenkorb abgezogen.",
+  "Prix": "Preis",
+  "Réessayer": "Erneut versuchen",
+  "Aucune carte ne correspond.": "Keine passenden Karten.",
+  "Affichage": "Anzeige",
+  "Plus tard": "Später",
+  "Sans offre": "Ohne Angebot",
+  "Familles": "Typen",
+  "Mot de passe trop court : 6 caractères minimum.": "Passwort zu kurz: mindestens 6 Zeichen.",
+  "{n} sans offre": "{n} ohne Angebot",
+  "7 et plus": "7+",
+  "Les plus chères": "Teuerste",
+  "Réserve": "Sideboard",
+  "Remettre": "Zurücklegen",
+  "Nom anglais ou français déjà connu de Scryfall": "Englischer oder französischer Name, den Scryfall schon kennt",
+  "Aucune carte de ce nom. Vérifie l'orthographe (nom anglais).": "Keine Karte mit diesem Namen. Prüfe die Schreibweise (englischer Name).",
+  "Chargement du catalogue (une seule fois)…": "Kartenkatalog wird geladen (nur einmal)…",
+  "Scryfall demande une pause, réessaie dans une minute.": "Scryfall braucht eine Pause, versuch es in einer Minute erneut.",
+  "Catalogue Scryfall injoignable : réessaie plus tard.": "Scryfall-Katalog nicht erreichbar: Versuch es später erneut.",
+  "Connexion Google impossible sur ce téléphone. Réessaie, ou utilise ton e-mail.": "Google-Anmeldung auf diesem Handy fehlgeschlagen. Versuch es erneut oder nutze deine E-Mail."
+}

@@ -526,12 +526,14 @@ function alEval(rec, now) {
   return hits;
 }
 // Textes des alertes dans la langue de l'interface envoyée par l'appli (« lang ») ; français pour une appli plus ancienne qui ne la donne pas, ou une langue inconnue.
-// Allemand, espagnol : euros écrits comme en français (« 1,80 € »).
+// Allemand, espagnol, italien : euros écrits comme en français (« 1,80 € ») ; portugais (du Brésil, celui des cartes Magic) : « € 1,80 ».
 const AL_TXT = {
   fr: { eur: alEur, pct: p => `−${p} %`, at: (n, p) => `${n} à ${p}`, drop: (n, p) => `${n} : ${p}`, under: p => `Sous ton prix cible de ${p} (tendance Cardmarket).`, trend: (a, b) => `${a} → ${b} (tendance Cardmarket).`, deck: d => ' · manque à ' + d, many: n => `${n} cartes en baisse`, more: n => ` et ${n} autre${n > 1 ? 's' : ''}` },
   en: { eur: c => '€' + (c / 100).toFixed(2), pct: p => `−${p}%`, at: (n, p) => `${n} at ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Below your target price of ${p} (Cardmarket trend).`, trend: (a, b) => `${a} → ${b} (Cardmarket trend).`, deck: d => ' · missing from ' + d, many: n => `${n} cards down`, more: n => ` and ${n} more` },
   de: { eur: alEur, pct: p => `−${p} %`, at: (n, p) => `${n} für ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Unter deinem Zielpreis von ${p} (Cardmarket-Trend).`, trend: (a, b) => `${a} → ${b} (Cardmarket-Trend).`, deck: d => ' · fehlt in ' + d, many: n => `${n} Karten günstiger`, more: n => ` und ${n} weitere` },
   es: { eur: alEur, pct: p => `−${p} %`, at: (n, p) => `${n} a ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Por debajo de tu precio objetivo de ${p} (tendencia de Cardmarket).`, trend: (a, b) => `${a} → ${b} (tendencia de Cardmarket).`, deck: d => ' · falta en ' + d, many: n => `${n} cartas bajan de precio`, more: n => ` y ${n} más` },
+  it: { eur: alEur, pct: p => `−${p}%`, at: (n, p) => `${n} a ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Sotto il tuo prezzo obiettivo di ${p} (tendenza Cardmarket).`, trend: (a, b) => `${a} → ${b} (tendenza Cardmarket).`, deck: d => ' · manca in ' + d, many: n => `${n} carte in calo`, more: n => ` e altre ${n}` },
+  pt: { eur: c => '€ ' + (c / 100).toFixed(2).replace('.', ','), pct: p => `−${p}%`, at: (n, p) => `${n} por ${p}`, drop: (n, p) => `${n}: ${p}`, under: p => `Abaixo do seu preço-alvo de ${p} (tendência do Cardmarket).`, trend: (a, b) => `${a} → ${b} (tendência do Cardmarket).`, deck: d => ' · falta em ' + d, many: n => `${n} cartas em queda`, more: n => ` e mais ${n}` },
 };
 const alLang = l => (typeof l === 'string' && Object.prototype.hasOwnProperty.call(AL_TXT, l) ? l : 'fr');
 function alMessage(hits, lang) {

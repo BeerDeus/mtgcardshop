@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Raccourcis de l'icône (res/xml/shortcuts.xml). Ici l'anglais, langue par défaut ; français, allemand et espagnol dans values-fr/, values-de/, values-es/ (langue du téléphone).
+<!-- Raccourcis de l'icône (res/xml/shortcuts.xml). Ici l'anglais, langue par défaut ; français, allemand, espagnol, italien et portugais (du Brésil) dans values-fr/, -de/, -es/, -it/, -pt/ (langue du téléphone).
      Libellé court : 10 caractères conseillés (écran d'accueil, raccourci épinglé) ; libellé long : menu de l'appui long, quand il y tient. -->
 <resources>
     <string name="shortcut_scan">Scan</string>

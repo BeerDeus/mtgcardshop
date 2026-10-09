@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône en portugais du Brésil (anglais par défaut dans values/shortcut_strings.xml : mêmes noms, rien de plus ici). Mêmes mots que l'accueil. -->
+<resources>
+    <string name="shortcut_scan">Escanear</string>
+    <string name="shortcut_scan_long">Escanear</string>
+    <string name="shortcut_quick">Preço rápido</string>
+    <string name="shortcut_quick_long">Preço rápido</string>
+    <string name="shortcut_trade">Troca</string>
+    <string name="shortcut_trade_long">Troca</string>
+    <string name="shortcut_paste">Carrinho</string>
+    <string name="shortcut_paste_long">Novo carrinho</string>
+</resources>

@@ -1292,6 +1292,14 @@ test('i18n : langues livrées seulement (dictionnaire présent), langue du tél�
     i18nPick({ nav: 'de-DE', robot: false, all: { ...all, es: {} }, saved: 'es' }); assert.deepEqual([I18N.lang, LOC(), TN(1, '{n} carte', '{n} cartes'), TN(1e6, '{n} carte', '{n} cartes')], ['es', 'es-ES', '1 carte', '1.000.000 cartes'], 'espagnol livré : es-ES, pluriel « many » → pluriel');
     i18nPick({ nav: ['es-MX'], robot: false, all: { ...all, es: {} } }); assert.equal(LOC(), 'es-MX');
     i18nPick({ nav: ['de_XX!!'], robot: false, all }); assert.equal(I18N.lang, 'de'); assert.equal(LOC(), 'de-DE', 'étiquette illisible : jamais d\'erreur');
+    const all5 = { ...all, it: {}, pt: {} };
+    assert.deepEqual(i18nLangs(all5).map(([c]) => c), ['fr', 'en', 'de', 'it', 'pt']); assert.equal(I18N_LANGS.it, 'Italiano'); assert.equal(I18N_LANGS.pt, 'Português');
+    for (const [nav, lang, loc] of [['it-IT', 'it', 'it-IT'], ['it', 'it', 'it-IT'], ['it-CH', 'it', 'it-CH'], ['pt-BR', 'pt', 'pt-BR'], ['pt', 'pt', 'pt-BR'], ['pt-PT', 'pt', 'pt-PT']]) {
+      i18nPick({ nav, robot: false, all: all5 }); assert.deepEqual([I18N.lang, LOC()], [lang, loc], nav);
+    }
+    assert.equal(new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR' }).format(1234.56), '1234,56 €', 'pt-PT');
+    i18nPick({ nav: 'pt-BR', robot: false, all: all5 }); assert.equal(new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR' }).format(1234.56), '€ 1.234,56', 'Brésil : euro devant');
+    assert.equal(i18nPick({ nav: 'it-IT', robot: false, all }), 'en', 'italien pas encore livré : anglais');
   } finally { i18nPick({ nav: 'fr-FR', robot: true, all }); }
   assert.equal(TN(1, '{n} carte', '{n} cartes'), '1 carte'); assert.equal(TN(0, '{n} carte', '{n} cartes'), '0 carte', 'français : 0 et 1 au singulier');
 });

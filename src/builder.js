@@ -63,7 +63,7 @@ function openDeckNew() {
     api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="ndGo">${T('Créer')}</button>`);
     const seg = $('#ndFmt', api.body), hint = $('#ndHint', api.body), name = $('#ndName', api.body);
     const paint = () => { const f = DK_FORMATS[seg._v || 'standard']; hint.textContent = f.hint; };
-    mountSeg(seg, [{ v: 'standard', label: 'Standard' }, { v: 'commander', label: 'Commander' }], 'standard', paint); paint();
+    mountSeg(seg, [{ v: 'standard', label: T('Standard') }, { v: 'commander', label: 'Commander' }], 'standard', paint); paint();
     const go = () => { const fmt = seg._v || 'standard'; api.close(); setTimeout(() => openBuilder({ name: name.value.trim(), fmt }), 200); };
     $('#ndGo', api.foot).onclick = go; name.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
     setTimeout(() => name.focus(), 380);

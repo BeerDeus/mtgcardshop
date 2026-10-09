@@ -442,7 +442,7 @@ function dvFrame(snap) {
     <div class="seg dv-seg" id="dvSeg"></div>
     <div id="dvF"></div>
     <div class="dv-groups"></div>${DV.pub && DV.sid ? `<p class="pub-report"><a href="${esc(trReportHref(DV.sid))}" rel="noopener">${T('Signaler ce partage')}</a></p>` : ''}`;      // deck reçu par un lien : contenu choisi par quelqu'un d'autre (règles Google Play)
-  mountSeg($('#dvSeg', el), [{ v: 'mana', label: 'Mana' }, { v: 'price', label: T('Prix') }, { v: 'type', label: 'Type' }], DV.sort, v => {
+  mountSeg($('#dvSeg', el), [{ v: 'mana', label: T('Mana') }, { v: 'price', label: T('Prix') }, { v: 'type', label: T('Type') }], DV.sort, v => {
     DV.sort = v; try { localStorage.setItem(DV_SORT_KEY, v); } catch (e) { /* ignore */ } haptic('tap'); DV.anim = true; dvGroups();
     const g = $('.dv-groups', DV.el), sc = $('.dv-scroll', DV.el); if (g && sc) sc.scrollTop = Math.min(sc.scrollTop, g.offsetTop - 8);
   });

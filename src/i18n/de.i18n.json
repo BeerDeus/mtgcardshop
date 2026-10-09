@@ -1,0 +1,9 @@
+{
+  "Mana": "Mana",
+  "Type": "Typ",
+  "Standard": "Standard",
+  "Viewer": "Ansicht",
+  "Decklist": "Decklist",
+  "Touche <b>Ma collection</b> sur l'accueil, puis les boutons du haut : <b>Importer</b> un fichier CSV (ManaBox, Moxfield, Dragon Shield, Archidekt, Deckbox…) ou une liste « 3 Sol Ring » ; <b>Scanner</b> : l'appareil photo lit le nom de la carte, en {lang} ou en anglais ; <b>+</b> pour chercher une carte par son nom.": "Tippe auf dem Startbildschirm auf <b>Meine Sammlung</b>, dann auf die Tasten oben: <b>Importieren</b> einer CSV-Datei (ManaBox, Moxfield, Dragon Shield, Archidekt, Deckbox…) oder einer Liste „3 Sol Ring“; <b>Scannen</b>: Die Kamera liest den Kartennamen, auf {lang} oder Englisch; <b>+</b>, um eine Karte nach Namen zu suchen.",
+  "Touche <b>Ma collection</b> sur l'accueil, puis les boutons du haut : <b>Importer</b> un fichier CSV (ManaBox, Moxfield, Dragon Shield, Archidekt, Deckbox…) ou une liste « 3 Sol Ring » ; <b>Scanner</b> : l'appareil photo lit le nom de la carte ; <b>+</b> pour chercher une carte par son nom.": "Tippe auf dem Startbildschirm auf <b>Meine Sammlung</b>, dann auf die Tasten oben: <b>Importieren</b> einer CSV-Datei (ManaBox, Moxfield, Dragon Shield, Archidekt, Deckbox…) oder einer Liste „3 Sol Ring“; <b>Scannen</b>: Die Kamera liest den Kartennamen; <b>+</b>, um eine Karte nach Namen zu suchen."
+}

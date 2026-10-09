@@ -136,7 +136,14 @@ ps = pushesFor(A); m = decrypt(ps[ps.length - 1].body, A); assert.equal(m.title,
   r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'es', items: [{ k: 'jeweled lotus', n: 'Jeweled Lotus' }, { k: 'grim monolith', n: 'Grim Monolith' }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
   set({ 'Jeweled Lotus': '40.00', 'Grim Monolith': '20.00' }); await check(B, IDE);
   ps = pushesFor(E); assert.equal(ps.length, 7); m = decrypt(ps[6].body, E); assert.equal(m.title, '2 cartas bajan de precio'); assert.equal(m.body, 'Jeweled Lotus −50 %, Grim Monolith −50 %');
-  ok('appli en allemand, en espagnol : notifications dans sa langue (baisse, prix cible, résumé ; euros « 18,00 € »)');
+  set({ 'Mox Amber': '10.00', 'Mana Drain': '50.00' });
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'it', items: [{ k: 'mox amber', n: 'Mox Amber', d: ['Mazzo I'] }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
+  set({ 'Mox Amber': '5.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 8); m = decrypt(ps[7].body, E); assert.equal(m.title, 'Mox Amber: −50%'); assert.equal(m.body, '10,00 € → 5,00 € (tendenza Cardmarket). · manca in Mazzo I');
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'pt', items: [{ k: 'mana drain', n: 'Mana Drain', t: 4000 }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
+  set({ 'Mana Drain': '39.90' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 9); m = decrypt(ps[8].body, E); assert.equal(m.title, 'Mana Drain por € 39,90'); assert.equal(m.body, 'Abaixo do seu preço-alvo de € 40,00 (tendência do Cardmarket).');
+  ok('appli en allemand, espagnol, italien, portugais : notifications dans sa langue (baisse, prix cible, résumé ; « 18,00 € », « € 39,90 » au Brésil)');
 }
 
 // 5) abonnement expiré

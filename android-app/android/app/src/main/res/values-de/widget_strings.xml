@@ -5,16 +5,16 @@
     <string name="widget_description">Der Wert deiner Magic-Sammlung, seine Entwicklung und Kurve, mit einer Verknüpfung zum Scanner</string>
     <string name="widget_title">Meine Sammlung</string>
     <string name="widget_empty">Öffne Mana Orbit, um deine Sammlung zu sehen</string>
-    <!-- %1$s : « ▲ +12 € », « ▼ −8 € » ou « ± 0 € » ; %2$d : durée de la variation en jours (T : Tage) -->
-    <string name="widget_delta">%1$s · %2$d T</string>
-    <!-- chiffres de plus de 36 h (même texte que l'appli : « vor {n} T ») -->
-    <string name="widget_age">vor %1$d T</string>
+    <!-- %1$s : « ▲ +12 € », « ▼ −8 € » ou « ± 0 € » ; %2$d : durée de la variation en jours (Tg. : Tage) -->
+    <string name="widget_delta">%1$s · %2$d Tg.</string>
+    <!-- chiffres de plus de 36 h (même texte que l'appli : « vor {n} Tg. ») -->
+    <string name="widget_age">vor %1$d Tg.</string>
     <!-- valeur recalculée appli fermée d'après les prix du jour, jusqu'à la prochaine ouverture de l'appli -->
     <string name="widget_estimated">geschätzt</string>
     <string name="widget_btn_scan">Scannen</string>
     <string name="widget_btn_quick">Schnellpreis</string>
     <!-- légende de la courbe : sa durée en jours -->
-    <string name="widget_chart_span">%1$d T</string>
+    <string name="widget_chart_span">%1$d Tg.</string>
     <string name="widget_chart_wait">Die Kurve erscheint nach zwei Tagen mit Messwerten</string>
     <plurals name="widget_cards">
         <item quantity="one">%1$s Karte</item>
@@ -24,7 +24,7 @@
     <string name="widget_a11y">Meine Sammlung: %1$s, %2$s</string>
     <!-- aperçu dans la liste des widgets (Android 12 et plus) -->
     <string name="widget_preview_value">1.234 €</string>
-    <string name="widget_preview_delta">▲ +12 € · 7 T</string>
+    <string name="widget_preview_delta">▲ +12 € · 7 Tg.</string>
     <string name="widget_preview_count">312 Karten</string>
-    <string name="widget_preview_span">30 T</string>
+    <string name="widget_preview_span">30 Tg.</string>
 </resources>

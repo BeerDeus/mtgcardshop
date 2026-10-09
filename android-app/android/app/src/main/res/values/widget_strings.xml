@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Textes du widget « Ma collection ». Ici l'anglais, langue par défaut ; français, allemand et espagnol dans values-fr/, values-de/, values-es/
+<!-- Textes du widget « Ma collection ». Ici l'anglais, langue par défaut ; français, allemand, espagnol, italien et portugais (du Brésil) dans values-fr/, -de/, -es/, -it/, -pt/
      (même règle que le site : téléphone dans une de ces langues → cette langue, toute autre → anglais). Avec des chiffres, ValueWidget prend la langue choisie dans l'appli. -->
 <resources>
     <string name="widget_label">Collection value</string>

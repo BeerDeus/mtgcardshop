@@ -1,7 +1,7 @@
 /* ── widget.js : widget d'écran d'accueil (appli Android) ──────────────────────────────────────────────────────────────
    La coque Android affiche la valeur de la collection sur l'écran d'accueil du téléphone (ValueWidget.java). Le site lui confie les chiffres
    de l'orbe de l'accueil par le plugin local ManaOrbit : setWidget({ data: JSON { v: centimes, d: variation (centimes) | null, dd: sa durée en jours,
-   n: cartes, at: date, h: [[t, centimes], …] relevés des 30 derniers jours (courbe du grand widget), b: bouton 'scan' | 'quick', lang: langue de l'interface ('fr', 'en', 'de', 'es' ; une coque plus ancienne lit tout sauf 'fr' en anglais), cur: 'EUR' },
+   n: cartes, at: date, h: [[t, centimes], …] relevés des 30 derniers jours (courbe du grand widget), b: bouton 'scan' | 'quick', lang: langue de l'interface ('fr', 'en', 'de', 'es', 'it', 'pt' ; une coque plus ancienne lit tout sauf 'fr' en anglais), cur: 'EUR' },
    coll?: JSON { pa: date du fichier de prix, c: [[clé, exemplaires, prix du fichier en centimes], …] } }), gardé par la coque (SharedPreferences) pour quand l'appli est fermée.
    coll (coque récente avec un widget posé) : la coque relit chaque jour le fichier de prix du serveur et applique son évolution à v (valeur « estimée »).
    Envoyé en différé après les repeints de l'accueil : une fois au lancement, puis seulement quand un chiffre change. Widget touché : la coque envoie « open »

@@ -25,7 +25,7 @@ const EN = merged('en');
 const SAME = {
   '*': ['Mana Orbit', 'OK', 'Commander', 'cEDH', 'Archidekt', 'Game Changer', '{n} Game Changer', '{n} Game Changers', 'Planeswalkers', 'Deck', 'Decks', 'deck', '{n} deck', '{n} decks',
     'Tier', 'Tier {t}', 'tier {t}', 'Premium', 'Budget', 'Widget', 'Auto', 'web', 'Version {v}', 'non-foil', 'Format', 'Stats'],
-  de: [],
+  de: ['Profil', 'Liste', 'Mana', 'Standard', 'Decklist'],
   es: [],
 };
 const sameOk = (l, k) => SAME['*'].includes(k) || (SAME[l] || []).includes(k) || !/\p{L}/u.test(k.replace(/\{\w+\}/g, '').replace(/<[^>]+>/g, ''));

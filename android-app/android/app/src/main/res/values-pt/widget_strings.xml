@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes du widget « Ma collection » en portugais du Brésil, langue des cartes Magic portugaises (anglais par défaut dans values/widget_strings.xml). -->
+<resources>
+    <string name="widget_label">Valor da coleção</string>
+    <string name="widget_description">O valor da sua coleção de Magic, a variação e a curva, com um atalho para o scanner</string>
+    <string name="widget_title">Minha coleção</string>
+    <string name="widget_empty">Abra o Mana Orbit para ver sua coleção</string>
+    <!-- %1$s : « ▲ +€ 12 », « ▼ −€ 8 » ou « ± € 0 » ; %2$d : durée de la variation en jours (d : dias) -->
+    <string name="widget_delta">%1$s · %2$d d</string>
+    <!-- chiffres de plus de 36 h -->
+    <string name="widget_age">há %1$d d</string>
+    <!-- valeur recalculée appli fermée d'après les prix du jour, jusqu'à la prochaine ouverture de l'appli -->
+    <string name="widget_estimated">estimado</string>
+    <string name="widget_btn_scan">Escanear</string>
+    <string name="widget_btn_quick">Preço rápido</string>
+    <!-- légende de la courbe : sa durée en jours -->
+    <string name="widget_chart_span">%1$d d</string>
+    <string name="widget_chart_wait">A curva aparece após dois dias de registros</string>
+    <plurals name="widget_cards">
+        <item quantity="one">%1$s carta</item>
+        <item quantity="many">%1$s cartas</item>
+        <item quantity="other">%1$s cartas</item>
+    </plurals>
+    <!-- lecteur d'écran : %1$s la valeur, %2$s le nombre de cartes -->
+    <string name="widget_a11y">Minha coleção: %1$s, %2$s</string>
+    <!-- aperçu dans la liste des widgets (Android 12 et plus) -->
+    <string name="widget_preview_value">€ 1.234</string>
+    <string name="widget_preview_delta">▲ +€ 12 · 7 d</string>
+    <string name="widget_preview_count">312 cartas</string>
+    <string name="widget_preview_span">30 d</string>
+</resources>

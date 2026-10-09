@@ -31,7 +31,7 @@ function openDecks() {
   document.addEventListener('keydown', onKey, true);
   wrap.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   wrap.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);      // image absente : la lettre du deck reste
-  mountSeg($('#dksSeg', wrap), [{ v: '', label: T('Tous') }, { v: 'commander', label: 'Commander' }, { v: 'standard', label: 'Standard' }], DKS.fmt, v => { DKS.fmt = v; dksPaint(); });
+  mountSeg($('#dksSeg', wrap), [{ v: '', label: T('Tous') }, { v: 'commander', label: 'Commander' }, { v: 'standard', label: T('Standard') }], DKS.fmt, v => { DKS.fmt = v; dksPaint(); });
   wrap.addEventListener('click', e => {
     const col = e.target.closest('.dks-c');
     if (col) { const c = col.dataset.c; if (DKS.colors.has(c)) DKS.colors.delete(c); else DKS.colors.add(c); haptic('tap'); dksPaint(); return; }

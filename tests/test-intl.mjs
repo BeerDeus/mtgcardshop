@@ -30,6 +30,10 @@ test('defaultCardLang : interface, puis langue du téléphone, sinon anglais', (
     assert.equal(d('en', ['de-DE']), 'en', 'anglais choisi alors que l\'allemand existe : cartes anglaises');
     assert.equal(d('en', ['es-ES']), 'es', 'espagnol sans dictionnaire : interface anglaise par repli, cartes espagnoles');
     globalThis.I18N_ALL.es = {}; assert.equal(d('es', ['es-MX']), 'es'); assert.equal(d('en', ['es-ES']), 'en', 'espagnol livré, anglais choisi : cartes anglaises');
+    assert.equal(d('en', ['it-IT']), 'it', 'italien pas encore livré : cartes italiennes'); assert.equal(d('en', ['pt-BR']), 'pt');
+    Object.assign(globalThis.I18N_ALL, { it: {}, pt: {} });
+    assert.equal(d('it', ['it-IT']), 'it', 'interface italienne : cartes italiennes'); assert.equal(d('pt', ['pt-BR']), 'pt'); assert.equal(d('pt', ['en-US']), 'pt', 'portugais choisi sur un téléphone anglais');
+    assert.equal(d('en', ['it-IT']), 'en', 'italien livré, anglais choisi : cartes anglaises');
   } finally { delete globalThis.I18N_ALL; }
 });
 

@@ -5,7 +5,7 @@
    (dictionnaires src/i18n/<langue>.json, posés par build.mjs dans un bloc JSON inerte par langue, script « application/json » d'id i18n-en), sinon le texte tel quel.
    TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (Intl.PluralRules : français 0 et 1 au singulier, anglais et allemand 1 seul).
    Ajouter une langue = ses dictionnaires (src/i18n/<code>*.json) + une entrée dans I18N_LANGS (et LOC_DEF) ; sans dictionnaire, elle n'est proposée nulle part. */
-const I18N_LANGS = { fr: 'Français', en: 'English', de: 'Deutsch', es: 'Español' };
+const I18N_LANGS = { fr: 'Français', en: 'English', de: 'Deutsch', es: 'Español', it: 'Italiano', pt: 'Português' };
 const I18N = { lang: 'fr', nav: 'fr-FR', navs: ['fr-FR'], dict: null };
 function T(s, v) {
   let out = I18N.dict && Object.prototype.hasOwnProperty.call(I18N.dict, s) ? I18N.dict[s] : s;
@@ -20,9 +20,9 @@ function TN(n, one, many, v) {
   const key = (pr ? pr.select(x) === 'one' : x === 1) ? one : many;
   return T(key, { n: x.toLocaleString(LOC()), ...v });
 }
-/** Locale des nombres et des dates : fr-FR ; anglais : celle du navigateur (en-US, en-GB…) ; autre langue : sa variante du téléphone (de-AT, de-CH, es-MX…),
- *  sinon celle de LOC_DEF (de-DE, es-ES). Les prix restent en euros : la locale n'en change que l'écriture (« 1.234,56 € » en allemand). */
-const LOC_DEF = { de: 'de-DE', es: 'es-ES' }, LOC_MEMO = {};
+/** Locale des nombres et des dates : fr-FR ; anglais : celle du navigateur (en-US, en-GB…) ; autre langue : sa variante du téléphone (de-AT, es-MX, it-CH, pt-PT…),
+ *  sinon celle de LOC_DEF (de-DE, es-ES, it-IT ; portugais : pt-BR, celui des cartes Magic). Les prix restent en euros : la locale n'en change que l'écriture (« 1.234,56 € » en allemand). */
+const LOC_DEF = { de: 'de-DE', es: 'es-ES', it: 'it-IT', pt: 'pt-BR' }, LOC_MEMO = {};
 const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : I18N.lang === 'en' ? (/^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB') : locOf(I18N.lang, I18N.navs);
 function locOf(l, navs) {
   const k = l + '|' + navs; if (LOC_MEMO[k]) return LOC_MEMO[k];
@@ -741,7 +741,7 @@ const canLead = tl => /legendary/i.test(String(tl || '')) && /(creature|planeswa
 
 /* ── Créateur de deck (Standard / Commander) ──────────────────────────────────────────────────── */
 const DK_FORMATS = {
-  standard: { label: 'Standard', size: 60, copies: 4, side: 15, hint: T('60 cartes, 4 exemplaires d\'une même carte au maximum (terrains de base exclus), réserve de 15 facultative.') },
+  standard: { label: T('Standard'), size: 60, copies: 4, side: 15, hint: T('60 cartes, 4 exemplaires d\'une même carte au maximum (terrains de base exclus), réserve de 15 facultative.') },
   commander: { label: 'Commander', size: 100, copies: 1, side: 0, hint: T('100 cartes dont ton commandant, un seul exemplaire de chaque carte (terrains de base exclus).') },
 };
 /** Format noté en tête d'une liste par le créateur (« // Deck Deal : commander »), '' sinon. */

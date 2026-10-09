@@ -174,9 +174,8 @@ public class ValueWidget extends AppWidgetProvider {
             v.setContentDescription(android.R.id.background, empty);
             return v;
         }
-        boolean after = !"en".equals(s.lang);          // euro après le nombre (français, allemand, espagnol) ; avant en anglais
         Locale loc = locale(s.lang);
-        String value = (s.est ? "\u2248\u00A0" : "") + eur(s.v, loc, after);
+        String value = (s.est ? "\u2248\u00A0" : "") + eur(s.v, loc, s.lang);
         v.setViewVisibility(R.id.widget_empty, View.GONE);
         v.setTextViewText(R.id.widget_value, value);
         v.setViewVisibility(R.id.widget_value, View.VISIBLE);
@@ -186,7 +185,7 @@ public class ValueWidget extends AppWidgetProvider {
         int color = COLOR_FLAT;
         if (s.d != null) {
             boolean flat = Math.abs(s.d) < 100;
-            String amount = flat ? "\u00B1\u00A0" + eur(0, loc, after) : (s.d < 0 ? "\u25BC \u2212" : "\u25B2 +") + eur(Math.abs(s.d), loc, after);
+            String amount = flat ? "\u00B1\u00A0" + eur(0, loc, s.lang) : (s.d < 0 ? "\u25BC \u2212" : "\u25B2 +") + eur(Math.abs(s.d), loc, s.lang);
             delta = res.getString(R.string.widget_delta, amount, s.dd);
             color = flat ? COLOR_FLAT : s.d < 0 ? COLOR_DOWN : COLOR_UP;
         }
@@ -274,14 +273,16 @@ public class ValueWidget extends AppWidgetProvider {
         return v;
     }
 
-    /** Euros entiers comme l'appli : « 1 234 € » en français, « 1.234 € » en allemand, « €1,234 » en anglais (after : euro après le nombre). */
-    private static String eur(long cents, Locale loc, boolean after) {
+    /** Euros entiers comme l'appli : « 1 234 € » en français (allemand, espagnol, italien : euro après le nombre), « €1,234 » en anglais, « € 1.234 » en portugais du Brésil. */
+    private static String eur(long cents, Locale loc, String lang) {
         String n = NumberFormat.getIntegerInstance(loc).format(Math.round(cents / 100.0));
-        return after ? n + "\u00A0\u20AC" : "\u20AC" + n;
+        if ("en".equals(lang)) return "\u20AC" + n;
+        if ("pt".equals(lang)) return "\u20AC\u00A0" + n;
+        return n + "\u00A0\u20AC";
     }
 
-    /** Langues du widget : celles de l'appli qui ont leurs textes ici (values-fr/, values-de/, values-es/ ; values/ : anglais). */
-    static final String[] LANGS = { "fr", "en", "de", "es" };
+    /** Langues du widget : celles de l'appli qui ont leurs textes ici (values-fr/, -de/, -es/, -it/, -pt/ ; values/ : anglais). */
+    static final String[] LANGS = { "fr", "en", "de", "es", "it", "pt" };
 
     /** Langue envoyée par le site → une langue du widget ; inconnue ou absente : anglais. */
     static String langOf(String l) {
@@ -289,11 +290,13 @@ public class ValueWidget extends AppWidgetProvider {
         return "en";
     }
 
+    /** Portugais : celui du Brésil (langue des cartes Magic portugaises), comme l'appli par défaut. */
     private static Locale locale(String lang) {
-        return Locale.forLanguageTag(langOf(lang));
+        String l = langOf(lang);
+        return Locale.forLanguageTag("pt".equals(l) ? "pt-BR" : l);
     }
 
-    /** Textes dans la langue de l'appli (values/ : anglais, values-fr/, values-de/, values-es/) ; null : langue du téléphone. */
+    /** Textes dans la langue de l'appli (values/ : anglais, values-fr/, -de/, -es/, -it/, -pt/) ; null : langue du téléphone. */
     private static Resources localized(Context context, String lang) {
         if (lang == null) return context.getResources();
         Configuration conf = new Configuration(context.getResources().getConfiguration());

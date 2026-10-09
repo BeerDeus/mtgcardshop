@@ -5,8 +5,8 @@
     <string name="shortcut_scan_long">Scannen</string>
     <string name="shortcut_quick">Schnellpreis</string>
     <string name="shortcut_quick_long">Schnellpreis</string>
-    <string name="shortcut_trade">Tauschen</string>
-    <string name="shortcut_trade_long">Tauschen</string>
+    <string name="shortcut_trade">Tausch</string>
+    <string name="shortcut_trade_long">Tausch</string>
     <string name="shortcut_paste">Warenkorb</string>
     <string name="shortcut_paste_long">Neuer Warenkorb</string>
 </resources>

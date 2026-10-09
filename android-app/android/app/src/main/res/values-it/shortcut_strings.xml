@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône en italien (anglais par défaut dans values/shortcut_strings.xml : mêmes noms, rien de plus ici). Mêmes mots que l'accueil. -->
+<resources>
+    <string name="shortcut_scan">Scansiona</string>
+    <string name="shortcut_scan_long">Scansiona</string>
+    <string name="shortcut_quick">Prezzo rapido</string>
+    <string name="shortcut_quick_long">Prezzo rapido</string>
+    <string name="shortcut_trade">Scambio</string>
+    <string name="shortcut_trade_long">Scambio</string>
+    <string name="shortcut_paste">Carrello</string>
+    <string name="shortcut_paste_long">Nuovo carrello</string>
+</resources>

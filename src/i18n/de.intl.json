@@ -1,0 +1,23 @@
+{
+  "Catalogue des noms incomplet ({lang})": "Namenskatalog unvollständig ({lang})",
+  "Tape son nom en anglais ou en {lang}": "Gib ihren Namen auf Englisch oder {lang} ein",
+  "Tape son nom en anglais": "Gib ihren Namen auf Englisch ein",
+  "Aucune carte de ce nom. Vérifie l'orthographe (les noms en {lang} arrivent dès que leur liste est chargée).": "Keine Karte mit diesem Namen. Prüfe die Schreibweise (Namen auf {lang} funktionieren, sobald ihre Liste geladen ist).",
+  "Lightning Bolt ou {name}": "Lightning Bolt oder {name}",
+  "Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l'emporte, et un nom en {lang} compte comme une carte en {lang}.": "Für Zeilen ohne Angabe: Eine Spalte „Language“ oder „*EN*“ am Zeilenende hat Vorrang, und ein Name auf {lang} zählt als Karte auf {lang}.",
+  "Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l'emporte.": "Für Zeilen ohne Angabe: Eine Spalte „Language“ oder „*EN*“ am Zeilenende hat Vorrang.",
+  "{n} nom en {lang} reconnu": "{n} Name auf {lang} erkannt",
+  "{n} noms en {lang} reconnus": "{n} Namen auf {lang} erkannt",
+  "(nom en {lang} de plusieurs cartes)": "(Name auf {lang} mehrerer Karten)",
+  "Nom en {lang} de plusieurs cartes : {list}. Écris le nom anglais.": "Name auf {lang} mehrerer Karten: {list}. Schreib den englischen Namen.",
+  "Catalogue des noms en {lang} : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite": "Namenskatalog ({lang}): {pct} % · Das Lesen klappt schon, danach wird es zuverlässiger",
+  "Pour lire les cartes en {lang} avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).": "Um Karten auf {lang} genau zu lesen: Namenskatalog (≈ 15 bis 20 MB, nur einmal).",
+  "{err}. Les cartes en {lang} restent lues, moins sûrement.": "{err}. Karten auf {lang} werden weiter gelesen, aber weniger zuverlässig.",
+  "Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré ({lang} d'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.": "Richte den oberen Teil jeder Karte aus (Name + Mana) und tippe auf den Kreis: Das Lesen läuft im Hintergrund, mach einfach weiter. Nur der Name wird gelesen, das Mana ignoriert ({lang} zuerst, dann Englisch), dann bei Scryfall gesucht: Prüfe das Vorschaubild (tippe darauf für die große Ansicht). Fotos werden nie gespeichert. „Kamera“ öffnet die Kamera-App des Handys (wenn die Vorschau ruckelt): Fotografiere die <b>ganze Karte im Hochformat</b>, Name und Mana im <b>oberen Drittel</b> des Bildes (der Rest wird nicht gelesen); „Fotos“: deine Galerie.",
+  "Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (en anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l'appareil photo du téléphone (si l'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l'image (le reste n'est pas lu) ; « Photos » : ta galerie.": "Richte den oberen Teil jeder Karte aus (Name + Mana) und tippe auf den Kreis: Das Lesen läuft im Hintergrund, mach einfach weiter. Nur der Name wird gelesen, das Mana ignoriert (auf Englisch), dann bei Scryfall gesucht: Prüfe das Vorschaubild (tippe darauf für die große Ansicht). Fotos werden nie gespeichert. „Kamera“ öffnet die Kamera-App des Handys (wenn die Vorschau ruckelt): Fotografiere die <b>ganze Karte im Hochformat</b>, Name und Mana im <b>oberen Drittel</b> des Bildes (der Rest wird nicht gelesen); „Fotos“: deine Galerie.",
+  "Nom anglais ou en {lang} déjà connu de Scryfall": "Englischer Name oder Name auf {lang}, den Scryfall schon kennt",
+  "Nom anglais déjà connu de Scryfall": "Englischer Name, den Scryfall schon kennt",
+  "Nom en {lang} ou en anglais": "Name auf {lang} oder Englisch",
+  "L'appareil photo lit le nom de la carte, en {lang} ou en anglais.": "Die Kamera liest den Kartennamen, auf {lang} oder Englisch.",
+  "L'appareil photo lit le nom de la carte.": "Die Kamera liest den Kartennamen."
+}
