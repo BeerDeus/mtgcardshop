@@ -61,6 +61,7 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   // valeurs : même base que « Pour toi » (fichier de prix : tendance Cardmarket de l'impression la moins chère, sinon Scryfall), total des doublons, tri, « ≥ X € »
   await p.waitForFunction(() => /1,20/.test((document.querySelector('.tr-row[data-k="sol ring"] .tr-px') || {}).textContent || ''), null, { timeout: 8000 });
   assert.match(await tc(p, '.tr-row[data-k="sol ring"] .tr-q'), /^≈ 1,20\s€\s*× 3/, 'prix unitaire du fichier de prix (Scryfall : 1,50 €)'); assert.match(await tc(p, '.tr-row[data-k="llanowar elves"] .tr-q'), /^≈ 0,25\s€\s*× 2/);
+  await p.waitForFunction(() => /^2 cartes · 5 exemplaires ≈/.test((document.querySelector('.tr-sum') || {}).innerText || ''), null, { timeout: 5000 }).catch(() => {});      // innerText sans espaces tant que l'en-tête n'est pas encore mis en page (battery chargée) : attendu avant d'être lu
   assert.match(await txt(p, '.tr-sum'), /^2 cartes · 5 exemplaires ≈ 4,10\s€ Prix à l'unité : tendance Cardmarket \(.+\)$/, '3 × 1,20 + 2 × 0,25, et sa base');
   await p.selectOption('#trSort', 'price'); await p.waitForFunction(() => document.querySelector('.tr-list .tr-row').dataset.k === 'sol ring');
   assert.deepEqual(await p.$$eval('.tr-list .tr-row', r => r.map(x => x.dataset.k)), ['sol ring', 'llanowar elves'], 'tri par prix');
