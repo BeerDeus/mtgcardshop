@@ -6,5 +6,7 @@
   "ajouter des cartes": "añadir cartas",
   "Prix rapide": "Precio rápido",
   "sans les ajouter": "sin añadirlas",
-  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "Con la app cerrada, el widget estima el valor cada día según los precios de Cardmarket (mejor con wifi): «≈» y «estimado» hasta tu próxima visita."
+  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "Con la app cerrada, el widget estima el valor cada día según los precios de Cardmarket (mejor con wifi): «≈» y «estimado» hasta tu próxima visita.",
+  "Autre widget, « QR code d'échange » : le QR code de ton lien d'échange, à faire scanner depuis l'écran d'accueil.": "Otro widget, «Código QR de intercambio»: el código QR de tu enlace de intercambio, para que lo escaneen desde tu pantalla de inicio.",
+  "Astuce : le widget « QR code d'échange » le garde sur ton écran d'accueil.": "Consejo: el widget «Código QR de intercambio» lo deja en tu pantalla de inicio."
 }

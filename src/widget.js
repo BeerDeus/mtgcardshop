@@ -5,8 +5,10 @@
    coll?: JSON { pa: date du fichier de prix, c: [[clé, exemplaires, prix du fichier en centimes], …] } }), gardé par la coque (SharedPreferences) pour quand l'appli est fermée.
    coll (coque récente avec un widget posé) : la coque relit chaque jour le fichier de prix du serveur et applique son évolution à v (valeur « estimée »).
    Envoyé en différé après les repeints de l'accueil : une fois au lancement, puis seulement quand un chiffre change. Widget touché : la coque envoie « open »
-   → la collection ; son bouton → le scan ou le prix rapide (Réglages › Widget). Dans un navigateur, la PWA ou une APK sans ce plugin : rien. */
-const WGT = { t: 0, sig: '', on: false, bg: false, pxTry: 0, retry: 0, btn: '' };
+   → la collection ; son bouton → le scan ou le prix rapide (Réglages › Widget). Dans un navigateur, la PWA ou une APK sans ce plugin : rien.
+   Deuxième widget « QR code d'échange » (TradeWidget.java, APK récente : info().tradeWidgets) : setTradeWidget({ data: JSON { u: lien public de la liste d'échange,
+   n: côté du QR en modules, m: modules '0'/'1' ligne par ligne (qrMatrix, src/qr.js), by?: pseudo, lang } }) ; { u: '', lang } sans lien. Toucher → l'onglet Échange. */
+const WGT = { t: 0, sig: '', on: false, bg: false, pxTry: 0, retry: 0, btn: '', qr: false, qn: 0, qsig: '' };      // qr : coque avec le widget « QR code d'échange » ; qn : combien en sont posés
 const WGT_BTN_KEY = 'deckdeal:widget:btn', WGT_COLL_MAX = 1500, WGT_DAYS = 30;
 /** Appelé à chaque repeint de l'accueil (homePaint) : pendant la lecture des prix les repeints arrivent en rafale, on attend qu'ils se calment. */
 function widgetSoon(ms = 1500) {
@@ -59,9 +61,30 @@ function widgetColl() {
   c.sort((a, b) => b[1] * b[2] - a[1] * a[2] || (a[0] < b[0] ? -1 : 1));
   return { pa: tab.at, c: c.slice(0, WGT_COLL_MAX) };
 }
+/** QR code du lien d'échange pour le widget « QR code d'échange » ; { u: '', lang } sans lien (pas encore créé, arrêté, compte déconnecté).
+ *  null tant que le compte n'est pas connu (lancement, Firebase injoignable) : la coque garde le code précédent plutôt que « Crée ton lien d'échange ». */
+function widgetQr() {
+  if (!D.authReady || D.state !== 'ready') return null;
+  const id = D.user ? TR.share : '', lang = I18N.lang;
+  if (id) {
+    try { const u = shareUrl(id), { n, m } = qrMatrix(u); return { u, n, m: m.map(r => r.join('')).join(''), ...(PROF.name ? { by: PROF.name } : {}), lang }; }
+    catch (e) { /* lien trop long pour un QR code : comme sans lien */ }
+  }
+  return { u: '', lang };
+}
+/** Envoyé quand le lien, le pseudo ou la langue changent ; APK sans ce widget : rien. Refusé : renvoyé au prochain repeint. */
+async function widgetQrPush(pl) {
+  const q = WGT.qr && typeof pl.setTradeWidget === 'function' ? widgetQr() : null; if (!q) return;
+  const data = JSON.stringify(q); if (data === WGT.qsig) return;
+  WGT.qsig = data;
+  try { await pl.setTradeWidget({ data }); }
+  catch (e) { if (WGT.qsig === data) WGT.qsig = ''; }
+}
 async function widgetPush() {
   WGT.t = 0;
-  const pl = natPlugin('ManaOrbit'), o = pl && widgetData(); if (!o) return;
+  const pl = natPlugin('ManaOrbit'); if (!pl) return;
+  widgetQrPush(pl);
+  const o = widgetData(); if (!o) return;
   const coll = WGT.bg && o.n ? widgetColl() : null;
   const sig = JSON.stringify([o, coll]); if (sig === WGT.sig) return;              // la date (at) n'entre pas dans la comparaison : rien n'a changé
   WGT.sig = sig;
@@ -70,11 +93,16 @@ async function widgetPush() {
   try { await pl.setWidget(arg); }
   catch (e) { if (WGT.sig === sig) WGT.sig = ''; }                                  // refusé : renvoyé au prochain repeint
 }
-/** Coque récente (info().widgetRefresh) avec au moins un widget posé : la liste des cartes part avec les chiffres. Relu au retour sur l'appli (widget posé entre-temps). */
+/** Coque récente (info().widgetRefresh) avec au moins un widget posé : la liste des cartes part avec les chiffres. Coque avec le widget « QR code d'échange »
+ *  (info().tradeWidgets, nombre posé) : son code part aussi, posé ou non (prêt dès qu'il l'est, appli fermée). Relu au retour sur l'appli (widget posé entre-temps). */
 function widgetCaps(pl) {
-  Promise.resolve().then(() => pl.info()).then(i => { const bg = !!(i && i.widgetRefresh && i.widgets > 0); if (bg !== WGT.bg) { WGT.bg = bg; widgetSoon(); } }).catch(() => { /* ancienne coque : sans info() */ });
+  Promise.resolve().then(() => pl.info()).then(i => {
+    const bg = !!(i && i.widgetRefresh && i.widgets > 0), qr = !!(i && typeof i.tradeWidgets === 'number');
+    WGT.qn = qr ? i.tradeWidgets : 0;
+    if (bg !== WGT.bg || qr !== WGT.qr) { WGT.bg = bg; WGT.qr = qr; widgetSoon(); }
+  }).catch(() => { /* ancienne coque : sans info() */ });
 }
-/** Vues ouvertes par le widget : lui-même → la collection ; son bouton → le scan, ou le scan en « prix rapide » (comme la tuile de l'accueil).
+/** Vues ouvertes par le widget : lui-même → la collection ; son bouton → le scan, ou le scan en « prix rapide » (comme la tuile de l'accueil) ; widget « QR code d'échange » → trade.
  *  Scan déjà ouvert (appli ramenée devant) : on change seulement de mode, sans perdre les cartes lues.
  *  Raccourcis de l'icône (appli Android : ShortcutActivity ; PWA : manifeste, ?open= lu par handleLaunch) : scan et quick comme le bouton du widget,
  *  trade → l'onglet Échange de la collection, paste → « Nouveau panier ». share : texte partagé vers l'appli Android ({ text, title } : decklist ou lien) → « Nouveau panier ». */
@@ -127,7 +155,7 @@ function widgetListen(pl) {
   widgetCaps(pl);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (WGT.t) { clearTimeout(WGT.t); widgetPush(); } }
-    else if (!WGT.bg) widgetCaps(pl);
+    else widgetCaps(pl);
   });
 }
 /** Réglages › Widget (appli Android, emplacement #widgetBox) : le bouton du widget ouvre le scan ou le prix rapide. Choix gardé sur l'appareil, envoyé aussitôt à la coque. */
@@ -137,7 +165,8 @@ function widgetSettings(el) {
   el.innerHTML = `<div class="sec-title">${T('Widget')}</div>
     <p class="hint">${T('Le bouton du widget d\'écran d\'accueil ouvre :')}</p>
     <div class="seg" id="segWidgetBtn" role="radiogroup" aria-label="${esc(T('Bouton du widget'))}"></div>
-    <p class="hint" id="widgetBgHint"${WGT.bg ? '' : ' hidden'}>${T('Appli fermée, le widget estime la valeur chaque jour d\'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu\'à ta prochaine visite.')}</p>`;
+    <p class="hint" id="widgetBgHint"${WGT.bg ? '' : ' hidden'}>${T('Appli fermée, le widget estime la valeur chaque jour d\'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu\'à ta prochaine visite.')}</p>
+    ${WGT.qr ? `<p class="hint" id="widgetQrHint">${T('Autre widget, « QR code d\'échange » : le QR code de ton lien d\'échange, à faire scanner depuis l\'écran d\'accueil.')}</p>` : ''}`;
   mountSeg($('#segWidgetBtn', el), [{ v: 'scan', label: T('Scanner'), sub: T('ajouter des cartes') }, { v: 'quick', label: T('Prix rapide'), sub: T('sans les ajouter') }], widgetBtn(), v => {
     WGT.btn = v === 'quick' ? 'quick' : 'scan';
     try { localStorage.setItem(WGT_BTN_KEY, WGT.btn); } catch (e) { /* stockage indisponible : choix gardé pour cette session */ }

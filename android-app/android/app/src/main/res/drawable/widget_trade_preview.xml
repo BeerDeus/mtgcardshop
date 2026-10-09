@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aperçu du widget « QR code d'échange » avant Android 12 (android:previewImage) : le fond blanc et le QR code d'exemple. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_trade_bg" />
+    <item
+        android:bottom="10dp"
+        android:drawable="@drawable/widget_trade_preview_qr"
+        android:left="10dp"
+        android:right="10dp"
+        android:top="10dp" />
+</layer-list>

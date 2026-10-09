@@ -3,6 +3,7 @@ package app.manaorbit;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -18,14 +19,17 @@ import org.json.JSONObject;
 /**
  * Plugin local « ManaOrbit » : ce que le site demande à la coque Android et qu'aucun plugin npm ne fait.
  * Côté site : natPlugin('ManaOrbit') (src/native.js), null dans un navigateur ou dans une APK plus ancienne sans ce plugin.
- * - info() → { firebase, version, build, widgets, widgetRefresh } : Firebase initialisé (google-services.json présent), versionName et versionCode
- *   de l'APK, nombre de widgets posés, estimation appli fermée possible (ValueRefreshJob.ENABLED).
+ * - info() → { firebase, version, build, widgets, widgetRefresh, tradeWidgets } : Firebase initialisé (google-services.json présent), versionName et versionCode
+ *   de l'APK, nombre de widgets de valeur posés, estimation appli fermée possible (ValueRefreshJob.ENABLED), nombre de widgets « QR code d'échange » posés
+ *   (absent : APK sans ce widget).
  * - setWidget({ data, coll? }) : chiffres du widget d'écran d'accueil (JSON, voir src/widget.js), gardés pour quand l'appli est fermée ;
  *   coll : cartes et prix de référence pour l'estimation appli fermée (absent : plus d'estimation jusqu'au prochain envoi).
+ * - setTradeWidget({ data }) : QR code du lien de la liste d'échange pour TradeWidget (JSON { u, n, m, by, lang }, voir src/widget.js), gardé pour quand
+ *   l'appli est fermée ; u vide : pas de lien (« Crée ton lien d'échange »).
  * - share({ title, text, url, chooser }) → { ok: true } : menu « Partager » d'Android pour un lien (liste d'échange, deck) ; une APK plus ancienne
  *   n'a pas la méthode et le site copie le lien.
  * - événement « open », gardé jusqu'à ce que la page l'écoute (lancement à froid) : { view: 'collection' | 'scan' | 'quick' } le widget ou son bouton a été
- *   touché ; { view: 'scan' | 'quick' | 'trade' | 'paste' } un raccourci de l'icône (ShortcutActivity) ; { view: 'share', text, title } du texte partagé
+ *   touché ; { view: 'trade' } le widget « QR code d'échange » ; { view: 'scan' | 'quick' | 'trade' | 'paste' } un raccourci de l'icône (ShortcutActivity) ; { view: 'share', text, title } du texte partagé
  *   par une autre appli (menu « Partager » : decklist, lien EDHREC, Archidekt, Moxfield…).
  */
 @CapacitorPlugin(name = "ManaOrbit")
@@ -49,6 +53,7 @@ public class ManaOrbitPlugin extends Plugin {
         ret.put("build", build);
         ret.put("widgets", ValueWidget.count(ctx));
         ret.put("widgetRefresh", ValueRefreshJob.ENABLED);
+        ret.put("tradeWidgets", TradeWidget.count(ctx));
         call.resolve(ret);
     }
 
@@ -72,6 +77,27 @@ public class ManaOrbitPlugin extends Plugin {
         ValueRefreshJob.store(ctx, data == null || data.isEmpty() ? null : call.getString("coll"));
         ValueWidget.refreshAll(ctx);
         ValueRefreshJob.sync(ctx);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setTradeWidget(PluginCall call) {
+        String data = call.getString("data");
+        Context ctx = getContext();
+        SharedPreferences.Editor e = ctx.getSharedPreferences(ValueWidget.PREFS, Context.MODE_PRIVATE).edit();
+        if (data == null || data.isEmpty()) {
+            e.remove(TradeWidget.KEY); // rien reçu : « Ouvre Mana Orbit… »
+        } else {
+            try {
+                new JSONObject(data);
+            } catch (JSONException ex) {
+                call.reject("data : JSON illisible");
+                return;
+            }
+            e.putString(TradeWidget.KEY, data);
+        }
+        e.apply();
+        TradeWidget.refreshAll(ctx);
         call.resolve();
     }
 

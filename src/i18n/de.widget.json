@@ -6,5 +6,7 @@
   "ajouter des cartes": "Karten hinzufügen",
   "Prix rapide": "Schnellpreis",
   "sans les ajouter": "ohne sie hinzuzufügen",
-  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "Bei geschlossener App schätzt das Widget den Wert täglich anhand der Cardmarket-Preise (bevorzugt über WLAN): „≈“ und „geschätzt“ bis zu deinem nächsten Besuch."
+  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "Bei geschlossener App schätzt das Widget den Wert täglich anhand der Cardmarket-Preise (bevorzugt über WLAN): „≈“ und „geschätzt“ bis zu deinem nächsten Besuch.",
+  "Autre widget, « QR code d'échange » : le QR code de ton lien d'échange, à faire scanner depuis l'écran d'accueil.": "Weiteres Widget, „Tausch-QR-Code“: der QR-Code deines Tauschlinks, direkt vom Startbildschirm scannen lassen.",
+  "Astuce : le widget « QR code d'échange » le garde sur ton écran d'accueil.": "Tipp: Das Widget „Tausch-QR-Code“ hält ihn auf deinem Startbildschirm bereit."
 }

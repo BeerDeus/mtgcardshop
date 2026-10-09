@@ -2,10 +2,13 @@
 // des 30 derniers jours et le bouton choisi, une fois les chiffres connus, en différé, seulement quand ils changent ; avec une coque récente et un widget
 // posé, la liste compacte des cartes et leurs prix du fichier de prix (estimation appli fermée) ; Réglages › Widget change le bouton ;
 // widget touché (« open ») → collection, scan ou prix rapide ; ?collection → la collection ; rien sur le web ; raccourcis de l'icône (« open » trade, paste ;
-// PWA : ?open=) et texte partagé vers l'appli (« open » share : decklist, lien lu par le serveur, à froid après le premier contact avec lui).
+// PWA : ?open=) et texte partagé vers l'appli (« open » share : decklist, lien lu par le serveur, à froid après le premier contact avec lui) ;
+// widget « QR code d'échange » (setTradeWidget : QR du lien d'échange, pseudo, langue ; lien arrêté, renouvelé, déconnexion ; jamais avant que le compte soit connu).
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { chromium, startWorld, newPage, ok, toHome, txt } from './e2e-world.mjs';
+const Q = createRequire(import.meta.url)('../src/qr.js');
 
 const world = await startWorld({ port: 18974 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
@@ -304,6 +307,70 @@ const errsAll = [];
   await x.p.waitForTimeout(1200); assert.deepEqual(await x.p.evaluate(() => [!!COLL.el, !!SC.el, S.view]), [false, false, 'home']);
   await x.p.context().close();
   ok('PWA : ?open=trade → Échange, ?open=paste → Nouveau panier, ?open=quick → prix rapide ; cible inconnue : rien');
+}
+
+/* ── 9) widget « QR code d'échange » : QR du lien d'échange confié à la coque (setTradeWidget), mis à jour quand le lien ou le pseudo change ─────── */
+{
+  const SID = 'Share000000000001', SID2 = 'Share000000000002';
+  // coque récente : setTradeWidget noté dans window.__mo.q ; tradeWidgets = nombre de widgets « QR code d'échange » posés (absent : APK sans ce widget)
+  const qshell = (n = 0) => shell(true, `{ firebase: true, version: '1.1', build: 2, widgets: 0, widgetRefresh: true${n == null ? '' : ', tradeWidgets: ' + n} }`)
+    .replace('window.__mo = { calls: [], ls: {} };', 'window.__mo = { calls: [], ls: {}, q: [] };').replace('info: async', 'setTradeWidget: async o => { window.__mo.q.push(o); return {}; },\n    info: async');
+  const qseed = `try { localStorage.setItem('deckdeal:trade:v1', JSON.stringify({ keep: 1, kept: [], wish: {}, share: '${SID}', dsh: {}, u: 1, sig: {}, who: 'u1' }));
+    localStorage.setItem('deckdeal:profile:v1', JSON.stringify({ uid: 'u1', name: 'Beer', photo: '' })); } catch (e) {}`;
+  // faux cloud (comme trade-e2e) puis connexion de u1
+  const login = pg => pg.evaluate(() => {
+    D.cloud = {
+      onUser() {}, watch: (uid, cb) => { cb([], false); return () => {}; }, newId: () => 'x', save: async () => {}, remove: async () => {},
+      watchColl(uid, cb) { cb(null, false, false); return () => {}; }, txColl: async (uid, fn) => { const out = fn(window.__collDoc || null); if (out) window.__collDoc = out; return out; }, pullColl: async () => ({ data: window.__collDoc || null }), saveColl: async () => {},
+      watchMeta(uid, id, cb) { cb(id === 'profile' ? { name: 'Beer', updatedAt: 1 } : null, false, false); return () => {}; }, saveMeta: async () => {}, pullMeta: async () => ({ data: null }),
+      shareId: () => 'Share000000000002', saveShare: async () => {}, dropShare: async () => {},
+    };
+    D.state = 'ready'; D.err = '';
+    onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer', reload: async () => {} });
+  });
+  const { p, errs } = await newPage(browser, world, { init: seed() + qseed + qshell() }); errsAll.push(errs);
+  const qs = () => p.evaluate(() => window.__mo.q.map(c => JSON.parse(c.data)));
+  const qn = n => p.waitForFunction(k => window.__mo.q.length >= k, n, { timeout: 6000 });
+  await p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 }); await p.waitForTimeout(800);
+  assert.deepEqual(await qs(), [], 'compte pas encore connu (Firebase injoignable ici) : rien, la coque garde le code précédent');
+  await login(p); await qn(1);
+  const url = await p.evaluate(id => shareUrl(id), SID), mx = Q.qrMatrix(url);
+  assert.match(url, /\/\?p=Share000000000001$/);
+  assert.deepEqual((await qs())[0], { u: url, n: mx.n, m: mx.m.map(r => r.join('')).join(''), by: 'Beer', lang: 'fr' }, 'QR du lien public (matrice de qrMatrix), pseudo, langue');
+  await p.evaluate(() => { homeSoon(0); trSoon(); }); await p.waitForTimeout(2200);
+  assert.equal((await qs()).length, 1, 'repeints sans changement : aucun nouvel envoi');
+  ok('widget « QR code d\'échange » : setTradeWidget({ u, n, m, by, lang }) une fois le compte connu, puis seulement si ça change');
+
+  await p.evaluate(() => trShareOff(false)); await qn(2);
+  assert.deepEqual((await qs())[1], { u: '', lang: 'fr' }, 'lien arrêté : plus de code');
+  await p.evaluate(() => trShareOn()); await qn(3);
+  const url2 = await p.evaluate(id => shareUrl(id), SID2), mx2 = Q.qrMatrix(url2);
+  assert.deepEqual((await qs())[2], { u: url2, n: mx2.n, m: mx2.m.map(r => r.join('')).join(''), by: 'Beer', lang: 'fr' }, 'nouveau lien : nouveau code');
+  await p.evaluate(() => profSave({ name: 'Mox' })); await qn(4);
+  assert.deepEqual([(await qs())[3].u, (await qs())[3].by], [url2, 'Mox'], 'pseudo changé');
+  ok('lien arrêté → { u: \'\' } ; nouveau lien → son QR ; pseudo changé → renvoyé');
+
+  // astuces : Réglages › Widget (coque avec ce widget) ; feuille du QR code tant qu'aucun n'est posé
+  await p.click('#btnSettings'); await p.waitForSelector('#widgetQrHint');
+  assert.match(await txt(p, '#widgetQrHint'), /^Autre widget, « QR code d'échange » :/);
+  const closeAll = () => p.evaluate(() => { while (sheets.length) sheets[sheets.length - 1].close(); }).then(() => p.waitForFunction(() => !document.querySelector('#sheetRoot').children.length));      // feuilles retirées après leur animation
+  await closeAll(); await p.evaluate(() => trQrOpen()); await p.waitForSelector('.qr-card');
+  assert.equal(await txt(p, '.qr-tip'), 'Astuce : le widget « QR code d\'échange » le garde sur ton écran d\'accueil.');
+  await closeAll(); await p.evaluate(() => { WGT.qn = 1; trQrOpen(); }); await p.waitForSelector('.qr-card');
+  assert.equal(await p.evaluate(() => !!document.querySelector('.qr-tip')), false, 'widget déjà posé : pas d\'astuce');
+  await closeAll();
+  ok('astuces : Réglages › Widget et feuille du QR code (aucun widget posé)');
+
+  await p.evaluate(() => onUser(null)); await qn(5);
+  assert.deepEqual((await qs())[4], { u: '', lang: 'fr' }, 'déconnecté : plus de code');
+  await p.context().close();
+  // APK sans ce widget (info() sans tradeWidgets) : rien, même avec un lien
+  const old = await newPage(browser, world, { init: seed() + qseed + qshell(null) }); errsAll.push(old.errs);
+  await old.p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 }); await login(old.p); await old.p.waitForTimeout(2500);
+  assert.deepEqual(await old.p.evaluate(() => window.__mo.q.length), 0);
+  assert.equal(await old.p.evaluate(() => { trQrOpen(); return !!document.querySelector('.qr-tip'); }), false, 'pas d\'astuce sans le widget');
+  await old.p.context().close();
+  ok('déconnexion → { u: \'\' } ; APK sans ce widget : jamais d\'envoi ni d\'astuce');
 }
 
 // ouverture sans geste de l'utilisateur (?collection) : Chrome refuse la vibration de openCollection, sans conséquence

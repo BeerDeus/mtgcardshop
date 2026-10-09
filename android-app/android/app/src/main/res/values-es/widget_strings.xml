@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Textes du widget « Ma collection » en espagnol (anglais par défaut dans values/widget_strings.xml : mêmes noms, rien de plus ici). -->
+<!-- Textes des widgets « Ma collection » et « QR code d'échange » en espagnol (anglais par défaut dans values/widget_strings.xml : mêmes noms, rien de plus ici). -->
 <resources>
     <string name="widget_label">Valor de la colección</string>
     <string name="widget_description">El valor de tu colección de Magic, su variación y su curva, con un acceso directo al escáner</string>
@@ -28,4 +28,18 @@
     <string name="widget_preview_delta">▲ +12 € · 7 d</string>
     <string name="widget_preview_count">312 cartas</string>
     <string name="widget_preview_span">30 d</string>
+
+    <!-- Widget « QR code d'échange » (TradeWidget) : nom et description dans la liste des widgets -->
+    <string name="widget_trade_label">Código QR de intercambio</string>
+    <string name="widget_trade_description">El código QR del enlace público de tu lista de intercambio, para que lo escaneen desde tu pantalla de inicio</string>
+    <!-- sous le QR code (avec le pseudo), et seul en gras sans pseudo -->
+    <string name="widget_trade_sub">Lista de intercambio</string>
+    <!-- pas de lien d'échange (pas encore créé, arrêté, compte déconnecté) ; toucher ouvre l'onglet Échange -->
+    <string name="widget_trade_none">Crea tu enlace de intercambio</string>
+    <string name="widget_trade_hint">Toca para abrir la pestaña Cambios</string>
+    <!-- rien reçu de l'appli (pas encore ouverte depuis l'installation) -->
+    <string name="widget_trade_wait">Abre Mana Orbit para mostrar tu código QR de intercambio</string>
+    <!-- lecteur d'écran : %1$s le pseudo -->
+    <string name="widget_trade_a11y">Código QR de la lista de intercambio de %1$s</string>
+    <string name="widget_trade_a11y_me">Código QR de tu lista de intercambio</string>
 </resources>

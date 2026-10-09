@@ -101,7 +101,7 @@ function trPayload() {
 }
 
 /* ── Partages : écriture (propriétaire) ────────────────────────────────────────────────────────── */
-function trSoon(ms = 4000) { pubSoon(); if (!TR.share && !Object.keys(TR.dsh).length) return; clearTimeout(TR.syncT); TR.syncT = setTimeout(trSync, ms); }
+function trSoon(ms = 4000) { pubSoon(); widgetSoon(); if (!TR.share && !Object.keys(TR.dsh).length) return; clearTimeout(TR.syncT); TR.syncT = setTimeout(trSync, ms); }      // widgetSoon : le widget « QR code d'échange » montre aussi le pseudo
 /** Empreinte du propriétaire (SHA-256 de l'UID, en hexadécimal) : le document est public, l'UID n'y est jamais écrit. Les règles Firestore la recalculent. */
 const ownerTags = new Map();
 async function ownerTag(uid) {
@@ -399,7 +399,7 @@ function trQrOpen() {
         <div class="qr-who">${bp ? `<img class="pub-av" src="${bp}" alt="">` : ''}<b>${by ? T('Liste d\'échange de {name}', { name: esc(by) }) : T('Ma liste d\'échange')}</b></div>
         <div class="qr-img" role="img" aria-label="${T('QR code du lien de ta liste d\'échange')}">${q.svg}</div>
         <p class="qr-url">${esc(url)}</p></div>
-      <p class="qr-hint">${T('Fais-le scanner par l\'autre joueur')}</p><p class="hint qr-lock" hidden>${T('L\'écran reste allumé tant que le QR code est affiché.')}</p>`;
+      <p class="qr-hint">${T('Fais-le scanner par l\'autre joueur')}</p>${WGT.qr && !WGT.qn ? `<p class="hint qr-tip">${T('Astuce : le widget « QR code d\'échange » le garde sur ton écran d\'accueil.')}</p>` : ''}<p class="hint qr-lock" hidden>${T('L\'écran reste allumé tant que le QR code est affiché.')}</p>`;
     const box = $('.qr-img', api.body), svg = $('svg', box);
     // taille : un nombre entier de pixels physiques par module (aucun module flou ou plus large que ses voisins)
     const fit = () => { const w = Math.min(box.clientWidth || 300, 380), r = window.devicePixelRatio || 1, px = Math.max(2, Math.floor(w * r / q.n)) * q.n / r; svg.style.width = svg.style.height = px + 'px'; };

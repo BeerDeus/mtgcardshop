@@ -129,6 +129,16 @@ Le widget « Ma collection » affiche la valeur de ta collection, sa variation (
 
 Le widget prend la langue choisie dans l'appli. Pour couper l'estimation appli fermée : `ValueRefreshJob.ENABLED = false` (Java), puis reconstruire l'APK.
 
+### Widget « QR code d'échange »
+
+Un deuxième widget, à part : le QR code du lien public de ta liste d'échange, en grand, avec ton pseudo et « Liste d'échange » dessous. L'autre joueur le scanne depuis ton écran d'accueil, sans que tu ouvres l'appli.
+
+1. Appui long sur un espace vide de l'écran d'accueil › **Widgets** › **Mana Orbit** › « QR code d'échange » (2 × 2 par défaut, agrandissable : le code suit la taille).
+2. Ouvre l'appli une fois, connecté : le code apparaît. Il change tout seul quand tu crées, arrêtes ou renouvelles le lien, ou quand tu changes de pseudo.
+3. Sans lien d'échange (pas encore créé, arrêté, compte déconnecté) : « Crée ton lien d'échange ». Toucher le widget ouvre l'onglet Échange dans tous les cas.
+
+Fond blanc même en thème sombre : un lecteur de QR code attend du foncé sur clair. Le code est calculé par le site (`src/qr.js`) et dessiné par `TradeWidget.java` ; rien n'est lu sur le réseau.
+
 ---
 
 ## 4. Publier sur le Play Store
@@ -259,6 +269,7 @@ Bon à savoir :
 | Notifications | `@capacitor/push-notifications` | fait : Firebase Cloud Messaging (voir « Notifications ») |
 | Connexion Google | `@capacitor-firebase/authentication` | fait : sélecteur de compte natif, jamais le navigateur (voir 2 bis pour Firebase) |
 | Widget (valeur de la collection) | plugin local `ManaOrbit` (Java, dans `android/app`) | fait : lit la valeur que l'appli lui laisse (voir « Widget », étape 3) |
+| Widget « QR code d'échange » | plugin local `ManaOrbit` (`TradeWidget.java`) | fait : QR code du lien d'échange envoyé par le site (voir « Widget « QR code d'échange » ») |
 | Bouton Retour | `@capacitor/app` | fait : ferme l'écran ouvert ; sur l'accueil, deux appuis mettent l'appli en arrière-plan |
 | Page hors ligne | `android-app/www/index.html` | fait : « Mana Orbit a besoin d'Internet… » si le site ne répond pas au lancement |
 | Diagnostic | plugin local `ManaOrbit` (Firebase, version) | en bas de **Réglages**, la ligne « Version … · APK : » montre ✓ ou ✗ pour chaque plugin (caméra, ML Kit, Google, pub, notif, widget, retour), Firebase et la version de l'APK |

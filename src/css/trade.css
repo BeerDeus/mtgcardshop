@@ -29,7 +29,7 @@
 .qr-img svg{display:block;width:min(100%,340px);height:auto;image-rendering:pixelated}
 .qr-url{margin:0;max-width:100%;font-family:var(--font-code);font-size:12px;line-height:1.35;color:#4a5470;text-align:center;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all}
 .qr-hint{margin:14px 0 0;text-align:center;font-weight:650;font-size:15px}
-.qr-lock{margin:2px 0 0;text-align:center}
+.qr-lock,.qr-tip{margin:2px 0 0;text-align:center}
 
 /* Onglet « Échange » du propriétaire : total estimé et sa base, tri et « ≥ X € », prix à l'unité sous la quantité. */
 .tr-sum{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:12px;row-gap:3px;margin:2px 2px 10px}

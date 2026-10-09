@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Textes du widget « Ma collection » en portugais du Brésil, langue des cartes Magic portugaises (anglais par défaut dans values/widget_strings.xml). -->
+<!-- Textes des widgets « Ma collection » et « QR code d'échange » en portugais du Brésil, langue des cartes Magic portugaises (anglais par défaut dans values/widget_strings.xml). -->
 <resources>
     <string name="widget_label">Valor da coleção</string>
     <string name="widget_description">O valor da sua coleção de Magic, a variação e a curva, com um atalho para o scanner</string>
@@ -28,4 +28,18 @@
     <string name="widget_preview_delta">▲ +€ 12 · 7 d</string>
     <string name="widget_preview_count">312 cartas</string>
     <string name="widget_preview_span">30 d</string>
+
+    <!-- Widget « QR code d'échange » (TradeWidget) : nom et description dans la liste des widgets -->
+    <string name="widget_trade_label">QR code de trocas</string>
+    <string name="widget_trade_description">O QR code do link público da sua lista de trocas, para escanearem direto da sua tela inicial</string>
+    <!-- sous le QR code (avec le pseudo), et seul en gras sans pseudo -->
+    <string name="widget_trade_sub">Lista de trocas</string>
+    <!-- pas de lien d'échange (pas encore créé, arrêté, compte déconnecté) ; toucher ouvre l'onglet Échange -->
+    <string name="widget_trade_none">Crie seu link de trocas</string>
+    <string name="widget_trade_hint">Toque para abrir a aba Trocas</string>
+    <!-- rien reçu de l'appli (pas encore ouverte depuis l'installation) -->
+    <string name="widget_trade_wait">Abra o Mana Orbit para mostrar seu QR code de trocas</string>
+    <!-- lecteur d'écran : %1$s le pseudo -->
+    <string name="widget_trade_a11y">QR code da lista de trocas de %1$s</string>
+    <string name="widget_trade_a11y_me">QR code da sua lista de trocas</string>
 </resources>

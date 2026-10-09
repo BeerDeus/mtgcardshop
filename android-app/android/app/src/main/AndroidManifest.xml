@@ -61,6 +61,19 @@
                 android:resource="@xml/widget_value_info" />
         </receiver>
 
+        <!-- Widget « QR code d'échange » (TradeWidget.java) : le QR code du lien de la liste d'échange, envoyé par le site. Non exporté, comme ValueWidget. -->
+        <receiver
+            android:name=".TradeWidget"
+            android:exported="false"
+            android:label="@string/widget_trade_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_trade_info" />
+        </receiver>
+
         <!-- Valeur du widget estimée appli fermée (ValueRefreshJob.java) : tâche JobScheduler toutes les ~12 h, réseau requis. Seul le système peut la lancer. -->
         <service
             android:name=".ValueRefreshJob"

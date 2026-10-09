@@ -42,7 +42,7 @@ public class ValueWidget extends AppWidgetProvider {
     static final String KEY = "data";
     /** Estimation appli fermée (ValueRefreshJob) : { base: « at » des données du site, v, at, p: [[t, v], …] } ; ignorée dès que le site renvoie. */
     static final String KEY_EST = "est";
-    /** Extra de l'intent du widget : vue du site à ouvrir (relayée par ManaOrbitPlugin, événement « open ») : collection, scan ou quick. */
+    /** Extra de l'intent du widget : vue du site à ouvrir (relayée par ManaOrbitPlugin, événement « open ») : collection, scan ou quick ; trade (TradeWidget). */
     static final String EXTRA_OPEN = "app.manaorbit.open";
 
     private static final int COLOR_UP = 0xFF4FD1A1;
@@ -297,15 +297,15 @@ public class ValueWidget extends AppWidgetProvider {
     }
 
     /** Textes dans la langue de l'appli (values/ : anglais, values-fr/, -de/, -es/, -it/, -pt/) ; null : langue du téléphone. */
-    private static Resources localized(Context context, String lang) {
+    static Resources localized(Context context, String lang) {
         if (lang == null) return context.getResources();
         Configuration conf = new Configuration(context.getResources().getConfiguration());
         conf.setLocale(locale(lang));
         return context.createConfigurationContext(conf).getResources();
     }
 
-    /** Ouvre l'appli (ou la ramène devant) sur une vue du site. Même action et catégorie que l'icône du lanceur : l'intent correspond au filtre de MainActivity. */
-    private static PendingIntent open(Context context, String view, int code) {
+    /** Ouvre l'appli (ou la ramène devant) sur une vue du site (aussi pour TradeWidget : « trade »). Même action et catégorie que l'icône du lanceur : l'intent correspond au filtre de MainActivity. */
+    static PendingIntent open(Context context, String view, int code) {
         Intent i = new Intent(context, MainActivity.class)
             .setAction(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)

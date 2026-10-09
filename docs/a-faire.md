@@ -8,11 +8,8 @@
 - Code natif (Java, XML Android) modifié → le propriétaire refait l'APK (`android-app` : `npm run setup` puis `npm run apk`). Le reste (site) arrive dans l'APK sans la refaire.
 
 ## Prochaines améliorations (prévues)
-- **Deuxième widget Android : QR code du lien d'échange.** Un widget à part (le widget de valeur actuel reste tel quel) qui affiche en grand le QR code du lien public de la liste d'échange du compte, pour le faire scanner depuis l'écran d'accueil sans ouvrir l'appli.
-  - Le QR est déjà calculé côté site (`src/qr.js`, feuille « QR code » de l'onglet Échange) : l'envoyer au natif comme pour la valeur (`ManaOrbitPlugin.setWidget`, `src/widget.js`), en matrice de modules ou en image.
-  - Natif : nouveau `AppWidgetProvider` + layout + `appwidget-provider` XML (tailles 2×2 et plus grand), fond blanc, marge de silence, pseudo et « Liste d'échange » sous le code ; toucher le widget ouvre l'onglet Échange.
-  - Sans lien d'échange actif : « Crée ton lien d'échange » et toucher ouvre l'appli au bon endroit. Lien arrêté ou renouvelé : le widget se met à jour.
-  - Demande une nouvelle APK.
+- **Deuxième widget Android « QR code d'échange » : fait le 9 octobre, à tester sur le téléphone (nouvelle APK).** `TradeWidget.java`, `res/layout/widget_trade.xml`, `res/xml/widget_trade_info.xml` ; le site envoie la matrice du QR (`src/widget.js`, `setTradeWidget`). Détail dans `docs/android.md` (« Widget « QR code d'échange » »).
+  - À vérifier sur le téléphone : aperçu dans la liste des widgets, code net en 2 × 2 et agrandi, scan par un autre téléphone, pseudo dessous, « Crée ton lien d'échange » après « Arrêter le partage », mise à jour après « Nouveau lien », toucher → onglet Échange.
 - **Bannière de pub : trouver l'emplacement qui gêne le moins.** Aujourd'hui : bandeau AdMob en haut (`TOP_CENTER`), 16 px d'écart sous lui (`src/ads.js`, `src/css/ads.css`).
   - Pistes à comparer (captures à 360 et 390 px) : en bas au-dessus de la barre d'action, seulement sur certains écrans (accueil, collection) et jamais pendant un scan ou une recherche, bannière « adaptative ancrée », bannière repliable.
   - Règles AdMob : pas collée aux boutons de navigation, jamais par-dessus le contenu, pas de clic accidentel ; mesurer la gêne sur les écrans les plus utilisés (scan, résultats, collection).
@@ -36,6 +33,7 @@
   - Firebase : domaine ajouté aux domaines autorisés (Authentication) ; lien de retour de l'e-mail de vérification.
   - APK : `server.url` / hôte dans `android-app` (`capacitor.config`) → nouvelle APK ; liens d'app éventuels.
   - Code : adresses en dur (`card.m2s-photo.fr`) dans `src/`, `proxy.mjs`, `pwa/` (manifest, privacy, sw), docs et fiche Play ; `shareUrl` des liens partagés.
+  - QR code d'exemple de l'aperçu du widget d'échange (`res/drawable/widget_trade_preview_qr.xml`, l'adresse du site) : à régénérer avec `src/qr.js` ; `PRICES_URL` de `ValueRefreshJob.java`.
   - Ancien domaine : redirection 301 de `card.m2s-photo.fr` vers le nouveau en gardant le chemin et `?p=` (les liens et QR déjà partagés continuent de marcher).
   - `app-ads.txt` à la racine du nouveau domaine (AdMob refuse souvent les sous-domaines) ; politique de confidentialité et site web de la fiche Play sur le nouveau domaine.
   - Après la bascule : tests, CI, et un lien d'échange ouvert depuis l'ancien domaine pour vérifier la redirection.

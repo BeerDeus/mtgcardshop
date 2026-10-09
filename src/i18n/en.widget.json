@@ -6,5 +6,7 @@
   "ajouter des cartes": "add cards",
   "Prix rapide": "Quick price",
   "sans les ajouter": "without adding them",
-  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "While the app is closed, the widget estimates the value every day from Cardmarket prices (Wi-Fi preferred): “≈” and “estimated” until your next visit."
+  "Appli fermée, le widget estime la valeur chaque jour d'après les prix Cardmarket (Wi-Fi de préférence) : « ≈ » et « estimée » jusqu'à ta prochaine visite.": "While the app is closed, the widget estimates the value every day from Cardmarket prices (Wi-Fi preferred): “≈” and “estimated” until your next visit.",
+  "Autre widget, « QR code d'échange » : le QR code de ton lien d'échange, à faire scanner depuis l'écran d'accueil.": "Another widget, “Trade QR code”: your trade link's QR code, for others to scan straight from your home screen.",
+  "Astuce : le widget « QR code d'échange » le garde sur ton écran d'accueil.": "Tip: the “Trade QR code” widget keeps it on your home screen."
 }
