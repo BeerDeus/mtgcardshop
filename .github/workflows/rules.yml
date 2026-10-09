@@ -1,0 +1,49 @@
+# Règles Firestore (firestore.rules) contre l'émulateur : tests/rules-test.mjs, chaque branche des règles avec un cas permis et un cas refusé.
+# · Workflow à part plutôt qu'un job de tests.yml : il ne tourne que quand les règles, leur test ou la version de firebase changent (Java et l'émulateur,
+#   ~140 Mo, ne sont pas installés à chaque push) et donne son propre statut « Règles Firestore » sur le commit qui touche aux règles.
+# · Dépendances installées à part (--no-save, hors de tests/package.json) : le npm ci des autres tests ne grossit pas. Versions figées :
+#   @firebase/rules-unit-testing 5.x attend firebase ^12 (celui de tests/package.json, repris tel quel) ; la 6.x exige firebase 13 et Node 24.
+# · RULES_REQUIRED=1 : sans émulateur ni dépendances, le test échoue au lieu de s'ignorer (en local, il s'ignore).
+# · La CI ne publie rien : règles modifiées = les republier à la main dans la console Firebase (Firestore › Règles).
+name: Règles Firestore
+on:
+  push:
+    paths: ['firestore.rules', 'tests/rules-test.mjs', 'tests/setup-env.mjs', 'tests/package.json', '.github/workflows/rules.yml']
+  pull_request:
+    paths: ['firestore.rules', 'tests/rules-test.mjs', 'tests/setup-env.mjs', 'tests/package.json', '.github/workflows/rules.yml']
+  workflow_dispatch:
+concurrency:
+  group: rules-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FIREBASE_TOOLS: 15.31.0
+      RULES_UNIT_TESTING: 5.0.2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Émulateur Firestore (cache du .jar, un par version de firebase-tools)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ env.FIREBASE_TOOLS }}
+      - name: Dépendances du test des règles
+        run: |
+          FB=$(node -p "require('./tests/package.json').devDependencies.firebase")
+          D="$RUNNER_TEMP/rules-deps"; mkdir -p "$D"
+          npm i --no-save --no-audit --no-fund --prefix "$D" "firebase-tools@$FIREBASE_TOOLS" "@firebase/rules-unit-testing@$RULES_UNIT_TESTING" "firebase@$FB"
+          echo "RULES_DEPS=$D/node_modules" >> "$GITHUB_ENV"
+          echo "$D/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Règles contre l'émulateur (projet demo-*, sans compte ni réseau Firebase)
+        env:
+          RULES_REQUIRED: 1
+        run: firebase emulators:exec --only firestore --project demo-deckdeal "node tests/rules-test.mjs"

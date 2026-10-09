@@ -23,6 +23,9 @@ assert.equal(await p.evaluate(() => location.search), '', 'adresse nettoyée');
 assert.match(await txt(p, '#btnDecks'), /My decks/); assert.match(await txt(p, '#hmNew'), /New cart/i); assert.equal(await p.evaluate(() => priceSrc()), 'cm');
 const home = await leftovers(p); console.log('  accueil, encore en français :', home.length ? home : 'rien');
 ok('?lang=en : langue gardée, accueil en anglais');
+// dictionnaire : bloc JSON inerte de la page (jamais compilé comme du code), analysé seulement pour l'anglais
+assert.equal(await p.evaluate(() => [typeof I18N_ALL, document.getElementById('i18n-en').type, T('Nouvelle version disponible'), T('Recharger')].join('|')), 'undefined|application/json|New version available|Reload');
+ok('dictionnaire anglais lu depuis son bloc JSON (toast de mise à jour traduit)');
 
 await toInput(p); await p.fill('#deckText', '1 Sol Ring\n2 Craterhoof Behemoth'); await p.waitForTimeout(250); await p.click('#btnRun');
 await p.waitForFunction(() => S.run && S.run.status === 'done', null, { timeout: 20000 }); await p.waitForTimeout(900);
@@ -36,6 +39,7 @@ assert.match(await txt(p, '.sheet-wrap.open .sheet-head'), /Settings/); assert.m
 const set = await leftovers(p); console.log('  réglages, encore en français :', set.length ? set : 'rien');
 await Promise.all([p.waitForEvent('load'), p.selectOption('#setLang', 'fr')]); await p.waitForTimeout(700);
 assert.equal(await p.evaluate(() => I18N.lang), 'fr'); await toHome(p); assert.match(await txt(p, '#btnDecks'), /Mes decks/);
+assert.equal(await p.evaluate(() => I18N.dict), null, 'français : aucun dictionnaire analysé');
 ok('Réglages › Langue : retour au français (rechargement), choix gardé');
 assert.deepEqual(errs, []);
 await browser.close(); world.stop();
