@@ -18,6 +18,7 @@
   - Règles AdMob : pas collée aux boutons de navigation, jamais par-dessus le contenu, pas de clic accidentel ; mesurer la gêne sur les écrans les plus utilisés (scan, résultats, collection).
 - **Proposition d'échange équilibrée** (plus tard) : cocher des cartes des deux côtés, balance de valeur, récapitulatif à partager.
 - **Outils de partie** (plus tard, rien dans le code) : pas de compteur de vies dans Mana Orbit ; éventuellement un lien vers l'appli du propriétaire sur Google Play.
+- **Langues, suites** : interface en fr, en, de, es, it, pt depuis le 9 octobre. Restent en français / anglais seulement : `pwa/manifest.webmanifest`, `pwa/privacy.html`, `<html lang>` et la description de `build.mjs`, la fiche Play Store (`docs/store/`), le texte d'aide « Nom français ou anglais » de la recherche de la liste publique. Poids : chaque langue ajoute ≈ 57 Ko compressés à la page (≈ 630 Ko en tout) : charger les dictionnaires à la demande si ça devient gênant. Japonais et chinois : clé de nom Unicode et modèles OCR à faire avant.
 - Fait et validé par le propriétaire : système d'échange (« Pour toi », QR, valeurs), widget de valeur (4 tailles, courbe 4×2, bouton Scanner / Prix rapide).
 
 ## Si EDHREC ou Archidekt refusent (plan B, à préparer avant la production)

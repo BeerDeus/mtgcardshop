@@ -65,6 +65,7 @@ await p.click('#collSeg [data-v="trade"]'); await p.waitForSelector('.tr-box');
   await p.selectOption('#trSort', 'price'); await p.waitForFunction(() => document.querySelector('.tr-list .tr-row').dataset.k === 'sol ring');
   assert.deepEqual(await p.$$eval('.tr-list .tr-row', r => r.map(x => x.dataset.k)), ['sol ring', 'llanowar elves'], 'tri par prix');
   await p.selectOption('#trMin', '100'); await p.waitForFunction(() => document.querySelectorAll('.tr-list .tr-row').length === 1);
+  await p.waitForFunction(() => /^1 carte sur 2 · 3 exemplaires/.test((document.querySelector('.tr-sum') || {}).innerText || ''), null, { timeout: 5000 }).catch(() => {});      // en-tête repeint juste après la liste filtrée : attendu avant d'être lu
   assert.match(await txt(p, '.tr-sum'), /^1 carte sur 2 · 3 exemplaires ≈ 3,60\s€/, '≥ 1 € : Sol Ring seule'); assert.ok(await p.$('.tr-min.on'), 'filtre actif bien visible');
   assert.deepEqual(await p.$$eval('#trMin option', o => o.map(x => x.textContent.replace(/\s/g, ' '))), ['Tous les prix', '≥ 1 €', '≥ 2 €', '≥ 5 €', '≥ 10 €', '≥ 20 €', '≥ 50 €']);
   await p.selectOption('#trMin', '0'); await p.selectOption('#trSort', 'name');
