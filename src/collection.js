@@ -420,23 +420,53 @@ function frOf(k) {
   const m = FRN.map || (typeof FRC !== 'undefined' && FRC.cat && FRC.cat.fr) || null;
   return (m && m.get(k)) || '';
 }
-/** Nom affiché d'une ligne de la collection : l'imprimé français pour un exemplaire FR ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas). */
-const frName = (k, l) => (l === 'fr' ? frOf(k) : '');
+/** Nom affiché d'une ligne de la collection : l'imprimé français pour un exemplaire FR ('' si la carte n'est pas FR ou si le catalogue ne la connaît pas).
+ *  Même chose dans la langue du catalogue chargé (exemplaire allemand → nom allemand) ; frOf donne alors le nom dans cette langue. */
+const frName = (k, l) => (l && l === FRX.l ? frOf(k) : '');
+/** Langue des noms imprimés reconnus (core.js › namesLangOf) : celle des cartes cherchées, sinon français pour l'interface française ; '' : aucun catalogue (cartes anglaises). */
+const namesLang = () => namesLangOf(S.opts.lang, I18N.lang);
+/** Passe au catalogue d'une autre langue : un seul en mémoire, l'ancien est oublié (index, noms affichés, catalogue du scan, recherches du scan). */
+function namesSwitch(l) {
+  if (l === FRX.l) return;
+  FRX.ix = null; FRX.l = l; FRN.map = null; FRN.fail = 0; FRN.p = null;
+  if (typeof FRC !== 'undefined') { FRC.cat = null; FRC.at = 0; FRC.state = 'idle'; FRC.p = null; }
+  if (typeof FR_CACHE !== 'undefined') FR_CACHE.clear();
+}
+/** Langue des cartes changée (critères) : le catalogue de la nouvelle langue est chargé, et la liste, la collection et le scan suivent. */
+function namesSync() {
+  const l = namesLang(); if (l === FRX.l) return;
+  namesSwitch(l); collPaint(); if (typeof refreshDeck === 'function') refreshDeck();      // l = '' (cartes anglaises) : catalogue oublié, aucun autre chargé
+  if (l) frLoad();
+}
+/** Texte qui nomme la langue des noms reconnus : fr (texte d'origine, catalogue français), other ({lang} : allemand…), none (cartes anglaises, aucun catalogue ; sinon fr). */
+const nmT = (fr, other, none, v) => { const l = namesLang(); return l === 'fr' ? T(fr, v) : l ? T(other, { ...v, lang: LANGS[l] || l }) : T(none || fr, v); };
+/** Exemple des champs de saisie : « Sol Ring ou Anneau solaire » ; autre langue : Lightning Bolt et son nom imprimé (« Blitzschlag ») ; one : le nom imprimé seul (import). */
+const NM_EX = { de: 'Blitzschlag', es: 'Rayo', it: 'Fulmine', pt: 'Relâmpago' };
+function nmExample(one) {
+  const l = namesLang();
+  if (l === 'fr') return one ? 'Anneau solaire' : T('Sol Ring ou Anneau solaire');
+  if (!l) return one ? 'Lightning Bolt' : 'Sol Ring';
+  const p = NM_EX[l] || 'Lightning Bolt'; return one ? p : T('Lightning Bolt ou {name}', { name: p });
+}
 /** Charge l'index des noms français (affichage des cartes FR, noms français tapés dans une decklist, à l'import ou à la saisie) : catalogue déjà sur l'appareil, sinon fichier du site (1 requête, gardé ensuite).
  *  local : appareil seulement (démarrage : aucun réseau). Jamais les pages Scryfall ici : c'est le scan qui s'en charge. Index construit par tranches (≈ 31 000 noms) : l'écran ne fige pas. */
 function frLoad(local) {
+  const l = namesLang(); if (!l) return Promise.resolve(false);      // cartes anglaises : aucun catalogue
+  namesSwitch(l);
   if (FRX.ix) return Promise.resolve(true);
   if (FRN.p) return FRN.local && !local ? FRN.p.then(ok => ok || frLoad()) : FRN.p;      // lecture locale en cours, réseau permis : on enchaîne
   if (!local && Date.now() - FRN.fail < 60000) return Promise.resolve(false);
   FRN.local = !!local;
-  FRN.p = (async () => {
-    const rec = (await scryFrCached().catch(() => null)) || (local ? null : await scryFrStatic().catch(() => null));
+  const p = FRN.p = (async () => {
+    const rec = (await scryFrCached(l).catch(() => null)) || (local ? null : await scryFrStatic(undefined, l).catch(() => null));
+    if (FRX.l !== l) return false;                                                     // langue changée entre-temps : ce catalogue ne sert plus
     if (!rec || FRX.ix) { if (!rec && !local) FRN.fail = Date.now(); return !!FRX.ix; }
     const ix = frIndex([]);
     for (let i = 0; i < rec.rows.length; i += 2500) { frIndex(rec.rows.slice(i, i + 2500), ix); await new Promise(r => setTimeout(r, 0)); }
-    frUse(ix); FRN.map = ix.fr; frReady(); return true;
-  })().catch(() => { if (!local) FRN.fail = Date.now(); return !!FRX.ix; }).finally(() => { FRN.p = null; });
-  return FRN.p;
+    if (FRX.l !== l) return false;
+    frUse(ix, l); FRN.map = ix.fr; frReady(); return true;
+  })().catch(() => { if (!local && FRX.l === l) FRN.fail = Date.now(); return FRX.l === l && !!FRX.ix; }).finally(() => { if (FRN.p === p) FRN.p = null; });
+  return p;
 }
 /** Index français prêt : les écrans qui l'attendaient se mettent à jour (collection, saisie de la decklist si aucune recherche n'est affichée, feuilles ouvertes). */
 function frReady() {
@@ -777,7 +807,7 @@ const collUnknown = () => Object.keys(COLL.map).filter(k => COLL.meta[k] === nul
 function collRename(k, en, fr) {
   const cur = COLL.map[k], nk = ownKey(en); if (!cur || !nk) return null;
   const had = nk !== k ? COLL.map[nk] || null : null, m = { ...COLL.map }, lines = collLines(had).map(e => e.slice());
-  for (const [l, q] of collLines(cur)) { const g = l || (fr ? 'fr' : ''), e = lines.find(x => x[0] === g); if (e) e[1] = Math.min(9999, e[1] + q); else lines.push([g, q]); }
+  for (const [l, q] of collLines(cur)) { const g = l || (fr ? FRX.l : ''), e = lines.find(x => x[0] === g); if (e) e[1] = Math.min(9999, e[1] + q); else lines.push([g, q]); }
   delete m[k];
   m[nk] = collFromLines({ ...(had || {}), n: (had && had.n) || en, d: (had && had.d) || cur.d || dateNowSec() }, lines);
   COLL.map = m; collChanged(); collEnrich();
@@ -858,8 +888,8 @@ function collNoLangHtml(v) {
 /* ── Ajouter à la main ────────────────────────────────────────────────────────────────────────── */
 function openCollAdd() {
   frLoad();
-  openSheet(T('Ajouter une carte'), T('Tape son nom en anglais ou en français'), api => {
-    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">${T('Nom de la carte')}</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${T('Sol Ring ou Anneau solaire')}" enterkeyhint="search"></div>
+  openSheet(T('Ajouter une carte'), nmT('Tape son nom en anglais ou en français', 'Tape son nom en anglais ou en {lang}', 'Tape son nom en anglais'), api => {
+    api.body.innerHTML = `<div class="field-in"><label class="label" for="caName">${T('Nom de la carte')}</label><input type="text" id="caName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(nmExample())}" enterkeyhint="search"></div>
       <div class="field-in"><label class="label" for="caLang">${T('Langue des exemplaires ajoutés')}</label><div class="sel"><select id="caLang"><option value="">${T('Celle de la carte (sinon non précisée)')}</option>${CARD_LANG_LIST.map(x => { const n = T(LANGS[x]); return `<option value="${x}">${esc(n[0].toUpperCase() + n.slice(1))}</option>`; }).join('')}</select></div></div>
       <div class="status" id="caStatus" data-ok="0" hidden><span class="dot"></span><span></span></div>
       <div class="ca-list" id="caList" role="listbox" aria-label="${T('Suggestions')}"></div>`;
@@ -871,11 +901,11 @@ function openCollAdd() {
       if (!cat) { list.innerHTML = ''; return; }
       const sug = collSuggestX(cat, q);
       list.innerHTML = sug.map(x => { const k = ownKey(x.n), have = collQty(k); return `<button type="button" class="ca-opt" role="option" data-n="${esc(x.n)}"${x.p ? ` data-p="${esc(x.p)}"` : ''}><span>${sugHtml(x.n, q, x.p || '')}</span><i>${have ? `× ${have}` : '+'}</i></button>`; }).join('')
-        || (q.length >= 2 ? '<p class="hint">' + (FRX.ix ? T('Aucune carte de ce nom. Vérifie l\'orthographe.') : T('Aucune carte de ce nom. Vérifie l\'orthographe (les noms français arrivent dès que leur liste est chargée).')) + '</p>' : '');
+        || (q.length >= 2 ? '<p class="hint">' + (FRX.ix || !namesLang() ? T('Aucune carte de ce nom. Vérifie l\'orthographe.') : nmT('Aucune carte de ce nom. Vérifie l\'orthographe (les noms français arrivent dès que leur liste est chargée).', 'Aucune carte de ce nom. Vérifie l\'orthographe (les noms en {lang} arrivent dès que leur liste est chargée).')) + '</p>' : '');
     };
     list.onclick = e => {
       const b = e.target.closest('.ca-opt'); if (!b) return;
-      const n = b.dataset.n, p = b.dataset.p || '', k = ownKey(n), l = lang.value || (p ? 'fr' : '');      // nom français choisi : exemplaire français (sauf langue choisie au-dessus)
+      const n = b.dataset.n, p = b.dataset.p || '', k = ownKey(n), l = lang.value || (p ? FRX.l : '');      // nom français (allemand…) choisi : exemplaire dans cette langue (sauf langue choisie au-dessus)
       collBump(k, n, 1, l ? { lang: l } : undefined); const q = collQty(k); haptic('ok');
       const i = $('i', b); i.textContent = '× ' + q; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
       say(T('{name} · {q} dans ta collection', { name: p || n, q }), true); collEnrich();
@@ -899,11 +929,11 @@ function openCollImport(initial) {
     const opt = (v, t, on) => `<option value="${v}"${on ? ' selected' : ''}>${esc(t)}</option>`, LN = l => { const s = T(LANGS[l]); return s[0].toUpperCase() + s.slice(1); }, l0 = collImportLang();
     api.body.innerHTML = `<p class="hint">${T('Le plus simple pour beaucoup de cartes : exporte ta collection en CSV depuis l\'appli que tu utilises, puis choisis le fichier. Les quantités d\'une même carte (éditions différentes) s\'additionnent ; une ligne par langue si le fichier la donne.')}</p>
       <label class="btn ghost small ci-file"><svg class="i"><use href="#i-upload"/></svg>${T('Choisir un fichier')}<input type="file" id="ciFile" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label>
-      <div class="field-in"><label class="label" for="ciText">${T('ou colle le texte')}</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 Anneau solaire"></textarea></div>
+      <div class="field-in"><label class="label" for="ciText">${T('ou colle le texte')}</label><textarea id="ciText" class="ci-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="3 Sol Ring&#10;1 ${esc(nmExample(true))}"></textarea></div>
       <div class="ci-sum" id="ciSum" hidden></div>
       <div class="ci-flag" id="ciFlag" hidden></div>
       <div class="field-in"><label class="label" for="ciLang">${T('Langue de ces cartes')}</label><div class="sel"><select id="ciLang">${CARD_LANG_LIST.map(l => opt(l, LN(l), l === l0)).join('')}${opt('', T('Non précisée'), false)}</select></div>
-        <p class="hint ci-lhint">${T('Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l\'emporte, et un nom français compte comme une carte française.')}</p></div>
+        <p class="hint ci-lhint">${nmT('Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l\'emporte, et un nom français compte comme une carte française.', 'Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l\'emporte, et un nom en {lang} compte comme une carte en {lang}.', 'Pour les lignes qui ne la donnent pas : une colonne « Language » ou « *EN* » en fin de ligne l\'emporte.')}</p></div>
       <div class="seg" id="ciMode" role="radiogroup" aria-label="${T('Mode d\'import')}"></div>`;
     mountSeg($('#ciMode', api.body), [{ v: 'add', label: T('Ajouter') }, { v: 'replace', label: T('Remplacer ma collection') }], collCount() ? 'add' : 'replace', () => paint());
     api.setFoot(`<button class="btn ghost" type="button" data-close>${T('Annuler')}</button><button class="btn" type="button" id="ciGo" disabled>${T('Importer')}</button>`);
@@ -916,13 +946,13 @@ function openCollImport(initial) {
       if (!parsed) { go.textContent = T('Importer'); return; }
       if (!parsed.items.length) { sum.className = 'ci-sum bad'; sum.textContent = parsed.format === 'csv' ? T('Aucune carte lue dans ce CSV : il faut une colonne « Name » (ou « Nom »).') : T('Aucune ligne reconnue. Une carte par ligne : « 3 Sol Ring ».'); return; }
       const rep = mode() === 'replace' && collCount();
-      sum.className = 'ci-sum'; sum.innerHTML = `<div>${TN(parsed.items.length, '<b>{n}</b> carte différente', '<b>{n}</b> cartes différentes')} · ${TN(parsed.copies, '<b>{n}</b> exemplaire', '<b>{n}</b> exemplaires')}</div><span>${parsed.format === 'csv' ? T('Fichier CSV') : T('Liste texte')}${parsed.fr ? ' · ' + TN(parsed.fr, '{n} nom français reconnu', '{n} noms français reconnus') : ''}${parsed.skipped ? ' · ' + TN(parsed.skipped, '{n} ligne ignorée', '{n} lignes ignorées') : ''}${rep ? ' · ' + T('remplace les {n} cartes actuelles', { n: nf0(collCount()) }) : ''}</span>`;      // un bloc par ligne : la carte .ci-sum est une colonne flex
+      sum.className = 'ci-sum'; sum.innerHTML = `<div>${TN(parsed.items.length, '<b>{n}</b> carte différente', '<b>{n}</b> cartes différentes')} · ${TN(parsed.copies, '<b>{n}</b> exemplaire', '<b>{n}</b> exemplaires')}</div><span>${parsed.format === 'csv' ? T('Fichier CSV') : T('Liste texte')}${parsed.fr ? ' · ' + (FRX.l === 'fr' ? TN(parsed.fr, '{n} nom français reconnu', '{n} noms français reconnus') : TN(parsed.fr, '{n} nom en {lang} reconnu', '{n} noms en {lang} reconnus', { lang: LANGS[FRX.l] || FRX.l })) : ''}${parsed.skipped ? ' · ' + TN(parsed.skipped, '{n} ligne ignorée', '{n} lignes ignorées') : ''}${rep ? ' · ' + T('remplace les {n} cartes actuelles', { n: nf0(collCount()) }) : ''}</span>`;      // un bloc par ligne : la carte .ci-sum est une colonne flex
       go.textContent = TN(parsed.items.length, 'Importer {n} carte', 'Importer {n} cartes');
       // noms que Scryfall ne connaîtra pas (catalogue des noms anglais + index français) : signalés avant l'import, corrigeables après
       if (!COLL.names) { if (!catAsked) { catAsked = true; collCatalog().then(() => { if (ta.isConnected) paint(); }).catch(() => {}); } return; }
       const unk = parsed.items.filter(x => !BASIC_NAMES.has(x.k) && !COLL.names.idx.by.has(x.k)).map(x => x.n), amb = new Set(parsed.amb);
       if (!unk.length) return;
-      const show = unk.slice(0, 4).map(n => '<b>' + esc(n) + '</b>' + (amb.has(n) ? ' ' + T('(nom français de plusieurs cartes)') : '')).join(', ') + (unk.length > 4 ? ' ' + T('et {n} autres', { n: nf0(unk.length - 4) }) : '');
+      const show = unk.slice(0, 4).map(n => '<b>' + esc(n) + '</b>' + (amb.has(n) ? ' ' + (FRX.l === 'fr' ? T('(nom français de plusieurs cartes)') : T('(nom en {lang} de plusieurs cartes)', { lang: LANGS[FRX.l] || FRX.l })) : '')).join(', ') + (unk.length > 4 ? ' ' + T('et {n} autres', { n: nf0(unk.length - 4) }) : '');
       flag.hidden = false; flag.innerHTML = `<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span>${TN(unk.length, '{n} nom inconnu de Scryfall : {list}. Tu pourras le corriger après l\'import.', '{n} noms inconnus de Scryfall : {list}. Tu pourras les corriger après l\'import.', { list: show })}</span>`;
     };
     ta.oninput = paint; lang.onchange = () => { haptic('tap'); paint(); };

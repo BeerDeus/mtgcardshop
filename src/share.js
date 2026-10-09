@@ -81,7 +81,7 @@ const trPrice = k => { const t = PXT && PXT.map && PXT.map.get(k); return (t && 
 function trCard(k, n, q, l) {
   const m = dmOf(k) || {}, o = { n, q };
   if (l) o.l = l;
-  const f = frOf(k); if (f) o.f = f;
+  const f = frOf(k); if (f) { o.f = f; if (FRX.l !== 'fr') o.fl = FRX.l; }      // fl : langue du nom imprimé (absente : français, comme avant)
   const im = (l && l !== 'en' && COLL.li[liKey(l, k)]) || m.im; if (im) o.i = im;
   if (m.cm != null) o.c = m.cm; if (m.tl) o.t = m.tl; if (typeof m.cl === 'string') o.o = m.cl; if (m.mc) o.m = m.mc;
   return o;
@@ -353,7 +353,7 @@ function trOpenImg(row) {
   if (list.length) openCardViewer(list, at);
 }
 function openWishAdd() {
-  openSheet(T('Ajouter une carte recherchée'), T('Nom anglais ou français déjà connu de Scryfall'), api => {
+  openSheet(T('Ajouter une carte recherchée'), nmT('Nom anglais ou français déjà connu de Scryfall', 'Nom anglais ou en {lang} déjà connu de Scryfall', 'Nom anglais déjà connu de Scryfall'), api => {
     api.body.innerHTML = `<div class="field-in"><label class="label" for="waName">${T('Nom de la carte')}</label><input type="text" id="waName" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Mana Crypt" enterkeyhint="search"></div>
       <div class="status" id="waStatus" data-ok="0" hidden><span class="dot"></span><span></span></div><div class="ca-list" id="waList" role="listbox" aria-label="${T('Suggestions')}"></div>`;
     const inp = $('#waName', api.body), list = $('#waList', api.body), stt = $('#waStatus', api.body); let cat = null;

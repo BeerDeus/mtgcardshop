@@ -802,14 +802,15 @@ test('noms français bruités par l\'OCR : retrouvés, jamais une mauvaise carte
 
 test('gen-fr-names.mjs : la ligne générée est identique à frRow() de l\'app (data.js)', async () => {
   const { readFileSync } = await import('node:fs'), src = readFileSync(new URL('../src/data.js', import.meta.url), 'utf8');
-  const imgOf = /^const imgOf = .*;$/m.exec(src)[0], fn = /^function frRow\(c\) \{[\s\S]*?^\}/m.exec(src)[0];
-  const appRow = new Function(imgOf + '\n' + fn + '\nreturn frRow;')(), { frRow } = await import('../gen-fr-names.mjs');
+  const imgOf = /^const imgOf = .*;$/m.exec(src)[0], fn = /^function frRow\(c, sl = 'fr'\) \{[\s\S]*?^\}/m.exec(src)[0];
+  const appRow = new Function(imgOf + '\n' + fn + '\nreturn frRow;')(), { frRow, namesRow } = await import('../gen-fr-names.mjs');
   const cards = [
     { lang: 'fr', name: 'Sol Ring', printed_name: 'Anneau solaire', image_uris: { small: 'https://cards.scryfall.io/small/front/a/b/ab.jpg?1700' } },
     { lang: 'fr', name: 'Delver of Secrets // Insectile Aberration', card_faces: [{ name: 'Delver of Secrets', printed_name: 'Explorateur de secrets', image_uris: { small: 'https://cards.scryfall.io/small/front/c/d/cd.jpg?1' } }, { name: 'Insectile Aberration', printed_name: 'Aberration insectoïde' }] },
     { lang: 'fr', name: 'Edgar Markov', printed_name: 'Edgar Markov' }, { lang: 'en', name: 'Sol Ring', printed_name: 'Sol Ring' }, { lang: 'fr', name: 'Sans nom imprimé' }, { name: 'Sol Ring', printed_name: 'Anneau solaire', image_uris: { small: 'https://x/small/p.jpg' } }, null,
   ];
   for (const c of cards) assert.equal(frRow(c), appRow(c), JSON.stringify(c));
+  for (const c of [...cards, { lang: 'de', name: 'Lightning Bolt', printed_name: 'Blitzschlag', image_uris: { small: 'https://cards.scryfall.io/small/front/e/f/ef.jpg?2' } }]) assert.equal(namesRow(c, 'de'), appRow(c, 'de'), 'allemand : ' + JSON.stringify(c));      // même ligne pour les autres langues (names-de.tsv)
   assert.equal(frRow(cards[0]), 'Anneau solaire\tSol Ring\tfront/a/b/ab.jpg'); assert.equal(frRow(cards[1]), 'Explorateur de secrets // Aberration insectoïde\tDelver of Secrets // Insectile Aberration\tfront/c/d/cd.jpg'); assert.equal(frRow(cards[3]), ''); assert.equal(frRow(null), '');
 });
 

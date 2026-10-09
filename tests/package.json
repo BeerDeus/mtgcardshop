@@ -10,6 +10,7 @@
     "test:unit": "bash run-tests.sh test.mjs test-trade.mjs test-cloud.mjs test-jobs.mjs test-proxy.mjs test-push.mjs test-alerts.mjs test-edh-gen.mjs smoke.mjs"
   },
   "devDependencies": {
+    "@tesseract.js-data/deu": "1.0.0",
     "@tesseract.js-data/eng": "1.0.0",
     "@tesseract.js-data/fra": "1.0.0",
     "esbuild": "0.28.2",

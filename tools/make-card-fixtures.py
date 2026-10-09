@@ -49,6 +49,9 @@ jobs = {
   'elfes.jpg': card('Elfes de Llanowar', frame=(60, 110, 70), band=(210, 225, 205), art=(40, 110, 60), cost=[(60, 140, 70)]),
   'behemoth.jpg': finish(card('Béhémoth Cratérosabot', frame=(60, 110, 70), band=(210, 225, 205), art=(40, 90, 50), cost=[(150, 150, 150)] + [(60, 140, 70)] * 3, size=34), rot=1.5, noise=12),
   'epees.jpg': card('Épées aux charrues', cost=[(250, 245, 220)]),
+  # cartes allemandes (téléphone allemand : moteur « deu », catalogue names-de.tsv) ; en dernier : les cartes ci-dessus restent identiques
+  'blitz.jpg': card('Blitzschlag', frame=(200, 120, 90), band=(240, 222, 205), art=(150, 60, 40), cost=[(210, 90, 60)]),
+  'zorn.jpg': finish(card('Zorn Gottes', frame=(235, 228, 205), cost=[(150, 150, 150)] + [(250, 245, 220)] * 2), rot=-1.0, noise=10),
 }
 for n, im in jobs.items(): im.convert('RGB').save(f'{out}/{n}', quality=88)
 # plusieurs cartes sur une photo : 3 × 2, légèrement de travers

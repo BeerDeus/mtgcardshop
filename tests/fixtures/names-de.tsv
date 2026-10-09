@@ -1,0 +1,20 @@
+# names-de (tests) : noms allemands imprimés de cartes connues, même format que pwa/names-de.tsv (gen-fr-names.mjs --lang de) ; chemins d'image inventés
+Arkanes Siegel	Arcane Signet	front/de/arcane-signet.jpg
+Blitzschlag	Lightning Bolt	front/de/lightning-bolt.jpg
+Dunkles Ritual	Dark Ritual	front/de/dark-ritual.jpg
+Ebene	Plains	front/de/plains.jpg
+Edgar Markov	Edgar Markov	front/de/edgar-markov.jpg
+Gebirge	Mountain	front/de/mountain.jpg
+Gegenzauber	Counterspell	front/de/counterspell.jpg
+Insel	Island	front/de/island.jpg
+Kommandoturm	Command Tower	front/de/command-tower.jpg
+Kraterhuf-Behemoth	Craterhoof Behemoth	front/de/craterhoof-behemoth.jpg
+Llanowarelfen	Llanowar Elves	front/de/llanowar-elves.jpg
+Pfad ins Exil	Path to Exile	front/de/path-to-exile.jpg
+Rhystische Studien	Rhystic Study	front/de/rhystic-study.jpg
+Riesenwuchs	Giant Growth	front/de/giant-growth.jpg
+Schwerter zu Pflugscharen	Swords to Plowshares	front/de/swords-to-plowshares.jpg
+Sol-Ring	Sol Ring	front/de/sol-ring.jpg
+Sumpf	Swamp	front/de/swamp.jpg
+Wald	Forest	front/de/forest.jpg
+Zorn Gottes	Wrath of God	front/de/wrath-of-god.jpg

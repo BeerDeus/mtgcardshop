@@ -658,7 +658,7 @@ function updateRow(el, c, v, st) {
     const small = pick.parts.length === 1 && n > 1 ? `${n} × ${fmt(top.price, top.cur)}` : '';
     el.innerHTML = `${thumb}<span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${qty}${ownTag}${tags.join('')}</span><span class="row-seller">${esc(top.seller)}${top.country ? ' · ' + esc(top.country) : ''}</span></span><span class="row-price"><b${prevCost != null && prevCost !== pick.cost ? ' class="flash"' : ''}>${fmt(pick.cost, top.cur)}</b>${small ? `<small>${small}</small>` : ''}</span>`;
   } else {
-    const msg = v.s === 'notfound' ? (c.amb ? T('Nom français de plusieurs cartes : {list}. Écris le nom anglais.', { list: c.amb.join(' · ') }) : T('Nom introuvable, vérifie l\'orthographe'))
+    const msg = v.s === 'notfound' ? (c.amb ? (FRX.l === 'fr' ? T('Nom français de plusieurs cartes : {list}. Écris le nom anglais.', { list: c.amb.join(' · ') }) : T('Nom en {lang} de plusieurs cartes : {list}. Écris le nom anglais.', { list: c.amb.join(' · '), lang: LANGS[FRX.l] || FRX.l })) : T('Nom introuvable, vérifie l\'orthographe'))
       : v.s === 'none' && isCm() ? T('Pas de prix Cardmarket connu')
       : v.s === 'stale' ? T('Collection modifiée : relance la recherche')
       : v.s === 'nohub' ? T('Aucune offre compatible Zero')
@@ -1190,7 +1190,7 @@ function init() {
   mountSeg($('#segTab'), [{ v: 'cards', label: T('Cartes') }, { v: 'sellers', label: T('Vendeurs') }], 'cards', v => {
     S.tab = v; $('#list').hidden = v !== 'cards'; $('#cardsPane').hidden = v !== 'cards'; $('#sellers').hidden = v !== 'sellers'; if (v === 'sellers') renderSellers(true); else applyView(true);
   });
-  ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { if (s === '#optLang') S.opts.langSet = true; readOpts(); saveStore(); }));      // langue choisie à la main : elle ne suit plus celle de l'interface
+  ['#optLang', '#optCond', '#optShip', '#optFallback'].forEach(s => $(s).addEventListener('change', () => { if (s === '#optLang') S.opts.langSet = true; readOpts(); saveStore(); if (s === '#optLang') namesSync(); }));      // langue choisie à la main : elle ne suit plus celle de l'interface
   syncShip(); modeHint(); modeLabel();
 
   const ta = $('#deckText');

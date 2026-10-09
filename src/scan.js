@@ -9,11 +9,17 @@
 const TESS_V = '5.1.1', CDN = 'https://cdn.jsdelivr.net/npm/';
 const TESS = {
   js: `${CDN}tesseract.js@${TESS_V}/dist/tesseract.min.js`, worker: `${CDN}tesseract.js@${TESS_V}/dist/worker.min.js`, core: `${CDN}tesseract.js-core@${TESS_V}`,
-  langs: { eng: `${CDN}@tesseract.js-data/eng/4.0.0_best_int`, fra: `${CDN}@tesseract.js-data/fra/4.0.0_best_int` },
+  langs: { eng: `${CDN}@tesseract.js-data/eng/4.0.0_best_int`, fra: `${CDN}@tesseract.js-data/fra/4.0.0_best_int`, deu: `${CDN}@tesseract.js-data/deu/4.0.0_best_int`,
+    spa: `${CDN}@tesseract.js-data/spa/4.0.0_best_int`, ita: `${CDN}@tesseract.js-data/ita/4.0.0_best_int`, por: `${CDN}@tesseract.js-data/por/4.0.0_best_int` },
 };
+/** Moteur OCR de la langue des noms reconnus (collection.js › namesLang) ; lu d'abord, puis l'anglais. Cartes anglaises (aucun catalogue) : l'anglais seul. */
+const TESS_OF = { fr: 'fra', de: 'deu', es: 'spa', it: 'ita', pt: 'por' };
+const ocrLangs = () => { const t = TESS_OF[namesLang()]; return t ? [t, 'eng'] : ['eng']; };
 const OCR = { lib: null, workers: {}, onProg: null };
 /** Lettres admises dans un nom de carte : écarte les symboles de mana, filets et bruits que Tesseract prendrait pour du texte. */
-const LETTERS = { eng: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,'’-:!", fra: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆàâäçéèêëîïôöùûüÿœæ ,'’-:!" };
+const LETTERS = { eng: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,'’-:!", fra: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆàâäçéèêëîïôöùûüÿœæ ,'’-:!",
+  deu: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüß ,'’-:!", spa: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÑÓÚÜáéíñóúü¡¿ ,'’-:!",
+  ita: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÈÉÌÍÒÓÙÚàèéìíòóùú ,'’-:!", por: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÇÉÊÍÓÔÕÚÜàáâãçéêíóôõúü ,'’-:!" };
 function ocrLib() {
   if (typeof Tesseract !== 'undefined') return Promise.resolve(Tesseract);
   if (!OCR.lib) OCR.lib = new Promise((res, rej) => {
@@ -262,7 +268,9 @@ function scanFlash() { const f = $('.sc-flash', SC.el); if (!f) return; f.classL
 const FRC = { cat: null, at: 0, p: null, state: 'idle', done: 0, total: 0, err: '' };      // state : idle · run · ready · ask (réseau mobile : on demande) · err
 const frcMetered = () => { try { const c = navigator.connection; return !!c && (c.saveData === true || c.type === 'cellular'); } catch (e) { return false; } };
 async function frcWarm() {
-  if (!FRC.cat) { const c = await scryFrCached().catch(() => null); if (c && !FRC.cat) { FRC.cat = frCatalog(c.rows); FRC.at = c.at; } }
+  const l = namesLang(); if (!l) { FRC.state = 'idle'; frcPaint(); return; }      // cartes anglaises : aucun catalogue de noms imprimés
+  namesSwitch(l);
+  if (!FRC.cat) { const c = await scryFrCached(l).catch(() => null); if (c && !FRC.cat && FRX.l === l) { FRC.cat = frCatalog(c.rows, l); FRC.at = c.at; } }
   if (FRC.cat && Date.now() - FRC.at < FR_FRESH) { FRC.state = 'ready'; frcPaint(); frcNames(); return; }
   frcStart(false);
 }
@@ -270,24 +278,27 @@ async function frcWarm() {
 /** Le catalogue vient d'arriver : les lignes FR déjà scannées passent sous leur nom imprimé. */
 function frcNames() { if (SC.el && FRC.cat && FRC.cat.fr && FRC.cat.fr.size) scanPaintList(); }
 function frcStart(force) {
+  const l = namesLang(); if (!l) return null;
+  namesSwitch(l);
   if (FRC.p) return FRC.p;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = T('Hors ligne'); frcPaint(); return null; }
   FRC.state = 'run'; FRC.err = ''; FRC.done = 0; FRC.total = 0; frcPaint();
-  FRC.p = (async () => {
-    if (!FRC.cat) { const st = await scryFrStatic().catch(() => null); if (st) { FRC.cat = frCatalog(st.rows); FRC.at = st.at; FRC.state = 'ready'; return; } }      // fichier du site : petit, pas de question même en 4G
+  const p = FRC.p = (async () => {
+    if (!FRC.cat) { const st = await scryFrStatic(undefined, l).catch(() => null); if (FRX.l !== l) return; if (st) { FRC.cat = frCatalog(st.rows, l); FRC.at = st.at; FRC.state = 'ready'; return; } }      // fichier du site : petit, pas de question même en 4G
     if (!force && !FRC.cat && frcMetered()) { FRC.state = 'ask'; return; }
-    const rec = await scryFrCatalog(null, (d, t) => { FRC.done = d; FRC.total = t; frcPaint(); });
-    FRC.cat = frCatalog(rec.rows); FRC.at = rec.at; FRC.state = 'ready';
-  })().catch(e => { FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? T('Scryfall demande une pause') : T('Téléchargement interrompu'); })
-    .finally(() => { FRC.p = null; frcPaint(); frcNames(); });
-  return FRC.p;
+    const rec = await scryFrCatalog(null, (d, t) => { FRC.done = d; FRC.total = t; frcPaint(); }, l);
+    if (FRX.l !== l) return;                                                           // langue changée pendant le téléchargement
+    FRC.cat = frCatalog(rec.rows, l); FRC.at = rec.at; FRC.state = 'ready';
+  })().catch(e => { if (FRX.l !== l) return; FRC.state = FRC.cat ? 'ready' : 'err'; FRC.err = e && e.code === 'rate' ? T('Scryfall demande une pause') : T('Téléchargement interrompu'); })
+    .finally(() => { if (FRC.p === p) FRC.p = null; frcPaint(); frcNames(); });
+  return p;
 }
 function frcPaint() {
   const el = SC.el && $('.sc-cat', SC.el); if (!el) return;
   const s = FRC.state, pct = FRC.total ? Math.min(99, Math.round(100 * FRC.done / FRC.total)) : 0;
-  if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>${T('Catalogue des noms français : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite', { pct })}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
-  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>' + T('Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).') + '</span><button class="link-btn" type="button" data-act="frc">' + T('Télécharger') + '</button>'; }
-  else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${T('{err}. Les cartes françaises restent lues, moins sûrement.', { err: esc(FRC.err || T('Catalogue indisponible')) })}</span><button class="link-btn" type="button" data-act="frc">${T('Réessayer')}</button>`; }
+  if (s === 'run' && !FRC.cat) { el.hidden = false; el.dataset.k = 'run'; el.innerHTML = `<span>${nmT('Catalogue des noms français : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite', 'Catalogue des noms en {lang} : {pct} % · la lecture marche déjà, elle sera plus sûre ensuite', null, { pct })}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span>`; }
+  else if (s === 'ask' && !FRC.cat) { el.hidden = false; el.dataset.k = 'idle'; el.innerHTML = '<span>' + nmT('Pour lire les cartes françaises avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).', 'Pour lire les cartes en {lang} avec précision : catalogue des noms (≈ 15 à 20 Mo, une seule fois).') + '</span><button class="link-btn" type="button" data-act="frc">' + T('Télécharger') + '</button>'; }
+  else if (s === 'err' && !FRC.cat) { el.hidden = false; el.dataset.k = 'err'; el.innerHTML = `<span>${nmT('{err}. Les cartes françaises restent lues, moins sûrement.', '{err}. Les cartes en {lang} restent lues, moins sûrement.', null, { err: esc(FRC.err || T('Catalogue indisponible')) })}</span><button class="link-btn" type="button" data-act="frc">${T('Réessayer')}</button>`; }
   else el.hidden = true;
 }
 
@@ -296,7 +307,7 @@ const FR_CACHE = new Map();
 async function frSearch(words, signal) {
   const k = words.map(w => w.toLowerCase()).join(' ');
   if (FR_CACHE.has(k)) return FR_CACHE.get(k);
-  let res = []; try { res = await scryForeign(words, 'fr', signal); } catch (e) { if (e.name === 'AbortError') throw e; return []; }   // erreur réseau : pas mise en cache
+  let res = []; try { res = await scryForeign(words, SCRY_LANG[FRX.l] || 'fr', signal); } catch (e) { if (e.name === 'AbortError') throw e; return []; }   // erreur réseau : pas mise en cache
   if (FR_CACHE.size > 400) FR_CACHE.clear(); FR_CACHE.set(k, res); return res;
 }
 /** Un texte lu (nom français probable) → { name (anglais), key, score, raw } ou null : mots longs cherchés chez Scryfall, puis nom imprimé comparé. */
@@ -308,14 +319,14 @@ async function frenchName(text, signal, quick) {
   if (!res.length) return null;
   const fm = matchName(text, nameIndex(res.map(r => r.printed)), 0.72); if (!fm) return null;
   const hit = res.find(r => frontName(r.printed) === frontName(fm.name));
-  return hit ? { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: text, card: 'fr', img: hit.img || '' } : null;
+  return hit ? { name: hit.name, key: ownKey(hit.name), score: fm.score, raw: text, card: FRX.l, img: hit.img || '' } : null;
 }
 /** Texte lu → carte reconnue. Deux catalogues locaux comparés sur les mêmes lignes : noms français imprimés (catalogue Scryfall téléchargé) et noms anglais ;
  *  la lecture la plus sûre gagne, à égalité (nom identique dans les deux langues) le français. Catalogue français absent ou rien de sûr : repli sur la recherche Scryfall des noms imprimés. */
 async function scanMatch(lines, cat, lang) {
   const en = bestMatch(lines, cat.idx); if (en) en.card = 'en';
   let m = bestOf(matchFr(lines, FRC.cat), en);
-  if (lang === 'fra' && (!m || m.score < 0.84) && (!FRC.cat || !m)) {
+  if (lang !== 'eng' && (!m || m.score < 0.84) && (!FRC.cat || !m)) {      // moteur de la langue des noms (fra, deu…) : repli sur la recherche Scryfall des noms imprimés
     for (const l of lines.slice(0, FRC.cat ? 2 : 3)) {
       const fm = await frenchName(l.text, undefined, !!FRC.cat);
       if (fm && (!m || fm.score > m.score)) m = fm;
@@ -327,7 +338,7 @@ async function scanMatch(lines, cat, lang) {
 /** Lit une zone « nom » : français d'abord (la plupart des cartes), puis anglais ; le texte lu est comparé aux noms français ET anglais (une carte anglaise lue par le moteur français est reconnue aussi).
  *  Polarité automatique puis inversée (texte clair sur fond sombre). S'arrête dès qu'un nom est sûr. */
 async function readNameAuto(src, box, outW, psm, cat, retry) {
-  const langs = ['fra', 'eng'];
+  const langs = ocrLangs();
   let best = null, inv;
   for (let pass = 0; pass < (retry ? 2 : 1); pass++) {
     const c = prepCanvas(src, box, outW, pass ? (inv ? 0 : 1) : undefined); if (!pass) inv = c.inv;
@@ -504,7 +515,7 @@ async function scanWarm() {
   const s = SC.session; if (!SC.el || SC.warm) return; SC.warm = true;
   try {
     await Promise.all([collCatalog(), frcWarm()]);
-    if (!SC.el || SC.session !== s || natOcr()) return; await ocrWorker('fra');      // appli Android : ML Kit, pas de moteur à télécharger      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
+    if (!SC.el || SC.session !== s || natOcr()) return; await ocrWorker(ocrLangs()[0]);      // appli Android : ML Kit, pas de moteur à télécharger      // français d'abord : l'anglais ne se charge que si le français ne trouve rien
   } catch (e) { /* hors ligne ou CDN bloqué : le premier appui retentera et dira pourquoi */ }
   finally { SC.warm = false; SC.workEnd = performance.now(); }
 }
@@ -606,7 +617,9 @@ function openScan() {
       <p class="sc-nocam">${T('Pas d\'appareil photo : utilise « Photos » ou « Appareil » ci-dessous.')}</p></div>
     <footer class="dv-foot"><button class="btn ghost" type="button" data-act="close">${T('Annuler')}</button><div class="sc-total" aria-live="polite" hidden></div><button class="btn" type="button" data-act="done" disabled>${T('Ajouter')}</button></footer>
     <div class="sc-cat coll-status" hidden></div>
-    <div class="sc-note"><p class="hint">${T('Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d\'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l\'appareil photo du téléphone (si l\'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l\'image (le reste n\'est pas lu) ; « Photos » : ta galerie.')}</p><button class="sc-x" type="button" data-act="note" aria-label="${T('Fermer l\'aide')}"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="sc-note"><p class="hint">${nmT('Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (français d\'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l\'appareil photo du téléphone (si l\'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l\'image (le reste n\'est pas lu) ; « Photos » : ta galerie.',
+      'Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré ({lang} d\'abord, puis anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l\'appareil photo du téléphone (si l\'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l\'image (le reste n\'est pas lu) ; « Photos » : ta galerie.',
+      'Cadre le haut de chaque carte (nom + mana) et appuie sur le cercle : la lecture se fait en arrière-plan, enchaîne sans attendre. Seul le nom est lu, le mana est ignoré (en anglais) puis retrouvé dans Scryfall : vérifie la miniature (appuie dessus pour la voir en grand). Les photos ne sont jamais enregistrées. « Appareil » ouvre l\'appareil photo du téléphone (si l\'aperçu saccade) : photo de la <b>carte entière en portrait</b>, nom et mana dans le <b>tiers haut</b> de l\'image (le reste n\'est pas lu) ; « Photos » : ta galerie.')}</p><button class="sc-x" type="button" data-act="note" aria-label="${T('Fermer l\'aide')}"><svg class="i"><use href="#i-close"/></svg></button></div>
     <div class="dv-scroll sc-list"></div>
     <div class="sc-bar">
       <label class="btn ghost small sc-photo"><svg class="i"><use href="#i-image"/></svg>${T('Photos')}<input type="file" id="scFile" accept="image/*" multiple></label>

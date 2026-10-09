@@ -123,7 +123,7 @@ function applyOpts(o) {
   $('#optLang').value = S.opts.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
   $('#optShip').value = (o.ship / 100).toFixed(2).replace('.', ',');
   $('#segFoil').setValue(o.foil); $('#segMode').setValue(o.mode);
-  syncShip(); modeHint(); saveStore();
+  syncShip(); modeHint(); saveStore(); namesSync();      // langue du deck choisie à la main : le catalogue des noms suit
 }
 function loadDeck(id, quiet) {
   const d = findDeck(id); if (!d) return;

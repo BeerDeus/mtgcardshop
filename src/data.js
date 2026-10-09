@@ -323,9 +323,11 @@ async function scryForeign(words, lang, signal) {
    Scryfall n'a pas de liste de noms imprimés : on parcourt la recherche « lang:fr » (175 cartes par page, ~180 pages (≈ 31 000 cartes mesurées), 2 requêtes/s). Fait une seule fois,
    gardé sur l'appareil (« nom imprimé \t nom anglais \t image », ~2,5 Mo), repris là où il en était si interrompu, puis complété des nouveautés tous les 14 jours. */
 const FR_KEY = 'sc:fr', FR_PART = 'sc:fr:part', FR_FRESH = 14 * DAY, FR_PAGES = 180, FR_STATIC = 'fr-names.tsv';
-/** Une carte Scryfall imprimée en français → « nom imprimé \t nom anglais \t image » (image : chemin après /small/, sans paramètre), ou '' sans nom imprimé. */
-function frRow(c) {
-  if (!c || (c.lang && c.lang !== 'fr')) return '';
+// Autres langues (l : code de l'appli, de es it pt) : même catalogue, sous sa propre clé et son propre fichier (names-de.tsv…) ; le français garde les siens (rien à retélécharger).
+const nmKey = l => (!l || l === 'fr' ? FR_KEY : 'sc:nm:' + l), nmPart = l => (!l || l === 'fr' ? FR_PART : 'sc:nm:' + l + ':part'), nmFile = l => (!l || l === 'fr' ? FR_STATIC : 'names-' + (SCRY_LANG[l] || l) + '.tsv');
+/** Une carte Scryfall imprimée en français (sl : autre langue Scryfall) → « nom imprimé \t nom anglais \t image » (image : chemin après /small/, sans paramètre), ou '' sans nom imprimé. */
+function frRow(c, sl = 'fr') {
+  if (!c || (c.lang && c.lang !== sl)) return '';
   const f = c.card_faces || [], p = c.printed_name || (f.length > 1 ? f.map(x => x.printed_name || x.name).join(' // ') : '');
   if (!p || !c.name) return '';
   const u = imgOf(c) || '', m = /\/small\/([^?]+)/.exec(u);
@@ -333,56 +335,56 @@ function frRow(c) {
 }
 const frRowKey = r => r.split('\t').slice(0, 2).join('\t');
 /** Suit les pages d'une recherche (next_page) : onPage(lignes de la page, total annoncé, page suivante) après chaque page. Retourne toutes les lignes. */
-async function scryFrPages(url, signal, onPage) {
+async function scryFrPages(url, signal, onPage, sl = 'fr') {
   const rows = [];
   while (url) {
     let j; try { j = await httpJson(limScry, url, SCRY_JSON, signal); } catch (e) { if (e.code === '404') break; throw e; }   // 404 : aucune carte (mise à jour sans nouveauté)
-    const got = (j.data || []).map(frRow).filter(Boolean); for (const r of got) rows.push(r);
+    const got = (j.data || []).map(c => frRow(c, sl)).filter(Boolean); for (const r of got) rows.push(r);
     url = j.has_more && typeof j.next_page === 'string' && /^https:\/\/api\.scryfall\.com\//.test(j.next_page) ? j.next_page : '';
     if (onPage) await onPage(got, j.total_cards || 0, url);
   }
   return rows;
 }
 const frSearchUrl = q => 'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(q) + '&unique=cards&order=name';
-/** Catalogue français sur l'appareil, s'il est complet : { rows, at } ou null. */
-async function scryFrCached() { const c = await Cache.get(FR_KEY, 3650 * DAY); return c && Array.isArray(c.rows) && c.rows.length > 500 ? c : null; }
+/** Catalogue français (l : autre langue) sur l'appareil, s'il est complet : { rows, at } ou null. */
+async function scryFrCached(l = 'fr') { const c = await Cache.get(nmKey(l), 3650 * DAY); return c && Array.isArray(c.rows) && c.rows.length > 500 ? c : null; }
 /** Catalogue prêt à l'emploi servi par le site (fr-names.tsv, régénéré chaque semaine par GitHub Actions : mêmes lignes « imprimé \t anglais \t image », ≈ 1,3 Mo compressé) :
  *  1 requête au lieu de ≈ 180 chez Scryfall. null s'il manque ou s'il est trop court (appli ouverte hors http, fichier pas encore généré) → on pagine chez Scryfall. */
-async function scryFrStatic(signal) {
+async function scryFrStatic(signal, l = 'fr') {
   if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return null;
-  let r; try { r = await fetch(new URL(FR_STATIC, location.href).href, { signal, cache: 'no-cache' }); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
+  let r; try { r = await fetch(new URL(nmFile(l), location.href).href, { signal, cache: 'no-cache' }); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
   if (!r.ok) return null;
   let t; try { t = await r.text(); } catch (e) { if (e.name === 'AbortError') throw e; return null; }
   const rows = t.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l && l[0] !== '#' && l.split('\t').length >= 2);
   if (rows.length < 500) return null;
-  const rec = { rows, at: Date.now() }; await Cache.set(FR_KEY, rec); await Cache.set(FR_PART, null); return rec;
+  const rec = { rows, at: Date.now() }; await Cache.set(nmKey(l), rec); await Cache.set(nmPart(l), null); return rec;
 }
 /** Télécharge (ou reprend, ou met à jour) le catalogue : retourne { rows, at }. onProgress(fait, total). Une mise à jour qui échoue garde l'ancien catalogue. */
-async function scryFrCatalog(signal, onProgress) {
-  const hit = await scryFrCached();
+async function scryFrCatalog(signal, onProgress, l = 'fr') {
+  const sl = SCRY_LANG[l] || 'fr', hit = await scryFrCached(l);
   if (hit && Date.now() - hit.at < FR_FRESH) return hit;
-  const pre = await scryFrStatic(signal); if (pre) return pre;                     // fichier du site d'abord (rapide), Scryfall seulement s'il manque
+  const pre = await scryFrStatic(signal, l); if (pre) return pre;                     // fichier du site d'abord (rapide), Scryfall seulement s'il manque
   if (hit) {
     const since = new Date(hit.at - 30 * DAY).toISOString().slice(0, 10);          // nouveautés : impressions françaises sorties depuis le dernier passage (30 jours de marge)
     try {
-      const add = await scryFrPages(frSearchUrl('lang:fr date>=' + since), signal);
+      const add = await scryFrPages(frSearchUrl('lang:' + sl + ' date>=' + since), signal, null, sl);
       const by = new Map(hit.rows.map(r => [frRowKey(r), r])); for (const r of add) by.set(frRowKey(r), r);
-      const rec = { rows: [...by.values()], at: Date.now() }; await Cache.set(FR_KEY, rec); return rec;
+      const rec = { rows: [...by.values()], at: Date.now() }; await Cache.set(nmKey(l), rec); return rec;
     } catch (e) { if (e.name === 'AbortError') throw e; return hit; }
   }
-  const part = await Cache.get(FR_PART, 30 * DAY);                                  // reprise d'un téléchargement interrompu
-  let rows = part && Array.isArray(part.rows) ? part.rows : [], url = part && part.next ? part.next : frSearchUrl('lang:fr'), pages = 0, total = part && part.total || 0;
+  const part = await Cache.get(nmPart(l), 30 * DAY);                               // reprise d'un téléchargement interrompu
+  let rows = part && Array.isArray(part.rows) ? part.rows : [], url = part && part.next ? part.next : frSearchUrl('lang:' + sl), pages = 0, total = part && part.total || 0;
   if (part && part.next === '') url = '';
   if (url) {
     await scryFrPages(url, signal, async (got, t, next) => {
       for (const r of got) rows.push(r); if (t) total = t; pages++;
       if (onProgress) onProgress(rows.length, total || FR_PAGES * 175);
-      if (pages % 8 === 0 && next) await Cache.set(FR_PART, { rows: rows.slice(), next, total });      // copie : le point de reprise ne grossit pas avec les pages suivantes
-    });
+      if (pages % 8 === 0 && next) await Cache.set(nmPart(l), { rows: rows.slice(), next, total });      // copie : le point de reprise ne grossit pas avec les pages suivantes
+    }, sl);
   }
   const seen = new Set(); rows = rows.filter(r => { const k = frRowKey(r); if (seen.has(k)) return false; seen.add(k); return true; });
-  if (rows.length < 500) throw netErr('http', T('Catalogue français incomplet'));
-  const rec = { rows, at: Date.now() }; await Cache.set(FR_KEY, rec); await Cache.set(FR_PART, null);
+  if (rows.length < 500) throw netErr('http', l === 'fr' ? T('Catalogue français incomplet') : T('Catalogue des noms incomplet ({lang})', { lang: LANGS[l] || l }));
+  const rec = { rows, at: Date.now() }; await Cache.set(nmKey(l), rec); await Cache.set(nmPart(l), null);
   return rec;
 }
 /** Images (petites) de cartes dans une autre langue que l'anglais : Map(clé de collection → url, '' si Scryfall n'a pas la carte dans cette langue). Une recherche pour 12 noms. */
@@ -757,14 +759,14 @@ function cmImgSave() {
   clearTimeout(CMIMG.t);
   CMIMG.t = setTimeout(() => { if (!CMIMG.m) return; const o = {}; for (const [k, v] of [...CMIMG.m].slice(-4000)) o[k] = v; Cache.set('cm:img', o).catch(() => {}); }, 600);      // les 4 000 dernières (≈ 300 Ko)
 }
-/** Vignettes sans requête : dans la langue de la recherche si on l'a (miniature française du catalogue pour une recherche en français), sinon l'anglaise
+/** Vignettes sans requête : dans la langue de la recherche si on l'a (miniature du catalogue des noms pour une recherche dans sa langue), sinon l'anglaise
  *  (lue avec les prix, collection, images gardées, impressions d'une recherche CardTrader). imgs : Map clé → url, complétée sur place. Retourne les cartes encore sans image. */
 async function cmImages(cards, imgs, lang) {
   const meta = typeof COLL !== 'undefined' ? COLL.meta : {}, fr = typeof FRX !== 'undefined' && FRX.ix ? FRX.ix.img : null, mem = await cmImgMap();
   const frImg = k => { const f = fr && fr.get(k); return f ? (/^https?:/.test(f) ? f : FR_IMG + f) : ''; };
   const rest = [];
   for (const c of cards) {
-    const k = ownKey(c.key), en = imgs.get(c.key) || (meta[k] && meta[k].im) || mem.get(k) || '', u = (lang === 'fr' && frImg(k)) || en;
+    const k = ownKey(c.key), en = imgs.get(c.key) || (meta[k] && meta[k].im) || mem.get(k) || '', u = (fr && lang === FRX.l && frImg(k)) || en;      // catalogue chargé dans la langue de la recherche (français, allemand…) : sa miniature
     if (u) imgs.set(c.key, u); else rest.push(c);
   }
   await pool(rest, 6, async c => {

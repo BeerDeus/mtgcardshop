@@ -34,7 +34,7 @@ function obOpen() {
         <p>${T('Tu l\'as déjà dans une autre appli ? Exporte-la en CSV et importe le fichier : c\'est le plus rapide.')}</p>
         <div class="ob-opts">
           <button class="ob-opt" type="button" data-ob="import"><svg class="i"><use href="#i-upload"/></svg><b>${T('Importer un fichier')}</b><span>${T('CSV de ManaBox, Moxfield, Dragon Shield, Archidekt, Deckbox… ou une liste « 3 Sol Ring ».')}</span></button>
-          <button class="ob-opt" type="button" data-ob="scan"><svg class="i"><use href="#i-camera"/></svg><b>${T('Scanner mes cartes')}</b><span>${T('L\'appareil photo lit le nom de la carte, en français ou en anglais.')}</span></button>
+          <button class="ob-opt" type="button" data-ob="scan"><svg class="i"><use href="#i-camera"/></svg><b>${T('Scanner mes cartes')}</b><span>${nmT('L\'appareil photo lit le nom de la carte, en français ou en anglais.', 'L\'appareil photo lit le nom de la carte, en {lang} ou en anglais.', 'L\'appareil photo lit le nom de la carte.')}</span></button>
         </div>
         <button class="btn ghost block" type="button" data-ob="next">${T('Plus tard')}</button>
       </section>

@@ -264,7 +264,7 @@ function bdTab(v) {
     const opts = BD.fmt === 'commander' ? [{ v: 'main', label: T('Deck') }, { v: 'cmdr', label: T('Commandant') }] : [{ v: 'main', label: T('Deck') }, { v: 'side', label: T('Réserve') }];
     if (!opts.some(o => o.v === BD.tgt)) BD.tgt = 'main';
     ctl.innerHTML = `<div class="bd-add"><span>${T('Ajouter au')}</span><div class="seg" id="bdTgt" role="radiogroup" aria-label="${T('Ajouter au')}"></div></div>
-      <div class="field-in"><label class="label" for="bdQ">${v === 'coll' ? T('Chercher dans ma collection') : T('Nom de la carte')}</label><input type="text" id="bdQ" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${v === 'coll' ? T('Nom français ou anglais') : 'Sol Ring'}" enterkeyhint="search"></div>`;
+      <div class="field-in"><label class="label" for="bdQ">${v === 'coll' ? T('Chercher dans ma collection') : T('Nom de la carte')}</label><input type="text" id="bdQ" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${v === 'coll' ? nmT('Nom français ou anglais', 'Nom en {lang} ou en anglais', 'Nom de la carte') : 'Sol Ring'}" enterkeyhint="search"></div>`;
     mountSeg($('#bdTgt', ctl), opts, BD.tgt, t => { BD.tgt = t; BD.shown = BD_PAGE; bdList(); });
     if (v === 'find' && !BD.cat && !BD.catErr) collCatalog().then(c => { BD.cat = c; if (BD.el && BD.tab === 'find') bdList(); }).catch(e => { BD.catErr = e && e.code === 'rate' ? T('Scryfall demande une pause, réessaie dans une minute.') : T('Catalogue Scryfall injoignable : réessaie plus tard.'); if (BD.el && BD.tab === 'find') bdList(); });
     if (v === 'coll') { BD.idx = null; if ((collMissing().length || collLangMissingCount()) && !COLL.enrichErr) collEnrich(); }

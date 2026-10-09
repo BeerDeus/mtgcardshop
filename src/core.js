@@ -91,11 +91,16 @@ const userLang = () => defaultCardLang(I18N.lang, navLangs());
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
-/* ── Noms français tapés ou importés → carte anglaise : index construit depuis le catalogue français (fr-names.tsv) ; tant qu'il n'est pas chargé, les noms restent tels qu'écrits ── */
-const FRX = { ix: null };
+/* ── Noms français tapés ou importés → carte anglaise : index construit depuis le catalogue français (fr-names.tsv) ; tant qu'il n'est pas chargé, les noms restent tels qu'écrits ──
+   Même mécanique pour les autres langues à alphabet latin (names-de.tsv…) : un seul catalogue à la fois, celui de la langue des noms (namesLangOf) ; FRX.l : sa langue. */
+const FRX = { ix: null, l: 'fr' };
+/** Langues dont les noms imprimés sont reconnus (catalogue servi par le site, clés latines de frKey) ; japonais, chinois… : pas encore (clé Unicode à faire). */
+const NAMES_LANGS = ['fr', 'de', 'es', 'it', 'pt'];
+/** Langue des noms imprimés reconnus : celle des cartes si elle a un catalogue, sinon celle de l'interface (français) ; cartes anglaises sur une interface anglaise : '' (aucun catalogue). */
+const namesLangOf = (card, ui) => (NAMES_LANGS.includes(card) ? card : NAMES_LANGS.includes(ui) ? ui : '');
 /** Clé d'un nom pour l'index français : accents, casse, apostrophes, tirets et espaces ignorés (« L'Aquilon », « l aquilon », « Laquilon » se rejoignent). */
 const frKey = s => normPart(s).replace(/ /g, '');
-const frUse = ix => { FRX.ix = ix || null; };
+const frUse = (ix, l = 'fr') => { FRX.ix = ix || null; FRX.l = l; };
 
 /** Une ligne de decklist → undefined (vide) · { ignored: true } (commentaire, en-tête : + quiet ; invalide : signalée) · { qty, name, key }.
  *  Nom français reconnu (index chargé, sauf o.fr === false) : name et key de la carte anglaise, dn = nom imprimé français, fr = 1 ; nom français de plusieurs cartes : amb = [noms anglais], le nom reste tel qu'écrit.
@@ -115,7 +120,7 @@ function parseLine(raw, o) {
   const key = normName(name); if (!key) return { ignored: true };
   const out = lang ? { qty, name, key, lang } : { qty, name, key };
   if (FRX.ix && !(o && o.fr === false)) {
-    const f = frLookup(name, lang === 'fr' || !!(o && o.prefer === 'fr'), key.replace(/[ /]/g, ''));
+    const f = frLookup(name, lang === FRX.l || !!(o && o.prefer === FRX.l), key.replace(/[ /]/g, ''));
     if (f && f.en) { out.name = f.en; out.key = normName(f.en); out.dn = f.p; out.fr = 1; } else if (f && f.amb) out.amb = f.amb;
   }
   return out;
@@ -927,8 +932,8 @@ function parseCollection(text, o) {
   const add = (name, q, l, d) => {
     name = String(name || '').trim(); q = Math.max(1, Math.min(9999, Math.round(q) || 1));
     if (fr && name) {
-      const f = frLookup(name, (l || dl) === 'fr');
-      if (f && f.en) { name = f.en; if (!l) l = 'fr'; nfr++; } else if (f && f.amb && amb.length < 50 && !amb.includes(name)) amb.push(name);
+      const f = frLookup(name, (l || dl) === FRX.l);
+      if (f && f.en) { name = f.en; if (!l) l = FRX.l; nfr++; } else if (f && f.amb && amb.length < 50 && !amb.includes(name)) amb.push(name);
     }
     if (!l) l = dl;
     const k = ownKey(name); if (!name || !k) { skipped++; return; }
@@ -1599,7 +1604,7 @@ function frNames(rows) {
   return m;
 }
 /** Catalogue français : lignes « nom imprimé \t nom anglais \t chemin de l'image » → { n, idx (recherche floue sur les noms imprimés), by (nom imprimé normalisé → { en, img }) }. */
-function frCatalog(rows) {
+function frCatalog(rows, l = 'fr') {
   const by = new Map(), amb = new Set(), names = [], fr = new Map();
   for (const r of rows || []) {
     const [p, en, img] = String(r).split('\t'); if (!p || !en) continue;
@@ -1608,14 +1613,14 @@ function frCatalog(rows) {
     if (by.has(k)) { if (frontName(by.get(k).en) !== frontName(en)) amb.add(k); continue; }      // même nom français pour deux cartes différentes (≈ 0,1 %) : on garde la 1re mais on le sait
     by.set(k, { en, img: img || '' }); names.push(p);
   }
-  return { n: names.length, idx: nameIndex(names), by, amb, fr };
+  return { n: names.length, idx: nameIndex(names), by, amb, fr, l };
 }
 function matchFr(lines, fc) {
   if (!fc || !fc.n) return null;
   const m = bestMatch(lines, fc.idx); if (!m) return null;
   const e = fc.by.get(frontName(m.name)); if (!e) return null;
   const dup = !!(fc.amb && fc.amb.has(frontName(m.name)));      // nom français partagé par plusieurs cartes : jamais « sûr », la photo permet de trancher
-  return { name: e.en, key: ownKey(e.en), score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, card: 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '', ...(dup ? { amb: true } : {}) };
+  return { name: e.en, key: ownKey(e.en), score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, card: fc.l || 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '', ...(dup ? { amb: true } : {}) };
 }
 /** Index des noms français tapés (decklist, import, saisie) depuis les lignes du catalogue « imprimé \t anglais \t image » :
  *  by : clé frKey (nom entier, et face avant d'une carte double) → { en, p } (anglais, imprimé) ou { amb: [anglais…], p } (même nom français pour plusieurs cartes : jamais choisi à la place de l'utilisateur) ;
@@ -1841,7 +1846,7 @@ function shareCard(x) {
   const it = { k: ownKey(n), n, q };
   if (!it.k) return null;
   if (SHARE_LANGS.includes(x.l)) it.l = x.l;
-  const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === 'fr') it.dn = f; }
+  const f = shStr(x.f, 160).trim(); if (f) { it.fn = f; if (it.l === (SHARE_LANGS.includes(x.fl) ? x.fl : 'fr')) it.dn = f; }      // fl : langue de f (partage d'un appareil en allemand…), français sans elle
   { const iv = shStr(x.i, 300), full = !iv || /^https:/.test(iv) ? iv : SCRY_IMG + iv; if (SHARE_IMG_RE.test(full)) it.im = full; }      // adresse complète ou raccourcie (imgShort)
   const pw = shStr(x.w, 90).trim(); if (pw) it.pw = pw;      // illustration recherchée : « Extension · CODE 123 »
   const c = shNum(x.c, 0, 99); if (c != null) it.cm = c;
@@ -1908,4 +1913,4 @@ if (typeof module !== 'undefined' && module.exports) Object.assign(module.export
 // Noms français tapés ou importés (frnames) : exportés à part, hors de la grande liste que d'autres modifient
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { FRX, frKey, frUse, frIndex, frLookup, frToEn, enToFr, nameSuggest });
 // Langue des cartes et liens selon la langue de l'utilisateur (test.mjs) : exportés à part, eux aussi
-if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { defaultCardLang, cmSite, ctCartUrl });
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { defaultCardLang, cmSite, ctCartUrl, namesLangOf, NAMES_LANGS });
