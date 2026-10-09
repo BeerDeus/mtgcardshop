@@ -161,6 +161,7 @@ self.addEventListener('fetch', e => {
 /* ── Push « recherche terminée » ──────────────────────────────────────────────────────────────── */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { try { d = { body: e.data.text() }; } catch (__) { d = {}; } }
+  if (!d || typeof d !== 'object') d = {};      // « null », nombre, texte JSON : avis par défaut (d.kind lèverait une erreur et rien ne serait affiché)
   const alert = d.kind === 'alert';
   const title = String(d.title || (alert ? 'Baisse de prix' : 'Recherche terminée')).slice(0, 80);
   e.waitUntil(self.registration.showNotification(title, {

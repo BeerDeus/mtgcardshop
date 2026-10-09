@@ -240,6 +240,7 @@ await p.evaluate(() => { window.__msgs = []; navigator.serviceWorker.addEventLis
 const push = data => cdp.send('ServiceWorker.deliverPushMessage', { origin: new URL(URL0).origin, registrationId: regId, data: JSON.stringify(data) });
 const notifs = () => p.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map(n => ({ title: n.title, body: n.body, tag: n.tag, url: n.data && n.data.url })));
 const waitNotif = async pred => { for (let i = 0; i < 40; i++) { const n = await notifs(); if (pred(n)) return n; await p.waitForTimeout(150); } return notifs(); };
+const pushSeen = async (data, pred) => { await push(data); const n = await waitNotif(pred); if (pred(n)) return n; await push(data); return waitNotif(pred); };      // message remis par DevTools perdu (vu une fois en CI, worker en cours d'arrêt) : redonné une fois, même tag donc même résultat
 
 await push({ title: 'Recherche terminée', body: 'Les offres de « Atraxa » sont prêtes.', url: './?resume=1' });
 let n = await waitNotif(a => a.length === 1);
@@ -253,7 +254,7 @@ for (const [i, url] of ['//evil.example/phish', '/\\evil.example', '/\t/evil.exa
   await push({ title: 'lien ' + i, url }); n = await waitNotif(a => a.length === 1 && a[0].title === 'lien ' + i); assert.equal(n[0].url, './?resume=1', 'lien refusé : ' + JSON.stringify(url));
 }
 await push({ title: 'même site', url: new URL('?resume=1', URL0).href }); n = await waitNotif(a => a.length === 1 && a[0].title === 'même site'); assert.equal(n[0].url, new URL('?resume=1', URL0).href, 'adresse de l\'app elle-même : gardée');
-await push(null); await p.waitForTimeout(0);
+n = await pushSeen(null, a => a.length === 1 && a[0].title === 'Recherche terminée'); assert.deepEqual(n, [{ title: 'Recherche terminée', body: 'Les offres sont prêtes.', tag: 'deckdeal-run', url: './?resume=1' }], 'message « null » : avis par défaut');
 ok('push : textes bornés, un seul avis à la fois, lien externe refusé');
 
 // toucher la notification : ferme l'avis, rouvre/focus l'app et lui demande de reprendre la recherche
@@ -264,8 +265,7 @@ assert.deepEqual(await notifs(), [], 'avis fermé au toucher');
 ok('toucher la notification : avis fermé, app prévenue (reprise de la recherche)');
 
 // alerte de prix : avis à part (autre tag), lien propre, toucher → l'app ouvre la feuille des alertes
-await push({ title: 'Sol Ring : −40 %', body: '3,00 € → 1,80 € (tendance Cardmarket).', url: './?alerts=1', kind: 'alert' });
-n = await waitNotif(a => a.length === 1);
+n = await pushSeen({ title: 'Sol Ring : −40 %', body: '3,00 € → 1,80 € (tendance Cardmarket).', url: './?alerts=1', kind: 'alert' }, a => a.length === 1);
 assert.deepEqual(n, [{ title: 'Sol Ring : −40 %', body: '3,00 € → 1,80 € (tendance Cardmarket).', tag: 'deckdeal-alert', url: './?alerts=1' }]);
 await push({ title: 'Recherche terminée', body: 'Les offres sont prêtes.', url: './?resume=1' });
 n = await waitNotif(a => a.length === 2); assert.deepEqual(n.map(x => x.tag).sort(), ['deckdeal-alert', 'deckdeal-run'], 'alerte et fin de recherche ne s\'écrasent pas');
