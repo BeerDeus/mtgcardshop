@@ -100,6 +100,8 @@ Ajouter le domaine dans Firebase › Authentication › Paramètres › Domaines
 - Page et catalogues (`fr-names.tsv` ; `names-<langue>.tsv` à la première demande seulement) : lus et compressés une seule fois (brotli, sinon gzip ; hors du fil principal, dès le démarrage), ETag → 304 au lieu de retélécharger ; relus si le fichier change sur le disque. Page : 750 Ko → ≈ 180 Ko transférés.
 - Scryfall : 2 requêtes/s max ; les cartes sont cherchées par lots de 12 noms (une recherche `(!"A" or !"B" …)` au lieu d'une par carte, soit ~10 requêtes pour un deck de 100 cartes), repli carte par carte pour les noms approximatifs ; pause automatique sur 429 ; résultats en cache 7 jours.
 
+- **Scan, autres langues** (`GET /api/names/find?q=…&skip=…`) : quand le nom lu n'est sûr ni dans la langue des noms ni en anglais (ou de justesse sur un texte qui n'a pas l'air de cette langue), l'appli demande au serveur de le chercher dans `fr-names.tsv` et `names-de/es/it/pt.tsv` (même comparaison tolérante que l'appli). Public, lecture seule, 1 à 4 lignes de 100 caractères, 60 par minute et par IP (`NAMES_RATE_PER_MIN`), 4 en même temps. Index construit à la première recherche (≈ 7 Mo de tas par langue, le processus prend ≈ 100 à 170 Mo de plus), libéré après `NAMES_IDLE_MIN` minutes sans recherche (30), relu si le fichier change ; `NAMES_FIND=0` le coupe (l'appli fait alors comme avant).
+
 ## Lecture des offres en tâche de fond
 
 CardTrader limite `marketplace/products` à 10 requêtes/s (1 blueprint par requête) : ~9 req/s est le plafond, une recherche de 700 offres prend donc ~80 s la première fois. Le serveur fait la boucle à la place de l'appareil (`POST /api/jobs`, suivi par `GET /api/jobs/<id>?from=n`, annulation `DELETE`) :
