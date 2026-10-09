@@ -33,8 +33,20 @@ async function page(o = {}) {
   errsAll.push(pg.errs);
   return { ...pg, hits };
 }
-const rows = p => p.$$eval('#hmSetsList .hm-set', as => as.map(a => ({ name: a.querySelector('b').textContent, sub: a.querySelector('.hm-set-t span').textContent, when: a.querySelector('em').textContent,
-  href: a.getAttribute('href'), target: a.target, rel: a.rel, icon: (a.querySelector('img') || {}).src || '' })));
+const rows = p => p.$$eval('#hmSetsList .hm-set', ls => ls.map(l => { const a = l.querySelector('.hm-set-a'), c = l.querySelector('.hm-set-cm');
+  return { name: a.querySelector('b').textContent, sub: a.querySelector('.hm-set-t span').textContent, when: l.querySelector('em').textContent,
+    href: a.getAttribute('href'), target: a.target, rel: a.rel, icon: (a.querySelector('img') || {}).src || '',
+    cm: c && { href: c.getAttribute('href'), target: c.target, rel: c.rel, text: c.textContent, label: c.getAttribute('aria-label') } }; }));
+const CM = (site, name) => `https://www.cardmarket.com/${site}/Magic/Products/Search?searchString=${encodeURIComponent(name)}`;
+/** Géométrie des lignes : débordements, zone de toucher du lien Cardmarket, alignement des deux pastilles, liens jamais imbriqués,
+ *  et ce que touche un doigt au centre de chaque pastille (lien Cardmarket sur la sienne, lien Scryfall étiré sur la date). */
+const geo = p => p.$$eval('#hmSetsList .hm-set', ls => ls.map((l, i) => {
+  if (!i) document.getElementById('hmSets').scrollIntoView({ block: 'center', behavior: 'instant' });      // elementFromPoint : la carte doit être à l'écran
+  const c = l.querySelector('.hm-set-cm'), cb = c.getBoundingClientRect(), pill = c.querySelector('span').getBoundingClientRect(), em = l.querySelector('em').getBoundingClientRect(), lb = l.getBoundingClientRect();
+  const hit = r => { const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && e.closest('a') ? e.closest('a').className : ''; };
+  return { over: l.scrollWidth > l.clientWidth || cb.right > lb.right + 0.5 || cb.left < lb.left, w: cb.width, h: cb.height, align: Math.abs(pill.right - em.right) <= 1,
+    nested: !!c.parentElement.closest('a') || !!c.querySelector('a') || !!l.querySelector('.hm-set-a .hm-set-cm'), hitCm: hit(pill), hitWhen: hit(em) };
+}));
 
 /* ── 0) « Coller une liste » (accueil, home.js) : jamais l'exemple de 100 cartes quand le presse-papiers est refusé ─────────── */
 {
@@ -75,6 +87,43 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   assert.equal(await p.$eval('#hmSets', e => getComputedStyle(e.querySelector('.hm-set-ic img')).filter), 'invert(1) brightness(0.92)', 'icônes noires éclaircies en thème sombre');
   assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'pas de défilement horizontal à 390 px');
   ok('accueil : extensions à venir triées, numériques / jetons / promos écartés, Commander rattaché, liens Scryfall, noms échappés');
+  // Cardmarket : « Précommander » sur les éditions à venir, « Acheter » sur la sortie récente ; recherche du nom encodé, site français
+  assert.deepEqual(r.map(x => x.cm), [
+    { href: CM('fr', 'Recent Expansion'), target: '_blank', rel: 'noopener', text: 'Acheter↗', label: 'Acheter Recent Expansion sur Cardmarket' },
+    { href: CM('fr', 'Beta Masters'), target: '_blank', rel: 'noopener', text: 'Précommander↗', label: 'Précommander Beta Masters sur Cardmarket' },
+    { href: CM('fr', 'Alpha Future'), target: '_blank', rel: 'noopener', text: 'Précommander↗', label: 'Précommander Alpha Future sur Cardmarket' },
+    { href: 'https://www.cardmarket.com/fr/Magic/Products/Search?searchString=%3Cimg%20src%3Dx%20onerror%3D%22window.__xss%3D1%22%3E', target: '_blank', rel: 'noopener', text: 'Précommander↗', label: 'Précommander <img src=x onerror="window.__xss=1"> sur Cardmarket' },
+  ]);
+  assert.equal(r[2].cm.href, 'https://www.cardmarket.com/fr/Magic/Products/Search?searchString=Alpha%20Future', 'adresse exacte (espace en %20)');
+  assert.deepEqual(await p.evaluate(() => [setsCm('Duskmourn: House of Horror'), setsCm("Marvel's Spider-Man"), setsCm('  ')]),
+    ['https://www.cardmarket.com/fr/Magic/Products/Search?searchString=Duskmourn%3A%20House%20of%20Horror', "https://www.cardmarket.com/fr/Magic/Products/Search?searchString=Marvel's%20Spider-Man", ''], 'nom Scryfall tel quel, encodé ; nom vide : pas de lien');
+  for (const w of [390, 360]) {
+    await p.setViewportSize({ width: w, height: 844 }); await p.waitForTimeout(250); const g = await geo(p);
+    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'pas de défilement horizontal à ' + w + ' px');
+    for (const x of g) {
+      assert.equal(x.over, false, w + ' px : rien ne déborde de la ligne'); assert.ok(x.h >= 40 && x.w >= 40, w + ' px : zone de toucher ≥ 40 px (' + x.w + '×' + x.h + ')');
+      assert.equal(x.align, true, 'pastilles alignées à droite'); assert.equal(x.nested, false, 'liens séparés, jamais imbriqués');
+      assert.deepEqual([x.hitCm, x.hitWhen], ['hm-set-cm', 'hm-set-a'], w + ' px : la pastille Cardmarket au-dessus ; la date ouvre la page Scryfall');
+    }
+  }
+  assert.deepEqual(await p.$eval('#hmSetsList .hm-set:last-child b', b => [b.scrollWidth > b.clientWidth, getComputedStyle(b).textOverflow]), [true, 'ellipsis'], 'nom long coupé par « … »');
+  await p.setViewportSize({ width: 390, height: 844 });
+  // toucher : chaque lien ouvre son seul onglet (Cardmarket ou Scryfall, simulés)
+  const opened = [];
+  await ctx.route(/^https:\/\/(www\.cardmarket\.com|scryfall\.com)\//, route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>ok</title>' }));
+  p.on('popup', pp => opened.push(pp));
+  const tapTo = async (sel, o) => {
+    const n = opened.length; await p.tap(sel, o);
+    for (let i = 0; i < 40 && opened.length === n; i++) await p.waitForTimeout(50);
+    await p.waitForTimeout(400);      // un 2e onglet (liens imbriqués) aurait eu le temps de s'ouvrir
+    const got = opened.slice(n); for (const pp of got) await pp.waitForLoadState('domcontentloaded'); return got.map(pp => pp.url());
+  };
+  // sans force : Playwright vérifie que la pastille reçoit bien le toucher (rien posé dessus)
+  assert.deepEqual(await tapTo('#hmSetsList .hm-set:nth-child(3) .hm-set-cm span'), [CM('fr', 'Alpha Future')], 'toucher « Précommander » : Cardmarket seul, pas la page Scryfall');
+  // force : la date est sous le lien Scryfall étiré, c'est lui qui reçoit le toucher
+  assert.deepEqual(await tapTo('#hmSetsList .hm-set:nth-child(3) em', { force: true }), ['https://scryfall.com/sets/aaa'], 'toucher la date : page Scryfall de l\'édition');
+  for (const pp of opened) await pp.close();
+  ok('Cardmarket : « Précommander » (à venir) / « Acheter » (sortie récente), recherche du nom encodé sur le site français, onglet séparé, ≥ 40 px, sans débordement à 390 et 360 px');
   // capture : accueil sombre, carte visible
   await p.$eval('#hmSets', e => e.scrollIntoView({ block: 'center', behavior: 'instant' })); await p.waitForTimeout(900);
   await p.screenshot({ path: 'shots/content-1-extensions.png' });
@@ -90,6 +139,21 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   assert.equal(hits.n, 2, 'cache périmé : nouvelle lecture'); ok('cache de plus de 24 h : relu chez Scryfall');
   await ctx.close();
 }
+{ // anglais : « Pre-order » / « Buy », site Cardmarket anglais ; interface anglaise sur un téléphone allemand : site allemand (langue de l'utilisateur)
+  const { p, ctx } = await page({ sets: 'ok', path: '?lang=en' });
+  await p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 });
+  const r = await rows(p);
+  assert.deepEqual(r.slice(0, 3).map(x => [x.cm.href, x.cm.text, x.cm.label]), [[CM('en', 'Recent Expansion'), 'Buy↗', 'Buy Recent Expansion on Cardmarket'],
+    [CM('en', 'Beta Masters'), 'Pre-order↗', 'Pre-order Beta Masters on Cardmarket'], [CM('en', 'Alpha Future'), 'Pre-order↗', 'Pre-order Alpha Future on Cardmarket']]);
+  assert.equal(r[2].cm.href, 'https://www.cardmarket.com/en/Magic/Products/Search?searchString=Alpha%20Future');
+  assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await ctx.close();
+  const de = await page({ sets: 'ok', path: '?lang=en', ctx: { locale: 'de-DE' } });
+  await de.p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 });
+  assert.equal((await rows(de.p))[2].cm.href, CM('de', 'Alpha Future'), 'téléphone allemand : cardmarket.com/de');
+  await de.ctx.close();
+}
+ok('Cardmarket en anglais : « Pre-order » / « Buy », site /en/ (site /de/ sur un téléphone allemand)');
 { // Scryfall en erreur (500, puis un nouvel essai) : carte cachée, sans message
   const { p, ctx, hits, errs } = await page({ sets: 'err' });
   await p.waitForFunction(() => SETS.st === 'fail', null, { timeout: 9000 });
