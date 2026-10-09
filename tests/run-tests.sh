@@ -13,6 +13,7 @@ BROWSER=(
   natshare-e2e.mjs
   gate-e2e.mjs
   splash-e2e.mjs
+  scanlang-e2e.mjs
 )
 T=("$@")
 if [ ${#T[@]} -eq 0 ]; then T=("${NODE[@]}" "${BROWSER[@]}"); elif [ "$1" = --node ]; then T=("${NODE[@]}"); fi

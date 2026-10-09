@@ -5,7 +5,7 @@ random.seed(7)
 SERIF = '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'
 SANS = '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf'
 W, H = 745, 1040
-def card(name, frame=(214, 196, 150), band=(236, 226, 196), ink=(25, 20, 15), art=(70, 100, 140), cost=None, rules=True, size=44):
+def card(name, frame=(214, 196, 150), band=(236, 226, 196), ink=(25, 20, 15), art=(70, 100, 140), cost=None, rules=True, size=44, foot='123/301 R  CMM • EN'):
     im = Image.new('RGB', (W, H), (18, 16, 14)); d = ImageDraw.Draw(im)
     d.rounded_rectangle((18, 18, W - 18, H - 18), 28, fill=frame)
     d.rounded_rectangle((44, 44, W - 44, 112), 12, fill=band, outline=(60, 50, 40), width=3)
@@ -23,7 +23,7 @@ def card(name, frame=(214, 196, 150), band=(236, 226, 196), ink=(25, 20, 15), ar
     if rules:
         for i, t in enumerate(['{T}: Add {C}{C}.', 'Whenever you cast a spell, draw a card.', 'Flying, vigilance, lifelink.', '"A fine blade for a fine day."']):
             d.text((78, 700 + i * 52), t, font=ImageFont.truetype(SANS, 30), fill=ink)
-    d.text((62, 975), '123/301 R  CMM • EN', font=ImageFont.truetype(SANS, 22), fill=(220, 220, 220))
+    d.text((62, 975), foot, font=ImageFont.truetype(SANS, 22), fill=(220, 220, 220))      # pied : numéro, extension • langue
     return im
 def finish(im, rot=0, blur=0.0, noise=0, bg=(60, 52, 44)):
     if blur: im = im.filter(ImageFilter.GaussianBlur(blur))
@@ -52,6 +52,10 @@ jobs = {
   # cartes allemandes (téléphone allemand : moteur « deu », catalogue names-de.tsv) ; en dernier : les cartes ci-dessus restent identiques
   'blitz.jpg': card('Blitzschlag', frame=(200, 120, 90), band=(240, 222, 205), art=(150, 60, 40), cost=[(210, 90, 60)]),
   'zorn.jpg': finish(card('Zorn Gottes', frame=(235, 228, 205), cost=[(150, 150, 150)] + [(250, 245, 220)] * 2), rot=-1.0, noise=10),
+  # cartes d'autres langues que celle de l'appli (appli en français : ni noms français ni anglais) ; en dernier, les cartes ci-dessus restent identiques
+  'fulmine.jpg': card('Fulmine', frame=(200, 120, 90), band=(240, 222, 205), art=(150, 60, 40), cost=[(210, 90, 60)], foot='146/280 C  M10 • IT'),
+  'contromagia.jpg': finish(card('Contromagia', frame=(90, 120, 180), band=(215, 225, 240), art=(40, 70, 130), cost=[(80, 120, 200)] * 2, foot='054/264 C  DMR • IT'), rot=1.0, noise=10),
+  'espadas.jpg': finish(card('Espadas en guadañas', cost=[(250, 245, 220)], foot='035/300 U  2X2 • ES'), rot=-1.0, noise=10),
 }
 for n, im in jobs.items(): im.convert('RGB').save(f'{out}/{n}', quality=88)
 # plusieurs cartes sur une photo : 3 × 2, légèrement de travers

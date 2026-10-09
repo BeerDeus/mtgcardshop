@@ -147,6 +147,39 @@ p.kill();
   pe.kill(); rmSync(dir, { recursive: true, force: true });
   console.log('✓ erreur 500 : message générique, détail seulement dans le journal');
 }
+{ // scan : noms imprimés des autres langues (GET /api/names/find) — public même avec APP_KEY, catalogues de la liste fermée, tailles bornées, budget par IP, mémoire rendue
+  const { mkdtempSync, readFileSync, writeFileSync, rmSync } = await import('node:fs'), { tmpdir } = await import('node:os'), dir = mkdtempSync(join(tmpdir(), 'pwanm-'));
+  const fill = l => Array.from({ length: 600 }, (_, i) => `Vrombl ${l} ${i} Quarnax\tVrombl Card ${i}\t`).join('\n') + '\n';
+  for (const l of ['it', 'es', 'pt']) writeFileSync(join(dir, `names-${l}.tsv`), readFileSync(new URL(`./fixtures/names-${l}.tsv`, import.meta.url), 'utf8') + fill(l));      // ni allemand ni français : sautés
+  writeFileSync(join(dir, 'names-de.tsv'), 'Blitzschlag\tLightning Bolt\tfront/de/x.jpg\n');      // tronqué (< 500 noms) : ignoré
+  const pn = await start({ CARDTRADER_TOKEN: 'tok123', APP_KEY: 'sesame', PWA_DIR: dir, NAMES_RATE_PER_MIN: '6', NAMES_IDLE_MIN: '0.01' }, 18784), NB = 'http://127.0.0.1:18784/api/names/find', F = (qs, h) => j(NB + '?' + qs, h && { headers: h });
+  r = await F('q=Fulmine&skip=fr'); assert.equal(r.s, 200, 'public : sans clé ni compte');
+  assert.deepEqual(r.o, { hit: { name: 'Lightning Bolt', printed: 'Fulmine', lang: 'it', score: 1, raw: 'Fulmine', img: 'https://cards.scryfall.io/small/front/it/lightning-bolt.jpg' }, tried: ['es', 'it', 'pt'] }, 'italien trouvé ; allemand tronqué et français absent sautés');
+  assert.equal(r.h.get('cache-control'), 'no-store'); assert.equal(r.h.get('x-content-type-options'), 'nosniff');
+  r = await F('q=' + encodeURIComponent('Espadas en guadahas') + '&q=' + encodeURIComponent('pe ee TS')); assert.deepEqual([r.o.hit.name, r.o.hit.lang, r.o.hit.raw], ['Swords to Plowshares', 'es', 'Espadas en guadahas'], 'lecture tolérante (ñ lu « h »), plusieurs lignes');
+  assert.ok(r.o.hit.score > 0.9 && r.o.hit.score < 1);
+  r = await F('q=Relampago'); assert.deepEqual([r.o.hit.name, r.o.hit.lang, r.o.hit.score, r.o.hit.amb], ['Lightning Bolt', 'es', 0.83, true], 'même nom sans accent pour deux cartes (es Lightning Bolt, pt Thunderbolt) : à vérifier');
+  r = await F('q=' + encodeURIComponent('Relâmpago')); assert.deepEqual([r.o.hit.name, r.o.hit.lang, r.o.hit.score, r.o.hit.amb], ['Thunderbolt', 'pt', 1, undefined], 'accent lu tel quel : il tranche');
+  r = await F('q=' + encodeURIComponent('Elfos de Llanowar'), { 'x-forwarded-for': '7.7.7.7' }); assert.deepEqual([r.o.hit.name, r.o.hit.lang, r.o.hit.alt], ['Llanowar Elves', 'es', ['pt']], 'même carte, même nom en espagnol et en portugais');
+  r = await F('q=Fulmine&skip=it,fr,../../etc/passwd,es'); assert.deepEqual(r.o.tried, ['pt'], 'skip : comparé à la liste fermée'); assert.equal(r.o.hit, null);
+  r = await F('q=Fulmine&skip=fr,de,es,it,pt'); assert.deepEqual(r.o, { hit: null, tried: [] });
+  r = await F('q=Qzxvbnm+Plrtkgh'); assert.deepEqual([r.s, r.o.hit], [200, null], 'texte absurde : rien');
+  for (const [qs, why] of [['', 'sans ligne'], ['q=', 'ligne vide'], ['q=a&q=b&q=c&q=d&q=e', '5 lignes'], ['q=' + 'x'.repeat(101), 'ligne de 101 caractères']]) { r = await F(qs); assert.equal(r.s, 400, why); assert.equal(r.o.error, 'bad_request'); }
+  r = await j(NB + '?q=Fulmine', { method: 'POST', headers: JS, body: '{}' }); assert.equal(r.s, 405, 'lecture seule');
+  for (const pth of ['/api/names/find/../../names-it.tsv', '/api/names/find%2F..%2Fnames-it.tsv', '/api/names/find/x', '/api/names', '/api/names/it']) { r = await j('http://127.0.0.1:18784' + pth + '?q=Fulmine'); assert.ok(!(r.o && typeof r.o === 'object' && 'hit' in r.o), pth + ' : pas la recherche'); assert.notEqual(r.s, 500, pth); }
+  // budget par IP (NAMES_RATE_PER_MIN = 6 ; 7.7.7.7 en a déjà pris 1) : 429 + Retry-After, une autre IP reste servie
+  for (let i = 0; i < 5; i++) assert.equal((await F('q=Fulmine', { 'x-forwarded-for': '7.7.7.7' })).s, 200);
+  r = await F('q=Fulmine', { 'x-forwarded-for': '7.7.7.7' }); assert.equal(r.s, 429); assert.equal(r.o.error, 'rate_limited'); assert.ok(Number(r.h.get('retry-after')) >= 1);
+  assert.equal((await F('q=Fulmine', { 'x-forwarded-for': '8.8.8.8' })).s, 200);
+  // mémoire rendue sans recherche (NAMES_IDLE_MIN) puis catalogues relus à la demande suivante (fichier italien retiré entre-temps)
+  rmSync(join(dir, 'names-it.tsv')); await new Promise(x => setTimeout(x, 1500));
+  r = await F('q=Fulmine'); assert.deepEqual(r.o.tried, ['es', 'pt'], 'index libéré puis relu : l\'italien retiré n\'est plus cherché');
+  pn.kill();
+  const off = await start({ CARDTRADER_TOKEN: 'tok123', PWA_DIR: dir, NAMES_FIND: '0' }, 18784); r = await j(NB + '?q=Fulmine'); assert.equal(r.s, 503); assert.equal(r.o.error, 'unavailable'); off.kill();
+  rmSync(dir, { recursive: true, force: true });
+  const none = await start({ CARDTRADER_TOKEN: 'tok123' }, 18784); r = await j(NB + '?q=Fulmine'); assert.equal(r.s, 503, 'aucun catalogue sur le serveur'); assert.equal(r.o.error, 'unavailable'); none.kill();
+  console.log('✓ /api/names/find : public, catalogues de la liste fermée (tronqué ignoré), lecture tolérante, accents qui tranchent, 1 à 4 lignes de 100 caractères, GET seul, budget par IP, mémoire rendue, coupé par NAMES_FIND=0');
+}
 
 // ── Accès par compte Firebase (jetons RS256 signés par une clé de test, JWKS local) ──
 {

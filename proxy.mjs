@@ -980,12 +980,98 @@ async function importApi(req, res, url) {
   } catch (e) { return json(res, e.status || 502, { error: 'import_failed', message: e.message }); }
 }
 
+/* ── Noms imprimés des autres langues (scan) : GET /api/names/find?q=<ligne lue>[&q=…]&skip=<langue>[,…] ──────────────────────────────
+   L'appli compare le nom lu au catalogue de SA langue (gardé sur l'appareil) puis à l'anglais ; une carte d'une autre langue (italienne lue avec l'appli
+   en français) est cherchée ici dans les catalogues names-*.tsv déjà servis, avec la même comparaison tolérante que l'appli (core.js › bestMatch).
+   Public comme les catalogues eux-mêmes, lecture seule, budget par IP. Index construit à la première recherche, par tranches (le serveur continue de
+   répondre) : ≈ 7 Mo de tas par langue, ≈ 35 Mo pour les cinq (mesuré : le processus prend ≈ 100 à 170 Mo de plus à la première recherche, tas réservé
+   par V8 compris) ; libéré après NAMES_IDLE_MIN minutes sans recherche (30), relu si le fichier change. NAMES_FIND=0 : coupé. NAMES_RATE_PER_MIN : 60 par IP. */
+const NM_FILES = { fr: 'fr-names.tsv', de: 'names-de.tsv', es: 'names-es.tsv', it: 'names-it.tsv', pt: 'names-pt.tsv' };      // liste fermée : aucun chemin construit depuis la requête
+let NM_CORE = null; try { NM_CORE = createRequire(import.meta.url)('./src/core.js'); } catch (e) { /* sources absentes : recherche coupée (503), l'appli fait sans */ }
+const NM_ON = process.env.NAMES_FIND !== '0' && !!(NM_CORE && NM_CORE.bestMatch && NM_CORE.nameIndex);
+const NM_RATE = Number(process.env.NAMES_RATE_PER_MIN ?? 60), NM_IDLE = (Number(process.env.NAMES_IDLE_MIN) || 30) * 60e3, NM_Q = 4, NM_LEN = 100, NM_BUSY = 4;
+const NM = new Map();                        // langue → { p: Promise<catalogue | null>, mt, at }
+let nmBusy = 0, nmUsed = 0, nmTimer = null;
+const nmTick = () => new Promise(r => setImmediate(r));
+const nmFlat = s => (s ? JSON.parse(JSON.stringify(s)) : '');      // copie autonome : une sous-chaîne garderait en mémoire tout le fichier lu
+/** Catalogue d'une langue : { n, idx, amb } ; null sans fichier ou s'il est tronqué (< 500 noms). idx : index de core.js › nameIndex dont chaque nom porte
+ *  « imprimé \t anglais \t image » (une seule chaîne par carte : ≈ 7 Mo par langue au lieu de 12) ; amb : noms imprimés partagés par deux cartes (jamais « sûrs »). */
+async function nmLoad(l) {
+  const f = join(PWA, NM_FILES[l]); let mt;
+  try { mt = (await stat(f)).mtimeMs; } catch (e) { return { cat: null, mt: 0 }; }
+  const rows = (await readFile(f, 'utf8')).split('\n'), idx = { list: [], by: new Map() }, amb = new Set(), first = new Map(), C = NM_CORE;
+  for (let i = 0; i < rows.length; i += 3000) {
+    const part = [], meta = new Map();
+    for (let j = i, end = Math.min(rows.length, i + 3000); j < end; j++) {      // mêmes règles que core.js › frCatalog : 1re ligne d'un nom gardée, nom partagé par deux cartes noté
+      const r = rows[j]; if (!r || r[0] === '#') continue;
+      const t = r.split('\t'), p = (t[0] || '').trim(), en = (t[1] || '').trim(); if (!p || !en) continue;
+      const k = C.frontName(p); if (k.length < 2) continue;
+      const cur = first.get(k); if (cur !== undefined) { if (C.frontName(cur) !== C.frontName(en)) amb.add(k); continue; }
+      first.set(k, en); part.push(p); meta.set(p, en + '\t' + (t[2] || '').trim());
+    }
+    for (const e of C.nameIndex(part).list) { e.n = nmFlat(e.n + '\t' + meta.get(e.n)); idx.by.set(e.k, e.n); idx.list.push(e); }
+    await nmTick();
+  }
+  return { cat: idx.list.length >= 500 ? { n: idx.list.length, idx, amb } : null, mt };
+}
+/** Catalogue prêt d'une langue : chargé à la première demande ; date du fichier contrôlée au plus toutes les 10 min (déploiement, mise à jour hebdomadaire). */
+function nmGet(l) {
+  let e = NM.get(l); const now = Date.now();
+  if (e && now - e.at > 600e3) { e.at = now; stat(join(PWA, NM_FILES[l])).then(s => s.mtimeMs, () => 0).then(mt => { if (NM.get(l) === e && mt !== e.mt) NM.delete(l); }); }      // relu à la recherche suivante
+  if (!e) { e = { at: now, mt: 0, p: null }; e.p = nmLoad(l).then(r => { e.mt = r.mt; return r.cat; }, () => null); NM.set(l, e); }
+  return e.p;
+}
+/** Mémoire rendue après NAMES_IDLE_MIN sans recherche. */
+function nmTouch() {
+  nmUsed = Date.now(); if (nmTimer) return;
+  nmTimer = setInterval(() => { if (Date.now() - nmUsed > NM_IDLE && !nmBusy) { NM.clear(); clearInterval(nmTimer); nmTimer = null; } }, Math.min(NM_IDLE, 60e3)); nmTimer.unref();
+}
+/** Meilleure carte d'un catalogue pour les lignes lues (mêmes règles que core.js › matchFr) : { name (anglais), printed, score, raw, img, amb? } ou null. */
+function nmMatch(cat, lines) {
+  const m = NM_CORE.bestMatch(lines, cat.idx); if (!m) return null;
+  const [printed, name, img] = m.name.split('\t'), dup = cat.amb.has(NM_CORE.frontName(printed));
+  return { name, printed, score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, img: img || '', ...(dup ? { amb: true } : {}) };
+}
+const nmAcc = s => String(s || '').toLowerCase().normalize('NFC').replace(/[^\p{L}]+/gu, '');      // lettres accentuées gardées : « relámpago » (es) ≠ « relâmpago » (pt)
+async function namesApi(req, res, url) {
+  if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+  if (!NM_ON) return json(res, 503, { error: 'unavailable', message: 'Recherche des noms des autres langues coupée sur ce serveur.' });
+  const qs = url.searchParams.getAll('q').map(s => s.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim()).filter(Boolean);
+  if (!qs.length || qs.length > NM_Q || qs.some(s => s.length > NM_LEN)) return json(res, 400, { error: 'bad_request', message: `De 1 à ${NM_Q} lignes lues (q), ${NM_LEN} caractères au plus.` });
+  const skip = new Set(String(url.searchParams.get('skip') || '').split(',')), langs = Object.keys(NM_FILES).filter(l => !skip.has(l));      // skip : comparé à la liste fermée, jamais utilisé comme chemin
+  if (!langs.length) return json(res, 200, { hit: null, tried: [] });
+  const wait = rateWait(req, 'names', NM_RATE, 60e3); if (wait) return tooMany(res, wait);
+  if (nmBusy >= NM_BUSY) return json(res, 503, { error: 'busy', message: 'Serveur occupé.' }, { 'Retry-After': '2' });
+  nmBusy++; nmTouch();
+  try {
+    const lines = qs.map(text => ({ text })), found = [], tried = [];
+    for (const l of langs) {
+      const cat = await nmGet(l); if (!cat) continue;
+      tried.push(l); const m = nmMatch(cat, lines); if (m) found.push({ ...m, lang: l });
+      await nmTick();                                                       // une langue à la fois : les autres requêtes passent entre deux
+    }
+    if (!tried.length) return json(res, 503, { error: 'unavailable', message: 'Aucun catalogue des autres langues sur ce serveur.' });
+    if (!found.length) return json(res, 200, { hit: null, tried });
+    found.sort((a, b) => b.score - a.score);                               // tri stable : à égalité, l'ordre de NM_FILES
+    let top = found.filter(f => found[0].score - f.score < 0.001);
+    const key = f => NM_CORE.frontName(f.name);
+    if (new Set(top.map(key)).size > 1) {                                   // même nom lu, cartes différentes selon la langue (« Relámpago » es = Lightning Bolt, « Relâmpago » pt = Thunderbolt)
+      const exact = top.filter(f => nmAcc(f.raw).includes(nmAcc(f.printed)));      // accents lus tels quels : ils tranchent
+      if (new Set(exact.map(key)).size === 1) top = exact; else top = top.map(f => ({ ...f, score: Math.min(f.score, 0.83), amb: true }));      // sinon : à vérifier
+    }
+    const h = top[0], alt = top.filter(f => f.lang !== h.lang && key(f) === key(h)).map(f => f.lang);      // même carte, même nom dans plusieurs langues (« Elfos de Llanowar » es / pt)
+    const hit = h ? { name: h.name, printed: h.printed, lang: h.lang, score: h.score, raw: h.raw, img: !h.img ? '' : /^https:\/\//.test(h.img) ? h.img : NM_CORE.FR_IMG + h.img, ...(h.amb ? { amb: true } : {}), ...(alt.length ? { alt } : {}) } : null;
+    return json(res, 200, { hit, tried });
+  } finally { nmBusy--; nmUsed = Date.now(); }
+}
+
 async function api(req, res, url) {
   const path = url.pathname.replace(/^\/api\//, '').replace(/\/+$/, '');
   // Serveur local sans compte : un POST d'une autre page (formulaire, text/plain : pas de pré-vérification CORS) ne doit rien déclencher.
   if (LOCAL && req.method === 'POST' && !/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) return json(res, 415, { error: 'bad_content_type', message: 'Content-Type: application/json attendu.' });
   // Ouvert à tous : import d'une liste depuis un lien, alertes de prix (Scryfall + push). Ni l'un ni l'autre n'utilise de token CardTrader.
   if (path === 'import') return importApi(req, res, url);
+  if (path === 'names/find') return namesApi(req, res, url);      // scan : noms imprimés des autres langues (catalogues publics)
   if (path === 'alerts' || path.startsWith('alerts/')) return alertsApi(req, res, path, url);
   // CardTrader : avec le token de l'utilisateur (X-CT-Token), ou celui du serveur pour les comptes autorisés (ALLOWED_UIDS / APP_KEY).
   const ut = userTok(req);
