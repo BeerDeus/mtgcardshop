@@ -18,6 +18,11 @@
 .hm-set-when{flex:none;font-style:normal;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
 .hm-set-when.soon{background:var(--warn-soft);color:var(--warn)}
 .hm-set-when.past{background:var(--good-soft);color:var(--good)}
+.hm-sets-sl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 4px 0;padding:11px 10px 9px;border-top:1px solid var(--line);color:var(--ink-2);font-size:13px;font-weight:600;text-decoration:none;border-radius:0 0 15px 15px}      /* Secret Lair : drops vendus sur le site de Wizards, absents de Scryfall /sets (une seule édition SLD) */
+.hm-sets-sl i{font-style:normal;color:var(--accent)}
+.hm-sets-sl:active{background:var(--surface-2)}
+@media (hover:hover){.hm-sets-sl:hover{background:var(--surface-2)}}
+.hm-sets-sl:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 :root[data-theme="dark"] .hm-set-ic img{filter:invert(1) brightness(.92)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-set-ic img{filter:invert(1) brightness(.92)}}
 .hm-help{align-self:center;display:inline-flex;align-items:center;gap:8px;margin-top:-2px;border:0;background:transparent;color:var(--ink-3);font-size:13px;font-weight:600;padding:8px 14px;border-radius:99px;transition:color .2s,background .2s}
