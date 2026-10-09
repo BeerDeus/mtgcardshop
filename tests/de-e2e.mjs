@@ -10,7 +10,7 @@ const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM ||
 // vrai téléphone : pas de navigator.webdriver (la langue du téléphone décide) ; accueil du premier lancement déjà vu
 const phone = `Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }); try { localStorage.setItem('deckdeal:onboard', '1'); } catch (e) {}`;
 const errsAll = [];
-const open = async locale => { const pg = await newPage(browser, world, { goto: false, ctx: { locale }, init: phone }); errsAll.push(pg.errs); await pg.p.goto(world.url); await pg.p.waitForTimeout(800); return pg; };
+const open = async locale => { const pg = await newPage(browser, world, { goto: false, ctx: { locale }, init: phone }); errsAll.push(pg.errs); await pg.p.goto(world.url + '?splash=0'); await pg.p.waitForTimeout(800); return pg; };      // ?splash=0 : webdriver masqué, l'écran de lancement jouerait (appli inerte 2 s) ; il est testé par splash-e2e
 
 /* ── 1) téléphone allemand ─────────────────────────────────────────────────────────────────────── */
 const { p } = await open('de-DE');
@@ -30,7 +30,8 @@ assert.deepEqual(await p.evaluate(() => [S.opts.lang, userLang(), cmSite(userLan
 ok('cartes allemandes par défaut (comme le français aujourd\'hui)');
 
 // recherche au prix Cardmarket : libellés et montant en allemand
-await p.evaluate(() => showView('input')); await p.fill('#deckText', '1 Sol Ring\n2 Craterhoof Behemoth'); await p.waitForTimeout(250);
+await p.evaluate(() => showView('input')); await p.fill('#deckText', '1 Sol Ring\n2 Craterhoof Behemoth');
+await p.waitForFunction(() => /· 2 Karten/.test(document.querySelector('#btnRun').textContent), null, { timeout: 5000 }).catch(() => {});      // la liste est relue après une courte pause de frappe : attendue, pas un délai fixe
 assert.match(await txt(p, '#btnRun'), /Preise ansehen · 2 Karten/);
 await p.click('#btnRun'); await p.waitForFunction(() => S.run && S.run.status === 'done', null, { timeout: 20000 }); await p.waitForTimeout(700);
 assert.match(await txt(p, '#heroAmt'), /^19,50\s€$/); assert.match(await txt(p, '#heroLabel'), /Cardmarket-Preis, ab/);
