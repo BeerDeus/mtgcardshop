@@ -1,0 +1,29 @@
+/* ── trade.css : liste d'échange publique (« Pour toi »), QR code du lien, signalement ──
+   « Pour toi » : deux blocs (ce qu'il a et que tu cherches, ce que tu as en trop et qu'il cherche) avec leur valeur ;
+   QR code : toujours noir sur blanc (un lecteur attend du foncé sur clair, thème sombre compris). */
+.pub-cta{gap:10px;margin-bottom:18px}
+.pub-cta .btn{height:auto;min-height:48px;padding:11px 18px;font-size:15px;line-height:1.25;text-align:center;text-wrap:balance}
+.pm-block{display:flex;flex-direction:column;gap:8px}
+.pm-block+.pm-block{margin-top:20px}
+.pm-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 2px 0}
+.pm-head b{font-family:var(--font-display);font-size:16.5px;font-weight:680;letter-spacing:-.01em;min-width:0;text-wrap:balance}
+.pm-head span{flex:none;font-size:13px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pm-head em{font-style:normal;color:var(--accent)}
+.pm-block .coll-list{border-radius:var(--r-lg);overflow:hidden;background:var(--glass,var(--surface));border:1px solid var(--line)}
+.pm-block .coll-list>.crow:first-child{border-top:0}
+.pm-none{margin:0 2px;padding:12px 14px;border-radius:var(--r-md);border:1px dashed var(--line)}
+.pm-note{margin:12px 2px 0}
+.pm-row .row-top .flag{margin-top:2px}
+.pm-row .tr-q small{font-size:12px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pub-report{margin:8px 0 0;text-align:center;font-size:12.5px}
+.pub-report a{color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
+
+.tr-qr{height:42px;font-size:14px}
+.qr-card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 16px 16px;border-radius:var(--r-lg);background:#fff;color:#10152b;box-shadow:var(--shadow)}
+.qr-who{display:flex;align-items:center;gap:10px;max-width:100%}
+.qr-who b{font-family:var(--font-display);font-size:17px;font-weight:680;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qr-img{width:100%;display:grid;place-items:center}
+.qr-img svg{display:block;width:min(100%,340px);height:auto;image-rendering:pixelated}
+.qr-url{margin:0;max-width:100%;font-family:var(--font-code);font-size:12px;line-height:1.35;color:#4a5470;text-align:center;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all}
+.qr-hint{margin:14px 0 0;text-align:center;font-weight:650;font-size:15px}
+.qr-lock{margin:2px 0 0;text-align:center}
