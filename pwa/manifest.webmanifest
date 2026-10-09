@@ -19,5 +19,11 @@
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Scanner", "short_name": "Scanner", "description": "Ajouter des cartes à ta collection avec l'appareil photo", "url": "./?open=scan", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Prix rapide", "short_name": "Prix rapide", "description": "Le prix d'une carte, sans l'ajouter à ta collection", "url": "./?open=quick", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Échange", "short_name": "Échange", "description": "Tes doublons à proposer et les cartes que tu recherches", "url": "./?open=trade", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Nouveau panier", "short_name": "Panier", "description": "Colle une decklist : le prix de chaque carte et le total", "url": "./?open=paste", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

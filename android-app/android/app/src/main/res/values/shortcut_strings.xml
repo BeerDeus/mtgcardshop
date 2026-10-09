@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône (res/xml/shortcuts.xml). Ici l'anglais, langue par défaut ; le français est dans values-fr/ (téléphone en français → français).
+     Libellé court : 10 caractères conseillés (écran d'accueil, raccourci épinglé) ; libellé long : menu de l'appui long, quand il y tient. -->
+<resources>
+    <string name="shortcut_scan">Scan</string>
+    <string name="shortcut_scan_long">Scan</string>
+    <string name="shortcut_quick">Quick price</string>
+    <string name="shortcut_quick_long">Quick price</string>
+    <string name="shortcut_trade">Trade</string>
+    <string name="shortcut_trade_long">Trade</string>
+    <string name="shortcut_paste">New cart</string>
+    <string name="shortcut_paste_long">New cart</string>
+</resources>

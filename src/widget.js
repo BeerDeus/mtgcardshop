@@ -75,17 +75,55 @@ function widgetCaps(pl) {
   Promise.resolve().then(() => pl.info()).then(i => { const bg = !!(i && i.widgetRefresh && i.widgets > 0); if (bg !== WGT.bg) { WGT.bg = bg; widgetSoon(); } }).catch(() => { /* ancienne coque : sans info() */ });
 }
 /** Vues ouvertes par le widget : lui-même → la collection ; son bouton → le scan, ou le scan en « prix rapide » (comme la tuile de l'accueil).
- *  Scan déjà ouvert (appli ramenée devant) : on change seulement de mode, sans perdre les cartes lues. */
+ *  Scan déjà ouvert (appli ramenée devant) : on change seulement de mode, sans perdre les cartes lues.
+ *  Raccourcis de l'icône (appli Android : ShortcutActivity ; PWA : manifeste, ?open= lu par handleLaunch) : scan et quick comme le bouton du widget,
+ *  trade → l'onglet Échange de la collection, paste → « Nouveau panier ». share : texte partagé vers l'appli Android ({ text, title } : decklist ou lien) → « Nouveau panier ». */
 const WGT_OPEN = {
   collection: () => { if (!COLL.el) openCollection(); },
   scan: () => { if (SC.el) scanPriceMode(false); else openScan(); },
   quick: () => { if (!SC.el) openScan(); scanPriceMode(true); },
+  trade: () => { wgtFront(); openCollection('trade'); },
+  paste: () => wgtPaste(),
+  share: e => wgtShare(e),
 };
-/** Une seule fois : widget touché → événement « open » ({ view }), que la coque garde tant que la page ne l'écoute pas (lancement à froid) ;
- *  appli mise en arrière-plan → ce qui attendait part tout de suite (la page peut être suspendue avant la fin du délai). */
+/** Premier contact avec le serveur au lancement (handleLaunch) : un lien partagé à froid l'attend, seul le serveur sait le lire. */
+const WGT_LAUNCH = { done: false, q: [] };
+function wgtLaunched() {
+  WGT_LAUNCH.done = true;
+  for (const go of WGT_LAUNCH.q.splice(0)) { try { go(); } catch (e) { /* une cible en échec n'empêche pas les autres */ } }
+}
+/** Raccourci de la PWA (?open=scan | quick | trade | paste, manifest.webmanifest) : mêmes vues que ceux de l'appli Android. */
+function wgtOpen(view) { if (['scan', 'quick', 'trade', 'paste'].includes(view)) WGT_OPEN[view](); }
+/** Ferme, comme Retour, ce qui couvre la page (visionneuse, feuilles, collection, decks…) pour montrer la cible ; s'arrête devant un écran
+ *  qui perdrait du travail : scan avec des cartes lues, deck modifié dans l'éditeur. */
+function wgtFront() {
+  for (let i = 0; i < 12; i++) {
+    if (typeof imgView !== 'undefined' && imgView) { imgView.close(); continue; }
+    if (sheets.length) { sheets[sheets.length - 1].close(); continue; }
+    const dvs = $$('body > .dv.on'), top = dvs[dvs.length - 1];
+    if (!top || !top.__close || (top === SC.el && SC.items && SC.items.size) || (top === BD.el && BD.dirty)) return;
+    if (top === BD.el) bdClose(); else top.__close();
+  }
+}
+/** « Nouveau panier » (raccourci) : la saisie, curseur dans le champ. Liste en cours gardée (comme « Reprendre ma liste »), sinon champ vidé (pas l'exemple).
+ *  Pas de lecture du presse-papiers : sans geste de l'utilisateur elle est refusée (WebView) ou demande une autorisation (navigateur). */
+function wgtPaste() {
+  wgtFront(); showView('input');
+  if (!S.isSample && S.deck && S.deck.cards.length) { try { $('#deckText').focus(); } catch (e) { /* ignore */ } return; }
+  $('#btnClear').click(); toast(T('Colle la liste dans le champ avec un appui long'));
+}
+/** Texte partagé vers l'appli Android : même traitement que le partage de la PWA (onShared : decklist collée, ou lien lu par le serveur). */
+function wgtShare(e) {
+  const sh = extractShared({ title: e && e.title, text: e && e.text });
+  const go = () => { wgtFront(); onShared(sh); };
+  if (sh.text || !sh.urls.length || WGT_LAUNCH.done) return go();
+  WGT_LAUNCH.q.push(go); setTimeout(wgtLaunched, 8000);                             // filet : le contact avec le serveur abandonne au bout de 5 s
+}
+/** Une seule fois : widget ou raccourci touché, texte partagé → événement « open » ({ view, text?, title? }), que la coque garde tant que la page
+ *  ne l'écoute pas (lancement à froid) ; appli mise en arrière-plan → ce qui attendait part tout de suite (la page peut être suspendue avant la fin du délai). */
 function widgetListen(pl) {
   if (WGT.on) return; WGT.on = true;
-  try { if (typeof pl.addListener === 'function') pl.addListener('open', e => { const go = e && Object.prototype.hasOwnProperty.call(WGT_OPEN, e.view) ? WGT_OPEN[e.view] : null; if (go) setTimeout(go, 500); }); } catch (e) { /* ancienne coque */ }
+  try { if (typeof pl.addListener === 'function') pl.addListener('open', e => { const go = e && Object.prototype.hasOwnProperty.call(WGT_OPEN, e.view) ? WGT_OPEN[e.view] : null; if (go) setTimeout(() => go(e), 500); }); } catch (e) { /* ancienne coque */ }
   widgetCaps(pl);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (WGT.t) { clearTimeout(WGT.t); widgetPush(); } }

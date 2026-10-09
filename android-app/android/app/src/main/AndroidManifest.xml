@@ -23,7 +23,30 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Menu « Partager » d'une autre appli (EDHREC, Archidekt, Moxfield dans le navigateur, notes) : une decklist ou un lien, ouvert dans « Nouveau panier »
+                 (ManaOrbitPlugin → événement « open » { view: 'share' } → onShared, comme le share_target de la PWA). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- Raccourcis de l'icône (appui long) : Scanner, Prix rapide, Échange, Nouveau panier -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
         </activity>
+
+        <!-- Relais des raccourcis de l'icône (ShortcutActivity.java) : tâche à part (taskAffinity vide), pour que le FLAG_ACTIVITY_CLEAR_TASK qu'Android impose
+             aux raccourcis statiques vide cette tâche-là et pas l'appli ouverte. Non exporté : le lanceur démarre un raccourci au nom de l'appli elle-même. -->
+        <activity
+            android:name=".ShortcutActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- Widget d'écran d'accueil « Ma collection » (ValueWidget.java). Non exporté : seul le système (AppWidgetManager) lui envoie ses mises à jour. -->
         <receiver
