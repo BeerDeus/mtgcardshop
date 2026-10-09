@@ -1646,6 +1646,60 @@ function matchFr(lines, fc) {
   const dup = !!(fc.amb && fc.amb.has(frontName(m.name)));      // nom français partagé par plusieurs cartes : jamais « sûr », la photo permet de trancher
   return { name: e.en, key: ownKey(e.en), score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, card: fc.l || 'fr', img: e.img ? (/^https?:/.test(e.img) ? e.img : FR_IMG + e.img) : '', ...(dup ? { amb: true } : {}) };
 }
+/* ── Noms imprimés des autres langues (scan : carte italienne lue avec l'appli en français) : un catalogue par langue, mêmes règles que frCatalog / matchFr.
+   Partagé par le serveur (proxy.mjs › /api/names/find, fichiers names-*.tsv) et l'appli (pwa/names-all.tsv, scan.js › scanOther) : même résultat des deux côtés. */
+/** Chaîne autonome : une sous-chaîne garderait en mémoire tout le fichier lu. */
+const nmFlat = s => (s ? JSON.parse(JSON.stringify(s)) : '');
+/** Catalogue vide d'une langue : idx (index de nameIndex dont chaque nom porte « imprimé \t anglais [\t image] » : une seule chaîne par carte), amb (noms imprimés partagés par deux cartes), first (construction). */
+const nmCat = () => ({ n: 0, idx: { list: [], by: new Map() }, amb: new Set(), first: new Map() });
+/** Ajoute le nom imprimé p de la carte anglaise en (img : chemin de la miniature, serveur seulement ; ek : frontName(en) déjà calculé) : 1er nom gardé, nom partagé par deux cartes noté (jamais « sûr »). */
+function nmPut(c, p, en, img, ek) {
+  let k = frontName(p); if (k.length < 2) return;
+  const cur = c.first.get(k); if (cur !== undefined) { if (cur !== (ek || frontName(en))) c.amb.add(nmFlat(k)); return; }
+  k = nmFlat(k); c.first.set(k, ek || frontName(en)); const n = nmFlat(img === undefined ? p + '\t' + en : p + '\t' + en + '\t' + img);      // nom déjà normalisé : frontName peut rendre p lui-même, donc une sous-chaîne du fichier
+  c.idx.by.set(k, n); c.idx.list.push({ k, n, s: spaces(k) }); c.n++;
+}
+/** Catalogue terminé (table de construction libérée) ; null s'il est tronqué (< 500 noms). */
+const nmDone = c => { c.first = null; return c.n >= 500 ? c : null; };
+/** Meilleure carte d'un catalogue pour les lignes lues (mêmes règles que matchFr) : { name (anglais), printed, score, raw, img, amb? } ou null. */
+function nmMatch(c, lines) {
+  const m = c && bestMatch(lines, c.idx); if (!m) return null;
+  const [printed, name, img] = m.name.split('\t'), dup = c.amb.has(frontName(printed));
+  return { name, printed, score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, img: img || '', ...(dup ? { amb: true } : {}) };
+}
+/** Lettres lues, accents gardés : « relámpago » (es) ≠ « relâmpago » (pt). */
+const nmAcc = s => String(s || '').toLowerCase().normalize('NFC').replace(/[^\p{L}]+/gu, '');
+/** Meilleures cartes de chaque langue [{ …nmMatch, lang }] (dans l'ordre des langues) → la carte retenue { …, lang, alt? } ou null.
+ *  Même nom lu, cartes différentes selon la langue (« Relámpago » es = Lightning Bolt, « Relâmpago » pt = Thunderbolt) : les accents lus tels quels tranchent, sinon à vérifier (0,83).
+ *  alt : autres langues où la même carte porte ce nom (« Elfos de Llanowar » es / pt). */
+function nmPick(found) {
+  if (!found || !found.length) return null;
+  const all = found.slice().sort((a, b) => b.score - a.score), key = f => frontName(f.name);      // tri stable : à égalité, l'ordre des langues
+  let top = all.filter(f => all[0].score - f.score < 0.001);
+  if (new Set(top.map(key)).size > 1) {
+    const exact = top.filter(f => nmAcc(f.raw).includes(nmAcc(f.printed)));
+    top = new Set(exact.map(key)).size === 1 ? exact : top.map(f => ({ ...f, score: Math.min(f.score, 0.83), amb: true }));
+  }
+  const h = top[0], alt = top.filter(f => f.lang !== h.lang && key(f) === key(h)).map(f => f.lang);
+  return alt.length ? { ...h, alt } : h;
+}
+/** pwa/names-all.tsv (1re ligne « # anglais \t fr \t de… », puis « anglais \t noms fr \t noms de… », noms d'une langue séparés par « | ») → { langue: catalogue } pour les langues ls
+ *  (les autres colonnes ne sont pas lues). Construit par tranches : await tick() entre deux (l'écran reste fluide) ; tick() renvoie false : abandon (null). Catalogue tronqué : absent. */
+async function namesAllCats(text, ls, tick) {
+  const rows = String(text || '').split('\n'), head = rows[0] && rows[0][0] === '#' ? rows[0].split('\t').slice(1).map(s => s.trim()) : NAMES_LANGS;
+  const cols = ls.map(l => [l, head.indexOf(l) + 1]).filter(([, i]) => i > 0), cats = cols.map(() => nmCat());
+  for (let i = 0; i < rows.length; i += 500) {
+    for (let j = i, end = Math.min(rows.length, i + 500); j < end; j++) {
+      const r = rows[j]; if (!r || r[0] === '#') continue;
+      const t = r.split('\t'), en = t[0]; if (!en) continue;
+      let ek = '';      // nom anglais normalisé : calculé une fois pour toutes les langues de la ligne
+      for (let c = 0; c < cols.length; c++) { const v = t[cols[c][1]]; if (v) for (const p of v.split('|')) if (p) nmPut(cats[c], p, en, undefined, ek || (ek = frontName(en))); }
+    }
+    if (tick && (await tick()) === false) return null;
+  }
+  const out = {}; cols.forEach(([l], c) => { const x = nmDone(cats[c]); if (x) out[l] = x; });
+  return out;
+}
 /** Index des noms français tapés (decklist, import, saisie) depuis les lignes du catalogue « imprimé \t anglais \t image » :
  *  by : clé frKey (nom entier, et face avant d'une carte double) → { en, p } (anglais, imprimé) ou { amb: [anglais…], p } (même nom français pour plusieurs cartes : jamais choisi à la place de l'utilisateur) ;
  *  en : clés frKey des noms anglais (un nom anglais reste anglais) ; fr : ownKey anglais → nom imprimé (comme frNames) ; img : ownKey anglais → chemin de la miniature française ;
@@ -1938,3 +1992,5 @@ if (typeof module !== 'undefined' && module.exports) Object.assign(module.export
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { FRX, frKey, frUse, frIndex, frLookup, frToEn, enToFr, nameSuggest });
 // Langue des cartes et liens selon la langue de l'utilisateur (test.mjs) : exportés à part, eux aussi
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { defaultCardLang, cmSite, ctCartUrl, namesLangOf, NAMES_LANGS });
+// Noms imprimés des autres langues (scan, proxy.mjs › /api/names/find) : exportés à part, eux aussi
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { nmFlat, nmCat, nmPut, nmDone, nmMatch, nmAcc, nmPick, namesAllCats });

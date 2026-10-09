@@ -93,6 +93,21 @@ r = await j(B + '/icons/apple-touch-icon.png'); assert.equal(r.s, 200); assert.m
   } finally { rmSync(fde, { force: true }); rmSync(ffr, { force: true }); }
   console.log('✓ /names-<langue>.tsv : liste fermée de langues (404 sinon, aucun chemin construit), gzip à la demande ; /names-fr.tsv = fr-names.tsv');
 }
+{ // noms imprimés de toutes les langues (scan des autres langues sur l'appareil, gen-names-all.mjs) : /names-all.tsv, même mécanique (404 propre, gzip, cache 24 h)
+  const { writeFileSync, rmSync } = await import('node:fs'), f = join(process.env.PWA_DIR, 'names-all.tsv');
+  r = await j(B + '/names-all.tsv'); assert.equal(r.s, 404); assert.equal(r.o.error, 'asset_missing');
+  const all = '# anglais\tfr\tde\tes\tit\tpt\n' + Array.from({ length: 800 }, (_, i) => `Name ${i}\tNom ${i}\tName ${i} Ä\t\tNome ${i}|Nome ${i} bis\t`).join('\n') + '\n';
+  writeFileSync(f, all);
+  try {
+    const g = await fetch(B + '/names-all.tsv'); assert.equal(g.status, 200); assert.match(g.headers.get('content-type'), /^text\/tab-separated-values; charset=utf-8/); assert.equal(g.headers.get('content-encoding'), 'gzip'); assert.match(g.headers.get('cache-control'), /max-age=86400/); assert.match(g.headers.get('vary'), /Accept-Encoding/); assert.equal(await g.text(), all, 'gzip décompressé = fichier');
+    const raw = await new Promise((res, rej) => http.get(B + '/names-all.tsv', { headers: { 'Accept-Encoding': 'identity' } }, x => { const c = []; x.on('data', d => c.push(d)); x.on('end', () => res({ h: x.headers, b: Buffer.concat(c).toString() })); }).on('error', rej));
+    assert.equal(raw.h['content-encoding'], undefined); assert.equal(raw.b, all);
+    const zh = await fetch(B + '/names-all.tsv', { headers: { 'Accept-Encoding': 'gzip' } }); assert.ok(Number(zh.headers.get('content-length')) < Buffer.byteLength(all) / 3, 'compressé : bien plus petit');
+    const tag = zh.headers.get('etag'); assert.ok(tag); assert.equal((await fetch(B + '/names-all.tsv', { headers: { 'Accept-Encoding': 'gzip', 'If-None-Match': tag } })).status, 304, 'déjà sur l\'appareil : 304');
+    for (const p of ['/names-ALL.tsv', '/names-all.tsv.gz', '/names-all', '/pwa/names-all.tsv']) assert.equal((await fetch(B + p)).status, 404, p);
+  } finally { rmSync(f, { force: true }); }
+  console.log('✓ /names-all.tsv : 404 propre si absent, sinon texte compressé en gzip (ou brut), cache 24 h, ETag → 304');
+}
 { // commandants EDHREC : même mécanique (404 propre, gzip, cache 24 h)
   const { writeFileSync, rmSync, existsSync } = await import('node:fs'), f = join(process.env.PWA_DIR, 'edh.tsv'); assert.ok(!existsSync(f), 'pwa/edh.tsv est généré par GitHub Actions, pas versionné ici');
   r = await j(B + '/edh.tsv'); assert.equal(r.s, 404); assert.equal(r.o.error, 'asset_missing');

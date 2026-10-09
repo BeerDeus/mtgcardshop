@@ -46,6 +46,7 @@ const STATIC = new Map([
   ['/privacy.html', ['privacy.html', 'text/html; charset=utf-8', 'public, max-age=3600']],
   ['/prices.tsv', ['prices.tsv.gz', 'text/tab-separated-values; charset=utf-8', 'public, max-age=3600', 'pre', 'px']],          // prix « à partir de » (gen-prices.mjs, relu depuis GitHub) : servi seulement une fois récupéré
   ['/fr-names.tsv', ['fr-names.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],      // catalogue des noms de cartes en français (généré par gen-fr-names.mjs) ; 4e valeur : compressé en gzip si le client l'accepte
+  ['/names-all.tsv', ['names-all.tsv', 'text/tab-separated-values; charset=utf-8', 'public, max-age=86400', true]],    // noms imprimés de toutes les langues, sans images (gen-names-all.mjs) : scan des autres langues sur l'appareil ; demandé par chaque scan en Wi-Fi (tous les 14 jours), donc compressé dès le démarrage
 ]);
 // Catalogues des noms imprimés des autres langues (gen-fr-names.mjs --lang xx) : /names-<code Scryfall>.tsv, liste fermée (rien n'est construit depuis l'URL) ;
 // /names-fr.tsv = fr-names.tsv. 'lazy' : compressés à la première demande seulement (≈ 5 Mo de mémoire par langue servie), pas au démarrage.
@@ -981,38 +982,34 @@ async function importApi(req, res, url) {
 }
 
 /* ── Noms imprimés des autres langues (scan) : GET /api/names/find?q=<ligne lue>[&q=…]&skip=<langue>[,…] ──────────────────────────────
-   L'appli compare le nom lu au catalogue de SA langue (gardé sur l'appareil) puis à l'anglais ; une carte d'une autre langue (italienne lue avec l'appli
-   en français) est cherchée ici dans les catalogues names-*.tsv déjà servis, avec la même comparaison tolérante que l'appli (core.js › bestMatch).
+   L'appli compare le nom lu au catalogue de SA langue (gardé sur l'appareil) puis à l'anglais, puis aux autres langues si elle a names-all.tsv sur l'appareil ;
+   sinon une carte d'une autre langue (italienne lue avec l'appli en français) est cherchée ici dans les catalogues names-*.tsv déjà servis, avec la même
+   comparaison tolérante et le même arbitrage entre langues que l'appli (core.js › nmPut, nmMatch, nmPick).
    Public comme les catalogues eux-mêmes, lecture seule, budget par IP. Index construit à la première recherche, par tranches (le serveur continue de
    répondre) : ≈ 7 Mo de tas par langue, ≈ 35 Mo pour les cinq (mesuré : le processus prend ≈ 100 à 170 Mo de plus à la première recherche, tas réservé
    par V8 compris) ; libéré après NAMES_IDLE_MIN minutes sans recherche (30), relu si le fichier change. NAMES_FIND=0 : coupé. NAMES_RATE_PER_MIN : 60 par IP. */
 const NM_FILES = { fr: 'fr-names.tsv', de: 'names-de.tsv', es: 'names-es.tsv', it: 'names-it.tsv', pt: 'names-pt.tsv' };      // liste fermée : aucun chemin construit depuis la requête
 let NM_CORE = null; try { NM_CORE = createRequire(import.meta.url)('./src/core.js'); } catch (e) { /* sources absentes : recherche coupée (503), l'appli fait sans */ }
-const NM_ON = process.env.NAMES_FIND !== '0' && !!(NM_CORE && NM_CORE.bestMatch && NM_CORE.nameIndex);
+const NM_ON = process.env.NAMES_FIND !== '0' && !!(NM_CORE && NM_CORE.nmCat && NM_CORE.nmPick);
 const NM_RATE = Number(process.env.NAMES_RATE_PER_MIN ?? 60), NM_IDLE = (Number(process.env.NAMES_IDLE_MIN) || 30) * 60e3, NM_Q = 4, NM_LEN = 100, NM_BUSY = 4;
 const NM = new Map();                        // langue → { p: Promise<catalogue | null>, mt, at }
 let nmBusy = 0, nmUsed = 0, nmTimer = null;
 const nmTick = () => new Promise(r => setImmediate(r));
-const nmFlat = s => (s ? JSON.parse(JSON.stringify(s)) : '');      // copie autonome : une sous-chaîne garderait en mémoire tout le fichier lu
-/** Catalogue d'une langue : { n, idx, amb } ; null sans fichier ou s'il est tronqué (< 500 noms). idx : index de core.js › nameIndex dont chaque nom porte
+/** Catalogue d'une langue (core.js › nmCat : mêmes règles que l'appli) ; null sans fichier ou s'il est tronqué (< 500 noms). Chaque nom de l'index porte
  *  « imprimé \t anglais \t image » (une seule chaîne par carte : ≈ 7 Mo par langue au lieu de 12) ; amb : noms imprimés partagés par deux cartes (jamais « sûrs »). */
 async function nmLoad(l) {
   const f = join(PWA, NM_FILES[l]); let mt;
   try { mt = (await stat(f)).mtimeMs; } catch (e) { return { cat: null, mt: 0 }; }
-  const rows = (await readFile(f, 'utf8')).split('\n'), idx = { list: [], by: new Map() }, amb = new Set(), first = new Map(), C = NM_CORE;
+  const rows = (await readFile(f, 'utf8')).split('\n'), C = NM_CORE, cat = C.nmCat();
   for (let i = 0; i < rows.length; i += 3000) {
-    const part = [], meta = new Map();
-    for (let j = i, end = Math.min(rows.length, i + 3000); j < end; j++) {      // mêmes règles que core.js › frCatalog : 1re ligne d'un nom gardée, nom partagé par deux cartes noté
+    for (let j = i, end = Math.min(rows.length, i + 3000); j < end; j++) {      // 1re ligne d'un nom gardée, nom partagé par deux cartes noté (core.js › nmPut)
       const r = rows[j]; if (!r || r[0] === '#') continue;
       const t = r.split('\t'), p = (t[0] || '').trim(), en = (t[1] || '').trim(); if (!p || !en) continue;
-      const k = C.frontName(p); if (k.length < 2) continue;
-      const cur = first.get(k); if (cur !== undefined) { if (C.frontName(cur) !== C.frontName(en)) amb.add(k); continue; }
-      first.set(k, en); part.push(p); meta.set(p, en + '\t' + (t[2] || '').trim());
+      C.nmPut(cat, p, en, (t[2] || '').trim());
     }
-    for (const e of C.nameIndex(part).list) { e.n = nmFlat(e.n + '\t' + meta.get(e.n)); idx.by.set(e.k, e.n); idx.list.push(e); }
     await nmTick();
   }
-  return { cat: idx.list.length >= 500 ? { n: idx.list.length, idx, amb } : null, mt };
+  return { cat: C.nmDone(cat), mt };
 }
 /** Catalogue prêt d'une langue : chargé à la première demande ; date du fichier contrôlée au plus toutes les 10 min (déploiement, mise à jour hebdomadaire). */
 function nmGet(l) {
@@ -1026,13 +1023,6 @@ function nmTouch() {
   nmUsed = Date.now(); if (nmTimer) return;
   nmTimer = setInterval(() => { if (Date.now() - nmUsed > NM_IDLE && !nmBusy) { NM.clear(); clearInterval(nmTimer); nmTimer = null; } }, Math.min(NM_IDLE, 60e3)); nmTimer.unref();
 }
-/** Meilleure carte d'un catalogue pour les lignes lues (mêmes règles que core.js › matchFr) : { name (anglais), printed, score, raw, img, amb? } ou null. */
-function nmMatch(cat, lines) {
-  const m = NM_CORE.bestMatch(lines, cat.idx); if (!m) return null;
-  const [printed, name, img] = m.name.split('\t'), dup = cat.amb.has(NM_CORE.frontName(printed));
-  return { name, printed, score: dup ? Math.min(m.score, 0.83) : m.score, raw: m.raw, img: img || '', ...(dup ? { amb: true } : {}) };
-}
-const nmAcc = s => String(s || '').toLowerCase().normalize('NFC').replace(/[^\p{L}]+/gu, '');      // lettres accentuées gardées : « relámpago » (es) ≠ « relâmpago » (pt)
 async function namesApi(req, res, url) {
   if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
   if (!NM_ON) return json(res, 503, { error: 'unavailable', message: 'Recherche des noms des autres langues coupée sur ce serveur.' });
@@ -1047,20 +1037,13 @@ async function namesApi(req, res, url) {
     const lines = qs.map(text => ({ text })), found = [], tried = [];
     for (const l of langs) {
       const cat = await nmGet(l); if (!cat) continue;
-      tried.push(l); const m = nmMatch(cat, lines); if (m) found.push({ ...m, lang: l });
+      tried.push(l); const m = NM_CORE.nmMatch(cat, lines); if (m) found.push({ ...m, lang: l });      // mêmes règles que core.js › matchFr
       await nmTick();                                                       // une langue à la fois : les autres requêtes passent entre deux
     }
     if (!tried.length) return json(res, 503, { error: 'unavailable', message: 'Aucun catalogue des autres langues sur ce serveur.' });
     if (!found.length) return json(res, 200, { hit: null, tried });
-    found.sort((a, b) => b.score - a.score);                               // tri stable : à égalité, l'ordre de NM_FILES
-    let top = found.filter(f => found[0].score - f.score < 0.001);
-    const key = f => NM_CORE.frontName(f.name);
-    if (new Set(top.map(key)).size > 1) {                                   // même nom lu, cartes différentes selon la langue (« Relámpago » es = Lightning Bolt, « Relâmpago » pt = Thunderbolt)
-      const exact = top.filter(f => nmAcc(f.raw).includes(nmAcc(f.printed)));      // accents lus tels quels : ils tranchent
-      if (new Set(exact.map(key)).size === 1) top = exact; else top = top.map(f => ({ ...f, score: Math.min(f.score, 0.83), amb: true }));      // sinon : à vérifier
-    }
-    const h = top[0], alt = top.filter(f => f.lang !== h.lang && key(f) === key(h)).map(f => f.lang);      // même carte, même nom dans plusieurs langues (« Elfos de Llanowar » es / pt)
-    const hit = h ? { name: h.name, printed: h.printed, lang: h.lang, score: h.score, raw: h.raw, img: !h.img ? '' : /^https:\/\//.test(h.img) ? h.img : NM_CORE.FR_IMG + h.img, ...(h.amb ? { amb: true } : {}), ...(alt.length ? { alt } : {}) } : null;
+    const h = NM_CORE.nmPick(found);                                       // même nom lu, cartes différentes selon la langue : accents lus tels quels, sinon à vérifier ; alt : même carte, même nom ailleurs (core.js › nmPick, comme l'appli)
+    const hit = h ? { name: h.name, printed: h.printed, lang: h.lang, score: h.score, raw: h.raw, img: !h.img ? '' : /^https:\/\//.test(h.img) ? h.img : NM_CORE.FR_IMG + h.img, ...(h.amb ? { amb: true } : {}), ...(h.alt ? { alt: h.alt } : {}) } : null;
     return json(res, 200, { hit, tried });
   } finally { nmBusy--; nmUsed = Date.now(); }
 }
