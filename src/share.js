@@ -200,7 +200,7 @@ function trDeckGone(id) {
 }
 
 /* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
-const CM_WANTS = 'https://www.cardmarket.com/fr/Magic/Wants';
+const cmWantsUrl = () => 'https://www.cardmarket.com/' + (I18N.lang === 'fr' ? 'fr' : 'en') + '/Magic/Wants';      // Cardmarket dans la langue de l'appli
 /** Presse-papiers ; refusé ou absent : copyText (repli, son propre message). done() seulement quand l'API a copié. */
 function cmClip(text, done) { try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); } }
 function cmCopy(items, what) {
@@ -208,7 +208,7 @@ function cmCopy(items, what) {
   if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
   if (n > CM_MAX) { cmPartsOpen(cmParts(text), n); return; }      // au-delà de 150 lignes, Cardmarket refuse la liste : une Wants list par partie
   haptic('ok');
-  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(CM_WANTS, '_blank', 'noopener') });
+  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(cmWantsUrl(), '_blank', 'noopener') });
   cmClip(text, done);
 }
 /** Feuille des parties : « Partie 1/3 · Copier », puis « Copier la suite » ; chaque partie a aussi son bouton (recopier, sauter). Un copier par geste : le navigateur l'exige. */
@@ -235,7 +235,7 @@ function cmPartsOpen(parts, n) {
       const b = e.target.closest('[data-act]'); if (!b) return;
       if (b.dataset.act === 'cmpart') copy(Number(b.dataset.i));
       else if (b.dataset.act === 'cmnext' && next < N) copy(next);
-      else if (b.dataset.act === 'cmopen') window.open(CM_WANTS, '_blank', 'noopener');
+      else if (b.dataset.act === 'cmopen') window.open(cmWantsUrl(), '_blank', 'noopener');
     });
   });
 }
@@ -452,7 +452,8 @@ function openPublicTrade(sh, preview, id) {
       const all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
       $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}</p>` : ''}
         ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${T(all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.')}</p>`}
-        ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}`;
+        ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}
+        ${shown.some(it => trPrice(it.k)) ? pubNote() : ''}`;
     }
     if (sc) sc.scrollTop = pos;
     if (!keep) stagger($$('.pub-main .coll-list', wrap));
@@ -534,8 +535,12 @@ function pubMatchHtml(P) {
     return `<section class="pm-block" data-side="${side}"><div class="pm-head"><b>${title}</b>${s.n ? `<span>${TN(s.n, '{n} carte', '{n} cartes')}${s.v ? ` · <em>≈ ${esc(fmt(s.v, 'EUR'))}</em>` : ''}</span>` : ''}</div>
       ${list.length ? `<div class="coll-list">${list.map(x => pubMatchRow(x, side)).join('')}</div>` : `<p class="hint pm-none">${none}</p>`}</section>`;
   };
-  const priced = m.sum.get.v || m.sum.give.v, at = PXT && Date.parse(PXT.at);
-  return `${top}${block('get')}${block('give')}${priced ? `<p class="hint pm-note">${at ? T('≈ valeur indicative : tendance Cardmarket ({when}), sans l\'état ni l\'édition des cartes.', { when: esc(relTime(at)) }) : T('≈ valeur indicative : tendance Cardmarket, sans l\'état ni l\'édition des cartes.')}</p>` : ''}`;
+  return `${top}${block('get')}${block('give')}${m.sum.get.v || m.sum.give.v ? pubNote() : ''}`;
+}
+/** Base des valeurs affichées chez le visiteur (calculées sur son appareil, jamais écrites dans le partage). */
+function pubNote() {
+  const at = PXT && Date.parse(PXT.at);
+  return `<p class="hint pm-note">${at ? T('≈ valeur indicative : tendance Cardmarket ({when}), sans l\'état ni l\'édition des cartes.', { when: esc(relTime(at)) }) : T('≈ valeur indicative : tendance Cardmarket, sans l\'état ni l\'édition des cartes.')}</p>`;
 }
 /** Ligne d'un bloc : sa carte (image, nom français), ce qui la rend intéressante, exemplaires échangeables et valeur. */
 function pubMatchRow(x, side) {
@@ -570,7 +575,7 @@ function pubRow(it) {
   const x = TN(it.q, '{n} exemplaire', '{n} exemplaires') + (it.l ? ' · ' + (LANGS[it.l] || it.l) : '') + (it.pw ? ' · ' + T('illustration {name}', { name: it.pw }) : '');
   return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
-    <span class="tr-q"><b>× ${it.q}</b></span></div>`;
+    <span class="tr-q">${trQxHtml({ q: it.q, u: trPrice(it.k) })}</span></div>`;      // prix à l'unité de l'appareil du visiteur, comme sur l'onglet du propriétaire
 }
 
 function trInit() {

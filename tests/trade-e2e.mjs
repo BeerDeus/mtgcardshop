@@ -246,6 +246,7 @@ const tradeId = [...shares.keys()][0];
   assert.match(await tc(V.p, '.pub-row[data-k="command tower"] .row-meta'), /tu l'as · dans tes decks/);
   await V.p.click('#pubSub [data-v="have"]'); await V.p.waitForSelector('.pub-row[data-k="sol ring"]');
   assert.match(await tc(V.p, '.pub-row[data-k="sol ring"] .row-meta'), /tu la cherches × 1/);
+  assert.match(await tc(V.p, '.pub-row[data-k="sol ring"] .tr-q'), /^≈ 1,50\s€\s*× 4$/, 'liste complète : prix à l\'unité du visiteur (son fichier de prix), jamais écrit dans le partage'); assert.match(await txt(V.p, '.pubv .pm-note'), /tendance Cardmarket/);
   // un souhait ajouté ailleurs dans l'appli : « Pour toi » suit, sans rouvrir le lien
   await V.p.click('#pubSub [data-v="match"]'); await V.p.evaluate(() => { TR.wish['llanowar elves'] = { n: 'Llanowar Elves', q: 2 }; trChanged(); });
   await V.p.waitForFunction(() => /× 2/.test(document.querySelector('.pm-row[data-k="llanowar elves"] .tr-q').textContent), null, { timeout: 4000 });
