@@ -3,7 +3,7 @@
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
-import { chromium, startWorld, newPage, ok, txt } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, ok, txt, signInFake } from './e2e-world.mjs';
 const SHOTS = process.env.SHAREDECK_SHOTS || 'shots'; mkdirSync(SHOTS, { recursive: true });      // captures 390 px (SHAREDECK_SHOTS : autre dossier)
 
 const world = await startWorld({ port: 18996 });
@@ -120,6 +120,7 @@ const shot = async (pg, f) => { await pg.waitForTimeout(450); await pg.screensho
     'D\tedgar-markov\tarchidekt\tUpping the Average · 4 200 vues\thttps://archidekt.com/decks/42', 'K\t1\tSol Ring', 'K\t1\tArcane Signet', ...filler(24, 300),
     'P\t150\tSol Ring', 'P\t40\tArcane Signet'].join('\n') + '\n';
   const { p, errs } = await newPage(browser, world, { ctx: { colorScheme: 'dark' } }); errsOf.push(errs);
+  await signInFake(p);      // decks EDHREC : réservés aux comptes vérifiés (gate-e2e)
   await p.route('**/edh.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: FILE }));
   await p.evaluate(() => edhLoad());
   const rows = await p.evaluate(() => edhRows().map((r, i) => ({ i, k: r.deck.k, src: r.deck.src, save: edhSaveName(r), text: edhDeckText(r.deck), shown: r.cmd.names.join(' + ') })));

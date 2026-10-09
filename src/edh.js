@@ -367,6 +367,7 @@ function edhDeckActs(api, r, name) {
 
 /** Feuille d'un deck : cartes à acheter (les plus chères d'abord), déjà possédées, aperçu de chaque carte (appui = en grand, glisser = carte suivante), Voir / Partager et les actions ci-dessus. */
 function openEdhDeck(r) {
+  if (edhGate() !== 'ok') { if (!COLL.el || COLL.tab !== 'decks') openCollection('decks'); return; }      // decks EDHREC réservés aux comptes : l'écran de connexion à la place
   const c = r.cmd, name = c.names.join(' + '), url = r.deck.url || (r.deck.src === 'edhrec' ? 'https://edhrec.com/average-decks/' + encodeURIComponent(c.slug) : '');
   openSheet(name, `${r.tier ? T('Tier {t} · n° {n}', { t: r.tier, n: nf0(r.rank) }) + ' · ' : ''}${T('{have} / {total} possédées', { have: nf0(r.have), total: nf0(r.total) })}${r.eng ? ` (${TN(r.eng, 'dont {n} engagée', 'dont {n} engagées')})` : ''} · ${edhSrcLabel(r.deck)}`, api => {
     const row = (x, own) => {

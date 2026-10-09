@@ -105,6 +105,8 @@ assert.match(await txt(p, '.gate'), /^Les decks EDHREC sont réservés aux compt
 assert.deepEqual(await p.$$eval('.gate .coll-cta .btn', b => b.map(x => x.textContent.trim())), ['Continuer avec Google', 'Se connecter par e-mail']);
 assert.equal(await p.$('.crow.dk'), null); assert.equal(edhHits, 0, 'aucun téléchargement EDHREC derrière l\'écran');
 await shot(p, '2-decks-sans-compte');
+await p.evaluate(() => openEdhDeck({ cmd: { names: ['Edgar Markov'] }, deck: {} })); await p.waitForTimeout(300);
+assert.equal(await p.$('.sheet-wrap'), null, 'feuille d\'un deck EDHREC ouverte d\'ailleurs : rien sans compte'); assert.ok(await p.$('.gate[data-gate="out"]'));
 ok('Decks sans compte : « Les decks EDHREC sont réservés aux comptes », pourquoi, Google / e-mail, rien de chargé');
 
 /* ═══ 3. Inscription par e-mail : lien de vérification envoyé tout de suite ══════════════════════ */
