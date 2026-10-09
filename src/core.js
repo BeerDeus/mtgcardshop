@@ -2,7 +2,7 @@
 
 /* ── Langue de l'interface ─────────────────────────────────────────────────────────────────────
    Les textes sont écrits en français dans le code. T('Texte {n}', { n }) donne leur traduction dans la langue choisie
-   (dictionnaires src/i18n/<langue>.json, assemblés par build.mjs dans I18N_ALL), sinon le texte tel quel.
+   (dictionnaires src/i18n/<langue>.json, posés par build.mjs dans un bloc JSON inerte par langue, script « application/json » d'id i18n-en), sinon le texte tel quel.
    TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (français : 0 et 1 au singulier ; anglais : 1 seul).
    Ajouter une langue = un dictionnaire de plus + une entrée dans I18N_LANGS ; rien d'autre à changer. */
 const I18N_LANGS = { fr: 'Français', en: 'English' };
@@ -28,9 +28,13 @@ function i18nPick(o = {}) {
   const nav = o.nav || (typeof navigator !== 'undefined' && (navigator.languages && navigator.languages[0] || navigator.language)) || 'fr-FR';
   const robot = o.robot != null ? o.robot : typeof navigator !== 'undefined' && (navigator.webdriver || /jsdom/i.test(navigator.userAgent || ''));
   let code = o.saved && has(o.saved) ? o.saved : o.query && has(o.query) ? o.query : robot ? 'fr' : /^fr(-|$)/i.test(nav) ? 'fr' : 'en';
-  const all = typeof I18N_ALL !== 'undefined' ? I18N_ALL : (o.all || {});
-  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : (all[code] || null);
+  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : i18nDict(code, o.all);
   return code;
+}
+/** Dictionnaire d'une langue : o.all (tests sous Node), sinon le bloc JSON de la page, analysé seulement quand il sert (changer de langue recharge la page). */
+function i18nDict(code, all) {
+  if (all) return all[code] || null;
+  try { const el = document.getElementById('i18n-' + code); return el ? JSON.parse(el.textContent) : null; } catch (e) { return null; }
 }
 // Dans la page : la langue est choisie avant tout le reste (les autres fichiers peuvent appeler T dès leur chargement).
 if (typeof document !== 'undefined' && typeof location !== 'undefined') {
