@@ -1,5 +1,6 @@
 // E2E pub (appli Android simulée : faux window.Capacitor + faux plugin AdMob) : bandeau en haut après le démarrage, page décalée de sa hauteur
-// (événement bannerAdSizeChanged), masqué pendant le scan natif, l'accueil et la carte en grand puis rétabli, jamais pour un compte autorisé
+// (événement bannerAdSizeChanged), masqué pendant le scan natif, l'accueil et la carte en grand puis rétabli, seulement sur les écrans de consultation
+// (accueil, collection, decks ; ni saisie, ni résultats, ni éditeur de deck), jamais pour un compte autorisé
 // (détruit quand checkServer le confirme), attente de la vérification du compte, consentement refusé, et rien du tout sur le web.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
@@ -81,6 +82,18 @@ async function natPage(o = {}) {
   await p.evaluate(() => obClose()); await shown(p); assert.equal(await n(p, 'resumeBanner'), 2);
   ok('carte en grand et accueil du premier lancement : bandeau masqué puis rétabli');
 
+  // emplacement « par moments » (9 octobre) : saisie, résultats, éditeur de deck → masqué ; accueil, collection, decks → rétabli
+  await p.evaluate(() => showView('input')); await gone(p); assert.equal(await n(p, 'hideBanner'), 3, 'saisie : masqué');
+  await p.evaluate(() => openCollection()); await p.waitForSelector('.coll.on'); await shown(p); assert.equal(await n(p, 'resumeBanner'), 3, 'collection ouverte par-dessus la saisie : rétabli');
+  await p.evaluate(() => closeCollection()); await gone(p); assert.equal(await n(p, 'hideBanner'), 4, 'collection refermée sur la saisie : masqué');
+  await p.evaluate(() => showView('results')); await p.waitForTimeout(500); assert.equal(await n(p, 'resumeBanner'), 3, 'résultats : toujours masqué');
+  await p.evaluate(() => showView('home')); await shown(p); assert.equal(await n(p, 'resumeBanner'), 4, 'accueil : rétabli');
+  await p.evaluate(() => openDecks()); await p.waitForSelector('.dks.on'); await p.waitForTimeout(500); assert.equal(await n(p, 'hideBanner'), 4, 'Mes decks : le bandeau reste');
+  await p.evaluate(() => openBuilder({})); await p.waitForSelector('.bd.on'); await gone(p); assert.equal(await n(p, 'hideBanner'), 5, 'éditeur de deck : masqué');
+  await p.evaluate(() => bdClose(true)); await shown(p); assert.equal(await n(p, 'resumeBanner'), 5, 'retour sur Mes decks : rétabli');
+  await p.evaluate(() => closeDecks()); await p.waitForTimeout(400); assert.equal(await n(p, 'showBanner'), 2, 'jamais recréé : masqué puis rétabli');
+  ok('écrans de consultation seulement : masqué en saisie, résultats, éditeur de deck ; rétabli sur l\'accueil, la collection, Mes decks');
+
   await p.setViewportSize({ width: 390, height: 520 });
   await p.click('#btnSettings'); await p.waitForSelector('#privBox[data-ads]');
   assert.match(await p.textContent('#privBox .hint'), /bandeau publicitaire Google AdMob/); assert.doesNotMatch(await p.textContent('#privBox .hint'), /Aucune publicité/);
@@ -88,7 +101,7 @@ async function natPage(o = {}) {
   assert.ok(await p.$eval('.sheet', (e, h) => e.getBoundingClientRect().top >= h, H), 'feuille haute : elle s\'arrête sous le bandeau');
   await p.click('#btnAdChoices'); await p.waitForFunction(() => window.__ad.calls.includes('showPrivacyOptionsForm'));
   await p.keyboard.press('Escape'); await p.waitForTimeout(450); await p.setViewportSize({ width: 390, height: 844 });
-  assert.equal(await n(p, 'hideBanner'), 2, 'feuille : le bandeau reste');
+  assert.equal(await n(p, 'hideBanner'), 5, 'feuille : le bandeau reste');
   ok('réglages : mention de la pub, « Choix publicitaires » (formulaire Google), feuille sous le bandeau');
 
   await p.evaluate(() => { CTX.serverOk = true; adsRefresh(); }); await gone(p);

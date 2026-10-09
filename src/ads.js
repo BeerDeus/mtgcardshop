@@ -4,10 +4,11 @@
    Règle « de temps en temps », simple et discrète :
    · rien au lancement : le bandeau n'arrive qu'après AD.delay (6 s) d'appli au calme, session revenue et compte vérifié (jamais montré au
      propriétaire le temps de la vérification), consentement réglé ;
-   · il reste ensuite en place sur les écrans principaux (accueil, collection, decks, feuilles) : un bandeau qui clignote ferait sauter la page
-     sous le doigt et provoquerait des clics accidentels (règles AdMob) ;
-   · masqué pendant l'accueil du premier lancement, le scan (surtout l'aperçu natif, html.nat-cam) et la carte en grand ; il revient AD.back
-     après leur fermeture, jamais pendant un toucher (AD.idle) ;
+   · seulement sur les écrans de consultation (emplacement choisi le 9 octobre : en haut, « par moments ») : accueil, collection, decks (liste et viewer),
+     liste d'échange d'un autre joueur, et leurs feuilles ; il y reste en place : un bandeau qui clignote ferait sauter la page sous le doigt
+     et provoquerait des clics accidentels (règles AdMob) ;
+   · masqué pendant la saisie d'une liste, la recherche et ses résultats, l'éditeur de deck, l'accueil du premier lancement, le scan (surtout
+     l'aperçu natif, html.nat-cam) et la carte en grand ; il revient AD.back après, jamais pendant un toucher (AD.idle) ;
    · l'annonce se renouvelle au rythme réglé dans la console AdMob ; aucune annonce reçue : nouvel essai AD.retry plus tard.
    Consentement (UE) : formulaire UMP de Google avant le premier chargement ; le SDK applique la réponse (annonces personnalisées ou non) ;
    consentement impossible (canRequestAds faux) : aucune pub de la session.
@@ -31,8 +32,14 @@ function adsPad(h) {
   const r = document.documentElement; r.classList.toggle('ad-on', h > 0);
   if (h > 0) r.style.setProperty('--ad-h', h + 'px'); else r.style.removeProperty('--ad-h');
 }
-/** Écran plein où la pub n'a pas sa place : accueil du premier lancement, scan (aperçu natif compris), carte en grand. */
-const adsBusy = () => !!(OB.el || SC.el || imgView || document.documentElement.classList.contains('nat-cam'));
+/** Écran où la pub n'a pas sa place : accueil du premier lancement, scan (aperçu natif compris), carte en grand ; et tout ce qui n'est pas de la consultation :
+ *  saisie, recherche et résultats, éditeur de deck. Écran du dessus : la dernière vue plein écran (.dv) de la page, même en train de s'ouvrir ou de se fermer
+ *  (retirée après son animation : réévalué à ce moment-là), sinon la vue de l'appli (#app[data-view]). */
+function adsBusy() {
+  if (OB.el || SC.el || imgView || document.documentElement.classList.contains('nat-cam')) return true;
+  const dvs = document.querySelectorAll('body > .dv'), top = dvs[dvs.length - 1];
+  return top ? top.classList.contains('bd') || top.classList.contains('scan') : S.view !== 'home';
+}
 
 /** Réglages du serveur (/__ping) : bloc d'annonces (ADMOB_BANNER_ID, vide = test) et comptes autorisés à attendre. null : injoignable. */
 async function adsServer() {
@@ -109,8 +116,9 @@ function adsInit() {
   AD.on = true; AD.calm = Date.now();
   AD.q = adsCall(P, 'removeBanner');                                                       // page rechargée (langue…) : le bandeau natif d'avant ne reste pas sans sa marge
   const mo = new MutationObserver(adsRefresh);
-  mo.observe(document.body, { childList: true });                                         // accueil, scan, carte en grand : ajoutés et retirés à la racine
+  mo.observe(document.body, { childList: true });                                         // accueil, scan, carte en grand, collection, decks… : ajoutés et retirés à la racine
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });  // html.nat-cam
+  const app = $('#app'); if (app) mo.observe(app, { attributes: true, attributeFilter: ['data-view'] });      // accueil ↔ saisie ↔ résultats (showView)
   const sr = $('#sheetRoot'); if (sr) new MutationObserver(() => adsPriv($('#privBox', sr))).observe(sr, { childList: true });
   document.addEventListener('pointerdown', () => { AD.touch = Date.now(); }, { capture: true, passive: true });
   document.addEventListener('visibilitychange', adsRefresh);

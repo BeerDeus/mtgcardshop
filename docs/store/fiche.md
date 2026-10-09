@@ -185,7 +185,7 @@ Résultat attendu : PEGI 3 à 7, ESRB Everyone à Everyone 10+, avec la mention 
 
 - **Tranches d'âge** : 13 à 15 ans, 16 à 17 ans, 18 ans et plus. Ne coche aucune tranche de moins de 13 ans (sinon le programme Familles s'applique, incompatible avec le bandeau AdMob tel qu'il est réglé).
 - **L'appli peut-elle attirer les enfants ?** Non : outil de collection pour un jeu de cartes destiné aux 13 ans et plus.
-- **Annonces** : **Oui, l'appli contient des annonces.** Bandeau Google AdMob en haut de l'écran, dans l'appli Android seulement ; aucun bandeau pour les comptes autorisés (`ALLOWED_UIDS`, seulement si le serveur a `CARDTRADER_TOKEN`), ni sur l'accueil du premier lancement, pendant le scan et la carte en grand.
+- **Annonces** : **Oui, l'appli contient des annonces.** Bandeau Google AdMob en haut de l'écran, dans l'appli Android seulement, sur les écrans de consultation (accueil, collection, decks) ; aucun bandeau pour les comptes autorisés (`ALLOWED_UIDS`, seulement si le serveur a `CARDTRADER_TOKEN`), ni pendant la saisie, la recherche et les résultats, l'éditeur de deck, l'accueil du premier lancement, le scan et la carte en grand.
 - **Identifiant publicitaire** : **Oui**, utilisé pour la **publicité ou le marketing** (SDK Google Mobile Ads).
 
 ## 8. Sécurité des données (résumé pour le formulaire)

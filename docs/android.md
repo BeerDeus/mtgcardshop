@@ -189,7 +189,8 @@ Fond blanc même en thème sombre : un lecteur de QR code attend du foncé sur c
 Un petit bandeau Google AdMob, en haut de l'écran, paie l'hébergement :
 - seulement dans l'appli Android, jamais sur le site ni la PWA ;
 - jamais pour les comptes de `ALLOWED_UIDS` (le tien) quand le serveur a `CARDTRADER_TOKEN` : connecté avec ton compte, tu ne vois aucune pub ;
-- il arrive quelques secondes après l'ouverture puis reste en place ; il disparaît pendant l'accueil du premier lancement, le scan et la carte en grand. La page descend de sa hauteur : rien n'est caché dessous.
+- seulement sur les écrans de consultation : accueil, collection, Mes decks, liste d'échange d'un autre joueur. Jamais pendant la saisie d'une liste, la recherche et ses résultats, l'éditeur de deck, le scan, la carte en grand ni l'accueil du premier lancement (choix du 9 octobre, `adsBusy` dans `src/ads.js`) ;
+- il arrive quelques secondes après l'ouverture puis reste en place sur ces écrans. La page descend de sa hauteur : rien n'est caché dessous.
 
 Tant que rien n'est configuré, l'appli affiche le bandeau de **test** de Google : aucun revenu, aucun risque pour ton compte.
 
