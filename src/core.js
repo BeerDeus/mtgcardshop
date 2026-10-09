@@ -18,6 +18,9 @@ function TN(n, one, many, v) {
 }
 /** Locale des nombres et des dates : fr-FR, ou celle du navigateur pour l'anglais (en-US, en-GB…). */
 const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : /^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB';
+/** Ordre alphabétique des noms de cartes, accents et casse ignorés : un Intl.Collator par langue de l'interface, créé une fois (localeCompare(…, 'fr', options) en recrée un à chaque comparaison : ×40 sur le tri de 5 000 cartes). */
+const NAME_COLL = {};
+const NAME_CMP = (a, b) => (NAME_COLL[I18N.lang] || (NAME_COLL[I18N.lang] = new Intl.Collator(I18N.lang === 'fr' ? 'fr' : 'en', { sensitivity: 'base' }).compare))(a, b);
 /** Langue : choix gardé, sinon ?lang=xx, sinon celle du téléphone (français → français, toute autre → anglais).
  *  Navigateurs pilotés par les tests (webdriver, jsdom) : français, sauf choix explicite. */
 function i18nPick(o = {}) {
@@ -121,7 +124,7 @@ function restoreLines(text, removed) {
 /** Ordre d'affichage. items : { name, i (rang dans la liste), cost (centimes ou null) } ; sans prix → toujours en fin de liste. */
 function sortCards(items, mode) {
   const byI = (a, b) => a.i - b.i, arr = items.slice();
-  if (mode === 'name') arr.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }) || byI(a, b));
+  if (mode === 'name') arr.sort((a, b) => NAME_CMP(a.name, b.name) || byI(a, b));
   else if (mode === 'price-desc' || mode === 'price-asc') {
     const sg = mode === 'price-desc' ? -1 : 1;
     arr.sort((a, b) => ((a.cost == null) - (b.cost == null)) || (a.cost != null && sg * (a.cost - b.cost)) || byI(a, b));
@@ -451,7 +454,7 @@ function typeBucket(tl) {
   return 'Autres';
 }
 const isLand = i => i.s === 'basic' || (i.tl ? typeBucket(i.tl) === 'Terrains' : false);
-const byName = (a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' });      // dn : nom affiché si différent de n (carte française)
+const byName = (a, b) => NAME_CMP(a.dn || a.n, b.dn || b.n);      // dn : nom affiché si différent de n (carte française)
 const byCmcName = (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b);
 const sumGroup = items => ({ count: items.reduce((a, i) => a + i.q, 0), cost: items.reduce((a, i) => a + (i.c || 0), 0) });
 /**
@@ -1734,7 +1737,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, NAME_CMP, byName, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
