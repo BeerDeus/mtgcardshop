@@ -10,6 +10,7 @@ BROWSER=(
   lang-e2e.mjs art-e2e.mjs viewer-e2e.mjs zoom-e2e.mjs builder-e2e.mjs coll-e2e.mjs extras-e2e.mjs edh-e2e.mjs
   frnames-e2e.mjs prix-e2e.mjs pwa-e2e.mjs sw-e2e.mjs push-client-e2e.mjs push-native-e2e.mjs sync-e2e.mjs e2e-account.mjs scan-e2e.mjs ads-e2e.mjs live-e2e.mjs trade-e2e.mjs motion-e2e.mjs widget-e2e.mjs content-e2e.mjs perf-e2e.mjs intl-e2e.mjs names-de-e2e.mjs rules-test.mjs
   sharedeck-e2e.mjs de-e2e.mjs
+  natshare-e2e.mjs
   gate-e2e.mjs
 )
 T=("$@")

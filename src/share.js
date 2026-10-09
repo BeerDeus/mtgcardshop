@@ -149,7 +149,7 @@ async function trShareOn() {
   if (!cloudOn()) { openAccount(); return; }
   if (!trNeedNet() || TR.creating) return;
   const id = D.cloud.shareId(); TR.creating = true;
-  try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast(T('Lien créé'), { label: T('Copier'), fn: () => copyText(shareUrl(id)) }); haptic('ok'); }
+  try { await trPrep(); TR.share = id; TR.sig[id] = ''; await trPut(id, 'trade', trPayload()); trChanged(); toast(T('Lien créé'), natShare() || navigator.share ? { label: T('Partager'), fn: () => trSend(id) } : { label: T('Copier'), fn: () => copyText(shareUrl(id)) }); haptic('ok'); }      // « Partager » seulement s'il ouvre un menu de partage (sinon il copierait)
   catch (err) { TR.share = ''; toast(err && err.code === 'too-big' ? T('Liste trop longue pour un lien : trop de cartes recherchées.') : err && err.code === 'permission-denied' ? T('Règles Firestore à publier pour le partage (voir README)') : T('Lien impossible à créer : réessaie en ligne')); trRepaint(); }
   finally { TR.creating = false; }
 }
@@ -159,10 +159,19 @@ async function trShareOff(renew) {
   delete TR.sig[old]; TR.share = ''; trChanged();
   if (renew) await trShareOn(); else toast(T('Partage arrêté : l\'ancien lien ne marche plus'));
 }
-async function sendLink(url, title) {
-  if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+/** ManaOrbit avec share : APK récente ; null dans un navigateur et dans une APK plus ancienne (méthode absente du pont). */
+const natShare = () => { const mo = typeof natPlugin === 'function' && natPlugin('ManaOrbit'); return mo && typeof mo.share === 'function' ? mo : null; };
+/**
+ * Partage d'un lien : menu « Partager » d'Android dans l'APK (ManaOrbit.share : la WebView n'a pas navigator.share), sinon celui du navigateur ou de la PWA,
+ * sinon copie. text : message court avant le lien, sur la même ligne (WhatsApp, Messages… : le message, puis l'aperçu du lien). Abandon (AbortError) : rien.
+ */
+async function shareOut({ title, text, url }) {
+  const mo = natShare();
+  if (mo) { try { await mo.share({ title, text, url, chooser: T('Partager') }); return; } catch (e) { /* coque qui refuse : navigateur, puis copie */ } }
+  if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   copyText(url);
 }
+const trSend = id => shareOut({ title: T('Ma liste d\'échange Magic'), text: T('Ma liste d\'échange Magic'), url: shareUrl(id) });
 /** Partage d'un deck : enregistré (suivi : chaque modification part sur le lien) ou figé (deck EDHREC, liste en cours). */
 async function shareDeck({ id, text, name }) {
   if (!cloudOn()) { toast(T('Connecte-toi pour partager un deck'), { label: T('Compte'), fn: openAccount }); return; }
@@ -183,7 +192,7 @@ async function shareDeck({ id, text, name }) {
     api.wrap.addEventListener('click', async e => {
       const b = e.target.closest('[data-act]'); if (!b) return;
       if (b.dataset.act === 'dcopy') copyText(shareUrl(sid));
-      else if (b.dataset.act === 'dsend') sendLink(shareUrl(sid), body.name);
+      else if (b.dataset.act === 'dsend') shareOut({ title: body.name, text: T('{name} · deck Magic', { name: body.name }), url: shareUrl(sid) });
       else if (b.dataset.act === 'dstop') {
         if (!trNeedNet()) return;
         try { await D.cloud.dropShare(sid); } catch (err) { toast(T('Arrêt impossible hors ligne : réessaie')); return; }
@@ -330,7 +339,7 @@ function trClick(e) {
   else if (act === 'troff') trShareOff(false);
   else if (act === 'trnew') trShareOff(true);
   else if (act === 'trcopy') copyText(shareUrl(TR.share));
-  else if (act === 'trsend') sendLink(shareUrl(TR.share), T('Ma liste d\'échange Magic'));
+  else if (act === 'trsend') trSend(TR.share);
   else if (act === 'trqr') trQrOpen();
   else if (act === 'trview') { const p = trPayload(); openPublicTrade(readShare('trade', { ...p, ...profShare(), at: Date.now() }), true); }
   else if (act === 'trmore') { TR.shown += TR_PAGE; collPaintBody(true); }

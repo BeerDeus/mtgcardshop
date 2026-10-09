@@ -1,13 +1,37 @@
 # À faire
 
+## Pour reprendre (nouvelle session)
+- Lire d'abord ce fichier, puis `README.md` (fonctionnement), `DEV.md` (build, tests, CI), `docs/android.md` (APK, widget, natif) et `docs/store/` (fiche Play Store, test fermé).
+- Branche de travail, puis `main` (Hostinger déploie `main`). `node build.mjs` après chaque changement de `src/` ; `deck-deal.html` est committé.
+- Tests : `bash tests/run-tests.sh` (tous, ~30 min) ou une sélection ; la CI GitHub (`tests.yml`, `rules.yml`) les relance à chaque push.
+- Jamais dans le dépôt : `google-services.json`, la clé FCM, les variables Hostinger (voir `README.md`).
+- Code natif (Java, XML Android) modifié → le propriétaire refait l'APK (`android-app` : `npm run setup` puis `npm run apk`). Le reste (site) arrive dans l'APK sans la refaire.
+
 ## Prochaines améliorations (prévues)
-- **Système d'échanges** (liste d'échange, lien public) : à retravailler. Attentes à préciser.
-- **Widget Android** (valeur de la collection : `ValueWidget`, `ManaOrbitPlugin.setWidget`, `src/widget.js`) : à améliorer. Attentes à préciser.
+- **Deuxième widget Android : QR code du lien d'échange.** Un widget à part (le widget de valeur actuel reste tel quel) qui affiche en grand le QR code du lien public de la liste d'échange du compte, pour le faire scanner depuis l'écran d'accueil sans ouvrir l'appli.
+  - Le QR est déjà calculé côté site (`src/qr.js`, feuille « QR code » de l'onglet Échange) : l'envoyer au natif comme pour la valeur (`ManaOrbitPlugin.setWidget`, `src/widget.js`), en matrice de modules ou en image.
+  - Natif : nouveau `AppWidgetProvider` + layout + `appwidget-provider` XML (tailles 2×2 et plus grand), fond blanc, marge de silence, pseudo et « Liste d'échange » sous le code ; toucher le widget ouvre l'onglet Échange.
+  - Sans lien d'échange actif : « Crée ton lien d'échange » et toucher ouvre l'appli au bon endroit. Lien arrêté ou renouvelé : le widget se met à jour.
+  - Demande une nouvelle APK.
+- **Bannière de pub : trouver l'emplacement qui gêne le moins.** Aujourd'hui : bandeau AdMob en haut (`TOP_CENTER`), 16 px d'écart sous lui (`src/ads.js`, `src/css/ads.css`).
+  - Pistes à comparer (captures à 360 et 390 px) : en bas au-dessus de la barre d'action, seulement sur certains écrans (accueil, collection) et jamais pendant un scan ou une recherche, bannière « adaptative ancrée », bannière repliable.
+  - Règles AdMob : pas collée aux boutons de navigation, jamais par-dessus le contenu, pas de clic accidentel ; mesurer la gêne sur les écrans les plus utilisés (scan, résultats, collection).
 - **Proposition d'échange équilibrée** (plus tard) : cocher des cartes des deux côtés, balance de valeur, récapitulatif à partager.
 - **Outils de partie** (plus tard, rien dans le code) : pas de compteur de vies dans Mana Orbit ; éventuellement un lien vers l'appli du propriétaire sur Google Play.
+- Fait et validé par le propriétaire : système d'échange (« Pour toi », QR, valeurs), widget de valeur (4 tailles, courbe 4×2, bouton Scanner / Prix rapide).
+
+## Si EDHREC ou Archidekt refusent (plan B, à préparer avant la production)
+- **Interrupteur côté serveur** : une variable Hostinger (ex. `EDHREC_OFF=1`, `ARCHIDEKT_OFF=1`) annoncée par `/__ping`, et l'appli cache la fonction concernée, sans nouvelle APK.
+- **Sources sans autorisation à demander**, pour garder « quels decks je peux monter, combien pour finir » :
+  - decks préconstruits officiels (MTGJSON, licence MIT : toutes les listes Commander de Wizards) ;
+  - decks générés par Mana Orbit depuis Scryfall (commandants populaires, cartes les plus jouées dans leurs couleurs, quotas terrains / mana / pioche / retraits) ;
+  - cEDH : EDHTop16 / TopDeck.gg (API publique, crédit déjà affiché) ;
+  - à terme : deck moyen « Mana Orbit » à partir des decks des utilisateurs, anonymisés (ligne à ajouter à la politique de confidentialité).
 
 ## Avant la publication sur le Play Store
-- Attendre les réponses d'EDHREC et d'Archidekt (`docs/mails-partenaires.md`).
+- **EDHREC et Archidekt** : réponses aux deux mails toujours en attente (`docs/mails-partenaires.md`).
+  - Lancer le test fermé sans attendre (pas public, accord non nécessaire) ; envoyer la relance avec une échéance claire.
+  - Sans réponse à la mise en production : publier avec crédit et lien (déjà là), lecture hebdomadaire par le serveur seulement, et l'interrupteur ci-dessus prêt. En cas de refus : basculer sur le plan B.
 - AdMob : remplacer les identifiants de test par les vrais.
   - `admob_app_id` dans `android-app/android/app/src/main/res/values/strings.xml`.
   - `ADMOB_BANNER_ID` sur Hostinger.
@@ -31,6 +55,7 @@
   - soit demander une autorisation écrite à Moxfield.
 - **EDHTop16 / TopDeck.gg** : `gen-edhrec.mjs` lit l'API GraphQL publique d'EDHTop16 (données TopDeck.gg). Crédit et lien déjà dans Mentions et sources ; leur envoyer un mot de courtoisie.
 - **Interrupteur EDHREC / Archidekt** : si l'un refuse, pouvoir couper sa fonction depuis le serveur, sans nouvelle APK (rien de tel aujourd'hui).
+- **Deux décisions** : (1) la collection Firestore `games` de l'autre appli du propriétaire est lisible par tout compte Mana Orbit connecté (`firestore.rules`) : la garder ou la fermer ; (2) les titres des decks Archidekt sont affichés tels quels dans la feuille d'un deck EDHREC : les masquer ou non (modération).
 - **Politique de confidentialité** : une phrase sur « Signaler ce partage » et ce qu'il advient d'un lien signalé (règle Google sur le contenu publié par les utilisateurs).
 
 ## Plus tard : achat « Soutenir » (phase 2, après 4 à 8 semaines d'usage réel)
