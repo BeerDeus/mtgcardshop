@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône (appui long sur Mana Orbit, Android 7.1 et plus), dans l'ordre affiché. Chacun passe par ShortcutActivity (relais : l'appli ouverte
+     n'est pas détruite) avec la cible du widget (extra app.manaorbit.open = ValueWidget.EXTRA_OPEN) ; le site l'ouvre (src/widget.js, WGT_OPEN).
+     targetPackage : l'applicationId (android/app/build.gradle). Textes : values(-fr)/shortcut_strings.xml. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_scan"
+        android:shortcutId="scan"
+        android:shortcutLongLabel="@string/shortcut_scan_long"
+        android:shortcutShortLabel="@string/shortcut_scan">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.manaorbit.ShortcutActivity"
+            android:targetPackage="app.manaorbit">
+            <extra
+                android:name="app.manaorbit.open"
+                android:value="scan" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_quick"
+        android:shortcutId="quick"
+        android:shortcutLongLabel="@string/shortcut_quick_long"
+        android:shortcutShortLabel="@string/shortcut_quick">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.manaorbit.ShortcutActivity"
+            android:targetPackage="app.manaorbit">
+            <extra
+                android:name="app.manaorbit.open"
+                android:value="quick" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_trade"
+        android:shortcutId="trade"
+        android:shortcutLongLabel="@string/shortcut_trade_long"
+        android:shortcutShortLabel="@string/shortcut_trade">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.manaorbit.ShortcutActivity"
+            android:targetPackage="app.manaorbit">
+            <extra
+                android:name="app.manaorbit.open"
+                android:value="trade" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_paste"
+        android:shortcutId="paste"
+        android:shortcutLongLabel="@string/shortcut_paste_long"
+        android:shortcutShortLabel="@string/shortcut_paste">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.manaorbit.ShortcutActivity"
+            android:targetPackage="app.manaorbit">
+            <extra
+                android:name="app.manaorbit.open"
+                android:value="paste" />
+        </intent>
+    </shortcut>
+</shortcuts>

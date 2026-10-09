@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône en français (anglais par défaut dans values/shortcut_strings.xml : mêmes noms, rien de plus ici). Mêmes mots que l'accueil. -->
+<resources>
+    <string name="shortcut_scan">Scanner</string>
+    <string name="shortcut_scan_long">Scanner</string>
+    <string name="shortcut_quick">Prix rapide</string>
+    <string name="shortcut_quick_long">Prix rapide</string>
+    <string name="shortcut_trade">Échange</string>
+    <string name="shortcut_trade_long">Échange</string>
+    <string name="shortcut_paste">Panier</string>
+    <string name="shortcut_paste_long">Nouveau panier</string>
+</resources>

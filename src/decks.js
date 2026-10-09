@@ -211,7 +211,7 @@ function renderAccountBtn() {
 /* ── Profil : pseudo et photo (users/{uid}/meta/profile), affichés sur les liens partagés ──────────── */
 const PROF_KEY = 'deckdeal:profile:v1', PROF_NAME_MAX = 30, PROF_PHOTO_MAX = 40000;
 const PROF = { uid: '', name: '', photo: '', unsub: null };
-const profClean = s => String(s || '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, PROF_NAME_MAX);
+const profClean = s => String(s || '').replace(/[\p{Cc}\p{Cf}<>]/gu, '').replace(/\s+/g, ' ').trim().slice(0, PROF_NAME_MAX);      // Cf : caractères invisibles de mise en forme (U+202E, U+200B, U+2066–2069…) qui retourneraient « Liste d'échange de … » sur le lien partagé
 const profPhotoOk = s => typeof s === 'string' && s.length <= PROF_PHOTO_MAX && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
 /** Avatar : photo choisie, sinon celle du compte Google, sinon rien (l'initiale reste). */
 const profAvatar = () => PROF.photo || (D.user && typeof D.user.photoURL === 'string' && /^https:\/\//.test(D.user.photoURL) ? D.user.photoURL : '');

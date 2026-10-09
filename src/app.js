@@ -982,8 +982,8 @@ function openSettings() {
       <div class="sec-title">${T('Affichage')}</div>
       <div class="field-in"><label class="label" for="setLang">${T('Langue')}</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="${esc(T('Thème'))}"></div>
-      <div class="switch-row"><span class="t"><b>${T('Vibrations')}</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? T('Un petit retour au toucher et à la fin des tâches.') : T('Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).')}</span></span>
-        <label class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></label></div>
+      <label class="switch-row" for="setHaptic"><span class="t"><b>${T('Vibrations')}</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? T('Un petit retour au toucher et à la fin des tâches.') : T('Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).')}</span></span>
+        <span class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></span></label>
       <button class="btn ghost small" type="button" id="btnCache" style="align-self:flex-start">${T('Vider le cache du catalogue')}</button>
       <div class="sec-title">${T('Notifications')}</div>
       <div class="installbox"><p class="hint">${T('Fin de recherche et alertes de prix.')}</p><button class="btn ghost small" type="button" id="btnNotif" style="align-self:flex-start">${T('Gérer les notifications')}</button></div>
@@ -1264,6 +1264,7 @@ function resumeRun() {
   refreshDeck(); toast(T('Prix prêts, chargement…')); startRun();
 }
 function handleLaunch() {
+  wgtLaunched();                                                                          // appli Android : liens partagés à froid, en attente du serveur (widget.js)
   let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
   if (![...q.keys()].length) return;
   const resume = q.has('resume'), alerts = q.has('alerts'), shared = q.has('text') || q.has('url') || q.has('title'), del = q.has('delete-account');
@@ -1273,6 +1274,7 @@ function handleLaunch() {
   else if (alerts) setTimeout(alertsOpen, 900);
   else if (shared) onShared(extractShared({ title: q.get('title'), text: q.get('text'), url: q.get('url') }));
   else if (q.has('collection')) setTimeout(() => openCollection(), 600);                  // lien direct vers la collection (?collection)
+  else if (q.has('open')) { const v = q.get('open'); setTimeout(() => wgtOpen(v), 600); }  // raccourcis de l'icône de la PWA (manifeste : ?open=scan | quick | trade | paste)
 }
 /** Contenu reçu du menu « Partager » : une decklist en texte, ou un lien (EDHREC, Archidekt, Moxfield) lu par le serveur. */
 /** Met une decklist dans la page de saisie (partage, import d'un lien, deck EDHREC de la collection). */

@@ -771,9 +771,19 @@ test('frNames / frCatalog.fr : nom anglais (clé de collection) → nom imprimé
 });
 test('byName / filterItems : une carte FR se trie et se cherche par son nom affiché (français), l\'anglais reste trouvable', () => {
   const items = [{ k: 'sol ring', n: 'Sol Ring', dn: 'Anneau solaire' }, { k: 'arcane signet', n: 'Arcane Signet' }, { k: 'counterspell', n: 'Counterspell', dn: 'Contresort' }, { k: 'wrath of god', n: 'Wrath of God' }];
-  assert.deepEqual(items.slice().sort(C.byName).map(i => i.dn || i.n), ['Anneau solaire', 'Arcane Signet', 'Contresort', 'Wrath of God']);
+  assert.deepEqual(items.slice().reverse().sort(C.byName).map(i => i.dn || i.n), ['Anneau solaire', 'Arcane Signet', 'Contresort', 'Wrath of God']);
   const q = t => C.filterItems(items, { q: t, colors: new Set() }).map(i => i.k);
   assert.deepEqual(q('anneau'), ['sol ring'], 'recherche par le nom français'); assert.deepEqual(q('sol ring'), ['sol ring'], 'et par le nom anglais'); assert.deepEqual(q('contre'), ['counterspell']); assert.deepEqual(q('Arcane'), ['arcane signet']);
+});
+test('NAME_CMP : même ordre que localeCompare(…, \'fr\', base), en français comme en anglais', () => {
+  const names = ['Æther Vial', 'aether vial', 'Élan', 'elan', 'Éclair', 'Eclair', 'Zap', 'zap', 'Ça', 'Ca', 'Lim-Dûl\'s Vault', 'Lim-Dul\'s Vault', 'Fire // Ice', 'Fire', '_Rare', '1996 World Champion', 'Ponder', 'Pondre', 'Œil', 'Oeil', 'Ætherize', 'Arcane Signet', 'arcane signet', 'Jötun Grunt', 'Jotun Grunt', '', 'Ñ', 'N'];
+  const ref = (a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }), sgn = x => Math.sign(x);
+  for (const lang of ['fr', 'en']) {
+    C.I18N.lang = lang;
+    for (const a of names) for (const b of names) assert.equal(sgn(C.NAME_CMP(a, b)), sgn(ref(a, b)), `${lang} : ${a} / ${b}`);
+    assert.deepEqual(names.slice().sort(C.NAME_CMP), names.slice().sort(ref), lang + ' : même tri');
+  }
+  C.I18N.lang = 'fr';
 });
 test('noms français bruités par l\'OCR : retrouvés, jamais une mauvaise carte', () => {
   const fc = C.frCatalog(FR_ROWS), en = C.nameIndex(FR_ROWS.map(r => r.split('\t')[1]));
