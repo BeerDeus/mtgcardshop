@@ -78,6 +78,21 @@ r = await j(B + '/icons/apple-touch-icon.png'); assert.equal(r.s, 200); assert.m
   } finally { rmSync(f, { force: true }); }
   console.log('✓ /fr-names.tsv : 404 propre si absent, sinon texte compressé en gzip (ou brut), cache 24 h, HEAD sans corps');
 }
+{ // catalogues des autres langues : /names-<langue>.tsv, liste fermée ; /names-fr.tsv = fr-names.tsv
+  const { writeFileSync, rmSync } = await import('node:fs'), fde = join(process.env.PWA_DIR, 'names-de.tsv'), ffr = join(process.env.PWA_DIR, 'fr-names.tsv');
+  r = await j(B + '/names-de.tsv'); assert.equal(r.s, 404); assert.equal(r.o.error, 'asset_missing');
+  const de = Array.from({ length: 800 }, (_, i) => `Name ${i} Ä\tName ${i}\tfront/a/b/${i}.jpg`).join('\n') + '\n', fr = 'Anneau solaire\tSol Ring\t\n';
+  writeFileSync(fde, de); writeFileSync(ffr, fr);
+  try {
+    const g = await fetch(B + '/names-de.tsv'); assert.equal(g.status, 200); assert.match(g.headers.get('content-type'), /^text\/tab-separated-values; charset=utf-8/); assert.equal(g.headers.get('content-encoding'), 'gzip'); assert.match(g.headers.get('cache-control'), /max-age=86400/); assert.equal(await g.text(), de, 'compressé à la première demande, même contenu');
+    const raw = await new Promise((res, rej) => http.get(B + '/names-de.tsv', { headers: { 'Accept-Encoding': 'identity' } }, x => { const c = []; x.on('data', d => c.push(d)); x.on('end', () => res({ h: x.headers, b: Buffer.concat(c).toString() })); }).on('error', rej));
+    assert.equal(raw.h['content-encoding'], undefined); assert.equal(raw.b, de);
+    r = await j(B + '/names-fr.tsv'); assert.equal(r.s, 200); assert.equal(r.o, fr, 'français : le fichier historique');
+    for (const p of ['/names-en.tsv', '/names-xx.tsv', '/names-DE.tsv', '/names-de.tsv.gz', '/names-..%2Ffr-names.tsv', '/names-de%00.tsv', '/names-.tsv', '/names-de.tsv%2F..%2Ffr-names.tsv'])
+      assert.equal((await fetch(B + p)).status, 404, p);
+  } finally { rmSync(fde, { force: true }); rmSync(ffr, { force: true }); }
+  console.log('✓ /names-<langue>.tsv : liste fermée de langues (404 sinon, aucun chemin construit), gzip à la demande ; /names-fr.tsv = fr-names.tsv');
+}
 { // commandants EDHREC : même mécanique (404 propre, gzip, cache 24 h)
   const { writeFileSync, rmSync, existsSync } = await import('node:fs'), f = join(process.env.PWA_DIR, 'edh.tsv'); assert.ok(!existsSync(f), 'pwa/edh.tsv est généré par GitHub Actions, pas versionné ici');
   r = await j(B + '/edh.tsv'); assert.equal(r.s, 404); assert.equal(r.o.error, 'asset_missing');

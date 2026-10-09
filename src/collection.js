@@ -890,8 +890,8 @@ function openCollAdd() {
 }
 
 /* ── Importer (fichier CSV, texte collé, texte partagé) ───────────────────────────────────────── */
-/** Langue proposée pour les cartes importées sans langue : celle de l'interface (français → cartes françaises). */
-const collImportLang = () => (I18N.lang === 'en' ? 'en' : 'fr');
+/** Langue proposée pour les cartes importées sans langue : la langue de cartes de l'utilisateur (interface en français → cartes françaises ; anglais sur un téléphone allemand → allemandes). */
+const collImportLang = () => { const l = userLang(); return CARD_LANG_LIST.includes(l) ? l : I18N.lang === 'en' ? 'en' : 'fr'; };
 const GLANCE_MIN = 10;      // « coup d'œil » après un import d'au moins 10 cartes (pas après 2 cartes ajoutées)
 function openCollImport(initial) {
   frLoad();      // noms français reconnus dès que l'index est là (aperçu repeint à son arrivée)

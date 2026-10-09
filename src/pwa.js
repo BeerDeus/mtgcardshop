@@ -1,7 +1,7 @@
 /* ── pwa.js : installation de l'app (vraie installation, pas seulement un raccourci) ─────────────
    Chrome/Edge/Android/Samsung : l'événement « beforeinstallprompt » ouvre la fenêtre d'installation du navigateur.
    iPhone/iPad : Apple n'autorise que « Sur l'écran d'accueil » (pas d'installation déclenchable) → on explique le geste.
-   Le service worker (sw.js) est ce qui rend l'app installable et la fait s'ouvrir hors ligne. */
+   Le service worker (sw.js) est ce qui rend l'app installable et la fait s'ouvrir hors ligne, sans attendre le réseau ; il signale une nouvelle version (toast « Recharger »). */
 const PWA = (() => {
   let deferred = null, installed = false;
   const subs = new Set(), KEY = 'deckdeal:install-x', QUIET = 30 * 864e5;
@@ -43,7 +43,20 @@ const PWA = (() => {
           await navigator.serviceWorker.register('sw.js', { scope: './' });
         } catch (e) { /* ignore */ }
       };
-      if (document.readyState === 'complete') reg(); else window.addEventListener('load', reg);
+      // Nouvelle version : la page a pu venir de la copie locale (ouverture immédiate) ; le service worker dit quelle version il garde
+      // une fois sa mise à jour faite. Différente de celle qui tourne → toast « Recharger » (sinon elle servira à la prochaine ouverture).
+      let told = false;
+      navigator.serviceWorker.addEventListener('message', e => {
+        const b = e.data && e.data.type === 'dd-shell' && e.data.build;
+        if (!b || told || typeof DD_BUILD !== 'string' || b === DD_BUILD) return;
+        told = true;
+        const show = () => { try { toast(T('Nouvelle version disponible'), { label: T('Recharger'), fn: () => location.reload() }); } catch (x) { /* ignore */ } };
+        if (!document.hidden) return show();
+        document.addEventListener('visibilitychange', function vis() { if (!document.hidden) { document.removeEventListener('visibilitychange', vis); show(); } });
+      });
+      const ask = () => { try { const c = navigator.serviceWorker.controller; if (c) c.postMessage({ type: 'dd-shell?' }); } catch (e) { /* ignore */ } };
+      const go = () => { reg(); ask(); };
+      if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
     }
   }
   return { state, install, snooze, wantsBanner, on, standalone, ios };

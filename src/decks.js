@@ -119,8 +119,8 @@ function updateHeroDelta() {
 
 /* ── Chargement d'un deck dans la saisie ──────────────────────────────────────────────────── */
 function applyOpts(o) {
-  Object.assign(S.opts, o);
-  $('#optLang').value = o.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
+  Object.assign(S.opts, o, S.opts.langSet ? {} : { lang: S.opts.lang });      // langue jamais choisie : celle de l'utilisateur, pas celle enregistrée avec le deck (souvent l'ancien défaut, le français)
+  $('#optLang').value = S.opts.lang; $('#optCond').value = o.cond; $('#optFallback').checked = !!o.fallbackEn;
   $('#optShip').value = (o.ship / 100).toFixed(2).replace('.', ',');
   $('#segFoil').setValue(o.foil); $('#segMode').setValue(o.mode);
   syncShip(); modeHint(); saveStore();
