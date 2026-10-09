@@ -17,7 +17,7 @@ const anims = (p, sel) => p.$eval(sel, e => e.getAnimations({ subtree: true }).m
   await p.evaluate(() => { const o = stagger; window.__stg = []; stagger = (...a) => { window.__stg.push(a.flat().filter(Boolean).map(e => e.className).join(' ')); return o(...a); }; });      // les repeints (lecture des cartes) remplacent la liste : on suit les appels
   await toHome(p);
   // accueil : le trait du scan glisse en transform (aucune mise en page par image) ; sous une fenêtre plein écran (#app inert), toutes ses animations sont en pause
-  const homeAnims = () => p.evaluate(() => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest('#app')).map(a => a.animationName + ':' + a.playState));
+  const homeAnims = () => p.evaluate(() => document.getAnimations().filter(a => a.animationName && a.effect && a.effect.target && a.effect.target.closest('#app')).map(a => a.animationName + ':' + a.playState));      // animations CSS (celles qui bouclent) ; transitions et WAAPI de l'appui finissent seules
   const props = await p.evaluate(() => { const a = document.getAnimations().find(a => a.animationName === 'hmScan'); return a && [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)))].filter(k => !['offset', 'computedOffset', 'easing', 'composite'].includes(k)); });
   assert.deepEqual(props, ['transform'], 'hmScan : transform seulement (plus de top)');
   assert.ok((await homeAnims()).some(a => a === 'hmScan:running'), 'accueil : animations en cours');
