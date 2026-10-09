@@ -1,7 +1,7 @@
 /* Mana Orbit — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
 :root{
   --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
-  --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
+  --ink:#10152b; --ink-2:#4a5470; --ink-3:#5a6480;      /* ink-3 : texte secondaire ≥ 4,5:1 (WCAG AA) sur bg, surface et surface-2 */
   --accent:#3a46d6; --accent-ink:#ffffff; --accent-soft:#e6e8fb; --ring:rgba(58,70,214,.28);
   --eng:#ee8a1d; --good:#0b8a5e; --good-soft:#dff5ec; --warn:#a46606; --warn-soft:#fbefd6; --bad:#c23a4b; --bad-soft:#fbe4e7;
   --bar-bg:rgba(241,243,248,.84); --scrim:rgba(10,14,30,.46);
@@ -20,7 +20,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
-    --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+    --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#8a96b6;
     --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
     --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
     --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
@@ -31,7 +31,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
-  --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+  --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#8a96b6;
   --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
   --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
   --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);

@@ -81,6 +81,31 @@ ok('collection : fondu des onglets');
   assert.deepEqual(S2.errs, []); await S2.ctx.close(); }
 ok('premier lancement : défile sur un petit écran, « Commencer » atteignable');
 
+/* Réglages : chaque contrôle a un nom accessible (arbre d'accessibilité, comme TalkBack) ; texte secondaire (--ink-3) ≥ 4,5:1 sur les fonds, en clair et en sombre */
+await p.evaluate(() => openSettings()); await p.waitForSelector('.sheet-wrap.open #setHaptic');
+assert.equal(await p.getByRole('checkbox', { name: /^Vibrations/ }).count(), 1, '« Vibrations » : interrupteur nommé');
+{ const cdp = await p.context().newCDPSession(p); const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+  const ROLES = ['checkbox', 'switch', 'button', 'combobox', 'textbox', 'radio', 'slider', 'link'];
+  const sheet = await p.evaluate(() => { const ids = []; document.querySelectorAll('.sheet-wrap.open input, .sheet-wrap.open button, .sheet-wrap.open select, .sheet-wrap.open a, .sheet-wrap.open textarea').forEach((e, i) => { if (!e.id) e.id = '__ax' + i; ids.push(e.id); }); return ids; });
+  const byDom = new Map(); for (const n of nodes) if (n.backendDOMNodeId) byDom.set(n.backendDOMNodeId, n);
+  const unnamed = []; let seen = 0;
+  for (const id of sheet) {
+    const { node } = await cdp.send('DOM.describeNode', { objectId: (await cdp.send('Runtime.evaluate', { expression: `document.getElementById(${JSON.stringify(id)})` })).result.objectId });
+    const ax = byDom.get(node.backendNodeId);
+    if (ax && !ax.ignored && ROLES.includes(ax.role && ax.role.value)) { seen++; if (!(ax.name && String(ax.name.value).trim())) unnamed.push(id); }
+  }
+  assert.ok(seen >= 8, 'contrôles des Réglages lus dans l\'arbre d\'accessibilité : ' + seen); assert.deepEqual(unnamed, [], 'Réglages : contrôles sans nom accessible'); await cdp.detach(); }
+await p.click('.sheet-head .icon-btn'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+const contrast = await p.evaluate(() => {
+  const L = c => { const m = c.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+  const cr = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }, r = document.documentElement, was = r.getAttribute('data-theme'), out = {};
+  for (const th of ['light', 'dark']) { r.setAttribute('data-theme', th); const cs = getComputedStyle(r), v = n => cs.getPropertyValue(n).trim(); for (const bg of ['--bg', '--surface', '--surface-2']) out[th + ' ' + bg] = +cr(v('--ink-3'), v(bg)).toFixed(2); }
+  if (was) r.setAttribute('data-theme', was); else r.removeAttribute('data-theme');
+  return out;
+});
+assert.ok(Object.values(contrast).every(x => x >= 4.5), 'texte secondaire ≥ 4,5:1 : ' + JSON.stringify(contrast));
+ok('Réglages : « Vibrations » et tous les contrôles nommés ; texte secondaire lisible (AA) en clair et en sombre');
+
 assert.deepEqual(errs, [], 'aucune erreur page : ' + errs.join(' | '));
 await browser.close(); world.stop();
 console.log('OK');
