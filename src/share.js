@@ -1,6 +1,6 @@
 /* ── share.js : liste d'échange (doublons, cartes recherchées) et liens publics en lecture seule (liste d'échange, deck) ──────────
    · Onglet « Échange » de la collection : cartes à échanger (possédé − decks − réserve, terrains de base exclus), « Garder » carte par carte,
-     cartes recherchées (manquantes des decks + souhaits ajoutés à la main), lien public.
+     cartes recherchées (manquantes des decks + souhaits ajoutés à la main), valeur estimée (même prix que « Pour toi »), tri par prix, « ≥ X € », lien public.
      Réglages sur l'appareil (deckdeal:trade:v1) et dans le compte (users/{uid}/meta/trade : keep, kept, wish, share, dsh, updatedAt ; le plus récent l'emporte).
    · Partages : shares/{id} { o (empreinte SHA-256 de l'UID du propriétaire), kind ('trade' | 'deck'), v, updatedAt, d (JSON) }. Lisibles par quiconque a le lien, jamais listables, modifiables
      seulement par leur propriétaire (règles Firestore). Tenus à jour par les appareils du propriétaire : collection, decks, souhaits, réserve.
@@ -9,7 +9,8 @@
 const TR_KEY = 'deckdeal:trade:v1', TR_KEEPS = [0, 1, 2, 3, 4], TR_PAGE = 120, TR_MAX = 880000, TR_SHARE_MAX = 900000;      // TR_SHARE_MAX : champ d d'un partage (règles Firestore)
 const TR_REPORT = 'martin.stuis11@gmail.com';      // « Signaler ce partage » : contact de la politique de confidentialité (pwa/privacy.html)
 const TR = { who: '', creating: false, st: null, dmBusy: false, keep: 1, kept: new Set(), wish: {}, share: '', dsh: {}, u: 0, sig: {}, sub: 'have', shown: TR_PAGE, err: '', busy: false, again: false, syncT: 0,
-  doc: { unsub: null, uid: '', pushT: 0 }, pub: null };
+  doc: { unsub: null, uid: '', pushT: 0 }, pub: null, sort: 'name', min: 0, pxTry: 0 };      // sort, min : tri et prix minimal de l'onglet (cet écran seulement) ; pxTry : fichier de prix déjà demandé (1 sans serveur, 2 avec)
+const TR_MINS = [0, 100, 200, 500, 1000, 2000, 5000];      // filtre « ≥ X € » des doublons (centimes)
 
 const trWishClean = w => {
   const out = {}; if (!w || typeof w !== 'object' || Array.isArray(w)) return out;
@@ -72,6 +73,10 @@ function trState() {
   const use = deckUse(trDeckTexts()), { have, held } = tradeLists(COLL.map, use, TR.keep, TR.kept);
   return { use, have, held, want: tradeWant(COLL.map, use, TR.wish), decks: allDecks().length };
 }
+/** Doublons à échanger d'une collection (decks et réglages de cet appareil) : colonne « Tradelist Count » de l'export CSV (collToCsv, core.js ; déclaration hoistée, jamais en zone morte). */
+function trSpare(map) { return tradeLists(map, deckUse(trDeckTexts()), TR.keep, TR.kept).have; }
+/** Prix unitaire (centimes) des estimations d'échange, chez le propriétaire comme chez le visiteur : tendance Cardmarket du fichier de prix (impression la moins chère), sinon le prix Scryfall déjà connu de l'appareil. */
+const trPrice = k => { const t = PXT && PXT.map && PXT.map.get(k); return (t && t.e) || (dmOf(k) || {}).eu || null; };
 /** Carte d'un partage : nom, exemplaires, langue, nom français, image (dans la langue de l'exemplaire si Scryfall l'a), coût, type, couleurs, symboles. */
 function trCard(k, n, q, l) {
   const m = dmOf(k) || {}, o = { n, q };
@@ -195,13 +200,44 @@ function trDeckGone(id) {
 }
 
 /* ── Export Cardmarket (Wants › « Ajouter une liste », puis Shopping Wizard) ── */
-const cmWants = () => 'https://www.cardmarket.com/' + cmSite(userLang()) + '/Magic/Wants';      // site Cardmarket dans la langue de l'utilisateur
+const cmWantsUrl = () => 'https://www.cardmarket.com/' + cmSite(userLang()) + '/Magic/Wants';      // Cardmarket dans la langue de l'utilisateur (fr de es it, sinon en)
+/** Presse-papiers ; refusé ou absent : copyText (repli, son propre message). done() seulement quand l'API a copié. */
+function cmClip(text, done) { try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); } }
 function cmCopy(items, what) {
   const text = cmText(items), n = text ? text.split('\n').length : 0;
   if (!n) { toast(T('Rien à copier : {what}', { what: what || T('aucune carte manquante') })); return; }
+  if (n > CM_MAX) { cmPartsOpen(cmParts(text), n); return; }      // au-delà de 150 lignes, Cardmarket refuse la liste : une Wants list par partie
   haptic('ok');
-  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(cmWants(), '_blank', 'noopener') });
-  try { navigator.clipboard.writeText(text).then(done, () => { copyText(text); }); } catch (e) { copyText(text); }
+  const done = () => toast(TN(n, '{n} carte copiée : colle-la dans une Wants list Cardmarket', '{n} cartes copiées : colle-les dans une Wants list Cardmarket'), { label: T('Ouvrir'), fn: () => window.open(cmWantsUrl(), '_blank', 'noopener') });
+  cmClip(text, done);
+}
+/** Feuille des parties : « Partie 1/3 · Copier », puis « Copier la suite » ; chaque partie a aussi son bouton (recopier, sauter). Un copier par geste : le navigateur l'exige. */
+function cmPartsOpen(parts, n) {
+  const N = parts.length, done = new Set(), nm = l => String(l).replace(/^\d+\s+/, '');
+  let next = 0;
+  openSheet(T('Copier pour Cardmarket'), TN(n, '{n} carte · {p} parties', '{n} cartes · {p} parties', { p: N }), api => {
+    api.body.innerHTML = `<p class="hint cm-why">${T('Cardmarket accepte {max} cartes par Wants list : crée une liste par partie (Wants › Ajouter une liste) et colles-y la partie copiée.', { max: CM_MAX })}</p>
+      <div class="cm-parts">${parts.map((p, i) => { const ls = p.split('\n'); return `<div class="cm-part" data-i="${i}"><span class="cm-main"><b>${T('Partie {i}/{n}', { i: i + 1, n: N })}</b><small>${TN(ls.length, '{n} carte', '{n} cartes')} · ${esc(nm(ls[0]))} → ${esc(nm(ls[ls.length - 1]))}</small></span><button class="btn ghost" type="button" data-act="cmpart" data-i="${i}">${T('Copier')}</button></div>`; }).join('')}</div>
+      <div class="status cm-said" data-ok="1" role="status" hidden><span class="dot"></span><span></span></div>`;
+    const paint = () => {
+      api.setFoot(`<button class="btn ghost" type="button" data-act="cmopen">${T('Ouvrir Cardmarket')}</button><button class="btn" type="button" data-act="cmnext"${next >= N ? ' disabled' : ''}>${next >= N ? T('Toutes les parties sont copiées') : done.size ? T('Copier la suite · {i}/{n}', { i: next + 1, n: N }) : T('Partie {i}/{n} · Copier', { i: next + 1, n: N })}</button>`);
+      for (const r of $$('.cm-part', api.body)) { const on = done.has(Number(r.dataset.i)); r.classList.toggle('done', on); $('button', r).innerHTML = on ? `<svg class="i"><use href="#i-check"/></svg>${T('Copiée')}` : T('Copier'); }
+    };
+    const copy = i => cmClip(parts[i], () => {
+      done.add(i); haptic('ok');
+      next = N; for (let j = 1; j <= N; j++) { const k = (i + j) % N; if (!done.has(k)) { next = k; break; } }      // la suivante pas encore copiée (après celle-ci, puis depuis le début)
+      const said = $('.cm-said', api.body); said.hidden = false;
+      $('span:last-child', said).textContent = T('Partie {i}/{n} copiée : colle-la dans une nouvelle Wants list Cardmarket.', { i: i + 1, n: N });
+      paint();
+    });
+    paint();
+    api.wrap.addEventListener('click', e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      if (b.dataset.act === 'cmpart') copy(Number(b.dataset.i));
+      else if (b.dataset.act === 'cmnext' && next < N) copy(next);
+      else if (b.dataset.act === 'cmopen') window.open(cmWantsUrl(), '_blank', 'noopener');
+    });
+  });
 }
 
 /* ── Onglet « Échange » de la collection (propriétaire) ────────────────────────────────────────── */
@@ -222,37 +258,55 @@ function trShareBoxHtml(st) {
     <button class="btn ghost block tr-qr" type="button" data-act="trqr">${QR_ICON}${T('QR code')}</button>
     <div class="tr-acts small"><button class="link-btn link-inline" type="button" data-act="trnew">${T('Nouveau lien')}</button><button class="link-btn link-inline" type="button" data-act="troff">${T('Arrêter le partage')}</button></div></div>`;
 }
+/** Prix unitaire d'une ligne chiffrée (tradeView) : « ≈ 1,50 € » devant « × 3 » (lu « 1,50 € × 3 », la ligne garde sa hauteur). */
+const trPxHtml = x => (x.u != null ? `<small class="tr-px" title="${esc(T('{v} pièce', { v: fmt(x.u, 'EUR') }))}">≈ ${esc(fmt(x.u, 'EUR'))}</small>` : '');
+const trQxHtml = x => `<span class="tr-qx">${trPxHtml(x)}<b>× ${x.q}</b></span>`;
+/** « 5 € » sans centimes (filtre « ≥ 5 € »). */
+const trEur = c => new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(c / 100);
 function trHaveRow(x) {
   const it = trItem(x.k, x.n, x.q, x.lines[0] ? x.lines[0][0] : ''), nm = it.dn || it.n, img = collImage(x.k, it.l, it.im).src;
   const langs = x.lines.map(([l, q]) => `<span class="tag">${l ? flag(l) : T('sans langue')}${x.lines.length > 1 ? ' × ' + q : ''}</span>`).join('');
   return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(it.l)}"><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${langs}${it.dn ? `<span class="tag">${esc(x.n)}</span>` : ''}</span></span>
-    <span class="tr-q"><b>× ${x.q}</b><button class="link-btn" type="button" data-act="tkeep" aria-label="${T('Garder {name} (ne plus la proposer)', { name: esc(nm) })}">${T('Garder')}</button></span></div>`;
+    <span class="tr-q">${trQxHtml(x)}<button class="link-btn" type="button" data-act="tkeep" aria-label="${T('Garder {name} (ne plus la proposer)', { name: esc(nm) })}">${T('Garder')}</button></span></div>`;
 }
 function trWantRow(x, mine) {
   const it = trItem(x.k, x.n, x.q, ''), nm = it.n, img = x.p ? scrySmall(x.p.i) : it.im || '';
   const tags = (x.p && x.p.w ? `<span class="tag accent" title="${T('Illustration recherchée')}">${x.p.l && x.p.l !== 'en' ? flag(x.p.l) + ' ' : ''}${esc(x.p.w)}</span>` : '') + (x.d ? `<span class="tag warn">${T('manque à tes decks')}${x.d > 1 ? ' × ' + x.d : ''}</span>` : '') + (x.w ? `<span class="tag accent">${T('souhait')}${x.w > 1 ? ' × ' + x.w : ''}</span>` : '') + (it.fn ? `<span class="tag">${esc(it.fn)}</span>` : '');
-  const ctl = mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="${T('Un de moins')}">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="${T('Un de plus')}">+</button></span>` : `<span class="tr-q"><b>× ${x.q}</b></span>`;
+  const ctl = `<span class="tr-q">${mine && x.w ? `<span class="qstep tr-wq"><button type="button" data-act="wminus" aria-label="${T('Un de moins')}">−</button><b>${x.w}</b><button type="button" data-act="wplus" aria-label="${T('Un de plus')}">+</button></span>${trPxHtml(x)}` : trQxHtml(x)}</span>`;
   return `<div class="crow tr-row" data-k="${esc(x.k)}" data-ln="${esc(x.p && x.p.l || '')}"${x.p ? ` data-big="${esc(x.p.i)}"` : ''}><span class="thumb" style="--h:${hash32(x.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(nm)}</span><span class="row-meta">${tags}</span></span>${ctl}</div>`;
 }
-/** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », listes filtrées (barre de recherche et filtres de la collection). */
+/** Corps de l'onglet : lien, réserve, sous-onglets « À échanger » / « Je recherche », total estimé, tri et prix minimal, listes filtrées (barre de recherche et filtres de la collection). */
 function trPanelHtml() {
-  const st = TR.st = trState(), f = COLL.f, act = filterActive(f);
-  const fil = list => filterItems(list.map(x => Object.assign(trItem(x.k, x.n, x.q, x.lines && x.lines[0] ? x.lines[0][0] : ''), { src: x })), f).map(i => i.src);
-  const have = fil(st.have), want = fil(st.want), held = st.held, sub = TR.sub;
-  const list = sub === 'want' ? want : have, shown = list.slice(0, TR.shown);
-  const copies = st.have.reduce((a, x) => a + x.q, 0);
-  const keepHint = T(st.decks > 1 ? 'Échangeable = possédées − utilisées par tes {n} decks − réserve. Terrains de base jamais proposés.' : st.decks ? 'Échangeable = possédées − utilisées par ton deck − réserve. Terrains de base jamais proposés.' : 'Échangeable = possédées − utilisées par tes decks (aucun pour l\'instant) − réserve. Terrains de base jamais proposés.', { n: nf0(st.decks) });
+  const st = TR.st = trState(), f = COLL.f, sub = TR.sub, want = sub === 'want', held = st.held;
+  const all = want ? st.want : st.have, min = want ? 0 : TR.min, act = filterActive(f) || min > 0;
+  const fil = filterItems(all.map(x => Object.assign(trItem(x.k, x.n, x.q, x.lines && x.lines[0] ? x.lines[0][0] : ''), { src: x })), f).map(i => i.src);
+  const { rows: list, sum } = tradeView(fil, { price: trPrice, sort: TR.sort, min }), shown = list.slice(0, TR.shown);
   return `${trShareBoxHtml(st)}
-    <div class="tr-keep"><span class="label">${T('Réserve gardée en plus de tes decks')}</span><div class="seg" id="trKeep" role="radiogroup" aria-label="${T('Réserve')}"></div><p class="hint">${esc(keepHint)}</p></div>
+    <div class="tr-keep"><span class="label">${T('Garder en plus de mes decks : 0–4 exemplaires')}</span><div class="seg" id="trKeep" role="radiogroup" aria-label="${T('Garder en plus de mes decks')}"></div><p class="hint">${T('Tu proposes seulement ce que tu as en trop.')}</p></div>
     <div class="seg tr-sub" id="trSub" role="radiogroup" aria-label="${T('Liste')}"></div>
-    ${act ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(sub === 'want' ? st.want.length : st.have.length) })}</p>` : ''}
-    ${sub === 'want' ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>${T('Ajouter une carte')}</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="' + T('Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)') + '"><svg class="i"><use href="#i-copy"/></svg>' + T('Copier pour Cardmarket') + '</button>' : ''}</div>` : `<p class="hint">${TN(st.have.length, '{n} carte', '{n} cartes')} · ${TN(copies, '{n} exemplaire à échanger', '{n} exemplaires à échanger')}</p>`}
-    ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (sub === 'want' ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
-      : `<p class="hint listempty">${T(act ? 'Aucune carte ne correspond.' : sub === 'want' ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.')}</p>`}
+    ${want ? `<div class="tr-acts tr-wacts"><button class="btn ghost tr-addw" type="button" data-act="wadd"><svg class="i"><use href="#i-plus"/></svg>${T('Ajouter une carte')}</button>${st.want.length ? '<button class="btn ghost" type="button" data-act="wcm" title="' + T('Une ligne « 1 Sol Ring » par carte, à coller dans une Wants list Cardmarket (Shopping Wizard)') + '"><svg class="i"><use href="#i-copy"/></svg>' + T('Copier pour Cardmarket') + '</button>' : ''}</div>` : ''}
+    ${all.length ? trSumHtml(list, all, sum, act, want) : ''}
+    ${shown.length ? `<div class="coll-list tr-list">${shown.map(x => (want ? trWantRow(x, true) : trHaveRow(x))).join('')}</div>`
+      : `<p class="hint listempty">${T(act ? 'Aucune carte ne correspond.' : want ? 'Rien à chercher : tes decks sont complets. Ajoute des cartes à ta liste de souhaits.' : 'Aucun doublon pour l\'instant.')}</p>`}
     ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="trmore">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}
-    ${sub === 'have' && held.length ? `<details class="tr-held"><summary>${T('Gardées à la main ({n})', { n: nf0(held.length) })}</summary><div class="coll-list">${held.map(x => `<div class="crow tr-row" data-k="${esc(x.k)}"><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta"><span class="tag">${T('{n} en trop', { n: x.q })}</span></span></span><span class="tr-q"><button class="link-btn" type="button" data-act="tunkeep">${T('Remettre')}</button></span></div>`).join('')}</div></details>` : ''}`;
+    ${!want && held.length ? `<details class="tr-held"><summary>${T('Gardées à la main ({n})', { n: nf0(held.length) })}</summary><div class="coll-list">${held.map(x => `<div class="crow tr-row" data-k="${esc(x.k)}"><span class="row-main"><span class="row-name">${esc(x.n)}</span><span class="row-meta"><span class="tag">${T('{n} en trop', { n: x.q })}</span></span></span><span class="tr-q"><button class="link-btn" type="button" data-act="tunkeep">${T('Remettre')}</button></span></div>`).join('')}</div></details>` : ''}`;
+}
+/** En-tête de la liste : cartes et exemplaires (affichés / au total), valeur estimée et sa base (prix à l'unité, tendance Cardmarket, date du fichier), tri et « ≥ X € » (doublons). */
+function trSumHtml(list, all, sum, act, want) {
+  const at = PXT && Date.parse(PXT.at), priced = sum.n > sum.nv;
+  const count = (act ? TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) }) : TN(list.length, '{n} carte', '{n} cartes')) + ' · ' + TN(sum.q, '{n} exemplaire', '{n} exemplaires');
+  const basis = priced ? (at ? T('Prix à l\'unité : tendance Cardmarket ({when})', { when: relTime(at) }) : T('Prix à l\'unité : tendance Cardmarket')) + (sum.nv ? ' · ' + TN(sum.nv, '{n} carte sans prix', '{n} cartes sans prix') : '') : '';
+  const opt = (v, l, cur) => `<option value="${v}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
+  return `<div class="tr-sum"><b>${esc(count)}</b>${priced ? `<em title="${T('Valeur estimée')}">≈ ${esc(fmt(sum.v, 'EUR'))}</em>` : ''}${basis ? `<span>${esc(basis)}</span>` : ''}</div>
+    <div class="tr-tools"><label class="sortsel"><span>${T('Trier')}</span><select id="trSort" aria-label="${T('Trier la liste')}">${opt('name', T('Nom'), TR.sort)}${opt('price', T('Prix'), TR.sort)}</select></label>
+      ${want ? '' : `<label class="sortsel tr-min${TR.min ? ' on' : ''}"><select id="trMin" aria-label="${T('Prix minimal à l\'unité')}">${TR_MINS.map(v => opt(v, v ? '≥ ' + trEur(v) : T('Tous les prix'), TR.min)).join('')}</select></label>`}</div>`;
+}
+/** Fichier de prix (celui de « Pour toi » et de la recherche Cardmarket) : lu une fois (cache de l'appareil, puis le serveur quand il répond), puis l'onglet se repeint avec les valeurs. */
+function trPx() {
+  const lvl = CTX.proxy ? 2 : 1; if (PXT || TR.pxTry >= lvl) return;
+  TR.pxTry = lvl; pxTable().then(t => { if (t) trRepaint(); }, () => {});
 }
 /** Après chaque peinture de l'onglet : les deux sélecteurs. */
 function trMount(host) {
@@ -260,6 +314,9 @@ function trMount(host) {
   mountSeg($('#trKeep', host), TR_KEEPS.map(v => ({ v: String(v), label: String(v) })), String(TR.keep), v => { TR.keep = Number(v); trChanged(); });
   mountSeg($('#trSub', host), [{ v: 'have', label: T('À échanger'), sub: nf0(st.have.length) }, { v: 'want', label: T('Je recherche'), sub: nf0(st.want.length) }], TR.sub, v => { TR.sub = v; TR.shown = TR_PAGE; collPaintBody(true); });
   const inp = $('.tr-link input', host); if (inp) inp.onfocus = e => e.target.select();
+  const so = $('#trSort', host); if (so) so.onchange = e => { TR.sort = e.target.value === 'price' ? 'price' : 'name'; TR.shown = TR_PAGE; haptic('tap'); collPaintBody(true); };
+  const mi = $('#trMin', host); if (mi) mi.onchange = e => { TR.min = TR_MINS.includes(Number(e.target.value)) ? Number(e.target.value) : 0; TR.shown = TR_PAGE; haptic('tap'); collPaintBody(true); };
+  trPx();
   // cartes recherchées sans fiche (image, type) : lues sur Scryfall, puis l'onglet se repeint
   const need = st.want.map(x => ({ key: x.k, name: x.n }));
   if (dmMissing(need).length && !TR.dmBusy) { TR.dmBusy = true; dmFetch(need).then(got => { TR.dmBusy = false; if (got) trRepaint(); }, () => { TR.dmBusy = false; }); }
@@ -395,7 +452,8 @@ function openPublicTrade(sh, preview, id) {
       const all = (P.sub === 'want' ? sh.want : sh.have).map(pubItem), list = filterItems(all, P.f), shown = list.slice(0, P.shown);
       $('.pub-main', wrap).innerHTML = `${filterActive(P.f) ? `<p class="hint coll-count">${TN(list.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}</p>` : ''}
         ${shown.length ? `<div class="coll-list">${shown.map(pubRow).join('')}</div>` : `<p class="hint listempty">${T(all.length ? 'Aucune carte ne correspond.' : P.sub === 'want' ? 'Aucune carte recherchée pour l\'instant.' : 'Aucune carte à échanger pour l\'instant.')}</p>`}
-        ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}`;
+        ${list.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {n} de plus · {left} restantes', { n: nf0(Math.min(TR_PAGE, list.length - shown.length)), left: nf0(list.length - shown.length) })}</button>` : ''}
+        ${shown.some(it => trPrice(it.k)) ? pubNote() : ''}`;
     }
     if (sc) sc.scrollTop = pos;
     if (!keep) stagger($$('.pub-main .coll-list', wrap));
@@ -434,12 +492,10 @@ function openPublicTrade(sh, preview, id) {
 }
 
 /* ── « Pour toi » : ce que le visiteur et le propriétaire du lien peuvent échanger ───────────────── */
-/** Prix unitaire (centimes) pour l'estimation : tendance Cardmarket du fichier de prix (impression la moins chère), sinon le prix Scryfall déjà connu de l'appareil. */
-const pubPrice = k => { const t = PXT && PXT.map && PXT.map.get(k); return (t && t.e) || (dmOf(k) || {}).eu || null; };
 /** Ce que le visiteur a en trop (tradeLists : ses decks et sa réserve gardent leurs cartes) et ce qu'il cherche, comparés au partage. */
 function pubMine(P) {
   const st = trState();
-  return { st, spare: new Map(st.have.map(x => [x.k, x])), want: new Map(st.want.map(x => [x.k, x])), m: tradeMatch(P.sh, st.want, st.have, pubPrice) };
+  return { st, spare: new Map(st.have.map(x => [x.k, x])), want: new Map(st.want.map(x => [x.k, x])), m: tradeMatch(P.sh, st.want, st.have, trPrice) };
 }
 /** Ce qui change les correspondances : compte, synchro, collection, decks, réglages d'échange, fichier de prix. */
 const pubKey = () => [D.uid || '', D.authReady ? 1 : 0, COLL.live ? 1 : 0, COLL.cloud, COLL.u, collCount(), allDecks().length, TR.u, CTX.proxy ? 1 : 0, PXT ? PXT.t : 0].join('|');
@@ -476,11 +532,15 @@ function pubMatchHtml(P) {
     const title = side === 'get' ? (who ? T('{name} a ce que tu cherches', { name: who }) : T('Il a ce que tu cherches')) : (who ? T('Tu as ce que {name} cherche', { name: who }) : T('Tu as ce qu\'il cherche'));
     const none = side === 'get' ? T(M.st.want.length ? 'Aucune des cartes que tu cherches n\'est dans sa liste.' : 'Tu ne cherches aucune carte pour l\'instant : tes decks sont complets et ta liste de souhaits est vide.')
       : T(M.st.have.length ? 'Il ne cherche aucun de tes doublons.' : 'Aucune carte en trop dans ta collection pour l\'instant (tes decks et ta réserve gardent les leurs).');
-    return `<section class="pm-block" data-side="${side}"><div class="pm-head"><b>${title}</b><span>${TN(s.n, '{n} carte', '{n} cartes')}${s.v ? ` · <em>≈ ${esc(fmt(s.v, 'EUR'))}</em>` : ''}</span></div>
+    return `<section class="pm-block" data-side="${side}"><div class="pm-head"><b>${title}</b>${s.n ? `<span>${TN(s.n, '{n} carte', '{n} cartes')}${s.v ? ` · <em>≈ ${esc(fmt(s.v, 'EUR'))}</em>` : ''}</span>` : ''}</div>
       ${list.length ? `<div class="coll-list">${list.map(x => pubMatchRow(x, side)).join('')}</div>` : `<p class="hint pm-none">${none}</p>`}</section>`;
   };
-  const priced = m.sum.get.v || m.sum.give.v, at = PXT && Date.parse(PXT.at);
-  return `${top}${block('get')}${block('give')}${priced ? `<p class="hint pm-note">${at ? T('≈ valeur indicative : tendance Cardmarket ({when}), sans l\'état ni l\'édition des cartes.', { when: esc(relTime(at)) }) : T('≈ valeur indicative : tendance Cardmarket, sans l\'état ni l\'édition des cartes.')}</p>` : ''}`;
+  return `${top}${block('get')}${block('give')}${m.sum.get.v || m.sum.give.v ? pubNote() : ''}`;
+}
+/** Base des valeurs affichées chez le visiteur (calculées sur son appareil, jamais écrites dans le partage). */
+function pubNote() {
+  const at = PXT && Date.parse(PXT.at);
+  return `<p class="hint pm-note">${at ? T('≈ valeur indicative : tendance Cardmarket ({when}), sans l\'état ni l\'édition des cartes.', { when: esc(relTime(at)) }) : T('≈ valeur indicative : tendance Cardmarket, sans l\'état ni l\'édition des cartes.')}</p>`;
 }
 /** Ligne d'un bloc : sa carte (image, nom français), ce qui la rend intéressante, exemplaires échangeables et valeur. */
 function pubMatchRow(x, side) {
@@ -515,7 +575,7 @@ function pubRow(it) {
   const x = TN(it.q, '{n} exemplaire', '{n} exemplaires') + (it.l ? ' · ' + (LANGS[it.l] || it.l) : '') + (it.pw ? ' · ' + T('illustration {name}', { name: it.pw }) : '');
   return `<div class="crow pub-row" role="button" tabindex="0" data-k="${esc(it.k)}" data-ln="${esc(it.l || '')}"${it.pw ? ' data-pw="1"' : ''} data-x="${esc(x)}"><span class="thumb" style="--h:${hash32(it.k) % 360}">${esc((nm.trim()[0] || '?').toUpperCase())}${img ? `<img alt="" loading="lazy" decoding="async" src="${esc(img)}">` : ''}</span>
     <span class="row-main"><span class="row-top"><span class="row-name">${esc(nm)}</span>${it.l ? flag(it.l) : ''}</span><span class="row-meta">${pw}${it.tl ? `<span class="tag">${esc(typeBucket(it.tl))}</span>` : ''}${sub}${mine}</span></span>
-    <span class="tr-q"><b>× ${it.q}</b></span></div>`;
+    <span class="tr-q">${trQxHtml({ q: it.q, u: trPrice(it.k) })}</span></div>`;      // prix à l'unité de l'appareil du visiteur, comme sur l'onglet du propriétaire
 }
 
 function trInit() {

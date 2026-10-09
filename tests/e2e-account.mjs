@@ -118,7 +118,7 @@ const DECK4 = '1 Sol Ring\n1 Swords to Plowshares\n1 Ranger\'s Hawk\n1 Phantom C
   await p.fill('#svName', ''); assert.equal(await p.$eval('#svGo', e => e.disabled), true); ok('nom vide : bouton désactivé');
   await p.fill('#svName', 'Mon Deck Test'); await p.click('#svGo'); await sheetGone(p);
   assert.match(await T(p, '#decksSub'), /^1 deck$/); await D(p);
-  assert.equal(await T(p, '.deck-name'), 'Mon Deck Test'); assert.match(await T(p, '.deck-meta'), /2 cartes\s*à l'instant/); ok('deck créé et listé'); await H(p);
+  assert.equal(await T(p, '.deck-name'), 'Mon Deck Test'); assert.match(await T(p, '.deck-meta'), /27 cartes\s*à l'instant/); ok('deck créé et listé'); await H(p);
   assert.match(await T(p, '#deckStats'), /Mon Deck Test/); ok('deck rattaché : puce dans les statistiques');
   const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:decks:v1')));
   assert.equal(stored.length, 1); assert.equal(stored[0].opts.lang, 'en'); assert.equal(stored[0].opts.mode, 'direct'); ok('stocké en local avec ses critères');

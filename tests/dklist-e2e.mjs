@@ -31,6 +31,17 @@ assert.equal(await p.$eval('.deck[data-id="d1"] .deck-art', e => Math.round(e.ge
 assert.equal(await p.$$eval('#deckList .deck', d => new Set(d.map(x => Math.round(x.getBoundingClientRect().left))).size), 2, 'grille à 2 colonnes');
 await p.waitForTimeout(600); await p.screenshot({ path: 'shots/dks-1-grille.png' });
 ok('bouton « Mes decks » → écran ; decks en cartes avec leur image (commandant / carte la plus chère par défaut)');
+// nombre de cartes : exemplaires, comme le viewer (terrains de base compris, réserve à part) ; « /100 » pour un deck Commander ; « monté »
+const lines = () => p.$$eval('#deckList .deck .deck-line', n => n.map(x => x.textContent.replace(/\s/g, ' ')));
+assert.deepEqual((await lines()).map(l => l.split(' · ')[0]), ['26 cartes', '18/100 cartes', '24 cartes', '2 cartes'], 'Rakdos 4 + 10 + 12 (réserve 3 à part) · Edgar 18/100 · Forêt 4 + 20 · Mystère 2');
+await p.evaluate(() => { XS.eng = { d2: { n: 'Edgar', at: Date.now(), q: { 'sol ring': 1 } } }; engApplied(); renderDecks(); });
+await p.waitForFunction(() => document.querySelector('.deck[data-id="d2"] .mounted'), null, { timeout: 3000 });
+assert.equal(await txt(p, '.deck[data-id="d2"] .mounted'), 'monté'); assert.match((await lines())[1], /^18\/100 cartes · .*monté$/); assert.equal(await txt(p, '#decksSub'), '4 decks · 1 monté');
+await p.evaluate(() => openDeckSheet('d2')); await p.waitForSelector('#dkMount');
+assert.match(await txt(p, '.sheet-head p'), /^18\/100 cartes · modifié /); assert.equal(await txt(p, 'label[for="dkMount"] b'), 'Deck monté'); assert.equal(await p.$eval('#dkMount', c => c.checked), true);
+await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.evaluate(() => { XS.eng = {}; engApplied(); renderDecks(); }); await p.waitForFunction(() => !document.querySelector('.deck .mounted'), null, { timeout: 3000 });
+ok('nombre de cartes = exemplaires comme le viewer (26 · 18/100 · 24 · 2), « monté » dans la liste, l\'accueil (« 4 decks · 1 monté ») et la feuille');
 
 /* ── 2) filtres : format, couleurs ───────────────────────────────────────────────────────── */
 assert.equal(await p.$eval('#dksFilters', e => e.hidden), false);
@@ -46,7 +57,7 @@ ok('filtres : Commander / Standard, couleurs (toutes celles cochées), vide + «
 
 /* ── 3) carte de présentation : choisie dans la feuille du deck ─────────────────────────── */
 await p.click('.deck[data-id="d1"] .deck-more'); await p.waitForSelector('#dkCover');
-assert.match(await txt(p, '#dkCoverSub'), /^Sol Ring · automatique$/);
+assert.match(await txt(p, '#dkCoverSub'), /^Sol Ring · automatique$/); assert.match(await txt(p, '.sheet-head p'), /^26 cartes · modifié /, 'feuille : même nombre que la liste et le viewer');
 await p.click('#dkCover'); await p.waitForSelector('.cv-card'); await p.waitForFunction(() => document.querySelectorAll('.cv-card img.ok').length === 3, null, { timeout: 8000 });
 assert.deepEqual(await p.$$eval('.cv-card', c => c.map(x => x.dataset.n)), ['Swords to Plowshares', 'Sol Ring', 'Wrath of God'], 'cartes du deck et de la réserve, les plus chères d\'abord (égalité : ordre alphabétique)');
 await p.fill('#cvQ', 'wrath'); assert.deepEqual(await p.$$eval('.cv-card', c => c.map(x => x.dataset.n)), ['Wrath of God']);
@@ -79,7 +90,7 @@ await p.waitForFunction(() => document.querySelector('.dv-g[data-g="sb"]') && do
 const lab = sel => p.$$eval(sel, t => t.map(x => x.getAttribute('aria-label').replace(/\s/g, ' ')));
 assert.deepEqual(await lab('.dv-g[data-g="sb"] .dvc'), ['Swords to Plowshares, ×2, 3,80 €, réserve', 'Wrath of God, 1,50 €, réserve'], 'réserve : tuiles, prix tendance');
 assert.match(await txt(p, '.dv-g[data-g="sb"] h3'), /^Réserve 3 cartes · ≈ 5,30 € · prix tendance$/);
-assert.match(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), /réserve 3$/); assert.equal((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), '≈ 6,00 €', 'total du deck sans la réserve (4 Sol Ring × 1,50 €)');
+assert.match(await txt(p, '.dv[aria-label^="Deck viewer"] .dv-title span'), /^27 cartes · .*réserve 3$/, 'viewer : 27 cartes (13 Mountain depuis l\'éditeur), comme Mes decks'); assert.equal((await p.waitForFunction(() => !document.querySelector('.dv-amt[data-tw]')), await txt(p, '.dv-eur')), '≈ 6,00 €', 'total du deck sans la réserve (4 Sol Ring × 1,50 €)');
 assert.equal((await p.$$eval('.dv-g[data-g="land"] .dvc', t => t.length)), 2, 'terrains de base : 2 tuiles avec leur image');
 assert.deepEqual(await p.$$eval('.dv-g .dvc', t => t.map(x => x.closest('.dv-g').dataset.g).filter((g, i, a) => a.indexOf(g) === i)), ['m1', 'land', 'sb'], 'réserve en dernier');
 await p.click('.dv-g[data-g="sb"] .dvc >> nth=1'); await p.waitForSelector('.imgv'); assert.match(await txt(p, '.imgv-extra'), /Réserve · 1,50 € · prix tendance Cardmarket/); await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.imgv'), null, { timeout: 3000 });
@@ -90,6 +101,20 @@ await p.waitForTimeout(600); await p.screenshot({ path: 'shots/dks-2-viewer-rese
 ok('viewer : réserve à part (prix tendance, hors total, avec le tri), images des terrains de base, carte en grand');
 await back(); await p.waitForFunction(() => !document.querySelector('.dv:not(.dks)'), null, { timeout: 3000 }); assert.ok(await p.$('.dks.on'));
 await back(); await p.waitForFunction(() => !document.querySelector('.dks'), null, { timeout: 3000 });
+
+/* ── 6) feuille « Enregistrer » : prix Cardmarket → pas de critères CardTrader ; toast sans question quand les alertes sont indisponibles ── */
+const svHint = () => p.$eval('.sheet-body > p.hint', e => e.textContent.replace(/\s/g, ' '));
+await toInput(p); await p.fill('#deckText', '// Deck Deal : commander\nCommander\n1 Edgar Markov\n\nDeck\n1 Sol Ring\n5 Plains'); await p.waitForTimeout(300);
+await p.evaluate(() => { S.src = 'cm'; }); assert.equal(await p.evaluate(() => priceSrc()), 'cm');
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName');
+assert.equal(await svHint(), '7/100 cartes · prix Cardmarket.', 'ni langue, ni état, ni Zero / Direct');
+await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+await p.evaluate(() => { S.src = 'auto'; }); assert.equal(await p.evaluate(() => priceSrc()), 'ct');
+await toInput(p); await p.click('#btnSave'); await p.waitForSelector('#svName');
+assert.match(await svHint(), /^7\/100 cartes · \S+ · \S+ min · (Zero|Direct)\. Les critères sont enregistrés avec la liste\.$/, 'CardTrader : les critères restent annoncés');
+await p.fill('#svName', 'Edgar CM'); await p.click('#svGo'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
+assert.equal(await txt(p, '#toast'), 'Deck enregistré', 'alertes indisponibles (pas de clés de notification) : aucune question');
+ok('« Enregistrer » : « 7/100 cartes · prix Cardmarket. » en Cardmarket, critères CardTrader sinon ; toast simple sans alertes possibles');
 
 assert.deepEqual(errs, [], 'erreurs page : ' + errs.join(' | '));
 await browser.close(); world.stop();
