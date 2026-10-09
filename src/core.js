@@ -1281,7 +1281,7 @@ function edhModelFromTsv(text) {
   }
   return m;
 }
-const EDHB = typeof module !== 'undefined' && module.exports ? require('./edhbin.js') : { edhPack, edhUnpack };
+const EDHB = typeof module !== 'undefined' && module.exports ? require('./edhbin.js') : { edhPack, edhUnpack, edhFilter };
 /** Types de decks, dans l'ordre d'affichage du filtre : deck moyen EDHREC, Budget, Premium, cEDH, Populaire (un seul deck récent), Archidekt (ancien fichier). */
 const EDH_KINDS = ['avg', 'budget', 'premium', 'cedh', 'pop', 'arch'];
 /** Un deck de l'index : ses cartes restent dans les grands tableaux de l'index ; `cards` ([[clé, nom, qté]], terrains de base compris, commandant exclu) n'est construit qu'à la demande.
@@ -1328,9 +1328,9 @@ function edhIndex(raw) {
  *    P \t centimes \t nom                                    prix Cardmarket (tendance Scryfall) au moment de la génération
  *    G \t nom                                                une carte de la liste Game Changers (Scryfall `is:gamechanger`)
  *  Retourne l'index (voir edhIndex). */
-function parseEdh(text) { return edhIndex(EDHB.edhUnpack(EDHB.edhPack(edhModelFromTsv(text), ownKey))); }
-/** Lit un fichier binaire EDH2 (edh.bin) : même index que parseEdh. Lève une erreur si le fichier est illisible. */
-function parseEdhBin(buf) { return edhIndex(EDHB.edhUnpack(buf)); }
+function parseEdh(text, keep) { const b = EDHB.edhPack(edhModelFromTsv(text), ownKey); return edhIndex(EDHB.edhUnpack(keep ? EDHB.edhFilter(b, keep) : b)); }
+/** Lit un fichier binaire EDH2 (edh.bin) : même index que parseEdh. Lève une erreur si le fichier est illisible. keep (facultatif, les deux) : decks gardés (edhFilter : interrupteur Archidekt du serveur). */
+function parseEdhBin(buf, keep) { return edhIndex(EDHB.edhUnpack(keep ? EDHB.edhFilter(buf, keep) : buf)); }
 /** Tier d'un commandant selon son rang de popularité (nombre de decks EDHREC) : S = les 30 premiers, A jusqu'à 150, B 500, C 1 500, D le reste. */
 const EDH_TIERS = [['S', 30], ['A', 150], ['B', 500], ['C', 1500], ['D', Infinity]];
 const edhTier = rank => (EDH_TIERS.find(t => rank <= t[1]) || EDH_TIERS[EDH_TIERS.length - 1])[0];

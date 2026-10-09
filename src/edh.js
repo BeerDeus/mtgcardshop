@@ -118,7 +118,7 @@ async function edhFetchBin(same) {
 /** Copie de l'appareil déjà affichée : en arrière-plan, une lecture de contrôle (ETag : rien n'est relu si le site n'a pas changé) ; une version plus récente la remplace tout de suite. */
 async function edhRevalidate(rec) {
   try {
-    const g = await edhFetchBin(rec.etag); if (!g || g.same) return;
+    const g = await edhFetchBin(rec.etag); if (!g || g.same || edhOff('edhrec')) return;      // coupé entre-temps : rien n'est remis
     const n = { buf: g.buf, at: Date.now(), etag: g.etag }, x = edhRead(n); if (!x || !x.decks.length) return;
     Cache.set(EDH_BIN_KEY, n);
     if (x.at && EDH.data && EDH.data.at && x.at <= EDH.data.at) return;      // même version : rien à changer
@@ -127,10 +127,11 @@ async function edhRevalidate(rec) {
 }
 /** Index lu depuis un enregistrement du cache ({ buf } binaire ou { text } ancien format), ou null s'il est illisible. */
 function edhRead(rec) {
-  try { const d = rec && rec.buf ? parseEdhBin(rec.buf) : rec && rec.text ? parseEdh(rec.text) : null; return d && d.v === 1 && d.cmds.length ? d : null; } catch (e) { return null; }
+  try { const keep = edhKeep(), d = rec && rec.buf ? parseEdhBin(rec.buf, keep) : rec && rec.text ? parseEdh(rec.text, keep) : null; return d && d.v === 1 && d.cmds.length ? d : null; } catch (e) { return null; }
 }
 /** Charge les données : copie locale de moins de 1 jour (affichée tout de suite, puis contrôlée en arrière-plan : une version plus récente du site la remplace), sinon le fichier binaire du site, sinon l'ancien fichier texte ; une copie plus ancienne sert si le site ne répond pas. */
 function edhLoad() {
+  if (edhOff('edhrec')) return Promise.reject(new Error('off'));      // coupé par le serveur : ni copie ni téléchargement (garde 'off')
   if (EDH.data) return Promise.resolve(EDH.data);
   if (EDH.p) return EDH.p;
   EDH.err = '';
@@ -150,10 +151,11 @@ function edhLoad() {
     if (!d) { const x = edhRead(rb); if (x) { d = x; at = rb.at; } }
     if (!d) { const x = edhRead(rt); if (x) { d = x; at = rt.at; } }
     if (!d) throw new Error(rb || rt ? 'illisible' : 'absent');
+    if (edhOff('edhrec')) { edhForget(); throw new Error('off'); }      // coupé pendant le chargement
     EDH.data = d; EDH.at = at; EDH.memo = null;
     if (cached) edhRevalidate(rb);
     return d;
-  })().catch(e => { EDH.err = e && e.message === 'absent' ? T('Données EDHREC indisponibles : le fichier edh.bin.gz n\'est pas encore généré ou le site est injoignable.') : T('Données EDHREC illisibles.'); throw e; })
+  })().catch(e => { if (e && e.message === 'off') throw e; EDH.err = e && e.message === 'absent' ? T('Données EDHREC indisponibles : le fichier edh.bin.gz n\'est pas encore généré ou le site est injoignable.') : T('Données EDHREC illisibles.'); throw e; })
     .finally(() => { EDH.p = null; if (COLL.el) collPaintBody(true); });
   return EDH.p;
 }
@@ -455,11 +457,32 @@ function edhWaitHtml() {
     : `<p class="hint listempty">${T('Chargement des commandants EDHREC…')}</p>`;
 }
 
+/* ── Interrupteurs du serveur (/__ping off : EDHREC_OFF, ARCHIDEKT_OFF ; plan B si EDHREC ou Archidekt refusent, docs/a-faire.md) ──────────────
+   EDHREC coupé : decks EDHREC cachés (garde 'off'), filtre « Joués en commandant » retiré, copie de l'appareil effacée, fichier plus demandé.
+   Archidekt coupé : ses decks retirés de la copie de l'appareil (le serveur ne les sert plus). Sans réponse du serveur : rien ne change. */
+const edhOff = s => !!(CTX.off && CTX.off.includes(s));
+/** Decks gardés à la lecture (edhFilter) : null = tous. */
+const edhKeep = () => (edhOff('archidekt') ? m => m[1] !== 'archidekt' : null);
+const edhForget = () => { Cache.set(EDH_BIN_KEY, null).catch(() => {}); Cache.set(EDH_KEY, null).catch(() => {}); };      // copie de l'appareil effacée
+function edhOffApply() {
+  if (edhOff('edhrec')) {
+    EDH.data = null; EDH.memo = null; EDH.err = ''; GLANCE.edh = null; edhForget();
+    if (COLL.f.cmdr === 'played') COLL.f.cmdr = 'can';
+    if (COLL.el) collPaintBody(true);
+    edhGateSync(); homeSoon(); return;
+  }
+  if (edhOff('archidekt') && EDH.data && EDH.data.decks.some(d => d.src === 'archidekt')) {      // copie déjà lue : relue sans eux
+    EDH.data = null; EDH.memo = null; edhLoad().then(() => { if (COLL.el) collPaintBody(true); homeSoon(); }, () => {});
+  }
+}
+
 /* ── Decks EDHREC réservés aux comptes : onglet « Decks », tuile « Deck à monter », coup d'œil après un import ────────────────────────
    Compte Google, ou compte e-mail dont l'adresse est vérifiée (acctVerified, decks.js). Garde de l'appli seulement : le fichier edh.bin.gz reste
    public (le site le sert à tous) ; « Mes decks » et le filtre « Joués en commandant » restent ouverts sans compte. */
-/** 'ok' · 'out' (sans compte) · 'verify' (adresse e-mail pas encore vérifiée) · 'wait' (session enregistrée pas encore restaurée : pas d'écran « connecte-toi » qui clignote). */
+/** 'ok' · 'out' (sans compte) · 'verify' (adresse e-mail pas encore vérifiée) · 'wait' (session enregistrée pas encore restaurée : pas d'écran « connecte-toi » qui clignote)
+ *  · 'off' (EDHREC coupé par le serveur : EDHREC_OFF). */
 function edhGate() {
+  if (edhOff('edhrec')) return 'off';
   const u = D.user;
   if (!u) return D.hint && !D.authReady ? 'wait' : 'out';
   return acctVerified(u) ? 'ok' : 'verify';
@@ -468,6 +491,7 @@ const EDH_LOCK = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x=
 const EDH_MAIL = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.4"/><path d="M4.5 7.5l7.5 5.6 7.5-5.6"/></svg>';
 function edhGateHtml() {
   const g = edhGate();
+  if (g === 'off') return `<div class="dv-empty gate" data-gate="off"><b>${T('Decks EDHREC indisponibles pour le moment')}</b><p>${T('« Mes decks » reste ouvert : colle une liste ou importe un deck pour le comparer à ta collection.')}</p></div>`;
   if (g === 'wait') return `<p class="hint listempty">${T('Connexion au compte…')}</p>`;
   if (g === 'verify') {
     const u = D.user, sent = vfAt(u.uid) > 0, mail = `<span class="gate-mail">${esc(u.email || '')}</span>`;

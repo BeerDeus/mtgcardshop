@@ -31,6 +31,7 @@ Page (`deck-deal.html`) + proxy CardTrader (`proxy.mjs`, zéro dépendance, Node
 | `ALERT_FILE` | Fichier d'état des alertes (défaut `alerts.json` dans `EDH_DATA_DIR`, donc `.data/alerts.json`) |
 | `EDH_SOURCE_URL`, `EDH_SYNC_MS`, `EDH_SYNC_FIRST_MS`, `EDH_DATA_DIR` | Données EDHREC relues sur GitHub (vide = désactivé) toutes les 6 h, premier essai 5 s après le démarrage (décale aussi la première lecture des prix), dossier des copies et de l'état des alertes (`.data`) |
 | `PUSH_GRACE_MS` | Délai avant d'envoyer « recherche terminée » (4000 ms : pas de notification si l'app est encore là) |
+| `EDHREC_OFF`, `ARCHIDEKT_OFF` | Interrupteurs (`1`) si EDHREC ou Archidekt refusent : annoncés par `/__ping` (`off`). EDHREC coupé : plus de fichier EDH (410) ni d'import de liens edhrec.com, l'appli cache les decks EDHREC (écran « indisponibles », tuile « Deck à monter » et filtre « Joués en commandant » retirés) et efface sa copie. Archidekt coupé : fichier EDH servi sans ses decks, import de liens archidekt.com refusé, l'appli les retire aussi de sa copie. Sans nouvelle APK |
 | `ADMOB_BANNER_ID` | Facultatif : bloc d'annonces AdMob du bandeau de l'appli Android (`ca-app-pub-…/…`, voir `docs/android.md` › Publicité). Vide : bandeau de test de Google |
 | `FIREBASE_JWKS_URL` | Tests seulement : URL des clés publiques Google |
 | `SCRYFALL_UPSTREAM`, `ALERT_FIRST_MS`, `ALERT_SEED_MS`, `ALERT_CHECK_GAP_MS` | Tests seulement |

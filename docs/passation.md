@@ -44,6 +44,7 @@
   - Vérifié ici sans SDK Android : Java compilé contre le framework Android (Robolectric `android-all`), rendu du bitmap décodé par un lecteur QR indépendant (jsQR) = bon lien ; ressources XML relues (aapt2 inaccessible : dl.google.com bloqué). La vraie compilation des XML se fait à la construction de l'APK.
 - **Pub : emplacement « C » choisi** : en haut, seulement sur les écrans de consultation (accueil, collection, Mes decks, liste d'un autre joueur) ; masquée pendant saisie, recherche, résultats, éditeur de deck (`adsBusy`, `src/ads.js`).
 - Scan de « Fulmine » (italien, appli en français) : reconnu après le redémarrage Node.
+- **Interrupteurs EDHREC / Archidekt** : `EDHREC_OFF=1` / `ARCHIDEKT_OFF=1` sur Hostinger (`README.md`), sans nouvelle APK. Fichier EDH filtré (`edhFilter`, `src/edhbin.js`) ou refusé (410), import de liens refusé, l'appli cache et efface.
 
 ## Actions du propriétaire en attente
 - **Refaire l'APK** (`android-app` : `git pull`, `npm run setup`, puis `npm run apk` ou Run ▶) et tester le widget « QR code d'échange » : liste de contrôle dans `docs/a-faire.md`. Puis vérifier que le bandeau de pub n'apparaît plus pendant la saisie et les résultats.
@@ -57,5 +58,4 @@
 
 ## Prochaine étape proposée
 1. Retour du propriétaire sur le widget QR (nouvelle APK) et le bandeau « par moments ».
-2. **Interrupteur serveur EDHREC / Archidekt** (`docs/a-faire.md` › plan B) : variables Hostinger annoncées par `/__ping`, l'appli cache la fonction, sans nouvelle APK.
-3. Préparation Play Store : nom de domaine, test fermé, AdMob réel (`docs/a-faire.md` › « Avant la publication »).
+2. Préparation Play Store : nom de domaine, test fermé, AdMob réel (`docs/a-faire.md` › « Avant la publication »).

@@ -35,8 +35,8 @@ const JS = { 'Content-Type': 'application/json' };
 let p = await start({ CARDTRADER_TOKEN: 'tok123' }, 18787);
 let B = 'http://127.0.0.1:18787';
 let r = await j(B + '/__ping');      // champ par champ : d'autres fonctions peuvent ajouter les leurs
-for (const [k, v] of Object.entries({ ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '', adUnit: '', fcm: false })) assert.deepEqual(r.o[k], v, '__ping.' + k);
-console.log('✓ ping (adUnit vide : bandeau de test ; fcm : pas de compte de service)');
+for (const [k, v] of Object.entries({ ok: true, app: 'deckdeal', userToken: true, prices: false, needsKey: false, needsLogin: false, hasToken: true, jobs: true, alerts: false, push: '', adUnit: '', fcm: false, off: [] })) assert.deepEqual(r.o[k], v, '__ping.' + k);
+console.log('✓ ping (adUnit vide : bandeau de test ; fcm : pas de compte de service ; off : aucune source coupée)');
 r = await j(B + '/'); assert.equal(r.s, 200); assert.match(r.o, /<title>Mana Orbit<\/title>/); console.log('✓ page servie');
 r = await j(B + '/api/cart/purchase', { method: 'POST', headers: JS, body: '{}' }); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (POST)');
 r = await j(B + '/api/cart/purchase'); assert.equal(r.s, 403); console.log('✓ cart/purchase bloqué (GET)');
@@ -438,6 +438,33 @@ await assert.rejects(start({ CARDTRADER_TOKEN: 'x', HOST: '0.0.0.0' }, 18790), /
   file = mk('2026-10-09T09:00:00Z', 120); await new Promise(r => setTimeout(r, 900)); r = await j(B + '/__prices'); assert.equal(r.o.cards, 16000, 'fichier trop maigre ignoré');
   px.kill(); gh.close(); rmSync(dir, { recursive: true, force: true });
   console.log('✓ prix des cartes : relus depuis la branche data, servis sur /prices.tsv, copie gardée ; fichier illisible ou maigre ignoré');
+}
+
+{ // interrupteurs EDHREC / Archidekt (EDHREC_OFF, ARCHIDEKT_OFF) : annoncés par /__ping, fichier EDH filtré ou refusé, import de liens refusé
+  const { mkdtempSync, writeFileSync } = await import('node:fs'), { tmpdir } = await import('node:os'), { gzipSync, gunzipSync } = await import('node:zlib'), { createRequire } = await import('node:module');
+  const { edhPack, edhUnpack } = createRequire(import.meta.url)('../edhbin.cjs'), dir = mkdtempSync(join(tmpdir(), 'edhoff-'));
+  const cmds = Array.from({ length: 3 }, (_, i) => ({ slug: 'c' + i, decks: 10 - i, ci: 'W', names: ['Cmd ' + i], img: '' }));
+  const decks = cmds.flatMap(c => [{ slug: c.slug, src: 'edhrec', label: 'Deck moyen', url: '', cards: [['Sol Ring', 1]] }, { slug: c.slug, src: 'archidekt', label: 'Budget', url: 'https://archidekt.com/decks/1', cards: [['Zed', 1]] }]);
+  writeFileSync(join(dir, 'edh.bin.gz'), gzipSync(Buffer.from(edhPack({ v: 1, at: '2026-10-09', cmds, decks, price: [['Sol Ring', 150]], gc: [] }, n => n.toLowerCase()))));
+  writeFileSync(join(dir, 'edh.tsv'), '#edh\t1\t2026-10-09\n');
+  const P = 18785, PB = 'http://127.0.0.1:' + P, imp = u => j(PB + '/api/import?url=' + encodeURIComponent(u));
+  const pa = await start({ CARDTRADER_TOKEN: 'tok123', PWA_DIR: dir, ARCHIDEKT_OFF: '1', IMPORT_UPSTREAM: 'http://127.0.0.1:9' }, P);
+  r = await j(PB + '/__ping'); assert.deepEqual(r.o.off, ['archidekt']);
+  const g = await fetch(PB + '/edh.bin.gz'); assert.equal(g.status, 200); const got = edhUnpack(new Uint8Array(await g.arrayBuffer()));
+  assert.deepEqual(got.dk.map(d => d[1]), ['edhrec', 'edhrec', 'edhrec'], 'decks Archidekt retirés du fichier servi'); assert.equal(got.cmds.length, 3);
+  const raw = await new Promise((res, rej) => http.get(PB + '/edh.bin.gz', { headers: { 'Accept-Encoding': 'gzip' } }, q => { const c = []; q.on('data', d => c.push(d)); q.on('end', () => res(Buffer.concat(c))); }).on('error', rej));
+  assert.equal(edhUnpack(gunzipSync(raw)).dk.length, 3, 'variante gzip filtrée aussi');
+  r = await j(PB + '/edh.tsv'); assert.equal(r.s, 410, 'ancien format texte : plus servi (non filtré)');
+  r = await imp('https://archidekt.com/decks/123/edgar'); assert.equal(r.s, 403); assert.equal(r.o.error, 'off');
+  r = await imp('https://edhrec.com/average-decks/edgar-markov'); assert.notEqual(r.s, 403, 'EDHREC toujours importable');
+  pa.kill(); await new Promise(res => setTimeout(res, 200));
+  const pe = await start({ CARDTRADER_TOKEN: 'tok123', PWA_DIR: dir, EDHREC_OFF: 'oui', IMPORT_UPSTREAM: 'http://127.0.0.1:9' }, P);
+  r = await j(PB + '/__ping'); assert.deepEqual(r.o.off, ['edhrec']);
+  for (const f of ['/edh.bin.gz', '/edh.tsv']) { r = await j(PB + f); assert.equal(r.s, 410, f); assert.equal(r.o.error, 'off'); }
+  r = await imp('https://edhrec.com/average-decks/edgar-markov'); assert.equal(r.s, 403); assert.equal(r.o.site, 'EDHREC');
+  r = await imp('https://archidekt.com/decks/123/edgar'); assert.notEqual(r.s, 403, 'Archidekt toujours importable');
+  pe.kill();
+  console.log('✓ interrupteurs : ARCHIDEKT_OFF → fichier EDH sans ses decks, import refusé ; EDHREC_OFF → fichier EDH 410, import refusé ; annoncés par /__ping');
 }
 
 // 5) amont HS → 502

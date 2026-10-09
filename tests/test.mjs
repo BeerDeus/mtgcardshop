@@ -969,6 +969,24 @@ test('edhPack / edhUnpack : dictionnaire, doublons et commandant retirés, nom c
   assert.throws(() => EB.edhUnpack(new Uint8Array(40)), /format/); assert.equal(EB.edhUnpack(EB.edhPack({ v: 0, at: '', cmds: [], decks: [], price: [], gc: [] }, C.ownKey)).names.length, 0, 'fichier vide valide');
   const off4 = new Uint8Array(bin.length + 3); off4.set(bin, 3); assert.equal(EB.edhUnpack(off4.subarray(3)).names.length, r.names.length, 'tampon non aligné : copie');
 });
+test('edhFilter : decks Archidekt retirés (interrupteur ARCHIDEKT_OFF), le reste recopié à l\'identique ; parseEdhBin / parseEdh avec keep', () => {
+  const m = { v: 1, at: 'T', rk: 'month', cmds: [{ slug: 'a', decks: 5, dm: 2, ci: 'WB', names: ['Alpha One'], img: 'f/a.jpg', themes: [['tokens', 'Tokens', 3]] }, { slug: 'b', decks: 3, ci: 'G', names: ['Bee'], img: '' }],
+    decks: [{ slug: 'a', src: 'edhrec', label: 'Deck moyen', url: 'https://edhrec.com/average-decks/a', cards: [['Sol Ring', 1], ['Fire', 2]], k: 'avg' },
+      { slug: 'b', src: 'archidekt', label: 'x', url: 'https://archidekt.com/decks/77', cards: [['Zed', 1], ['Sol Ring', 1]], k: 'budget', u: '2026-01-02', v: 9, p: 1234 },
+      { slug: 'b', src: 'edhrec', label: 'Deck moyen', url: '', cards: [['Zed', 4]], k: 'avg' }, { slug: 'a', src: 'archidekt', label: 'y', url: 'https://archidekt.com/decks/78', cards: [['Fire', 1]] }],
+    price: [['Sol Ring', 150], ['Zed', 20]], gc: ['Sol Ring'] };
+  const bin = EB.edhPack(m, C.ownKey), keep = d => d[1] !== 'archidekt', out = EB.edhFilter(bin, keep), r = EB.edhUnpack(bin), f = EB.edhUnpack(out);
+  assert.deepEqual(f.dk, r.dk.filter(keep), 'seuls les decks EDHREC restent, champs intacts');
+  const cards = (u, i) => [...u.ids.subarray(u.off[i], u.off[i + 1])].map((x, j) => [u.names[x], u.qty[u.off[i] + j]]);
+  assert.deepEqual(f.dk.map((d, i) => cards(f, i)), [0, 2].map(i => cards(r, i)), 'cartes et quantités de chaque deck gardé');
+  assert.deepEqual([f.cmds, f.names, [...f.pr], [...f.gc], f.themes, f.at, f.v, f.rk], [r.cmds, r.names, [...r.pr], [...r.gc], r.themes, r.at, r.v, r.rk], 'commandants, noms, prix, Game Changers, thèmes, date : recopiés');
+  assert.equal(EB.edhFilter(bin, () => true), bin, 'rien à retirer : le fichier lui-même');
+  assert.deepEqual(EB.edhUnpack(EB.edhFilter(bin, () => false)).dk, [], 'tout retiré : fichier valide sans deck');
+  const off3 = new Uint8Array(bin.length + 3); off3.set(bin, 3); assert.deepEqual(EB.edhUnpack(EB.edhFilter(off3.subarray(3), keep)).dk, f.dk, 'tampon non aligné');
+  assert.deepEqual(C.parseEdhBin(bin, keep).decks.map(d => [d.slug, d.src]), [['a', 'edhrec'], ['b', 'edhrec']], 'parseEdhBin(buf, keep)');
+  assert.deepEqual(C.parseEdhBin(bin).decks.length, 4);
+  assert.ok(C.parseEdh(EDH_TXT, keep).decks.every(d => d.src !== 'archidekt') && C.parseEdh(EDH_TXT).decks.some(d => d.src === 'archidekt'), 'parseEdh(texte, keep)');
+});
 test('parseEdhBin = parseEdh : index identique (commandants, rangs, prix, Game Changers, cartes des decks, liens)', () => {
   const t = C.parseEdh(EDH_TXT), bin = EB.edhPack(C.edhModelFromTsv(EDH_TXT), C.ownKey), b = C.parseEdhBin(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength));
   assert.deepEqual(b.cmds.map(c => [c.slug, c.rank, c.tier, c.keys, c.img]), t.cmds.map(c => [c.slug, c.rank, c.tier, c.keys, c.img])); assert.deepEqual([...b.price], [...t.price]); assert.deepEqual([...b.gc], [...t.gc]);

@@ -17,7 +17,7 @@
 - Fait et validé par le propriétaire : système d'échange (« Pour toi », QR, valeurs), widget de valeur (4 tailles, courbe 4×2, bouton Scanner / Prix rapide).
 
 ## Si EDHREC ou Archidekt refusent (plan B, à préparer avant la production)
-- **Interrupteur côté serveur** : une variable Hostinger (ex. `EDHREC_OFF=1`, `ARCHIDEKT_OFF=1`) annoncée par `/__ping`, et l'appli cache la fonction concernée, sans nouvelle APK.
+- **Interrupteur côté serveur : fait le 9 octobre.** Variables Hostinger `EDHREC_OFF=1` ou `ARCHIDEKT_OFF=1`, puis redémarrer l'app Node (détail dans `README.md`). Pour arrêter aussi la collecte : `EDH_ARCH: '0'` dans `.github/workflows/edhrec.yml` (Archidekt), ou désactiver le workflow (EDHREC).
 - **Sources sans autorisation à demander**, pour garder « quels decks je peux monter, combien pour finir » :
   - decks préconstruits officiels (MTGJSON, licence MIT : toutes les listes Commander de Wizards) ;
   - decks générés par Mana Orbit depuis Scryfall (commandants populaires, cartes les plus jouées dans leurs couleurs, quotas terrains / mana / pioche / retraits) ;
@@ -60,7 +60,7 @@
   - Soit retirer Moxfield de l'import par lien (la liste collée et le CSV marchent toujours) ;
   - soit demander une autorisation écrite à Moxfield.
 - **EDHTop16 / TopDeck.gg** : `gen-edhrec.mjs` lit l'API GraphQL publique d'EDHTop16 (données TopDeck.gg). Crédit et lien déjà dans Mentions et sources ; leur envoyer un mot de courtoisie.
-- **Interrupteur EDHREC / Archidekt** : si l'un refuse, pouvoir couper sa fonction depuis le serveur, sans nouvelle APK (rien de tel aujourd'hui).
+- **Interrupteur EDHREC / Archidekt** : prêt (`EDHREC_OFF`, `ARCHIDEKT_OFF` sur Hostinger, voir « Si EDHREC ou Archidekt refusent »).
 - **Deux décisions** : (1) la collection Firestore `games` de l'autre appli du propriétaire est lisible par tout compte Mana Orbit connecté (`firestore.rules`) : la garder ou la fermer ; (2) les titres des decks Archidekt sont affichés tels quels dans la feuille d'un deck EDHREC : les masquer ou non (modération).
 - **Politique de confidentialité** : une phrase sur « Signaler ce partage » et ce qu'il advient d'un lien signalé (règle Google sur le contenu publié par les utilisateurs).
 

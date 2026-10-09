@@ -10,7 +10,7 @@
 import http from 'node:http';
 import { readFile, writeFile, mkdir, rename, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { gunzipSync, gzip, brotliCompress, constants as zc } from 'node:zlib';
+import { gunzipSync, gzipSync, gzip, brotliCompress, constants as zc } from 'node:zlib';
 import { promisify } from 'node:util';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,6 +28,10 @@ const PAGE = ['deck-deal.html', 'dist/deck-deal.html'].map(f => join(here, f)).f
 const PWA = process.env.PWA_DIR || join(here, 'pwa');                       // surchargeable pour les tests (dossier temporaire)
 // Bloc d'annonces AdMob du bandeau de l'appli Android (ca-app-pub-…/…), donné à l'appli par /__ping ; vide : bandeau de test de Google.
 const ADMOB_RAW = (process.env.ADMOB_BANNER_ID || '').trim(), ADMOB_BANNER = /^ca-app-pub-\d+\/\d+$/.test(ADMOB_RAW) ? ADMOB_RAW : '';
+// Interrupteurs EDHREC / Archidekt (plan B de docs/a-faire.md : si l'un refuse, sa fonction est coupée depuis Hostinger, sans nouvelle APK), annoncés par /__ping (off) :
+// EDHREC_OFF=1 : plus de fichier EDH (/edh.bin.gz, /edh.tsv : 410) ni d'import de liens edhrec.com ; l'appli cache les decks EDHREC et efface sa copie.
+// ARCHIDEKT_OFF=1 : fichier EDH servi sans les decks Archidekt (edhFilter), plus d'import de liens archidekt.com ; l'appli les retire aussi de sa copie.
+const OFF = ['edhrec', 'archidekt'].filter(x => /^(1|true|on|yes|oui)$/i.test(String(process.env[x.toUpperCase() + '_OFF'] || '').trim()));
 
 // Fichiers PWA servis depuis ./pwa : correspondance EXACTE sur cette liste (aucun chemin n'est construit depuis l'URL → pas de traversée).
 const YEAR = 'public, max-age=604800', NOCACHE = 'no-cache';
@@ -69,6 +73,13 @@ function edhInfo(buf) {
   if (raw.length < 12 || raw.toString('latin1', 0, 4) !== 'EDH2') throw new Error('pas un fichier EDH2');
   if (!EDHB) return { at: '', decks: 0, cmds: 0 };
   const u = EDHB.edhUnpack(raw); return { at: String(u.at || ''), decks: u.dk.length, cmds: u.cmds.length };
+}
+/** Fichier EDH servi sans les decks Archidekt (ARCHIDEKT_OFF) : recalculé seulement quand le fichier change (empreinte). Illisible : refusé plutôt que servi tel quel. */
+let EDH_NOARCH = { key: '', buf: null };
+function edhNoArchidekt(data) {
+  const key = sha1Of(data); if (EDH_NOARCH.key === key) return EDH_NOARCH.buf;
+  const out = EDHB.edhFilter(gunzipSync(data), m => m[1] !== 'archidekt'), buf = gzipSync(out, { level: 9 });
+  EDH_NOARCH = { key, buf }; return buf;
 }
 async function edhLocal(f) { try { const buf = await readFile(f); return { buf, ...edhInfo(buf) }; } catch (e) { return null; } }
 async function edhBoot() {
@@ -973,6 +984,7 @@ async function importApi(req, res, url) {
   } else if (host === 'moxfield.com' && segs[0] === 'decks' && mox.test(segs[1] || '')) {
     site = 'Moxfield'; parse = fromMoxfield; target = (IMPORT_UP ? IMPORT_UP + '/moxfield' : 'https://api2.moxfield.com') + '/v3/decks/all/' + segs[1]; headers = { Referer: 'https://moxfield.com/', Origin: 'https://moxfield.com' };
   } else return json(res, 400, { error: 'unsupported', message: 'Lien non pris en charge : EDHREC (average-decks), Archidekt ou Moxfield.' });
+  if (OFF.includes(site.toLowerCase())) return json(res, 403, { error: 'off', site, message: `Import depuis ${site} désactivé : colle la liste à la place.` });      // interrupteur (EDHREC_OFF, ARCHIDEKT_OFF)
   const wait = rateWait(req, 'import', IMPORT_RATE, 3600e3); if (wait) return tooMany(res, wait);       // route publique : IMPORT_RATE_PER_H lectures par heure et par IP (un lien refusé d'office ne compte pas)
   try {
     const r = parse(await getJsonLimited(target, headers));
@@ -1141,7 +1153,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__me') return json(res, 200, { server: await serverOk(req) });
     if (url.pathname === '/__prices') return json(res, 200, { source: PX_SRC ? 'GitHub' : '', ...PX_ST });
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '', adUnit: ADMOB_BANNER, fcm: FCM_ON });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '', adUnit: ADMOB_BANNER, fcm: FCM_ON, off: OFF });
     if (url.pathname === '/__edh') return json(res, 200, { source: EDH_SRC ? 'GitHub' : '', ...EDH_ST });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -1149,12 +1161,14 @@ const server = http.createServer(async (req, res) => {
       return await sendFile(req, res, PAGE, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }, true);
     }
     const st = (req.method === 'GET' || req.method === 'HEAD') && STATIC.get(url.pathname);
+    if (st && st[0].startsWith('edh.') && (OFF.includes('edhrec') || (OFF.includes('archidekt') && (st[0] !== 'edh.bin.gz' || !EDHB || !EDHB.edhFilter)))) return json(res, 410, { error: 'off', message: 'Données EDHREC coupées sur ce serveur.' });      // Archidekt coupé : seul le binaire filtré est servi
     if (st) {
       const src = st[4] === 'px' ? PX_LIVE : EDH_LIVE, f = join(PWA, st[0]), live = st[3] === 'pre' && src;
       if (!live && !existsSync(f)) return json(res, 404, { error: 'asset_missing', message: 'Dossier pwa/ absent à côté de proxy.mjs.' });
       const hd = { 'Content-Type': st[1], 'Cache-Control': st[2] };
       if (st[3] !== 'pre') return await sendFile(req, res, f, hd, !!st[3]);
       let data = live ? src.buf : await readFile(f); Object.assign(hd, SEC);
+      if (st[0] === 'edh.bin.gz' && OFF.includes('archidekt')) data = edhNoArchidekt(data);
       hd.Vary = 'Accept-Encoding';
       const gz = /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
       hd.ETag = '"' + sha1Of(data) + (gz ? '' : '-i') + '"';       // le navigateur revalide (304) au lieu de retélécharger

@@ -1014,8 +1014,9 @@ function paintGlance() {
   const val = st.valued ? `<b>${esc(fmt(st.value, 'EUR'))}</b><span>${T('valeur · tendance Cardmarket')}${st.valued < st.unique ? ' ' + T('({n} cartes)', { n: nf0(st.valued) }) : ''}</span>` : `<b>—</b><span>${reading ? T('lecture des prix…') : T('aucun prix connu')}</span>`;
   const prog = reading ? `<p class="hint gl-prog">${T('Lecture des cartes sur Scryfall · {a} / {b}', { a: nf0(e.done), b: nf0(e.total) })}</p>` : '';
   const best = top ? `<h3 class="cs-h">${T('La plus chère')}</h3><div class="crow ro gl-top"><span class="thumb" style="--h:${hash32(top.k) % 360}">${esc(((top.dn || top.n).trim()[0] || '?').toUpperCase())}${top.im ? `<img alt="" decoding="async" src="${esc(collImage(top.k, top.l, top.im).src)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(top.dn || top.n)}</span>${top.q > 1 ? `<span class="row-meta"><span class="tag accent">× ${nf0(top.q)}</span></span>` : ''}</span><span class="row-price"><b>${esc(fmt(top.up, 'EUR'))}</b></span></div>` : '';
-  let dk = '';
-  if (edhGate() !== 'ok') dk = `<div class="gl-edh"><span>${T('<b>Decks EDHREC</b> à finir avec tes cartes : réservés aux comptes')}</span><button class="btn ghost small" type="button" data-g="decks">${T('Voir')}</button></div>`;
+  let dk = ''; const eg = edhGate();
+  if (eg === 'off') { /* EDHREC coupé par le serveur : pas de ligne « Decks EDHREC » */ }
+  else if (eg !== 'ok') dk = `<div class="gl-edh"><span>${T('<b>Decks EDHREC</b> à finir avec tes cartes : réservés aux comptes')}</span><button class="btn ghost small" type="button" data-g="decks">${T('Voir')}</button></div>`;
   else if (EDH.data && !reading) {
     const sig = COLL.seq + '|' + EDH.at;
     if (!GLANCE.edh || GLANCE.edh.sig !== sig) GLANCE.edh = { sig, n: edhRank(EDH.data, collQty, { budget: GLANCE_BUDGET, sort: 'have' }).filter(r => r.have >= r.total * 0.3).length };      // au moins 30 % du deck déjà là : un vrai deck « à finir »

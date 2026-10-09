@@ -124,6 +124,8 @@ function homeCostText(r) {
 function homeBuild() {
   const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), btn = $('#btnBuild'), n = collCount(), g = edhGate();
   const idle = () => { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); btn.removeAttribute('aria-label'); };
+  btn.hidden = g === 'off'; btn.parentElement.classList.toggle('two', g === 'off');      // EDHREC coupé par le serveur : tuile retirée, les deux autres prennent la place
+  if (g === 'off') { HM.best = null; return; }
   btn.dataset.lock = g === 'out' || g === 'verify' ? '1' : '0';
   // decks EDHREC réservés aux comptes (edhGate, edh.js) : ni chiffres ni téléchargement sans compte vérifié, la tuile mène à l'écran de connexion
   if (g === 'out' || g === 'verify') {

@@ -651,7 +651,7 @@ button.sync:active{background:var(--surface-2)}
 .hm-dt b em{font-style:normal;color:var(--accent)}
 .hm-dt span{font-size:12.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #hmDeckNames:empty{display:none}
-.hm-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hm-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.hm-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .hm-tile{min-height:116px;padding:12px;border-radius:20px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;animation-delay:.2s}
 .hm-tile:nth-child(2){animation-delay:.26s}.hm-tile:nth-child(3){animation-delay:.32s}
 .hm-ic{width:22px!important;height:22px!important}

@@ -1,5 +1,6 @@
 // E2E commandants : filtre « Commander » de l'onglet Cartes (éligibles / joués EDHREC), onglet « Decks » (classement selon la collection,
-// filtres, feuille d'un deck), chargement du deck dans la page de saisie, cache, fichier absent. Faux edh.tsv servi par une route Playwright.
+// filtres, feuille d'un deck), chargement du deck dans la page de saisie, cache, fichier absent ; interrupteurs du serveur (/__ping off : Archidekt, EDHREC).
+// Faux edh.tsv servi par une route Playwright.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { chromium, startWorld, newPage, txt, ok, toInput, toHome, signInFake } from './e2e-world.mjs';
@@ -393,6 +394,39 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   assert.equal(await cost(0, 0), 'Rien à acheter'); assert.equal(await cost(3, 0), '3 cartes à trouver'); assert.equal(await cost(2, 450), '≈ 4,50 € pour finir', 'moins de 10 € : au centime'); assert.equal(await cost(9, 123456), '≈ 1 235 € pour finir');
   ok('Deck à monter : règle part possédée − 10 points par doublement du coût au-delà de 10 € (62 % à 84 € > 40 % à 20 € > 90 % à 900 €), seuil 10 %, ≥ 60 cartes, complet d\'abord, coût en mots');
   assert.deepEqual(h.errs, []); await h.ctx.close();
+}
+
+/* ── 9) interrupteurs du serveur (/__ping off) : Archidekt coupé → ses decks retirés, copie de l'appareil comprise ; EDHREC coupé → decks cachés,
+   tuile et filtre « Joués en commandant » retirés, copie effacée, fichier plus demandé ───────────────────────────────────────────────────── */
+{
+  let off = [], bins = 0;
+  const w = await newPage(browser, world, { goto: false });
+  await w.p.route('**/__ping', async r => { const res = await r.fetch(); r.fulfill({ response: res, json: { ...(await res.json()), off } }); });
+  await w.p.route('**/edh.bin.gz', r => { bins++; return r.fulfill({ status: 200, contentType: 'application/octet-stream', headers: { 'content-encoding': 'gzip' }, body: BIN }); });
+  await w.p.route('**/edh.tsv', r => r.fulfill({ status: 404, body: '{}' }));
+  await w.p.goto(world.url); await w.p.waitForTimeout(700);
+  await openDecks(w.p);
+  await w.p.waitForFunction(() => document.querySelectorAll('.crow.dk').length === 4);
+  await w.p.evaluate(() => { CTX.off = ['archidekt']; edhOffApply(); });
+  await w.p.waitForFunction(() => EDH.data && document.querySelectorAll('.crow.dk').length === 3, null, { timeout: 5000 });
+  assert.equal(await w.p.evaluate(() => EDH.data.decks.filter(d => d.src === 'archidekt').length), 0, 'copie de l\'appareil relue sans les decks Archidekt');
+  ok('Archidekt coupé par le serveur : ses decks retirés de la copie déjà chargée (3 decks EDHREC restent)');
+  await w.p.evaluate(() => { CTX.off = ['edhrec']; edhOffApply(); });
+  await w.p.waitForSelector('.coll .gate[data-gate="off"]');
+  assert.equal(await txt(w.p, '.coll .gate[data-gate="off"] b'), 'Decks EDHREC indisponibles pour le moment');
+  await w.p.waitForFunction(() => $('#btnBuild').hidden, null, { timeout: 3000 });      // accueil repeint en différé (homeSoon)
+  assert.deepEqual(await w.p.evaluate(async () => [EDH.data, await Cache.get('edh:v2', 1e12), $('#btnBuild').hidden, $('#btnBuild').parentElement.classList.contains('two')]), [null, null, true, true], 'données et copie effacées, tuile « Deck à monter » retirée');
+  await w.p.evaluate(() => closeCollection()); await w.p.waitForTimeout(400); await w.p.click('#btnColl'); await w.p.waitForSelector('.coll.on'); await w.p.click('#collSeg [data-v="list"]'); await w.p.click('.coll .fbtn');
+  assert.deepEqual(await w.p.$$eval('.coll .fopt[data-x]', b => b.map(x => x.dataset.x).filter(x => x === 'can' || x === 'played')), ['can'], 'filtre « Joués en commandant » retiré');
+  await w.p.click('#collSeg [data-v="decks"]'); await w.p.waitForSelector('.coll .gate[data-gate="off"]');
+  // relancée avec EDHREC coupé : rien de téléchargé
+  off = ['edhrec']; bins = 0; await w.p.reload(); await w.p.waitForTimeout(700); await signInFake(w.p);
+  await w.p.waitForFunction(() => CTX.off.includes('edhrec')); await w.p.click('#btnBuild').catch(() => {});
+  assert.equal(await w.p.evaluate(() => $('#btnBuild').hidden), true);
+  await w.p.click('#btnColl'); await w.p.waitForSelector('.coll.on'); await w.p.click('#collSeg [data-v="decks"]'); await w.p.waitForSelector('.coll .gate[data-gate="off"]'); await w.p.waitForTimeout(3000);
+  assert.equal(bins, 0, 'fichier EDH jamais demandé');
+  ok('EDHREC coupé : écran « Decks EDHREC indisponibles », copie effacée, tuile et filtre « Joués » retirés ; au lancement suivant, rien de téléchargé');
+  assert.deepEqual(w.errs, []); await w.ctx.close();
 }
 
 console.log('erreurs page :', [...errs, ...b.errs].length ? [...errs, ...b.errs] : 'aucune'); assert.deepEqual([...errs, ...b.errs], []);

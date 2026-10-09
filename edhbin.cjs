@@ -98,4 +98,30 @@ function edhUnpack(input) {
   return { v: head.v, at: head.at, rk: typeof head.rk === 'string' ? head.rk : '', themes: Array.isArray(head.tl) ? head.tl : [], cmds, dk, names, off, ids, qty, pr, gc };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { edhPack, edhUnpack, EDHB_MAX_CARDS };
+/** Copie d'un fichier EDH2 sans les decks que keep refuse (keep reçoit l'entrée du JSON des decks : [indice du commandant, source, libellé, lien, …]).
+ *  Commandants, noms, prix et Game Changers sont recopiés tels quels. Retourne l'entrée elle-même si rien n'est retiré. Sert aux interrupteurs
+ *  EDHREC / Archidekt (proxy.mjs, ARCHIDEKT_OFF ; copie de l'appareil, edh.js). */
+function edhFilter(input, keep) {
+  const u8 = input instanceof Uint8Array ? input : new Uint8Array(input), u = edhUnpack(u8);
+  const kept = []; u.dk.forEach((m, i) => { if (keep(m)) kept.push(i); });
+  if (kept.length === u.dk.length) return u8;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), hl = dv.getUint32(4, true), dec = new TextDecoder(), enc = new TextEncoder();
+  const head = JSON.parse(dec.decode(u8.subarray(8, 8 + hl))), [lc, ld, ln] = head.sl;
+  const pc = edhPad4(8 + hl), pn = pc + edhPad4(lc) + edhPad4(ld);      // commandants, puis noms (recopiés)
+  const meta = kept.map(i => u.dk[i]), dk = enc.encode(JSON.stringify(meta));
+  let ne = 0; for (const i of kept) ne += u.off[i + 1] - u.off[i];
+  const nh = enc.encode(JSON.stringify({ ...head, nd: meta.length, ne, sl: [lc, dk.length, ln] })), nn = u.names.length, ng = u.gc.length;
+  const hp = edhPad4(8 + nh.length), total = hp + edhPad4(lc) + edhPad4(dk.length) + edhPad4(ln) + 4 * (meta.length + 1) + edhPad4(2 * ne) + edhPad4(ne) + 4 * nn + edhPad4(2 * ng);
+  const out = new Uint8Array(total), ov = new DataView(out.buffer);
+  out.set([0x45, 0x44, 0x48, 0x32], 0); ov.setUint32(4, nh.length, true); out.set(nh, 8);
+  let p = hp; out.set(u8.subarray(pc, pc + lc), p); p += edhPad4(lc); out.set(dk, p); p += edhPad4(dk.length); out.set(u8.subarray(pn, pn + ln), p); p += edhPad4(ln);
+  const off = new Uint32Array(out.buffer, p, meta.length + 1); p += 4 * (meta.length + 1);
+  const ids = new Uint16Array(out.buffer, p, ne); p += edhPad4(2 * ne);
+  const qty = new Uint8Array(out.buffer, p, ne); p += edhPad4(ne);
+  let e = 0; kept.forEach((i, j) => { const a = u.off[i], b = u.off[i + 1]; off[j] = e; ids.set(u.ids.subarray(a, b), e); qty.set(u.qty.subarray(a, b), e); e += b - a; }); off[meta.length] = e;
+  new Uint32Array(out.buffer, p, nn).set(u.pr); p += 4 * nn;
+  new Uint16Array(out.buffer, p, ng).set(u.gc);
+  return out;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { edhPack, edhUnpack, edhFilter, EDHB_MAX_CARDS };
