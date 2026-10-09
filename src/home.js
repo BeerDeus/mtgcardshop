@@ -23,7 +23,7 @@ function homeValue() {
 /** Le chiffre défile jusqu'à sa valeur (euros entiers). */
 function homeCount(el, to) {
   const from = HM.v == null ? 0 : HM.v; HM.v = to; cancelAnimationFrame(HM.raf);
-  if (reduceMotion() || from === to) { el.textContent = hmEur(to); return; }
+  if (reduceMotion() || from === to || document.getElementById('splash')) { el.textContent = hmEur(to); return; }      // sous l'écran de lancement : valeur finale (le défilement, invisible, repeignait chaque image)
   const t0 = performance.now(), d = from ? 600 : 1400;
   const step = now => { const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3); el.textContent = hmEur(Math.round(from + (to - from) * e)); if (p < 1) HM.raf = requestAnimationFrame(step); };
   HM.raf = requestAnimationFrame(step);

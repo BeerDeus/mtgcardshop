@@ -1,7 +1,7 @@
 /* ── splash.js : écran de lancement ─────────────────────────────────────────────────────────────────────────────
    Script à part, posé par build.mjs juste après #splash en haut du <body> : il tourne avant le gros script, donc avant la première image
    (thème enregistré appliqué tout de suite, choix du mode). Visuels interchangeables : #splash (body.html) + src/css/splash.css.
-   Contrat · #splash : .sp-short / .sp-rm (dès le départ), .sp-in (première image : la chorégraphie part), .sp-idle (plafond atteint, appli pas prête),
+   Contrat · #splash : .sp-in (dans le balisage : la chorégraphie part au premier rendu), .sp-short / .sp-rm (dès le départ), .sp-idle (plafond atteint, appli pas prête),
      .sp-out (sortie) + .sp-morph (passage à l'accueil) ; --sp-out : durée de la sortie. <html>.sp-on : appli inerte, ses animations en pause.
    · [data-sp-to="sélecteur"] : vole sur cet élément de #app au passage (échelle fixe permise) ; [data-sp-sync="sélecteur"] : les boucles CSS de cet élément
      reprennent l'horloge du splash (même nom d'animation : aucun saut). · window.splashHandoffX(el, morph, done) : sortie propre à un autre concept (true = prise en charge). */
@@ -14,7 +14,7 @@ function splashMode(o) {
   if (f === '0' || o.hidden || (o.webdriver && !f)) return 'none';
   return f === 'short' || o.nav === 'reload' || o.nav === 'back_forward' || [...q.keys()].some(k => !SPLASH_KEEP.test(k)) ? 'short' : 'full';
 }
-const SPL = { el: null, short: false, rm: false, ready: false, min: false, skip: false, end: false, held: [], mo: null, tm: [] };
+const SPL = { el: null, short: false, rm: false, ready: false, min: false, near: false, skip: false, end: false, prep: undefined, held: [], mo: null, tm: [] };
 function splashEnv() {
   let nav = ''; try { nav = performance.getEntriesByType('navigation')[0].type; } catch (e) { /* navigateur ancien */ }
   return { search: location.search, webdriver: navigator.webdriver === true, hidden: document.visibilityState === 'hidden', nav };
@@ -42,26 +42,25 @@ function splashRemove() {
   if (document.activeElement === document.body) { const c = document.querySelector('.sheet-wrap.open [data-close].icon-btn'); if (c) c.focus({ preventScroll: true }); }      // focus refusé sous le splash
   document.dispatchEvent(new Event('splashend'));
 }
-/** Paires [élément du splash, cible] du passage à l'accueil ; null si une cible manque, sort de l'écran ou est couverte (accueil du premier lancement, feuille, autre écran). */
-function splashPairs(el) {
-  if (!Element.prototype.animate) return null;
-  const out = []; el.style.pointerEvents = 'none';
+/** Vol vers l'accueil préparé d'avance, avant le temps minimal (aucune mise en page forcée au départ du vol) : entrées de chaque cible et de ses parents finies
+ *  (orbe qui grossit, écran qui glisse), puis [élément, cible, départ, arrivée]. null : une cible manque ou sort de l'écran (fondu). */
+function splashPrep() {
+  const el = SPL.el; if (!el || SPL.prep !== undefined || SPL.short || SPL.rm || !Element.prototype.animate) return;
+  const out = [], fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };
   for (const s of el.querySelectorAll('[data-sp-to]')) {
-    const d = document.querySelector('#app ' + s.dataset.spTo), r = d && d.getBoundingClientRect();
-    if (!r || r.width < 8 || r.top < 0 || r.bottom > innerHeight) return null;
-    const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    if (!h || !(d.contains(h) || h.contains(d))) return null;
-    out.push([s, d]);
-  }
-  return out.length ? out : null;
-}
-function splashMorph(el, pairs, D) {
-  for (const [s, d] of pairs) {
-    const fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };      // entrées de la cible et de ses parents finies : mesure juste
+    const d = document.querySelector('#app ' + s.dataset.spTo); if (!d) return (SPL.prep = null);
     d.getAnimations({ subtree: true }).forEach(fin); for (let n = d.parentElement; n && n.id !== 'app'; n = n.parentElement) n.getAnimations().forEach(fin);
     const a = s.getBoundingClientRect(), b = d.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(s).transform);
-    const to = `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})`;
-    s.animate([{ transform: m.toString(), easing: 'cubic-bezier(.45,.05,.2,1)' }, { transform: to, offset: 0.8 }, { transform: to }], { duration: D, fill: 'forwards' });
+    if (b.width < 8 || b.top < 0 || b.bottom > innerHeight) return (SPL.prep = null);
+    out.push([s, d, m.toString(), `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})`]);
+  }
+  SPL.prep = out.length ? out : null;
+}
+/** Accueil couvert (premier lancement, feuille, écran plein format, autre vue) : un enfant du <body> visible en plus de l'appli. */
+const splashCovered = () => (typeof S !== 'undefined' && S.view !== 'home') || [...document.body.children].some(n => n !== SPL.el && !/^(script|style|svg)$/i.test(n.nodeName) && !/^(app|toast|tasks)$/.test(n.id) && (n.id !== 'sheetRoot' || n.children.length) && n.getClientRects().length);
+function splashMorph(pairs, D) {
+  for (const [s, d, from, to] of pairs) {
+    s.animate([{ transform: from, easing: 'cubic-bezier(.45,.05,.2,1)' }, { transform: to, offset: 0.8 }, { transform: to }], { duration: D, fill: 'forwards' });
     s.animate([{ opacity: 1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: D, fill: 'forwards' });
     d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1, offset: 0.801 }, { opacity: 1 }], { duration: D });      // posée : la cible paraît sous le splash identique, qui s'efface
   }
@@ -69,30 +68,23 @@ function splashMorph(el, pairs, D) {
 /** Sortie : vol vers l'accueil si tout est en place, sinon fondu (agrandi). fast : toucher, plafond absolu. */
 function splashHandoff(fast) {
   const el = SPL.el; if (!el || SPL.end) return;
-  SPL.end = true; SPL.tm.forEach(clearTimeout); splashMark('out'); splashRelease();
+  SPL.end = true; SPL.tm.forEach(clearTimeout); splashMark('out');
   const quick = fast || SPL.rm, D = SPL.rm ? SPLASH_T.fade : fast ? SPLASH_T.fast : SPL.short ? SPLASH_T.outShort : SPLASH_T.out;
   el.style.setProperty('--sp-out', D + 'ms');
-  if (typeof window.splashHandoffX === 'function') { try { if (window.splashHandoffX(el, !quick, splashRemove)) { splashPlay(); return; } } catch (e) { /* sortie par défaut */ } }
-  const pairs = quick || SPL.short ? null : splashPairs(el);      // lien profond : un autre écran, fondu
-  el.classList.add('sp-out'); if (pairs) { el.classList.add('sp-morph'); splashMorph(el, pairs, D); }
-  SPL.tm = [setTimeout(splashPlay, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // l'accueil entre une fois l'orbe partie du centre
+  if (typeof window.splashHandoffX === 'function') { try { if (window.splashHandoffX(el, !quick, splashRemove)) { splashRelease(); splashPlay(); return; } } catch (e) { /* sortie par défaut */ } }
+  if (!quick && !SPL.short) splashPrep();
+  const pairs = quick || SPL.short || splashCovered() ? null : SPL.prep;      // lien profond : un autre écran, fondu
+  el.classList.add('sp-out'); if (pairs) { el.classList.add('sp-morph'); splashMorph(pairs, D); } else splashRelease();
+  SPL.tm = [setTimeout(() => { splashRelease(); splashPlay(); }, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // vol : l'appli (inerte, en pause) n'est recalculée qu'une fois l'orbe partie du centre
 }
-/** Décor généré (moins d'octets que du balisage) : 22 étoiles, 18 étincelles de l'allumage, lettres du nom (montée et reflet lettre à lettre). */
-function splashBuild(el) {
-  let z = 7, h = ''; const R = () => (z = z * 16807 % 2147483647) / 2147483647, F = n => +n.toFixed(2), K = ['#fff', '#ffd479', '#ff8fc3', '#7be8c8', '#7fb0ff', '#c79bff'], q = c => el.querySelector(c);
-  for (let i = 0; i < 18; i++) h += `<i style="--a:${i * 20 + R() * 14 | 0}deg;--d:${90 + R() * 120 | 0}px;--f:${70 + R() * 80 | 0}px;--u:${F(0.5 + R() * 0.4)}s;--k:${K[i % 6]}"></i>`;
-  q('.sp-p').innerHTML = h; h = '';
-  for (let i = 0; i < 22; i++) h += `<b style="left:${F(R() * 100)}%;top:${F(R() * 100)}%;--z:${F(1 + R() * 1.8)}px;--o:${F(0.35 + R() * 0.6)};--w:${F(0.55 + R() * 0.7)}s"></b>`;
-  q('.sp-sky').innerHTML = h;
-  const w = q('.sp-word'); if (w) w.innerHTML = [...w.textContent].map((l, i) => l === ' ' ? ' ' : `<span style="--i:${i};--k:${K[i % 5 + 1]}" data-l="${l}">${l}</span>`).join('');
-}
-function splashCheck() { if (SPL.ready && (SPL.min || SPL.skip)) splashHandoff(SPL.skip); }
+function splashCheck() { if (SPL.ready && (SPL.min || SPL.skip)) splashHandoff(SPL.skip); else if (SPL.ready && SPL.near) splashPrep(); }
+/** Départ synchrone, sans attendre une image : .sp-in est déjà dans le balisage, les animations CSS partent au premier rendu et tournent sur le compositeur. */
 function splashStart() {
-  const el = SPL.el; if (!el || SPL.end) return;
-  el.classList.add('sp-in'); splashMark('in');
+  const el = SPL.el; splashMark('in');
   if (SPL.short && !SPL.rm) for (const a of el.getAnimations({ subtree: true })) if (a.effect.target !== el) { a.currentTime = 340; a.playbackRate = 2.2; }      // version courte : allumage immédiat
   const T = SPLASH_T, min = SPL.rm ? T.rm : SPL.short ? T.short : T.min;
   SPL.tm.push(setTimeout(() => { SPL.min = true; splashCheck(); }, min),
+    setTimeout(() => { SPL.near = true; splashCheck(); }, min - 350),      // vol mesuré d'avance
     setTimeout(() => { if (!SPL.end) el.classList.add('sp-idle'); }, SPL.short || SPL.rm ? min : T.cap),
     setTimeout(() => splashHandoff(true), T.max));
 }
@@ -101,6 +93,8 @@ function splashReady() {
   const go = () => requestAnimationFrame(() => requestAnimationFrame(() => { SPL.ready = true; splashCheck(); }));
   try { void document.body.offsetHeight; Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 700))]).then(go, go); } catch (e) { go(); }
 }
+/** fn après la sortie d'un splash complet (travail lourd du démarrage : SDK Firebase…) ; tout de suite sinon (lien profond, pas de splash). */
+function splashAfter(fn) { if (SPL.el && !SPL.short) document.addEventListener('splashend', () => setTimeout(fn, 0), { once: true }); else setTimeout(fn, 0); }
 (function splashBoot() {
   if (typeof document === 'undefined') return;
   const de = document.documentElement;
@@ -110,7 +104,6 @@ function splashReady() {
   if (m === 'none') { el.remove(); return; }
   SPL.el = el; SPL.short = m === 'short'; try { SPL.rm = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignore */ }
   if (SPL.short) el.classList.add('sp-short'); if (SPL.rm) el.classList.add('sp-rm');
-  try { splashBuild(el); } catch (e) { /* décor seulement */ }
   de.classList.add('sp-on');
   try { SPL.mo = new MutationObserver(ms => ms.forEach(r => r.addedNodes.forEach(splashHold))); SPL.mo.observe(document.body, { childList: true }); } catch (e) { /* ignore */ }
   const skip = () => { if (SPL.el && !SPL.end) { SPL.skip = true; splashCheck(); } }, kill = () => { if (SPL.el) splashRemove(); };
@@ -118,7 +111,7 @@ function splashReady() {
   el.addEventListener('wheel', e => e.preventDefault(), { passive: false });
   document.addEventListener('visibilitychange', () => { if (document.hidden) kill(); });      // arrière-plan, bfcache
   addEventListener('pagehide', kill);
-  requestAnimationFrame(splashStart);
+  splashStart();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', splashReady); else splashReady();
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = { splashMode, SPLASH_T, SPLASH_KEEP };

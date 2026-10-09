@@ -718,5 +718,5 @@ function initDecks() {
   };
   $('#deckStats').addEventListener('click', e => { if (e.target.closest('[data-act="detach"]')) detachDeck(); });
   renderAccountBtn(); renderDecks(); dmLoad();
-  setTimeout(connectCloud, 0);
+  (typeof splashAfter === 'function' ? splashAfter : f => setTimeout(f, 0))(connectCloud);      // SDK Firebase (gros script à compiler) : après l'écran de lancement complet, tout de suite sur un lien profond
 }
