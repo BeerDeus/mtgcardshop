@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône du raccourci « Prix rapide » (Android 8 et plus) : la nuit de l'icône de l'appli, glyphe blanc. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/shortcut_bg" />
+    <foreground android:drawable="@drawable/shortcut_fg_quick" />
+</adaptive-icon>

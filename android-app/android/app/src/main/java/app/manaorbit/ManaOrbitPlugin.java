@@ -21,7 +21,9 @@ import org.json.JSONObject;
  *   de l'APK, nombre de widgets posés, estimation appli fermée possible (ValueRefreshJob.ENABLED).
  * - setWidget({ data, coll? }) : chiffres du widget d'écran d'accueil (JSON, voir src/widget.js), gardés pour quand l'appli est fermée ;
  *   coll : cartes et prix de référence pour l'estimation appli fermée (absent : plus d'estimation jusqu'au prochain envoi).
- * - événement « open » ({ view: 'collection' | 'scan' | 'quick' }) : le widget ou son bouton a été touché ; gardé jusqu'à ce que la page l'écoute (lancement à froid).
+ * - événement « open », gardé jusqu'à ce que la page l'écoute (lancement à froid) : { view: 'collection' | 'scan' | 'quick' } le widget ou son bouton a été
+ *   touché ; { view: 'scan' | 'quick' | 'trade' | 'paste' } un raccourci de l'icône (ShortcutActivity) ; { view: 'share', text, title } du texte partagé
+ *   par une autre appli (menu « Partager » : decklist, lien EDHREC, Archidekt, Moxfield…).
  */
 @CapacitorPlugin(name = "ManaOrbit")
 public class ManaOrbitPlugin extends Plugin {
@@ -70,18 +72,66 @@ public class ManaOrbitPlugin extends Plugin {
         call.resolve();
     }
 
-    /** Widget touché : l'activité est lancée (ou ramenée devant) avec l'extra du widget ; à froid, Capacitor passe ici l'intent de lancement. */
+    /** Texte partagé gardé au plus : une decklist de 250 lignes fait moins de 10 000 caractères ; au-delà, ce n'est pas une liste et le pont n'a pas à le porter. */
+    static final int SHARE_MAX = 100000;
+
+    /** Widget ou raccourci touché, texte partagé : l'activité est lancée (ou ramenée devant) avec cette intention ; à froid, Capacitor passe ici l'intention de lancement. */
     @Override
     protected void handleOnNewIntent(Intent intent) {
         super.handleOnNewIntent(intent);
-        String view = intent == null ? null : intent.getStringExtra(ValueWidget.EXTRA_OPEN);
-        if (view == null) return;
-        // Rouverte depuis les applis récentes (ou recréée) : Android rejoue l'ancienne intention ; ce n'est pas un nouveau toucher du widget.
-        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return;
-        intent.removeExtra(ValueWidget.EXTRA_OPEN);
+        String[] t = target(intent);
+        if (t == null) return;
         JSObject ev = new JSObject();
-        ev.put("view", view);
+        ev.put("view", t[0]);
+        if (t.length > 2) {
+            ev.put("text", t[1]);
+            ev.put("title", t[2]);
+        }
         notifyListeners("open", ev, true);
+    }
+
+    /**
+     * Ce que l'intention demande d'ouvrir : [vue] (widget, raccourci : extra EXTRA_OPEN) ou ['share', texte, titre] (ACTION_SEND text/plain) ; null sinon.
+     * Lue une seule fois : l'intention est ensuite vidée (forget), un nouvel appel avec la même intention ne rouvre rien.
+     */
+    static String[] target(Intent intent) {
+        if (intent == null) return null;
+        String[] t = null;
+        try {
+            if (Intent.ACTION_SEND.equals(intent.getAction())) {
+                t = new String[] {"share", clip(intent.getCharSequenceExtra(Intent.EXTRA_TEXT), SHARE_MAX), clip(intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT), 300)};
+            } else {
+                String view = intent.getStringExtra(ValueWidget.EXTRA_OPEN);
+                if (view != null) t = new String[] {view};
+            }
+        } catch (RuntimeException e) {
+            return null; // extras illisibles (objet inconnu glissé par une autre appli) : intention ignorée plutôt que l'appli arrêtée
+        }
+        // Rouverte depuis les applis récentes : Android rejoue l'ancienne intention ; ce n'est ni un nouveau toucher ni un nouveau partage.
+        if (t == null || (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return null;
+        forget(intent);
+        return t;
+    }
+
+    /** Intention lue, ou à ne pas rejouer (activité recréée, voir MainActivity) : plus de cible ni de texte partagé. */
+    static void forget(Intent intent) {
+        if (intent == null) return;
+        try {
+            if (Intent.ACTION_SEND.equals(intent.getAction())) {
+                intent.setAction(Intent.ACTION_MAIN); // d'abord : même si les extras sont illisibles, plus de partage à rejouer
+                intent.removeExtra(Intent.EXTRA_TEXT);
+                intent.removeExtra(Intent.EXTRA_SUBJECT);
+            }
+            intent.removeExtra(ValueWidget.EXTRA_OPEN);
+        } catch (RuntimeException e) {
+            // extras illisibles : target() les ignore déjà
+        }
+    }
+
+    private static String clip(CharSequence s, int max) {
+        if (s == null) return "";
+        String v = s.toString();
+        return v.length() > max ? v.substring(0, max) : v;
     }
 
     /** FirebaseApp.getApps(context) non vide. Firebase n'est visible des plugins qu'à l'exécution (dépendance « implementation ») : appel par réflexion,
