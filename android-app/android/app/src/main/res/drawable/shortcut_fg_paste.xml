@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourci « Nouveau panier » : la loupe (symbole i-search, tuile Nouveau panier de l'accueil), en trait blanc ; premier plan des icônes shortcut_paste. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="66"
+    android:viewportHeight="66">
+    <group
+        android:translateX="21"
+        android:translateY="21">
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M5,11a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="2" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M20,20l-4.2,-4.2"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="2" />
+    </group>
+</vector>

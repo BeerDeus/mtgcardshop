@@ -112,6 +112,12 @@ La connexion Google utilise le compte Google du téléphone : un sélecteur nati
 
 **En ligne de commande**, depuis `android-app` (Windows, Mac ou Linux) : `npm run apk` fabrique le même APK de test sans Android Studio ; sous Windows, définis d'abord `JAVA_HOME` comme au 2 bis. Pour le Play Store, passe par l'étape 4.1 (fichier signé).
 
+### Raccourcis et partage
+
+- **Appui long sur l'icône** : Scanner, Prix rapide, Échange, Nouveau panier (un raccourci peut être épinglé sur l'écran d'accueil). Ils passent par `ShortcutActivity`, une tâche à part : sans elle, Android relancerait l'appli de zéro (recherche ou scan en cours perdus).
+- **Partager vers Mana Orbit** : depuis Chrome (page d'un deck EDHREC, Archidekt, Moxfield) ou une appli de notes, « Partager » › Mana Orbit ouvre « Nouveau panier » avec la liste.
+- Si toucher un raccourci ne fait rien du tout : mets `android:exported="true"` sur `ShortcutActivity` dans `AndroidManifest.xml` (il ne transmet que ces 4 actions), puis reconstruis.
+
 ### Widget
 
 Le widget « Ma collection » affiche la valeur de ta collection, sa variation (sur 7 jours, ou celle du marché seul si tu as ajouté des cartes, avec sa durée), le nombre de cartes et, en 4 × 2, la courbe des 30 derniers jours. Au-delà de 36 h sans nouvelles données, « il y a 3 j » s'affiche en gris.

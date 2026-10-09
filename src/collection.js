@@ -533,7 +533,7 @@ function collExport() {
       <button class="ex-opt" type="button" data-x="copy"><b>${T('Copier le texte')}</b><span>${T('Pour le coller dans un message ou une autre appli.')}</span></button></div>`;
     api.body.onclick = e => {
       const x = (e.target.closest('[data-x]') || {}).dataset; if (!x || !x.x) return;
-      if (x.x === 'csv') collDownload(collToCsv(COLL.map), 'csv', 'text/csv');
+      if (x.x === 'csv') collDownload(collToCsv(COLL.map, trSpare(COLL.map)), 'csv', 'text/csv');
       else if (x.x === 'txt') collDownload(collToText(COLL.map) + '\n', 'txt', 'text/plain');
       else { copyText(collToText(COLL.map)); }
       api.close();
