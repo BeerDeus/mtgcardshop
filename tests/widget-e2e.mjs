@@ -328,11 +328,14 @@ const errsAll = [];
     D.state = 'ready'; D.err = '';
     onUser({ uid: 'u1', email: 'beer@example.com', displayName: 'Beer', reload: async () => {} });
   });
-  const { p, errs } = await newPage(browser, world, { init: seed() + qseed + qshell() }); errsAll.push(errs);
+  // Firebase injoignable (SDK bloqué, comme en ligne sans réseau) : le compte reste inconnu tant que le test ne le connecte pas
+  const qpage = async init => { const w = await newPage(browser, world, { goto: false, init }); await w.p.route('https://www.gstatic.com/**', r => r.abort()); await w.p.goto(world.url); return w; };
+  const { p, errs } = await qpage(seed() + qseed + qshell()); errsAll.push(errs);
   const qs = () => p.evaluate(() => window.__mo.q.map(c => JSON.parse(c.data)));
   const qn = n => p.waitForFunction(k => window.__mo.q.length >= k, n, { timeout: 6000 });
   await p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 }); await p.waitForTimeout(800);
-  assert.deepEqual(await qs(), [], 'compte pas encore connu (Firebase injoignable ici) : rien, la coque garde le code précédent');
+  assert.deepEqual(await p.evaluate(() => [D.state, !!D.user]), ['unavailable', false]);
+  assert.deepEqual(await qs(), [], 'compte inconnu (Firebase injoignable) : rien, la coque garde le code précédent');
   await login(p); await qn(1);
   const url = await p.evaluate(id => shareUrl(id), SID), mx = Q.qrMatrix(url);
   assert.match(url, /\/\?p=Share000000000001$/);
@@ -365,7 +368,7 @@ const errsAll = [];
   assert.deepEqual((await qs())[4], { u: '', lang: 'fr' }, 'déconnecté : plus de code');
   await p.context().close();
   // APK sans ce widget (info() sans tradeWidgets) : rien, même avec un lien
-  const old = await newPage(browser, world, { init: seed() + qseed + qshell(null) }); errsAll.push(old.errs);
+  const old = await qpage(seed() + qseed + qshell(null)); errsAll.push(old.errs);
   await old.p.waitForFunction(() => window.__mo.calls.length >= 1, null, { timeout: 6000 }); await login(old.p); await old.p.waitForTimeout(2500);
   assert.deepEqual(await old.p.evaluate(() => window.__mo.q.length), 0);
   assert.equal(await old.p.evaluate(() => { trQrOpen(); return !!document.querySelector('.qr-tip'); }), false, 'pas d\'astuce sans le widget');
