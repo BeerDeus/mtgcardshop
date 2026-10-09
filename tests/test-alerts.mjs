@@ -110,7 +110,7 @@ r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: A.sub
 await sleep(500); set({ 'Delver of Secrets': '1.00', 'Mana Crypt': '60.00' });
 await check(B, ID);
 ps = pushesFor(A); m = decrypt(ps[ps.length - 1].body, A); assert.equal(m.title, '2 cartes en baisse', JSON.stringify(m)); assert.match(m.body, /Delver of Secrets \/\/ Insectile Aberration −50 %, Mana Crypt −40 %/, m.body); ok('plusieurs cartes : un seul message récapitulatif');
-// 4 bis) appli en anglais (lang: 'en') : notifications en anglais ; langue absente (appli plus ancienne) ou inconnue : français
+// 4 bis) appli en anglais (lang: 'en') : notifications en anglais ; langue absente (appli plus ancienne) ou inconnue : français ; allemand, espagnol
 {
   const E = browser('devEn');
   set({ 'Ancient Tomb': '10.00', "Gaea's Cradle": '400.00', 'Mox Diamond': '50.00', 'Chrome Mox': '60.00', 'Lotus Petal': '5.00' });
@@ -126,6 +126,17 @@ ps = pushesFor(A); m = decrypt(ps[ps.length - 1].body, A); assert.equal(m.title,
   set({ 'Lotus Petal': '2.00' }); await check(B, IDE);
   ps = pushesFor(E); assert.equal(ps.length, 4); m = decrypt(ps[3].body, E); assert.equal(m.title, 'Lotus Petal : −60 %', 'langue inconnue : français');
   ok('appli en anglais : notifications en anglais (baisse, prix cible, résumé) ; langue inconnue ou absente : français');
+  // même appareil passé en allemand, puis en espagnol : le serveur réapprend la langue à chaque enregistrement
+  set({ 'Mox Opal': '30.00', 'Mana Vault': '25.00', 'Jeweled Lotus': '80.00', 'Grim Monolith': '40.00' });
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'de', items: [{ k: 'mox opal', n: 'Mox Opal', d: ['Deck D'] }, { k: 'mana vault', n: 'Mana Vault', t: 2000 }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
+  set({ 'Mox Opal': '18.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 5); m = decrypt(ps[4].body, E); assert.equal(m.title, 'Mox Opal: −40 %'); assert.equal(m.body, '30,00 € → 18,00 € (Cardmarket-Trend). · fehlt in Deck D');
+  set({ 'Mana Vault': '19.50' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 6); m = decrypt(ps[5].body, E); assert.equal(m.title, 'Mana Vault für 19,50 €'); assert.equal(m.body, 'Unter deinem Zielpreis von 20,00 € (Cardmarket-Trend).');
+  r = await J(B, '/api/alerts', { method: 'PUT', body: JSON.stringify({ sub: E.sub, thr: 30, lang: 'es', items: [{ k: 'jeweled lotus', n: 'Jeweled Lotus' }, { k: 'grim monolith', n: 'Grim Monolith' }] }) }); assert.equal(r.o.id, IDE); await sleep(500);
+  set({ 'Jeweled Lotus': '40.00', 'Grim Monolith': '20.00' }); await check(B, IDE);
+  ps = pushesFor(E); assert.equal(ps.length, 7); m = decrypt(ps[6].body, E); assert.equal(m.title, '2 cartas bajan de precio'); assert.equal(m.body, 'Jeweled Lotus −50 %, Grim Monolith −50 %');
+  ok('appli en allemand, en espagnol : notifications dans sa langue (baisse, prix cible, résumé ; euros « 18,00 € »)');
 }
 
 // 5) abonnement expiré

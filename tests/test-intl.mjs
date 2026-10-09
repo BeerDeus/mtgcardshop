@@ -23,12 +23,14 @@ test('defaultCardLang : interface, puis langue du téléphone, sinon anglais', (
   assert.equal(d('en', ['ru-RU', 'en-US', 'de-DE']), 'en');
   assert.equal(d('en', 'de-DE'), 'de', 'une seule langue en texte'); assert.equal(d('en', []), 'en'); assert.equal(d('en', undefined), 'en'); assert.equal(d('', null), 'en');
   assert.equal(d('xx', ['es-MX']), 'es', 'interface inconnue : langue du téléphone');
-  // demain, une interface allemande : elle compte comme le français aujourd'hui
-  C.I18N_LANGS.de = 'Deutsch';
+  // interface allemande livrée (dictionnaire présent) : elle compte comme le français ; espagnol pas encore livré : son téléphone garde les cartes espagnoles
+  globalThis.I18N_ALL = { en: {}, de: {} };
   try {
     assert.equal(d('de', ['de-DE']), 'de'); assert.equal(d('de', ['en-US']), 'de', 'allemand choisi sur un téléphone anglais');
     assert.equal(d('en', ['de-DE']), 'en', 'anglais choisi alors que l\'allemand existe : cartes anglaises');
-  } finally { delete C.I18N_LANGS.de; }
+    assert.equal(d('en', ['es-ES']), 'es', 'espagnol sans dictionnaire : interface anglaise par repli, cartes espagnoles');
+    globalThis.I18N_ALL.es = {}; assert.equal(d('es', ['es-MX']), 'es'); assert.equal(d('en', ['es-ES']), 'en', 'espagnol livré, anglais choisi : cartes anglaises');
+  } finally { delete globalThis.I18N_ALL; }
 });
 
 test('Cardmarket : site dans la langue la plus proche (fr de es it, sinon en)', () => {

@@ -22,7 +22,7 @@ function obOpen() {
     <button class="link-btn ob-skip" type="button" data-ob="skip">${T('Passer')}</button>
     <div class="ob-track">
       <section class="ob-s" aria-label="${T('Bienvenue')}">
-        <div class="ob-lang" role="group" aria-label="${T('Langue')}">${Object.entries(I18N_LANGS).map(([c, n]) => `<button type="button" class="ob-chip${c === I18N.lang ? ' on' : ''}" data-ob="lang:${c}" aria-pressed="${c === I18N.lang}">${esc(n)}</button>`).join('')}</div>
+        <div class="ob-lang" role="group" aria-label="${T('Langue')}">${i18nLangs().map(([c, n]) => `<button type="button" class="ob-chip${c === I18N.lang ? ' on' : ''}" data-ob="lang:${c}" aria-pressed="${c === I18N.lang}">${esc(n)}</button>`).join('')}</div>
         <div class="ob-logo"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg></div>
         <h1>${T('Bienvenue dans {app}', { app: '<span class="foil-t">Mana Orbit</span>' })}</h1>
         <p>${T('Ta collection Magic et sa valeur au jour le jour, tes decks, et les meilleurs prix pour les compléter.')}</p>

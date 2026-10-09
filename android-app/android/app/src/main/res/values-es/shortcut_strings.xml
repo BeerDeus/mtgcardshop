@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis de l'icône en espagnol (anglais par défaut dans values/shortcut_strings.xml : mêmes noms, rien de plus ici). Mêmes mots que l'accueil. -->
+<resources>
+    <string name="shortcut_scan">Escanear</string>
+    <string name="shortcut_scan_long">Escanear</string>
+    <string name="shortcut_quick">Precio rápido</string>
+    <string name="shortcut_quick_long">Precio rápido</string>
+    <string name="shortcut_trade">Intercambio</string>
+    <string name="shortcut_trade_long">Intercambio</string>
+    <string name="shortcut_paste">Carrito</string>
+    <string name="shortcut_paste_long">Nuevo carrito</string>
+</resources>

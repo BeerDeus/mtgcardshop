@@ -3,32 +3,56 @@
 /* ── Langue de l'interface ─────────────────────────────────────────────────────────────────────
    Les textes sont écrits en français dans le code. T('Texte {n}', { n }) donne leur traduction dans la langue choisie
    (dictionnaires src/i18n/<langue>.json, posés par build.mjs dans un bloc JSON inerte par langue, script « application/json » d'id i18n-en), sinon le texte tel quel.
-   TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (français : 0 et 1 au singulier ; anglais : 1 seul).
-   Ajouter une langue = un dictionnaire de plus + une entrée dans I18N_LANGS ; rien d'autre à changer. */
-const I18N_LANGS = { fr: 'Français', en: 'English' };
-const I18N = { lang: 'fr', nav: 'fr-FR', dict: null };
+   TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (Intl.PluralRules : français 0 et 1 au singulier, anglais et allemand 1 seul).
+   Ajouter une langue = ses dictionnaires (src/i18n/<code>*.json) + une entrée dans I18N_LANGS (et LOC_DEF) ; sans dictionnaire, elle n'est proposée nulle part. */
+const I18N_LANGS = { fr: 'Français', en: 'English', de: 'Deutsch', es: 'Español' };
+const I18N = { lang: 'fr', nav: 'fr-FR', navs: ['fr-FR'], dict: null };
 function T(s, v) {
   let out = I18N.dict && Object.prototype.hasOwnProperty.call(I18N.dict, s) ? I18N.dict[s] : s;
   if (v) out = out.replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? v[k] : m);
   return out;
 }
+/** Règle de pluriel de chaque langue (créée une fois) : catégorie 'one' → singulier, toute autre (other, many…) → pluriel. */
+const PLURAL = {};
 function TN(n, one, many, v) {
-  const key = I18N.lang === 'fr' ? (n > 1 ? many : one) : (n === 1 ? one : many);
-  return T(key, { n: Number(n || 0).toLocaleString(LOC()), ...v });
+  const x = Number(n || 0), l = I18N.lang;
+  let pr = PLURAL[l]; if (pr === undefined) { try { pr = PLURAL[l] = new Intl.PluralRules(l); } catch (e) { pr = PLURAL[l] = null; } }
+  const key = (pr ? pr.select(x) === 'one' : x === 1) ? one : many;
+  return T(key, { n: x.toLocaleString(LOC()), ...v });
 }
-/** Locale des nombres et des dates : fr-FR, ou celle du navigateur pour l'anglais (en-US, en-GB…). */
-const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : /^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB';
+/** Locale des nombres et des dates : fr-FR ; anglais : celle du navigateur (en-US, en-GB…) ; autre langue : sa variante du téléphone (de-AT, de-CH, es-MX…),
+ *  sinon celle de LOC_DEF (de-DE, es-ES). Les prix restent en euros : la locale n'en change que l'écriture (« 1.234,56 € » en allemand). */
+const LOC_DEF = { de: 'de-DE', es: 'es-ES' }, LOC_MEMO = {};
+const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : I18N.lang === 'en' ? (/^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB') : locOf(I18N.lang, I18N.navs);
+function locOf(l, navs) {
+  const k = l + '|' + navs; if (LOC_MEMO[k]) return LOC_MEMO[k];
+  let v = [].concat(navs || []).find(t => String(t).toLowerCase().split(/[-_]/)[0] === l) || '';
+  try { v = v ? Intl.getCanonicalLocales(String(v).replace(/_/g, '-'))[0] : ''; } catch (e) { v = ''; }      // étiquette illisible : jamais d'erreur dans Intl
+  return (LOC_MEMO[k] = v.includes('-') ? v : LOC_DEF[l] || l);
+}
 /** Ordre alphabétique des noms de cartes, accents et casse ignorés : un Intl.Collator par langue de l'interface, créé une fois (localeCompare(…, 'fr', options) en recrée un à chaque comparaison : ×40 sur le tri de 5 000 cartes). */
 const NAME_COLL = {};
-const NAME_CMP = (a, b) => (NAME_COLL[I18N.lang] || (NAME_COLL[I18N.lang] = new Intl.Collator(I18N.lang === 'fr' ? 'fr' : 'en', { sensitivity: 'base' }).compare))(a, b);
-/** Langue : choix gardé, sinon ?lang=xx, sinon celle du téléphone (français → français, toute autre → anglais).
- *  Navigateurs pilotés par les tests (webdriver, jsdom) : français, sauf choix explicite. */
+const NAME_CMP = (a, b) => (NAME_COLL[I18N.lang] || (NAME_COLL[I18N.lang] = new Intl.Collator(I18N.lang, { sensitivity: 'base' }).compare))(a, b);
+/** Langue livrée : le français (celle du code), sinon une langue de I18N_LANGS dont le dictionnaire est dans la page (bloc i18n-<code>),
+ *  ou dans all / I18N_ALL sous Node. Une langue sans dictionnaire n'est ni choisie ni proposée (jamais une interface à moitié traduite). */
+function i18nHas(code, all) {
+  if (!code || !Object.prototype.hasOwnProperty.call(I18N_LANGS, code)) return false;
+  if (code === 'fr') return true;
+  const a = all || (typeof I18N_ALL !== 'undefined' ? I18N_ALL : null);
+  if (a) return !!a[code];
+  try { return !!document.getElementById('i18n-' + code); } catch (e) { return false; }
+}
+/** Langues proposées (Réglages › Langue, accueil) : [code, nom dans sa langue], dans l'ordre de I18N_LANGS. */
+const i18nLangs = all => Object.entries(I18N_LANGS).filter(([c]) => i18nHas(c, all));
+/** Langue : choix gardé, sinon ?lang=xx, sinon la première langue du téléphone qui est livrée (de-AT → de, es-MX → es…), sinon l'anglais.
+ *  Navigateurs pilotés par les tests (webdriver, jsdom) : français, sauf choix explicite. o.nav : une étiquette ou la liste (navigator.languages). */
 function i18nPick(o = {}) {
-  const has = c => Object.prototype.hasOwnProperty.call(I18N_LANGS, c);
-  const nav = o.nav || (typeof navigator !== 'undefined' && (navigator.languages && navigator.languages[0] || navigator.language)) || 'fr-FR';
+  const has = c => i18nHas(c, o.all);
+  const navs = [].concat(o.nav || (typeof navigator !== 'undefined' && (navigator.languages && navigator.languages.length ? [...navigator.languages] : navigator.language)) || 'fr-FR').map(String);
   const robot = o.robot != null ? o.robot : typeof navigator !== 'undefined' && (navigator.webdriver || /jsdom/i.test(navigator.userAgent || ''));
-  let code = o.saved && has(o.saved) ? o.saved : o.query && has(o.query) ? o.query : robot ? 'fr' : /^fr(-|$)/i.test(nav) ? 'fr' : 'en';
-  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : i18nDict(code, o.all);
+  const dev = () => navs.map(t => t.toLowerCase().split(/[-_]/)[0]).find(has);
+  const code = o.saved && has(o.saved) ? o.saved : o.query && has(o.query) ? o.query : robot ? 'fr' : dev() || 'en';
+  I18N.lang = code; I18N.nav = navs[0]; I18N.navs = navs; I18N.dict = code === 'fr' ? null : i18nDict(code, o.all);
   return code;
 }
 /** Dictionnaire d'une langue : o.all (tests sous Node), sinon le bloc JSON de la page, analysé seulement quand il sert (changer de langue recharge la page). */
@@ -39,7 +63,7 @@ function i18nDict(code, all) {
 // Dans la page : la langue est choisie avant tout le reste (les autres fichiers peuvent appeler T dès leur chargement).
 if (typeof document !== 'undefined' && typeof location !== 'undefined') {
   let saved = '', q = '';
-  try { q = new URLSearchParams(location.search).get('lang') || ''; if (q && Object.prototype.hasOwnProperty.call(I18N_LANGS, q)) localStorage.setItem('deckdeal:lang', q); else q = ''; } catch (e) { /* ignore */ }
+  try { q = new URLSearchParams(location.search).get('lang') || ''; if (q && i18nHas(q)) localStorage.setItem('deckdeal:lang', q); else q = ''; } catch (e) { /* ignore */ }
   try { saved = localStorage.getItem('deckdeal:lang') || ''; } catch (e) { /* ignore */ }
   i18nPick({ saved: q || saved });
   try { document.documentElement.lang = I18N.lang; } catch (e) { /* ignore */ }
@@ -77,9 +101,9 @@ const langCode = l => (l === 'zh-CN' ? 'ZH' : String(l || '').toUpperCase());
 function defaultCardLang(ui, navLangs) {
   const base = t => String(t || '').toLowerCase().split(/[-_]/)[0], card = t => { const c = cardLang(base(t)); return OPT_LANGS.includes(c) ? c : ''; };
   const u = card(ui);
-  if (u && u !== 'en') return u;                                                       // interface en français : jamais un repli (langue du téléphone ou choix)
+  if (u && u !== 'en') return u;                                                       // interface en français, allemand… : jamais un repli (langue du téléphone ou choix)
   for (const t of [].concat(navLangs || [])) {
-    if (Object.prototype.hasOwnProperty.call(I18N_LANGS, base(t))) return u || 'en';  // le téléphone parle une langue de l'interface : celle de l'interface fait foi (anglais choisi sur un téléphone français)
+    if (i18nHas(base(t))) return u || 'en';                                            // le téléphone parle une langue livrée de l'interface : celle de l'interface fait foi (anglais choisi sur un téléphone français)
     const c = card(t); if (c) return c;                                                // sinon la première langue du téléphone qui existe en cartes (coréen, russe… : absentes de CardTrader ici)
   }
   return u || 'en';
@@ -1898,7 +1922,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, cmParts, CM_MAX, deckMissing, deckUse, tradeLists, tradeWant, tradeMatch, tradeView, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, i18nHas, i18nLangs,collToCsv, cmOffer, cmUrl, cmText, cmParts, CM_MAX, deckMissing, deckUse, tradeLists, tradeWant, tradeMatch, tradeView, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,

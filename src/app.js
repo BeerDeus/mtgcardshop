@@ -328,7 +328,10 @@ function paintSearchTask() {
   const r = S.run, t = r && r.task; if (!t || t.done) return;
   t.set(Math.round(r.frac * 100), 100, T('{n} %', { n: Math.round(r.frac * 100) }) + (r.step ? ' · ' + r.step : ''));
 }
-function setRate(rps, total, extra) { const rs = rps.toFixed(1); $('#progRate').textContent = T('{total} requêtes · {rps} / s', { total, rps: LOC() === 'fr-FR' ? rs.replace('.', ',') : rs }) + (extra ? ' · ' + extra : ''); }
+function setRate(rps, total, extra) {
+  const dec = (new Intl.NumberFormat(LOC()).formatToParts(1.5).find(p => p.type === 'decimal') || { value: '.' }).value;      // virgule décimale de la langue (français, allemand…)
+  $('#progRate').textContent = T('{total} requêtes · {rps} / s', { total, rps: rps.toFixed(1).replace('.', dec) }) + (extra ? ' · ' + extra : '');
+}
 
 /** Une ligne de la liste : le bouton de la carte + une petite croix (visible une fois la carte scannée). */
 function makeRow(c, i) {
@@ -982,7 +985,7 @@ function openSettings() {
       <div class="field-in" id="boxKey" ${CTX.needsKey ? '' : 'hidden'}><label class="label" for="setKey">${T('Clé du proxy')}</label><input type="password" id="setKey" autocomplete="off" value="${esc(S.appKey)}">${CTX.needsLogin ? `<span class="hint">${T('Facultative : ton compte suffit. À supprimer côté serveur une fois la connexion par compte validée.')}</span>` : ''}</div>
       <button class="btn ghost small" type="button" id="btnTest" style="align-self:flex-start">${T('Tester CardTrader')}</button>
       <div class="sec-title">${T('Affichage')}</div>
-      <div class="field-in"><label class="label" for="setLang">${T('Langue')}</label><div class="sel"><select id="setLang">${Object.entries(I18N_LANGS).map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
+      <div class="field-in"><label class="label" for="setLang">${T('Langue')}</label><div class="sel"><select id="setLang">${i18nLangs().map(([c, n]) => `<option value="${c}" ${c === I18N.lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div></div>
       <div class="seg" id="segTheme" role="radiogroup" aria-label="${esc(T('Thème'))}"></div>
       <label class="switch-row" for="setHaptic"><span class="t"><b>${T('Vibrations')}</b><span class="hint">${typeof navigator !== 'undefined' && navigator.vibrate ? T('Un petit retour au toucher et à la fin des tâches.') : T('Indisponible sur cet appareil (iPhone et iPad ne les exposent pas).')}</span></span>
         <span class="switch"><input type="checkbox" id="setHaptic" ${S.haptic ? 'checked' : ''}><i></i></span></label>

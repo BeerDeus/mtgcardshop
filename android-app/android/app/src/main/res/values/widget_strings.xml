@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Textes du widget « Ma collection ». Ici l'anglais, langue par défaut ; le français est dans values-fr/ (même règle que le site :
-     téléphone en français → français, toute autre langue → anglais). Avec des chiffres, ValueWidget prend la langue choisie dans l'appli. -->
+<!-- Textes du widget « Ma collection ». Ici l'anglais, langue par défaut ; français, allemand et espagnol dans values-fr/, values-de/, values-es/
+     (même règle que le site : téléphone dans une de ces langues → cette langue, toute autre → anglais). Avec des chiffres, ValueWidget prend la langue choisie dans l'appli. -->
 <resources>
     <string name="widget_label">Collection value</string>
     <string name="widget_description">Your Magic collection value, its change and its curve, with a shortcut to the scanner</string>

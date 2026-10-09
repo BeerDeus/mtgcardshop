@@ -8,7 +8,7 @@
    Tout est repeint en différé (homeSoon) quand la collection, les decks, les prix ou la liste d'échange changent. */
 const HM = { t: 0, v: null, raf: 0, best: null, bestSig: '', edhAsk: 0, covers: '', lands: false };
 const HM_LANDS = [['W', 'plains', 'Plains'], ['U', 'island', 'Island'], ['B', 'swamp', 'Swamp'], ['R', 'mountain', 'Mountain'], ['G', 'forest', 'Forest']];
-const hmEur = c => I18N.lang === 'fr' ? Math.round(c / 100).toLocaleString('fr-FR') + ' €' : new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.round(c / 100));
+const hmEur = c => new Intl.NumberFormat(LOC(), { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(c / 100));      // euros entiers dans l'écriture de la langue : « 1 234 € », « €1,234 », « 1.234 € »
 /** Petite image Scryfall → recadrage de l'illustration (même chemin, autre taille). */
 const hmArt = u => String(u || '').replace('/small/', '/art_crop/').replace('/normal/', '/art_crop/');
 
