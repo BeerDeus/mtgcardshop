@@ -59,7 +59,7 @@ const errsOf = [];
   await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 3000 });
   assert.deepEqual(await need(), [['sol ring', 1, 1], ['llanowar elves', 0, 1]], 'liste non rattachée : les cartes du deck A ne sont plus déduites');
   assert.match(await txt(p, '#collHint'), /2 exemplaires réservés par Deck A ne sont pas comptés/);
-  assert.match(await txt(p, '#deckList'), /complet/, 'étiquette « complet » dans la liste des decks');
+  assert.match(await txt(p, '#deckList'), /monté/, 'étiquette « monté » dans la liste des decks');
   // le deck A lui-même : ses cartes lui restent
   await p.click('#deckList [data-act="more"]'); await p.waitForSelector('#dkOpen'); await p.click('#dkOpen'); await p.waitForTimeout(300);
   assert.deepEqual(await need(), [['sol ring', 1, 0], ['llanowar elves', 1, 0]], 'rattaché au deck A : il utilise ses propres cartes');
@@ -189,7 +189,7 @@ const errsOf = [];
   // drapeau : à droite du nom, sur sa ligne, loin de la vignette
   const geo = await p.$eval('.crow[data-k="sol ring"]', r => { const th = r.querySelector('.thumb').getBoundingClientRect(), n = r.querySelector('.row-name').getBoundingClientRect(), c = r.querySelector('.row-top .lchip').getBoundingClientRect(); return { right: c.left >= n.right - 1, sameLine: Math.abs((c.top + c.height / 2) - (n.top + n.height / 2)) < 12, far: c.left - th.right > 30 }; });
   assert.deepEqual(geo, { right: true, sameLine: true, far: true }, 'drapeau collé au nom, pas à la vignette : ' + JSON.stringify(geo));
-  assert.equal(await p.$eval('.crow[data-k="sol ring"] .row-meta', e => !!e.querySelector('.lchip')), false, 'plus de drapeau sous le nom');
+  assert.equal(await p.$eval('.crow[data-k="sol ring"]', r => !!r.querySelector('.row-meta .lchip')), false, 'plus de drapeau sous le nom');      // .row-meta n'existe qu'avec des tags (type lu sur Scryfall, parfois pas encore là)
   assert.equal(await p.$eval('.crow[data-k="counterspell"] .row-meta .lchip.none', e => !!e), true, '« Langue ? » en fin de rangée de tags'); assert.equal(await p.$('.crow[data-k="counterspell"] .row-top .lchip'), null);
   // tri et recherche sur le nom affiché
   assert.deepEqual(await p.$$eval('.crow .row-name', n => n.map(x => x.textContent)), ['Anneau solaire', 'Arcane Signet', 'Collision', 'Counterspell'], 'tri alphabétique sur le nom affiché');

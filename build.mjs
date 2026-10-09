@@ -13,7 +13,7 @@ writeFileSync(join(root, 'edhbin.cjs'), rd('edhbin.js'));      // copie pour le 
 const CSS_DIR = join(root, 'src', 'css');
 const css = [rd('style.css'), ...(existsSync(CSS_DIR) ? readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort().map(f => readFileSync(join(CSS_DIR, f), 'utf8')) : [])].join('\n').trim();
 const body = rd('body.html').trim();
-// Dictionnaires des langues (src/i18n/<code>.json : { « texte français » : « traduction » }) : un seul objet, placé avant le code.
+// Dictionnaires des langues (src/i18n/<code>.json : { « texte français » : « traduction » }) : un bloc JSON inerte par langue, placé avant le code.
 const I18N_DIR = join(root, 'src', 'i18n');
 // Une langue peut être répartie en plusieurs fichiers (en.json, en.app.json…) : ils sont fusionnés.
 const i18nAll = {};
@@ -22,21 +22,31 @@ for (const f of (existsSync(I18N_DIR) ? readdirSync(I18N_DIR) : []).sort((a, b) 
   const m = /^([a-z]{2}(?:-[A-Z]{2})?)(?:\.[a-z0-9-]+)?\.json$/.exec(f); if (!m) continue;
   Object.assign(i18nAll[m[1]] = i18nAll[m[1]] || {}, JSON.parse(readFileSync(join(I18N_DIR, f), 'utf8')));
 }
-const js = 'const I18N_ALL = ' + JSON.stringify(i18nAll) + ';\n\n' + ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'native.js', 'ads.js', 'widget.js', 'qr.js', 'sets.js', 'help.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
+const js = ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'native.js', 'ads.js', 'widget.js', 'qr.js', 'sets.js', 'help.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
-const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
+// <script type="application/json" id="i18n-en"> : jamais compilé ; core.js n'analyse que celui de la langue choisie (le français n'en lit aucun).
+// « < » échappé (\u003c, relu tel quel par JSON.parse) : une traduction ne peut pas fermer la balise.
+const i18nTags = Object.keys(i18nAll).sort().map(c => `<script type="application/json" id="i18n-${c}">${JSON.stringify(i18nAll[c]).replace(/</g, '\\u003c')}</script>`).join('\n');
+
+// Version affichée dans Réglages (quel code le téléphone exécute) ; pwa/sw.js lit la ligne « const DD_BUILD = '…' » de la page
+// pour ne garder qu'une vraie page de l'app et proposer « Recharger » quand elle change : ne pas en modifier la forme.
+const BUILD = createHash('sha1').update(css + body + i18nTags + js).digest('hex').slice(0, 8);
 const TITLE = 'Mana Orbit';
 const FONTS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap';
+// Scryfall : connexions ouvertes pendant que la page se charge (API en fetch CORS, images relues en CORS anonyme par le service worker).
+const SCRY = '<link rel="preconnect" href="https://api.scryfall.com" crossorigin>\n<link rel="preconnect" href="https://cards.scryfall.io" crossorigin>';
 const DESC = 'Ta collection Magic, tes decks et les meilleurs prix : valeur de tes cartes, decks EDHREC à monter, panier CardTrader le moins cher.';
 
 const fragment = `<title>${TITLE}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTS}">
+${SCRY}
 <style>
 ${css}
 </style>
 ${body}
+${i18nTags}
 <script>
 const DD_BUILD = '${BUILD}';
 ${js}
@@ -64,6 +74,7 @@ const doc = `<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTS}">
+${SCRY}
 <style>
 html{padding-top:env(safe-area-inset-top,0px)}
 [hidden]{display:none!important}
@@ -73,6 +84,7 @@ ${css}
 </head>
 <body>
 ${body}
+${i18nTags}
 <script>
 const DD_BUILD = '${BUILD}';
 ${js}

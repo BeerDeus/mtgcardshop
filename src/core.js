@@ -2,7 +2,7 @@
 
 /* ── Langue de l'interface ─────────────────────────────────────────────────────────────────────
    Les textes sont écrits en français dans le code. T('Texte {n}', { n }) donne leur traduction dans la langue choisie
-   (dictionnaires src/i18n/<langue>.json, assemblés par build.mjs dans I18N_ALL), sinon le texte tel quel.
+   (dictionnaires src/i18n/<langue>.json, posés par build.mjs dans un bloc JSON inerte par langue, script « application/json » d'id i18n-en), sinon le texte tel quel.
    TN(n, '{n} carte', '{n} cartes') choisit le pluriel selon la règle de la langue (français : 0 et 1 au singulier ; anglais : 1 seul).
    Ajouter une langue = un dictionnaire de plus + une entrée dans I18N_LANGS ; rien d'autre à changer. */
 const I18N_LANGS = { fr: 'Français', en: 'English' };
@@ -28,9 +28,13 @@ function i18nPick(o = {}) {
   const nav = o.nav || (typeof navigator !== 'undefined' && (navigator.languages && navigator.languages[0] || navigator.language)) || 'fr-FR';
   const robot = o.robot != null ? o.robot : typeof navigator !== 'undefined' && (navigator.webdriver || /jsdom/i.test(navigator.userAgent || ''));
   let code = o.saved && has(o.saved) ? o.saved : o.query && has(o.query) ? o.query : robot ? 'fr' : /^fr(-|$)/i.test(nav) ? 'fr' : 'en';
-  const all = typeof I18N_ALL !== 'undefined' ? I18N_ALL : (o.all || {});
-  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : (all[code] || null);
+  I18N.lang = code; I18N.nav = String(nav); I18N.dict = code === 'fr' ? null : i18nDict(code, o.all);
   return code;
+}
+/** Dictionnaire d'une langue : o.all (tests sous Node), sinon le bloc JSON de la page, analysé seulement quand il sert (changer de langue recharge la page). */
+function i18nDict(code, all) {
+  if (all) return all[code] || null;
+  try { const el = document.getElementById('i18n-' + code); return el ? JSON.parse(el.textContent) : null; } catch (e) { return null; }
 }
 // Dans la page : la langue est choisie avant tout le reste (les autres fichiers peuvent appeler T dès leur chargement).
 if (typeof document !== 'undefined' && typeof location !== 'undefined') {
@@ -68,6 +72,22 @@ const LANG_ALIAS = { fr: 'fr', fra: 'fr', fre: 'fr', french: 'fr', francais: 'fr
 const cardLang = x => LANG_ALIAS[String(x == null ? '' : x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '')] || '';
 /** Code court d'une langue pour l'affichage et le texte de la collection : « FR », « EN »… ; le chinois s'écrit « ZH » (lettres seules : le code CardTrader « zh-CN » a un tiret). */
 const langCode = l => (l === 'zh-CN' ? 'ZH' : String(l || '').toUpperCase());
+/** Langue des cartes par défaut (offres cherchées, aperçus) tant que « Langue » n'a pas été choisie : celle de l'interface, sauf l'anglais quand il n'est
+ *  qu'un repli (téléphone allemand, espagnol, japonais… : cartes de sa langue d'abord, l'anglais ensuite par le repli). navLangs : navigator.languages. */
+function defaultCardLang(ui, navLangs) {
+  const base = t => String(t || '').toLowerCase().split(/[-_]/)[0], card = t => { const c = cardLang(base(t)); return OPT_LANGS.includes(c) ? c : ''; };
+  const u = card(ui);
+  if (u && u !== 'en') return u;                                                       // interface en français : jamais un repli (langue du téléphone ou choix)
+  for (const t of [].concat(navLangs || [])) {
+    if (Object.prototype.hasOwnProperty.call(I18N_LANGS, base(t))) return u || 'en';  // le téléphone parle une langue de l'interface : celle de l'interface fait foi (anglais choisi sur un téléphone français)
+    const c = card(t); if (c) return c;                                                // sinon la première langue du téléphone qui existe en cartes (coréen, russe… : absentes de CardTrader ici)
+  }
+  return u || 'en';
+}
+/** Langues du téléphone, la préférée d'abord. */
+const navLangs = () => { try { return navigator.languages && navigator.languages.length ? [...navigator.languages] : navigator.language ? [navigator.language] : []; } catch (e) { return []; } };
+/** Langue de lecture de l'utilisateur (site Cardmarket…) : sa langue de cartes par défaut, même s'il cherche des cartes d'une autre langue. */
+const userLang = () => defaultCardLang(I18N.lang, navLangs());
 
 const HEADER_RE = /^(commander|companion|deck|main(board)?|sideboard|maybeboard|considering|about|name|creatures?|lands?|artifacts?|enchantments?|instants?|sorceries|sorcery|planeswalkers?|battles?|other|tokens?)\s*(\(\d+\))?\s*:?\s*$/i;
 
@@ -134,6 +154,8 @@ function sortCards(items, mode) {
 
 /** Page d'une carte sur CardTrader (par identifiant de blueprint). */
 const ctCardUrl = bpId => 'https://www.cardtrader.com/cards/' + encodeURIComponent(bpId);
+/** Panier CardTrader : page française pour l'interface en français ; sinon sans langue dans l'adresse (CardTrader prend celle du compte ou du navigateur, comme pour ctCardUrl). */
+const ctCartUrl = () => 'https://www.cardtrader.com/' + (I18N.lang === 'fr' ? 'fr-FR/' : '') + 'cart/edit';
 
 /** Une offre passe-t-elle les critères (état, foil, hors vendeurs en vacances, etc.) ? */
 function passes(o, f) {
@@ -320,8 +342,10 @@ function cmOffer(card, cents, opts) {
     price: cents, cur: 'EUR', qty: 999, cond: opts.cond === 'Mint' ? 'Mint' : 'Near Mint', foil: opts.foil === 'yes', lang: opts.lang,
     signed: false, altered: false, graded: false, vac: false, bundle: 1, set: '', setName: '', num: '', img: null, ref: null };
 }
-/** Lien de recherche Cardmarket d'une carte (langue du site : fr ou en). */
-const cmUrl = (name, lang) => `https://www.cardmarket.com/${lang === 'fr' ? 'fr' : 'en'}/Magic/Products/Search?searchString=${encodeURIComponent(String(name || '').split('//')[0].trim())}`;
+/** Langue du site Cardmarket la plus proche : fr, de, es, it, sinon en (seules langues du site). */
+const cmSite = l => (['fr', 'de', 'es', 'it'].includes(l) ? l : 'en');
+/** Lien de recherche Cardmarket d'une carte (lang : langue de l'utilisateur, voir userLang). */
+const cmUrl = (name, lang) => `https://www.cardmarket.com/${cmSite(lang)}/Magic/Products/Search?searchString=${encodeURIComponent(String(name || '').split('//')[0].trim())}`;
 function makeDemoOffers(card, lang) {
   const key = card.key;
   const r = mulberry32(hash32(key + '|' + lang));
@@ -767,6 +791,11 @@ function dkValue(text, metaOf) {
   }
   return { cents: Math.round(cents), known, total: cards.length, missing, noPrice };
 }
+/** Taille d'un deck comptée comme le viewer : tous les exemplaires, commandant et terrains de base compris, réserve « SB: » à part.
+ *  size : 100 si le format Commander est connu (noté par le créateur ou en-tête « Commander »), sinon 0. → { n, size } */
+function dkCount(text) { return { n: parseDeck(text).copies, size: dkFmtOf(text) === 'commander' ? DK_FORMATS.commander.size : 0 }; }
+/** « 41/100 cartes » (Commander), sinon « 36 cartes » : même chiffre dans Mes decks, la feuille d'un deck et l'enregistrement. */
+function dkCountText(text) { const c = dkCount(text); return c.size ? T('{n}/{size} cartes', { n: c.n.toLocaleString(LOC()), size: c.size }) : TN(c.n, '{n} carte', '{n} cartes'); }
 /** Couleurs d'un deck d'après ses terrains de base (« WUBRG », dans cet ordre ; Wastes ignorés) : '' si le deck n'en a pas. */
 function dkColors(text) {
   const have = new Set(), by = { plains: 'W', island: 'U', swamp: 'B', mountain: 'R', forest: 'G' };
@@ -1789,10 +1818,12 @@ if (typeof module !== 'undefined' && module.exports) {
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
     sanitizeSnap, newestSnap, typeBucket, groupSnap, curveOf, snapAge, TYPE_ORDER, SNAP_MAX,
-    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkColors, dkSideCards, dkBuildText, dkParse, dkCheck, dkFmtOf, dkMatch, dkCover, dkSetCover, dkCoverCard,
+    eurCents, minRef, refInfo, refTotals, unitOf, pvOf, snapDeltas, topMovers, commanderKeys, canLead, DK_FORMATS, dkFormat, dkValue, dkColors, dkSideCards, dkBuildText, dkParse, dkCheck, dkFmtOf, dkMatch, dkCover, dkSetCover, dkCoverCard, dkCount, dkCountText,
     ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, EDH_KINDS, EDH_SORT_STEP, agoDay, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
 
 // Tri des noms (test.mjs) : exporté à part, hors de la grande liste que d'autres modifient
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { NAME_CMP, byName });
+// Langue des cartes et liens selon la langue de l'utilisateur (test.mjs) : exportés à part, eux aussi
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { defaultCardLang, cmSite, ctCartUrl });

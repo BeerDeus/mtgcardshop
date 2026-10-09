@@ -102,7 +102,7 @@ function engRefresh(id, name, text) {
   if (JSON.stringify(q) === JSON.stringify(cur.q) && cur.n === name) return;
   engSet(id, name, text);
 }
-/** Interrupteur « Deck complet » (deck monté) de la feuille d'un deck. */
+/** Interrupteur « Deck monté » de la feuille d'un deck. */
 function engBindSwitch(id, cb, hint) {
   const paint = () => {
     const n = engCount(id); cb.checked = engIsOn(id);
@@ -115,8 +115,8 @@ function engBindSwitch(id, cb, hint) {
     if (cb.checked) {
       const d = findDeck(id);
       if (!d || !Object.keys(engSnapshot(d.text, collQty)).length) { cb.checked = false; toast(T('Aucune carte de ce deck n\'est dans ta collection')); return; }
-      engSet(id, d.name, d.text); haptic('ok'); toast(T('Deck complet : cartes réservées'));
-    } else { engClear(id); haptic('tap'); toast(T('Deck non complet : cartes à nouveau disponibles')); }
+      engSet(id, d.name, d.text); haptic('ok'); toast(T('Deck monté : cartes réservées'));
+    } else { engClear(id); haptic('tap'); toast(T('Deck démonté : cartes à nouveau disponibles')); }
     paint();
   };
 }
@@ -130,7 +130,7 @@ function engTag(k) {
 /* ── Synchro avec le compte (engagés, historique de valeur) ───────────────────────────────────── */
 function xsFail(id, err) {
   const d = XS.docs[id]; d.state = 'error';
-  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast(T('Règles Firestore à publier pour synchroniser decks complets et historique (voir README)')); }
+  if (err && err.code === 'permission-denied' && !XS.warned) { XS.warned = true; toast(T('Règles Firestore à publier pour synchroniser decks montés et historique (voir README)')); }
 }
 function xsUser(user) {
   for (const id in XS.docs) { const d = XS.docs[id]; if (d.unsub) { try { d.unsub(); } catch (e) { /* ignore */ } d.unsub = null; } clearTimeout(d.pushT); d.state = 'off'; d.uid = ''; }

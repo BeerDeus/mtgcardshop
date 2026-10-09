@@ -188,7 +188,7 @@ function bdTags(k, q, ctx) {
   if (ctx !== 'deck' && BD.cmdr.some(c => c.key === k)) out.push(`<span class="tag accent">${T('Commandant')}</span>`);
   if (ctx === 'deck') out.push(own >= q ? `<span class="tag good">${T('Possédée')}</span>` : own > 0 ? `<span class="tag warn">${T(own > 1 ? '{n} possédées sur {q}' : '{n} possédée sur {q}', { n: own, q })}</span>` : `<span class="tag">${T('À acheter')}</span>`);
   else out.push(own ? `<span class="tag good">${T(own > 1 ? '× {n} possédées' : '× {n} possédée', { n: own })}</span>` : `<span class="tag">${T('Pas dans ta collection')}</span>`);
-  if (own && eg) out.push(`<span class="tag warn" title="${T('Réservées par un autre deck complet')}">${T(eg > 1 ? '{n} engagées ailleurs' : '{n} engagée ailleurs', { n: eg })}</span>`);
+  if (own && eg) out.push(`<span class="tag warn" title="${T('Réservées par un autre deck monté')}">${T(eg > 1 ? '{n} engagées ailleurs' : '{n} engagée ailleurs', { n: eg })}</span>`);
   return out.join('');
 }
 function bdRow(k, name, q, tgt, ctx, label) {

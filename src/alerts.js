@@ -2,7 +2,8 @@
    Le serveur (proxy.mjs, « Alertes de prix ») relit toutes les 6 h le prix tendance Cardmarket des cartes surveillées et pousse une
    notification quand l'une chute d'au moins N % (et 0,50 €) ou passe sous un prix cible. Cette page fournit la liste à surveiller :
    · automatiquement : cartes qu'il manque pour chaque deck enregistré (liste du deck − collection libre) ;
-   · à la main : n'importe quelle carte, avec ou sans prix cible (fiche d'une carte, ou saisie dans la feuille « Alertes de prix »).
+   · à la main : n'importe quelle carte, avec ou sans prix cible (fiche d'une carte, ou saisie dans la feuille « Alertes de prix ») ;
+     depuis la feuille d'un deck EDHREC (« Surveiller leurs prix »), ses cartes manquantes, avec le nom du deck, jusqu'à ce qu'elles soient dans la collection.
    La liste part avec l'abonnement push de CET appareil (PUT /api/alerts) à chaque changement (différé de 3 s) et au plus toutes les 12 h ;
    dans l'appli Android, avec son jeton FCM ({ fcm }) à la place de l'abonnement (voir push.js).
    Les cartes suivies à la main et les réglages restent sur l'appareil (deckdeal:alert:v1). */
@@ -37,7 +38,10 @@ function alItems() {
     if (deck && x.d.length < 3 && !x.d.includes(deck)) x.d.push(deck);
     return x;
   };
-  for (const [k, w] of Object.entries(AC.watch)) put(k, w.n, w.t || 0, '');
+  for (const [k, w] of Object.entries(AC.watch)) {
+    if (w.d && collQty(k) > 0) continue;                                                       // manquante d'un deck EDHREC, désormais possédée : plus rien à surveiller
+    const x = put(k, w.n, w.t || 0, ''); if (w.d && !x.d.includes(w.d)) x.d.push(w.d);
+  }
   if (AC.deck) {
     for (const d of allDecks()) {
       for (const c of parseDeck(d.text).cards) {
@@ -60,13 +64,13 @@ const alSubJson = () => pushTarget();
 /** Envoie la liste au serveur (rien si inchangée depuis moins de 12 h). */
 async function alSync(force) {
   if (!AC.on || AC.busy || !alAvail()) return;
-  const items = alItems(), sig = AC.thr + '|' + JSON.stringify(items);
+  const items = alItems(), sig = AC.thr + '|' + I18N.lang + '|' + JSON.stringify(items);      // langue dans la signature : le serveur réapprend la langue des notifications quand elle change
   if (!force && sig === AC.sig && Date.now() - AC.at < AL_RESYNC) return;
   if (!items.length && !AC.id) { AC.sig = sig; return; }
   AC.busy = true;
   try {
     const sub = await alSubJson(); if (!sub) { AC.err = 'push'; return; }
-    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, items: items.map(({ h, ...x }) => x) } }), prev = AC.id;
+    const j = await ct('alerts', { method: 'PUT', body: { sub, thr: AC.thr, lang: I18N.lang, items: items.map(({ h, ...x }) => x) } }), prev = AC.id;
     if (prev && j.id && j.id !== prev) ct('alerts', { method: 'DELETE', params: { id: prev } }).catch(() => {});   // nouvel abonnement ou jeton FCM renouvelé : l'ancien ne doit plus notifier
     AC.id = items.length ? (j.id || AC.id) : ''; AC.sig = sig; AC.at = Date.now(); AC.err = ''; AC.info = { watching: j.watching | 0 }; alWrite();
   } catch (e) { AC.err = e && e.code === 'auth' ? 'auth' : 'net'; }
@@ -103,6 +107,25 @@ function alWatch(name, target) {
   const m = { ...AC.mute }; delete m[k]; AC.mute = m; alWrite(); alSoon();
 }
 function alUnwatch(k) { const w = { ...AC.watch }; delete w[k]; AC.watch = w; alWrite(); alSoon(); }
+/** Cartes manquantes d'un deck (feuille EDHREC) : [{ n }] suivies d'un coup, avec le nom du deck (notification « manque à … ») ; une carte déjà suivie reste telle quelle. Retourne le nombre de cartes ajoutées. */
+function alWatchMany(cards, deck) {
+  const w = { ...AC.watch }, m = { ...AC.mute }, d = String(deck || '').trim().slice(0, 40); let n = 0;
+  for (const c of cards) {
+    const k = ownKey(c.n); if (!k) continue; delete m[k];
+    if (w[k]) continue;                                                                        // déjà suivie (à la main ou par un autre deck) : gardée telle quelle
+    w[k] = { n: String(c.n).trim().slice(0, 150), ...(d ? { d } : {}) }; n++;
+  }
+  AC.watch = w; AC.mute = m; alWrite(); alSoon(); return n;
+}
+/** Deck tout juste enregistré : s'il lui manque des cartes et que les alertes sont possibles mais coupées, action « Activer » pour le toast « Deck enregistré · Me prévenir des baisses ? » ; sinon null. */
+function alSaveOffer(text, id) {
+  if (AC.on || !alAvail()) return null;
+  if (!parseDeck(text).cards.some(c => { const k = ownKey(c.key); return c.qty > engFree(collQty(k), XS.eng, k, id); })) return null;      // tout est déjà possédé : rien qui puisse baisser
+  return { label: T('Activer'), fn: async () => {
+    const was = AC.deck; AC.deck = true;                                                       // ce deck doit être surveillé, même si « cartes manquantes de mes decks » avait été coupé
+    const r = await alEnable(); if (r.ok) { haptic('ok'); toast(T('Alertes de prix activées'), { label: T('Régler'), fn: () => openAlertSheet() }); alPaintBox(); } else { AC.deck = was; toast(alWhy(r)); }
+  } };
+}
 /** Bouton « Prévenir si le prix baisse » de la fiche d'une carte. */
 function alWatchBtn(api, name) {
   if (!alAvail()) return;
@@ -121,7 +144,7 @@ function alWatchBtn(api, name) {
 async function alPaintBox(box) {
   box = box && box.isConnected ? box : $('#alertBox'); if (!box || !box.isConnected) return;
   const note = t => `<p class="hint">${t}</p>`;
-  if (!CTX.proxy) { box.innerHTML = note(T('Les alertes demandent le serveur Mana Orbit (il surveille les prix quand l\'app est fermée).')); return; }
+  if (!CTX.proxy) { box.innerHTML = note(T('Les alertes demandent le serveur Mana Orbit (il surveille les prix quand l\'appli est fermée).')); return; }
   const nat = !!pushNat();                                                      // appli Android : FCM à la place de Web Push
   if (nat ? !CTX.fcm : !CTX.vapid) { box.innerHTML = note(nat ? T('Le serveur n\'a pas de compte de service Firebase pour les notifications de l\'appli : ajoute FCM_SERVICE_ACCOUNT (voir README).') : T('Le serveur n\'a pas de clés de notification : ajoute VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY et VAPID_SUBJECT (voir README).')); return; }
   if (!CTX.alerts) { box.innerHTML = note(T('Les alertes de prix sont désactivées sur le serveur.')); return; }
@@ -162,7 +185,7 @@ async function openAlertSheet() {
     const paint = () => {
       if (!sig()) return;
       if (!AC.on) {
-        api.body.innerHTML = `<p class="hint">${T('Les alertes surveillent les cartes qu\'il te manque pour tes decks enregistrés, et celles que tu suis à la main. Une notification arrive quand l\'une chute de prix, même app fermée.')}</p>`;
+        api.body.innerHTML = `<p class="hint">${T('Les alertes surveillent les cartes qui manquent à tes decks et celles que tu suis. Tu reçois une notification dès que l\'une d\'elles baisse, même appli fermée.')}</p>`;
         api.setFoot(`<button class="btn" type="button" id="alOn">${T('Activer les alertes')}</button>`);
         $('#alOn', api.foot).onclick = async e => { e.target.disabled = true; const r = await alEnable(); if (!r.ok) { e.target.disabled = false; toast(alWhy(r)); return; } haptic('ok'); await load(); paint(); };
         return;
@@ -173,7 +196,7 @@ async function openAlertSheet() {
       const hits = (data && data.hits || []).slice(0, 5), muted = Object.keys(AC.mute).filter(k => !AC.watch[k]).length;
       const last = data && data.last && data.last.at ? T('Dernier contrôle {when}', { when: relTime(data.last.at) }) + (data.last.miss ? ' · ' + T('{n} sans prix', { n: nf0(data.last.miss) }) : '') : T('Premier contrôle dans quelques minutes.');
       const rowHtml = r => {
-        const tags = [...(r.d || []).map(d => T('Manque à {deck}', { deck: esc(d) })), r.h ? (r.t ? T('Cible {p}', { p: esc(fmt(r.t)) }) : T('Suivie à la main')) : ''].filter(Boolean).join(' · ');
+        const tags = [...(r.d || []).map(d => T('Manque à {deck}', { deck: esc(d) })), r.h ? (r.t ? T('Cible {p}', { p: esc(fmt(r.t)) }) : (AC.watch[r.k] || {}).d ? '' : T('Suivie à la main')) : ''].filter(Boolean).join(' · ');
         return `<div class="al-row" data-k="${esc(r.k)}"><span class="al-n"><b>${esc(r.n)}</b><small>${tags}</small></span>
           <span class="al-px">${r.c ? `<b>${esc(fmt(r.c))}</b>${r.b && r.pct ? `<small class="${r.pct < 0 ? 'dn' : 'up'}">${r.pct > 0 ? '+' : '−'}${Math.abs(r.pct)} %</small>` : ''}` : `<small>${T('pas encore de prix')}</small>`}</span>
           <button class="ib-x" type="button" data-rm="${esc(r.k)}" aria-label="${T(r.h ? 'Ne plus suivre {name}' : 'Exclure de la surveillance {name}', { name: esc(r.n) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`;
