@@ -24,7 +24,7 @@ const splashMark = n => { try { performance.mark('splash:' + n); } catch (e) { /
 function splashHold(n) { if (n.nodeType === 1 && n !== SPL.el && !/^(script|style|svg)$/i.test(n.nodeName) && !n.inert) { n.inert = true; SPL.held.push(n); } }
 function splashRelease() {
   if (SPL.mo) { SPL.mo.disconnect(); SPL.mo = null; }
-  const busy = (typeof sheets !== 'undefined' && sheets.length) || (typeof appHolds !== 'undefined' && appHolds);      // feuille ouverte par un lien profond : l'appli reste inerte dessous
+  const busy = (typeof sheets !== 'undefined' && sheets.length) || (typeof appHolds !== 'undefined' && appHolds);      // feuille ouverte dessous : reste inerte
   for (const n of SPL.held) if (!(busy && n.id === 'app')) n.inert = false;
   SPL.held = [];
 }
@@ -39,7 +39,7 @@ function splashPlay() {
 function splashRemove() {
   const el = SPL.el; if (!el) return;
   SPL.end = true; SPL.tm.forEach(clearTimeout); splashRelease(); document.documentElement.classList.remove('sp-on'); SPL.el = null; el.remove(); splashMark('end');
-  if (document.activeElement === document.body) { const c = document.querySelector('.sheet-wrap.open [data-close].icon-btn'); if (c) c.focus({ preventScroll: true }); }      // la feuille n'a pas pu se donner le focus sous le splash
+  if (document.activeElement === document.body) { const c = document.querySelector('.sheet-wrap.open [data-close].icon-btn'); if (c) c.focus({ preventScroll: true }); }      // focus refusé sous le splash
   document.dispatchEvent(new Event('splashend'));
 }
 /** Paires [élément du splash, cible] du passage à l'accueil ; null si une cible manque, sort de l'écran ou est couverte (accueil du premier lancement, feuille, autre écran). */
@@ -57,13 +57,13 @@ function splashPairs(el) {
 }
 function splashMorph(el, pairs, D) {
   for (const [s, d] of pairs) {
-    const fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };      // entrées de la cible et de ses parents (orbe qui grossit, écran qui glisse) : déjà en place, mesure juste
+    const fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };      // entrées de la cible et de ses parents finies : mesure juste
     d.getAnimations({ subtree: true }).forEach(fin); for (let n = d.parentElement; n && n.id !== 'app'; n = n.parentElement) n.getAnimations().forEach(fin);
     const a = s.getBoundingClientRect(), b = d.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(s).transform);
     const to = `translate(${b.left + b.width / 2 - a.left - a.width / 2}px,${b.top + b.height / 2 - a.top - a.height / 2}px) scale(${m.a * b.width / a.width})`;
-    s.animate([{ transform: m.toString(), easing: 'cubic-bezier(.45,.05,.2,1)' }, { transform: to, offset: 0.8 }, { transform: to }], { duration: D, fill: 'forwards' });      // vol sur 80 % du temps, puis posé
+    s.animate([{ transform: m.toString(), easing: 'cubic-bezier(.45,.05,.2,1)' }, { transform: to, offset: 0.8 }, { transform: to }], { duration: D, fill: 'forwards' });
     s.animate([{ opacity: 1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: D, fill: 'forwards' });
-    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1, offset: 0.801 }, { opacity: 1 }], { duration: D });      // posé : la cible apparaît d'un coup sous le splash identique, qui s'efface dessus (ni creux de fondu ni double image)
+    d.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1, offset: 0.801 }, { opacity: 1 }], { duration: D });      // posée : la cible paraît sous le splash identique, qui s'efface
   }
 }
 /** Sortie : vol vers l'accueil si tout est en place, sinon fondu (agrandi). fast : toucher, plafond absolu. */
@@ -73,9 +73,9 @@ function splashHandoff(fast) {
   const quick = fast || SPL.rm, D = SPL.rm ? SPLASH_T.fade : fast ? SPLASH_T.fast : SPL.short ? SPLASH_T.outShort : SPLASH_T.out;
   el.style.setProperty('--sp-out', D + 'ms');
   if (typeof window.splashHandoffX === 'function') { try { if (window.splashHandoffX(el, !quick, splashRemove)) { splashPlay(); return; } } catch (e) { /* sortie par défaut */ } }
-  const pairs = quick || SPL.short ? null : splashPairs(el);      // lien profond : il mène ailleurs que l'accueil (l'écran s'ouvre pendant la sortie), simple fondu
+  const pairs = quick || SPL.short ? null : splashPairs(el);      // lien profond : un autre écran, fondu
   el.classList.add('sp-out'); if (pairs) { el.classList.add('sp-morph'); splashMorph(el, pairs, D); }
-  SPL.tm = [setTimeout(splashPlay, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // vol : l'accueil entre quand l'orbe a quitté le centre (les tuiles ne passent pas dessous)
+  SPL.tm = [setTimeout(splashPlay, pairs ? D * 0.3 : 0), setTimeout(splashRemove, D + 40)];      // l'accueil entre une fois l'orbe partie du centre
 }
 /** Décor généré (moins d'octets que du balisage) : 22 étoiles, 18 étincelles de l'allumage, lettres du nom (montée et reflet lettre à lettre). */
 function splashBuild(el) {
@@ -90,10 +90,10 @@ function splashCheck() { if (SPL.ready && (SPL.min || SPL.skip)) splashHandoff(S
 function splashStart() {
   const el = SPL.el; if (!el || SPL.end) return;
   el.classList.add('sp-in'); splashMark('in');
-  if (SPL.short && !SPL.rm) for (const a of el.getAnimations({ subtree: true })) if (a.effect.target !== el) { a.currentTime = 340; a.playbackRate = 2.2; }      // version courte : l'allumage tout de suite, comètes en place vers 0,4 s
+  if (SPL.short && !SPL.rm) for (const a of el.getAnimations({ subtree: true })) if (a.effect.target !== el) { a.currentTime = 340; a.playbackRate = 2.2; }      // version courte : allumage immédiat
   const T = SPLASH_T, min = SPL.rm ? T.rm : SPL.short ? T.short : T.min;
   SPL.tm.push(setTimeout(() => { SPL.min = true; splashCheck(); }, min),
-    setTimeout(() => { if (!SPL.end) el.classList.add('sp-idle'); }, SPL.short || SPL.rm ? min : T.cap),      // appli pas prête : boucle d'attente calme
+    setTimeout(() => { if (!SPL.end) el.classList.add('sp-idle'); }, SPL.short || SPL.rm ? min : T.cap),
     setTimeout(() => splashHandoff(true), T.max));
 }
 /** Appli prête : page lue et exécutée (DOMContentLoaded : init() et l'accueil sont peints), polices chargées (0,7 s au plus), deux images. */
@@ -104,7 +104,7 @@ function splashReady() {
 (function splashBoot() {
   if (typeof document === 'undefined') return;
   const de = document.documentElement;
-  try { const t = JSON.parse(localStorage.getItem('deckdeal:v1') || '{}').theme; if (t === 'light' || t === 'dark') de.setAttribute('data-theme', t); } catch (e) { /* stockage absent */ }      // thème choisi dès la première image
+  try { const t = JSON.parse(localStorage.getItem('deckdeal:v1') || '{}').theme; if (t === 'light' || t === 'dark') de.setAttribute('data-theme', t); } catch (e) { /* stockage absent */ }      // thème dès la 1re image
   const el = document.getElementById('splash'); if (!el) return;
   let m = 'none'; try { m = splashMode(splashEnv()); } catch (e) { /* ignore */ }
   if (m === 'none') { el.remove(); return; }
@@ -114,9 +114,9 @@ function splashReady() {
   de.classList.add('sp-on');
   try { SPL.mo = new MutationObserver(ms => ms.forEach(r => r.addedNodes.forEach(splashHold))); SPL.mo.observe(document.body, { childList: true }); } catch (e) { /* ignore */ }
   const skip = () => { if (SPL.el && !SPL.end) { SPL.skip = true; splashCheck(); } }, kill = () => { if (SPL.el) splashRemove(); };
-  el.addEventListener('pointerdown', skip); addEventListener('keydown', e => { if (SPL.el && !SPL.end) { e.preventDefault(); skip(); } }, true);      // la touche passe le splash, sans agir sur l'appli dessous
+  el.addEventListener('pointerdown', skip); addEventListener('keydown', e => { if (SPL.el && !SPL.end) { e.preventDefault(); skip(); } }, true);      // sans agir dessous
   el.addEventListener('wheel', e => e.preventDefault(), { passive: false });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) kill(); });      // arrière-plan, bfcache : jamais au retour
+  document.addEventListener('visibilitychange', () => { if (document.hidden) kill(); });      // arrière-plan, bfcache
   addEventListener('pagehide', kill);
   requestAnimationFrame(splashStart);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', splashReady); else splashReady();
