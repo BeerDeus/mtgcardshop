@@ -53,6 +53,14 @@ const fakePrompt = outcome => {
   console.log('erreurs d\'installabilité (CDP) :', JSON.stringify(installabilityErrors));
   assert.deepEqual(installabilityErrors, [], 'Chromium juge l\'app installable');
   const mf = await cdp.send('Page.getAppManifest'); assert.equal(mf.errors.length, 0, 'manifeste sans erreur : ' + JSON.stringify(mf.errors)); console.log('✓ installable (aucune erreur CDP), manifeste sans erreur');
+  // raccourcis de l'icône (appui long, menu de l'appli installée) : ?open=… lu par handleLaunch, dans la portée, icône servie
+  assert.deepEqual(m.shortcuts.map(s => [s.name, s.url]), [['Scanner', './?open=scan'], ['Prix rapide', './?open=quick'], ['Échange', './?open=trade'], ['Nouveau panier', './?open=paste']]);
+  for (const s of m.shortcuts) {
+    assert.ok(s.short_name && s.short_name.length <= 12 && s.description, s.name + ' : libellé court et description');
+    for (const ic of s.icons) { const r = await pg.request.get(URL0 + ic.src); assert.equal(r.status(), 200, ic.src); assert.equal(r.headers()['content-type'], ic.type); }
+  }
+  if (mf.manifest && mf.manifest.shortcuts) assert.deepEqual(mf.manifest.shortcuts.map(s => s.url), ['scan', 'quick', 'trade', 'paste'].map(v => URL0 + '?open=' + v), 'Chromium lit les 4 raccourcis, dans la portée');
+  console.log('✓ raccourcis : Scanner, Prix rapide, Échange, Nouveau panier (?open=…, icônes servies)' + (mf.manifest && mf.manifest.shortcuts ? ', lus par Chromium' : ''));
   // contenu des caches : jamais d'API ni de ping
   const cached = await pg.evaluate(async () => { const out = []; for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(k + ' ' + new URL(r.url).pathname); return out; });
   console.log('en cache :', cached.join(', '));

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pastille des icônes de raccourci sur Android 7.1 (sans icônes adaptatives) : même nuit que shortcut_bg. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:endColor="#0B0F1C"
+        android:startColor="#2A3470" />
+</shape>

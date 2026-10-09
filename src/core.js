@@ -18,6 +18,9 @@ function TN(n, one, many, v) {
 }
 /** Locale des nombres et des dates : fr-FR, ou celle du navigateur pour l'anglais (en-US, en-GB…). */
 const LOC = () => I18N.lang === 'fr' ? 'fr-FR' : /^en(-|$)/i.test(I18N.nav) ? I18N.nav : 'en-GB';
+/** Ordre alphabétique des noms de cartes, accents et casse ignorés : un Intl.Collator par langue de l'interface, créé une fois (localeCompare(…, 'fr', options) en recrée un à chaque comparaison : ×40 sur le tri de 5 000 cartes). */
+const NAME_COLL = {};
+const NAME_CMP = (a, b) => (NAME_COLL[I18N.lang] || (NAME_COLL[I18N.lang] = new Intl.Collator(I18N.lang === 'fr' ? 'fr' : 'en', { sensitivity: 'base' }).compare))(a, b);
 /** Langue : choix gardé, sinon ?lang=xx, sinon celle du téléphone (français → français, toute autre → anglais).
  *  Navigateurs pilotés par les tests (webdriver, jsdom) : français, sauf choix explicite. */
 function i18nPick(o = {}) {
@@ -125,7 +128,7 @@ function restoreLines(text, removed) {
 /** Ordre d'affichage. items : { name, i (rang dans la liste), cost (centimes ou null) } ; sans prix → toujours en fin de liste. */
 function sortCards(items, mode) {
   const byI = (a, b) => a.i - b.i, arr = items.slice();
-  if (mode === 'name') arr.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }) || byI(a, b));
+  if (mode === 'name') arr.sort((a, b) => NAME_CMP(a.name, b.name) || byI(a, b));
   else if (mode === 'price-desc' || mode === 'price-asc') {
     const sg = mode === 'price-desc' ? -1 : 1;
     arr.sort((a, b) => ((a.cost == null) - (b.cost == null)) || (a.cost != null && sg * (a.cost - b.cost)) || byI(a, b));
@@ -455,7 +458,7 @@ function typeBucket(tl) {
   return 'Autres';
 }
 const isLand = i => i.s === 'basic' || (i.tl ? typeBucket(i.tl) === 'Terrains' : false);
-const byName = (a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' });      // dn : nom affiché si différent de n (carte française)
+const byName = (a, b) => NAME_CMP(a.dn || a.n, b.dn || b.n);      // dn : nom affiché si différent de n (carte française)
 const byCmcName = (a, b) => ((a.cm ?? 99) - (b.cm ?? 99)) || byName(a, b);
 const sumGroup = items => ({ count: items.reduce((a, i) => a + i.q, 0), cost: items.reduce((a, i) => a + (i.c || 0), 0) });
 /**
@@ -907,7 +910,7 @@ function parseCollection(text, o) {
 }
 
 /** Export CSV au format Moxfield (« Count,Tradelist Count,Name,Edition,Condition,Language,Foil ») : relu par Moxfield, ManaBox, Archidekt, Deckbox… et par cette appli.
- *  Une ligne par langue ; langue non précisée : colonne vide. */
+ *  Une ligne par langue ; langue non précisée : colonne vide. « Tradelist Count » : exemplaires de cette langue à échanger (trade : tradeLists(…).have), 0 sinon. */
 const CSV_LANG = { fr: 'French', en: 'English', de: 'German', es: 'Spanish', it: 'Italian', pt: 'Portuguese', jp: 'Japanese', 'zh-CN': 'Chinese Simplified', ko: 'Korean', ru: 'Russian' };
 /** Cellule texte : un nom venu d'une liste importée ou partagée qui commence par = + - @ (ou tabulation, retour) serait lu comme une formule par Excel ou LibreOffice → préfixé d'une apostrophe.
  *  Sauf « +2 Mace » et ses pareils (signe, chiffres, espace, puis des mots) : vrais noms de cartes, aucune formule possible. */
@@ -916,10 +919,12 @@ const csvCell = v => {
   if (typeof v === 'string' && (/^[=@\t\r]/.test(s) || (/^[+-]/.test(s) && !/^[+-]\d+ [\p{L}' ,-]+$/u.test(s)))) s = "'" + s;
   return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
-function collToCsv(map) {
-  const rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil'];
-  for (const x of Object.values(map || {}).filter(x => x && x.n).sort((a, b) => a.n.localeCompare(b.n, 'en')))
-    for (const [l, q] of collLines(x)) rows.push([q, 0, csvCell(x.n), '', 'Near Mint', CSV_LANG[l] || '', ''].join(','));
+// trade absent : dans l'appli, la liste d'échange de l'onglet « Échange » (trSpare, share.js, chargé après ce fichier) ; sous Node, aucune.
+function collToCsv(map, trade = typeof trSpare === 'function' ? trSpare(map) : null) {
+  const rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil'], tl = new Map();
+  for (const x of trade || []) if (x && x.k) tl.set(x.k, new Map(x.lines || []));
+  for (const [k, x] of Object.entries(map || {}).filter(([, x]) => x && x.n).sort(([, a], [, b]) => a.n.localeCompare(b.n, 'en')))
+    for (const [l, q] of collLines(x)) rows.push([q, Math.min(q, (tl.get(k) && tl.get(k).get(l)) || 0), csvCell(x.n), '', 'Near Mint', CSV_LANG[l] || '', ''].join(','));
   return rows.join('\n') + '\n';
 }
 
@@ -1665,12 +1670,25 @@ function tradeMatch(sh, want, spare, price) {
     e.has += it.q; if (it.l && !e.ls.includes(it.l)) e.ls.push(it.l); if (!e.it.im && it.im) e.it = it;
   }
   for (const it of (sh && sh.want) || []) { const s = it && sm.get(it.k); if (s && !give.some(x => x.k === it.k)) give.push({ k: it.k, n: it.n, q: Math.min(it.q, s.q), it, s }); }
-  const priced = x => { const c = price ? Number(price(x.k)) : 0, u = c > 0 ? Math.round(c) : null; return Object.assign(x, { u, v: u == null ? null : u * x.q }); };
   const by = (a, b) => (b.v || 0) - (a.v || 0) || a.n.localeCompare(b.n, 'en');
-  const sum = list => list.reduce((t, x) => { t.n++; t.q += x.q; if (x.v == null) t.nv++; else t.v += x.v; return t; }, { n: 0, q: 0, v: 0, nv: 0 });
-  const get = [...g.values()].map(e => priced({ ...e, q: Math.min(e.has, e.w.q) })).sort(by);
-  give.forEach(priced); give.sort(by);
-  return { get, give, sum: { get: sum(get), give: sum(give) }, n: get.length + give.length };
+  const get = [...g.values()].map(e => tradePriced({ ...e, q: Math.min(e.has, e.w.q) }, price)).sort(by);
+  give.forEach(x => tradePriced(x, price)); give.sort(by);
+  return { get, give, sum: { get: tradeSum(get), give: tradeSum(give) }, n: get.length + give.length };
+}
+/** Pose sur x (modifié) u : prix unitaire en centimes (null sans prix), et v = u × x.q. price(k) : centimes, ou null. */
+function tradePriced(x, price) { const c = price ? Number(price(x.k)) : 0, u = c > 0 ? Math.round(c) : null; return Object.assign(x, { u, v: u == null ? null : u * x.q }); }
+/** Total d'une liste chiffrée (tradePriced) : { n cartes, q exemplaires, v centimes (cartes chiffrées), nv cartes sans prix }. */
+const tradeSum = list => (list || []).reduce((t, x) => { t.n++; t.q += x.q; if (x.v == null) t.nv++; else t.v += x.v; return t; }, { n: 0, q: 0, v: 0, nv: 0 });
+/**
+ * Onglet « Échange » du propriétaire : ses lignes (tradeLists(…).have ou tradeWant) chiffrées (copies, avec u et v), triées et filtrées, et leur total.
+ * o : { price(k), sort : 'name' (ordre reçu) | 'price' (prix unitaire décroissant, sans prix à la fin, puis nom), min : prix unitaire minimal en centimes (0 : tout ; sinon les cartes sans prix sont écartées) }.
+ * Retourne { rows, sum } ; sum porte sur les lignes gardées.
+ */
+function tradeView(list, o = {}) {
+  let rows = (list || []).map(x => tradePriced({ ...x }, o.price));
+  if (o.min > 0) rows = rows.filter(x => x.u != null && x.u >= o.min);
+  if (o.sort === 'price') rows.sort((a, b) => (b.u == null ? -1 : b.u) - (a.u == null ? -1 : a.u) || a.n.localeCompare(b.n, 'en'));
+  return { rows, sum: tradeSum(rows) };
 }
 
 /* ── Export Cardmarket : une ligne « 2 Sol Ring » par carte (noms anglais), à coller dans une Wants list (Shopping Wizard) ── */
@@ -1682,6 +1700,13 @@ function cmText(items) {
     const cur = m.get(k); if (cur) cur.q += q; else m.set(k, { n: String(x.n).trim(), q });
   }
   return [...m.values()].map(x => x.q + ' ' + x.n).join('\n');
+}
+/** Cardmarket n'accepte que 150 lignes par Wants list : le texte de cmText découpé en parties de max lignes au plus (une seule partie s'il tient). */
+const CM_MAX = 150;
+function cmParts(text, max = CM_MAX) {
+  const lines = String(text || '').split('\n').filter(Boolean), out = [], n = Math.max(1, Math.floor(max) || CM_MAX);
+  for (let i = 0; i < lines.length; i += n) out.push(lines.slice(i, i + n).join('\n'));
+  return out;
 }
 /** Cartes qui manquent à un deck (texte) : deck + réserve − owned(clé) ; owned absent = rien n'est possédé. [{ n, q }] */
 function deckMissing(text, owned) {
@@ -1726,7 +1751,7 @@ function readShare(kind, d) {
   if (!o || typeof o !== 'object') return null;
   const at = shNum(o.at, 0, 1e15) || 0;
   // pseudo et photo du propriétaire (facultatifs) : texte court sans balise, image seulement en data:image (aucune adresse externe)
-  const by = shStr(o.by, 200).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30).trim(), bp = typeof o.bp === 'string' && o.bp.length <= 40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(o.bp) ? o.bp : '';
+  const by = shStr(o.by, 200).replace(/[\p{Cc}\p{Cf}<>]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 30).trim(), bp = typeof o.bp === 'string' && o.bp.length <= 40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(o.bp) ? o.bp : '';
   const who = { ...(by ? { by } : {}), ...(bp ? { bp } : {}) };
   if (kind === 'trade') {
     const list = a => (Array.isArray(a) ? a.slice(0, 20000).map(shareCard).filter(Boolean) : []);
@@ -1763,7 +1788,7 @@ function handLandOdds(N, L, n = 7) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, deckMissing, deckUse, tradeLists, tradeWant, tradeMatch, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
+  module.exports = { T, TN, LOC, I18N, I18N_LANGS, i18nPick, collToCsv, cmOffer, cmUrl, cmText, cmParts, CM_MAX, deckMissing, deckUse, tradeLists, tradeWant, tradeMatch, tradeView, shareCard, readShare, SHARE_IMG_RE, scrySmall, imgShort, isLandType, libraryOf, drawHand, handLandOdds,
     parseLine, dropCard, restoreLines, sortCards, ctCardUrl, replaceParts, preferLang, forMode, needsEnglish, recapOf, CONDITIONS, COND_SHORT, normPart, normName, frontName, parseDeck, passes, normalizeProduct, optimize, allocate,
     hash32, mulberry32, makeDemoOffers, DEMO_SELLERS,
     sanitizeOpts, suggestName, sameKind, pushHistory, priceDelta, priceSeries, deckDoc, readDeck, relTime, newDeckId, HISTORY_MAX,
@@ -1772,3 +1797,6 @@ if (typeof module !== 'undefined' && module.exports) {
     ownKey, cardLang, langCode, merge3, sameEntry, unitPrice, cheapestOffer, pxSig, pxStale, parseCollection, mergeColl, unionColl, sameColl, collToText, collFromText, applyOwned, itemColors, itemType, filterItems, filterActive, collStats, srcPrice, canBeCommander, isCmdrType, cmdrClass, parseEdh, parseEdhBin, edhModelFromTsv, edhIndex, edhTokens, edhCmdHas, edhRank, EDH_KINDS, EDH_SORT_STEP, agoDay, edhThemeCounts, edhThemeOrder, edhDeckText, edhTier, edhBracket, EDH_TIERS, dayOf, histPush, histDelta, baseRoll, baseRef, pxMovers, buyMerge, buyClean, engClean, engTotal, engFree, engDecksOf, engSnapshot, engMerge, engSame, engActive, histMerge, histSame,
     lev, levw, nameIndex, lineVariants, matchName, frCatalog, frNames, frFront, collLines, collFromLines, collDomLang, collSig, matchFr, bestOf, FR_IMG, spanMatches, ocrMatches, bestMatch, coverMap, makeFpsWatch, frWords, extractShared };
 }
+
+// Tri des noms (test.mjs) : exporté à part, hors de la grande liste que d'autres modifient
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { NAME_CMP, byName });

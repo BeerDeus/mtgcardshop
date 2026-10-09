@@ -1,7 +1,7 @@
 /* Mana Orbit — mobile-first, une colonne. Boldness: l'anneau foil (total + progression), le reste reste neutre. */
 :root{
   --bg:#f1f3f8; --surface:#ffffff; --surface-2:#e8ecf4; --surface-3:#f5f7fb; --line:#d9dfeb;
-  --ink:#10152b; --ink-2:#4a5470; --ink-3:#6f7a97;
+  --ink:#10152b; --ink-2:#4a5470; --ink-3:#5a6480;      /* ink-3 : texte secondaire ≥ 4,5:1 (WCAG AA) sur bg, surface et surface-2 */
   --accent:#3a46d6; --accent-ink:#ffffff; --accent-soft:#e6e8fb; --ring:rgba(58,70,214,.28);
   --eng:#ee8a1d; --good:#0b8a5e; --good-soft:#dff5ec; --warn:#a46606; --warn-soft:#fbefd6; --bad:#c23a4b; --bad-soft:#fbe4e7;
   --bar-bg:rgba(241,243,248,.84); --scrim:rgba(10,14,30,.46);
@@ -20,7 +20,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
-    --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+    --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#8a96b6;
     --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
     --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
     --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
@@ -31,7 +31,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0b0f1c; --surface:#131a2b; --surface-2:#1b2439; --surface-3:#101627; --line:#262f49;
-  --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#7783a4;
+  --ink:#eaeefb; --ink-2:#a9b3cf; --ink-3:#8a96b6;
   --accent:#929cff; --accent-ink:#0b0f1c; --accent-soft:#1f2650; --ring:rgba(146,156,255,.34);
   --eng:#f5a04a; --good:#4fd1a1; --good-soft:#12302a; --warn:#e8b45e; --warn-soft:#33270f; --bad:#ff8091; --bad-soft:#38161d;
   --bar-bg:rgba(11,15,28,.82); --scrim:rgba(0,0,0,.6);
@@ -606,7 +606,7 @@ button.sync:active{background:var(--surface-2)}
 @keyframes hmHalo{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.12);opacity:.22}}
 @keyframes hmOrbIn{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
 @keyframes hmDeal{0%{opacity:0;transform:translateY(34px) rotate(-2.5deg) scale(.96)}100%{opacity:1;transform:none}}
-@keyframes hmScan{0%,100%{top:12%}50%{top:80%}}
+@keyframes hmScan{0%,100%{transform:none}50%{transform:translateY(26px)}}      /* transform (composité) et non top : plus de mise en page à chaque image ; 26 px = de 12 % à 80 % des 38 px du cadre */
 @keyframes hmPulse{0%{box-shadow:0 0 0 0 rgba(79,209,161,.6)}100%{box-shadow:0 0 0 9px rgba(79,209,161,0)}}
 @keyframes hmGlint{0%{transform:translateX(-120%) skewX(-18deg)}60%,100%{transform:translateX(260%) skewX(-18deg)}}
 .hm-hero{display:flex;flex-direction:column;align-items:center;gap:4px;overflow-x:clip}      /* l'orbite qui tourne (carré tourné, terrains autour) élargissait la page : les panneaux fixes étaient coupés à droite */
@@ -663,7 +663,7 @@ button.sync:active{background:var(--surface-2)}
 @media (max-width:430px){.hm-tile{padding:12px 10px}.hm-tt b{font-size:13px;letter-spacing:-.01em}}      /* « Deck à monter » tient sur une ligne dès 390 px ; en dessous, deux lignes équilibrées */
 .hm-tt span{font-size:11px;line-height:1.25;color:var(--ink-3)}
 .hm-scanbox{position:absolute;right:10px;top:10px;width:30px;height:42px;border-radius:5px;border:2px dashed color-mix(in srgb,var(--ink-3) 55%,transparent)}
-.hm-scanbox i{position:absolute;left:8%;right:8%;height:2px;background:#4fd1a1;box-shadow:0 0 12px 2px rgba(79,209,161,.7);animation:hmScan 2.4s ease-in-out infinite}
+.hm-scanbox i{position:absolute;left:8%;right:8%;top:12%;height:2px;background:#4fd1a1;box-shadow:0 0 12px 2px rgba(79,209,161,.7);animation:hmScan 2.4s ease-in-out infinite}
 .hm-live{width:8px;height:8px;border-radius:50%;background:#4fd1a1;animation:hmPulse 1.6s ease-out infinite}
 .hm-new{position:relative;border-radius:24px;padding:2px;margin-top:4px;box-shadow:0 18px 44px -20px rgba(146,156,255,.6);animation:hmDeal .8s cubic-bezier(.16,1,.3,1) .38s both}
 .hm-new-ring{position:absolute;inset:0;border-radius:24px;overflow:hidden}
@@ -685,6 +685,7 @@ button.sync:active{background:var(--surface-2)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hm-quick .hm-ic{color:#4fd1a1}:root:not([data-theme="light"]) .hm-build .hm-ic,:root:not([data-theme="light"]) .hm-top em{color:#ffd479}:root:not([data-theme="light"]) .hm-trade .hm-ic{color:#ff8fc3}}
 @media (max-width:359px){.hm-stage{transform:scale(.9);margin:-10px 0}}
 @media (prefers-reduced-motion:reduce){.hm-aura i,.hm-aura b,.hm-orbit,.hm-land,.hm-halo,.hm-ring,.hm-orb,.hm-orb-t b,.hm-decks,.hm-tile,.hm-scanbox i,.hm-live,.hm-new,.hm-new-ring::before,.hm-glint{animation:none}.hm-glint{display:none}}
+#app[inert] *,#app[inert] *::before,#app[inert] *::after{animation-play-state:paused!important}      /* feuille ou fenêtre plein écran ouverte (#app inert, dessous) : animations de l'accueil en pause (batterie) */
 .coll-open{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:transform .15s,border-color .2s}
 .coll-open:active{transform:scale(.99)}
 .coll-ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
@@ -777,6 +778,7 @@ i.mc.mc-c,.fcol.mc-c{background:#cbc5c0 url("data:image/svg+xml,<svg xmlns='http
 .coll-status[data-k="run"]{flex-direction:column;align-items:stretch;gap:8px}
 .coll-status[data-k="err"]{background:var(--warn-soft);color:var(--warn)}
 .coll-status .track{height:6px}
+.coll-status .coll-wait{font-size:12px;color:var(--ink-2)}
 .coll-list{display:flex;flex-direction:column;gap:8px}
 .crow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
 .crow.has-px{grid-template-columns:40px minmax(0,1fr) auto;row-gap:4px}
