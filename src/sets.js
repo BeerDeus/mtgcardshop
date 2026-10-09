@@ -4,7 +4,8 @@
    · Lue par la file Scryfall de l'appli (cadence, pause après un 429 respectée), seulement quand l'accueil est vraiment à l'écran, quelques secondes
      après le lancement : jamais pendant une recherche, un scan ou une feuille.
    · Gardée 24 h (Cache) sous une forme réduite : seules les éditions utiles (à venir ou récentes), le tri et les dates relatives sont refaits à l'affichage.
-   · Hors ligne, en erreur ou sans rien à venir : la carte reste cachée, sans message ; nouvel essai au prochain lancement. */
+   · Hors ligne, en erreur ou sans rien à venir : la carte reste cachée, sans message ; nouvel essai au prochain lancement.
+   · Chaque ligne : la page Scryfall de l'édition, plus « Précommander » (à venir) ou « Acheter » (sortie récente) vers Cardmarket, deux liens séparés. */
 const SETS_KEY = 'sets:v1', SETS_TTL = DAY, SETS_RECENT = 14, SETS_MAX = 4;
 /** Produits papier « grand public » : les autres types (promo, jetons, funny, cartes numériques, boîtes…) n'intéressent pas l'accueil. */
 const SETS_TYPES = ['expansion', 'core', 'masters', 'draft_innovation', 'commander'];
@@ -58,6 +59,14 @@ function setsWhen(d) {
   return T('dans {n} mois', { n: Math.round(d / 30.4) });                         // 100 jours ou plus : toujours 3 mois ou plus (pluriel dans les deux langues)
 }
 
+/** Produits scellés d'une édition sur Cardmarket (site dans la langue de l'utilisateur) : la recherche produits par nom, toutes catégories,
+ *  car boosters, displays et bundles / decks Commander sont trois catégories distinctes ; les cartes, nommées d'après la carte, n'y sortent pas.
+ *  Nom Scryfall tel quel : couper « Commander », « Remastered »… élargirait aux anciennes éditions. '' si l'adresse sort du format attendu. */
+const SETS_CM_RE = /^https:\/\/www\.cardmarket\.com\/(fr|de|es|it|en)\/Magic\/Products\/Search\?searchString=[\w%.!~*'()-]+$/;
+function setsCm(name) {
+  const u = cmUrl(name, userLang()); return SETS_CM_RE.test(u) ? u : '';
+}
+
 /** Appelé à chaque repeint de l'accueil (homePaint) : affiche la liste gardée, sinon prévoit la lecture. */
 function setsSoon() {
   if (typeof document === 'undefined' || !$('#hmSets')) return;
@@ -93,8 +102,13 @@ function setsPaint() {
   if (sig === SETS.sig) return; SETS.sig = sig;
   box.hidden = !rows.length;
   if (!ul._err) { ul._err = true; ul.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true); }      // icône injoignable : la pastille reste, vide
-  ul.innerHTML = rows.map(r => `<li><a class="hm-set${r.d < 0 ? ' past' : ''}" href="${esc(r.url)}" target="_blank" rel="noopener">
+  // lien Scryfall étiré sur la ligne (CSS) ; le lien Cardmarket, frère et non enfant, passe au-dessus : jamais d'ancres imbriquées
+  ul.innerHTML = rows.map(r => {
+    const cm = setsCm(r.name), past = r.d < 0;
+    return `<li class="hm-set${past ? ' past' : ''}"><a class="hm-set-a" href="${esc(r.url)}" target="_blank" rel="noopener">
     <span class="hm-set-ic" aria-hidden="true">${r.icon ? `<img alt="" decoding="async" src="${esc(r.icon)}">` : ''}</span>
-    <span class="hm-set-t"><b>${esc(r.name)}</b><span>${esc(setsDate(r))}${r.cmd ? ' · ' + esc(T('decks Commander')) : ''}</span></span>
-    <em class="hm-set-when${r.d < 0 ? ' past' : r.d <= 7 ? ' soon' : ''}">${esc(setsWhen(r.d))}</em></a></li>`).join('');
+    <span class="hm-set-t"><b>${esc(r.name)}</b><span>${esc(setsDate(r))}${r.cmd ? ' · ' + esc(T('decks Commander')) : ''}</span></span></a>
+    <span class="hm-set-side"><em class="hm-set-when${past ? ' past' : r.d <= 7 ? ' soon' : ''}">${esc(setsWhen(r.d))}</em>${cm ? `<a class="hm-set-cm" href="${esc(cm)}" target="_blank" rel="noopener"
+      aria-label="${esc(past ? T('Acheter {nom} sur Cardmarket', { nom: r.name }) : T('Précommander {nom} sur Cardmarket', { nom: r.name }))}"><span>${esc(past ? T('Acheter') : T('Précommander'))}<i aria-hidden="true">↗</i></span></a>` : ''}</span></li>`;
+  }).join('');
 }

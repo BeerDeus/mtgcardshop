@@ -5,10 +5,12 @@
 .hm-sets-h b{font-family:var(--font-display);font-size:18px;font-weight:700;letter-spacing:-.02em}
 .hm-sets-h span{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
 .hm-sets-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.hm-set{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:15px;color:inherit;text-decoration:none;transition:background .2s,transform .3s var(--spring)}
-.hm-set:active{background:var(--surface-2);transform:scale(.98)}
-@media (hover:hover){.hm-set:hover{background:var(--surface-2)}}
-.hm-set:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.hm-set{position:relative;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:15px;transition:background .2s,transform .3s var(--spring)}
+.hm-set-a{flex:1;min-width:0;display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none;outline:0}
+.hm-set-a::after{content:"";position:absolute;inset:0;border-radius:15px}      /* lien Scryfall étiré sur toute la ligne (pastille de date comprise) ; le lien Cardmarket passe au-dessus */
+.hm-set:has(>.hm-set-a:active){background:var(--surface-2);transform:scale(.98)}
+@media (hover:hover){.hm-set:has(>.hm-set-a:hover){background:var(--surface-2)}}
+.hm-set-a:focus-visible::after{outline:2px solid var(--accent);outline-offset:-2px}
 .hm-set-ic{width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;position:relative}
 .hm-set-ic img{width:23px;height:23px;object-fit:contain}
 .hm-set.past .hm-set-ic::after{content:"";position:absolute;inset:-1.5px;border-radius:13.5px;padding:1.5px;background:var(--foil-ring);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}      /* sortie récente : liseré foil */
@@ -18,6 +20,14 @@
 .hm-set-when{flex:none;font-style:normal;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
 .hm-set-when.soon{background:var(--warn-soft);color:var(--warn)}
 .hm-set-when.past{background:var(--good-soft);color:var(--good)}
+.hm-set-side{flex:none;display:flex;flex-direction:column;align-items:flex-end}
+/* « Précommander » / « Acheter » : pastille contour sous la date (pas un 2e badge plein) ; zone de toucher de 40 px, marges négatives pour ne pas grandir la ligne */
+.hm-set-cm{position:relative;z-index:1;display:flex;align-items:center;min-height:40px;margin:-3px -4px -9px;padding:0 4px;text-decoration:none;-webkit-tap-highlight-color:transparent;outline:0}
+.hm-set-cm span{display:inline-flex;align-items:center;gap:3px;height:24px;padding:0 8px 0 9px;border-radius:99px;border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);color:var(--accent);font-size:11px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;transition:background .2s,transform .3s var(--spring)}
+.hm-set-cm i{font-style:normal;font-size:10px}
+.hm-set-cm:active span{background:var(--accent-soft);transform:scale(.94)}
+@media (hover:hover){.hm-set-cm:hover span{background:var(--accent-soft)}}
+.hm-set-cm:focus-visible span{outline:2px solid var(--accent);outline-offset:2px}
 .hm-sets-sl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 4px 0;padding:11px 10px 9px;border-top:1px solid var(--line);color:var(--ink-2);font-size:13px;font-weight:600;text-decoration:none;border-radius:0 0 15px 15px}      /* Secret Lair : drops vendus sur le site de Wizards, absents de Scryfall /sets (une seule édition SLD) */
 .hm-sets-sl i{font-style:normal;color:var(--accent)}
 .hm-sets-sl:active{background:var(--surface-2)}
