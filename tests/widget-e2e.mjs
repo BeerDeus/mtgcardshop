@@ -1,7 +1,8 @@
 // E2E widget Android (widget.js) : le site confie au plugin ManaOrbit (simulé) la valeur, la variation (et sa durée), le nombre de cartes, les relevés
 // des 30 derniers jours et le bouton choisi, une fois les chiffres connus, en différé, seulement quand ils changent ; avec une coque récente et un widget
 // posé, la liste compacte des cartes et leurs prix du fichier de prix (estimation appli fermée) ; Réglages › Widget change le bouton ;
-// widget touché (« open ») → collection, scan ou prix rapide ; ?collection → la collection ; rien sur le web.
+// widget touché (« open ») → collection, scan ou prix rapide ; ?collection → la collection ; rien sur le web ; raccourcis de l'icône (« open » trade, paste ;
+// PWA : ?open=) et texte partagé vers l'appli (« open » share : decklist, lien lu par le serveur, à froid après le premier contact avec lui).
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { chromium, startWorld, newPage, ok, toHome, txt } from './e2e-world.mjs';
@@ -230,6 +231,79 @@ const errsAll = [];
   assert.deepEqual([c[1].v, c[1].d, c[1].dd], [1240, 300, 9], 'variation du marché seul (+3 €) sur sa vraie durée (9 j), pas −4 € dus à la carte ajoutée');
   await p.context().close();
   ok('collection modifiée : variation du marché seul (valMovers : +3 € · 9 j) au lieu des relevés (−4 €) ; courbe limitée à 30 jours');
+}
+
+/* ── 7) raccourcis de l'icône (« open » trade / paste) et texte partagé vers l'appli (« open » share) ─────────────────── */
+{
+  const { p, errs } = await newPage(browser, world, { init: seed() + shell() }); errsAll.push(errs);
+  await p.waitForFunction(() => typeof window.__mo.ls.open === 'function', null, { timeout: 6000 });
+  const open = ev => p.evaluate(e => window.__mo.ls.open(e), ev);
+  const toastIs = re => p.waitForFunction(r => new RegExp(r).test(document.querySelector('#toast').textContent), re.source, { timeout: 5000 });
+  // Échange : réglages ouverts par-dessus → fermés, la collection s'ouvre sur l'onglet Échange
+  await p.click('#btnSettings'); await p.waitForFunction(() => sheets.length === 1);
+  await open({ view: 'trade' }); await p.waitForSelector('.coll.on', { timeout: 3000 });
+  assert.deepEqual(await p.evaluate(() => [sheets.length, COLL.tab, document.querySelector('#collSeg [aria-checked="true"]').dataset.v]), [0, 'trade', 'trade'], 'feuille fermée, onglet Échange');
+  ok('raccourci « Échange » : réglages fermés, collection ouverte sur l\'onglet Échange');
+  // Nouveau panier sans liste en cours (exemple affiché) : collection fermée, saisie vide, curseur dans le champ, conseil pour coller
+  assert.equal(await p.evaluate(() => S.isSample), true);
+  await open({ view: 'paste' }); await p.waitForFunction(() => S.view === 'input' && !COLL.el, null, { timeout: 3000 });
+  assert.deepEqual(await p.evaluate(() => [$('#deckText').value, document.activeElement && document.activeElement.id, $$('body > .dv.on').length]), ['', 'deckText', 0]);
+  await toastIs(/appui long/);
+  // avec une liste en cours : gardée (comme « Reprendre ma liste »)
+  await p.evaluate(() => { $('#deckText').value = '1 Sol Ring\n1 Arcane Signet\n1 Command Tower'; S.isSample = false; refreshDeck(); showView('home'); document.activeElement.blur(); });
+  await open({ view: 'paste' }); await p.waitForFunction(() => S.view === 'input', null, { timeout: 3000 });
+  assert.deepEqual(await p.evaluate(() => [$('#deckText').value.split('\n').length, document.activeElement && document.activeElement.id]), [3, 'deckText'], 'liste en cours gardée, curseur dans le champ');
+  ok('raccourci « Nouveau panier » : saisie au premier plan, champ vidé (exemple) ou liste en cours gardée, curseur dans le champ');
+  // partage d'une decklist (collection ouverte par-dessus : fermée)
+  await p.evaluate(() => { showView('home'); openCollection(); }); await p.waitForSelector('.coll.on');
+  await open({ view: 'share', text: '1 Sol Ring\n1 Arcane Signet\n1 Command Tower\n1 Wrath of God', title: '' });
+  await toastIs(/4 cartes reçues/);
+  assert.deepEqual(await p.evaluate(() => [S.view, !!COLL.el, $('#deckText').value.split('\n').length]), ['input', false, 4]);
+  // partage d'un lien (EDHREC, Archidekt, Moxfield) : lu par le serveur, comme le share_target de la PWA
+  await open({ view: 'share', text: 'https://archidekt.com/decks/123/edgar', title: 'Edgar' });
+  await toastIs(/Edgar partagé · 4 cartes reçues/);
+  assert.match(await p.$eval('#deckText', t => t.value), /^Commander\n1 Edgar Markov\n\nDeck\n1 Sol Ring/);
+  // partage vide (fichier sans texte) : message clair
+  await open({ view: 'share', text: '', title: '' }); await toastIs(/Rien à importer dans ce partage/);
+  ok('partage vers l\'appli : decklist collée (collection fermée), lien Archidekt lu par le serveur, partage vide signalé');
+  // scan avec des cartes lues : jamais fermé par un partage (les cartes seraient perdues) ; la liste attend dessous
+  await open({ view: 'scan' }); await p.waitForSelector('.scan.on', { timeout: 3000 });
+  await p.evaluate(() => { window.__scEl = SC.el; SC.items.set('sol ring|en', { id: 'sol ring|en', key: 'sol ring', name: 'Sol Ring', q: 1, l: 'en' }); });
+  await open({ view: 'share', text: '1 Llanowar Elves\n1 Sol Ring\n1 Arcane Signet', title: '' }); await toastIs(/3 cartes reçues/);
+  assert.deepEqual(await p.evaluate(() => [SC.el === window.__scEl, SC.items.size, S.view, $('#deckText').value.split('\n')[0]]), [true, 1, 'input', '1 Llanowar Elves']);
+  // scan vide : fermé
+  await p.evaluate(() => SC.items.clear()); await open({ view: 'paste' }); await p.waitForFunction(() => !SC.el, null, { timeout: 3000 });
+  // deck modifié dans l'éditeur : gardé ouvert
+  await p.evaluate(() => { openBuilder({}); BD.dirty = true; }); await p.waitForSelector('.bd.on');
+  await open({ view: 'trade' }); await p.waitForSelector('.coll.on', { timeout: 3000 });
+  assert.deepEqual(await p.evaluate(() => [!!BD.el, sheets.length]), [true, 0], 'éditeur modifié : ni fermé ni « Quitter sans enregistrer ? »');
+  ok('scan avec des cartes lues et deck modifié : jamais fermés par un raccourci ou un partage ; scan vide : fermé');
+  await p.context().close();
+}
+
+/* ── 8) lancement à froid par un partage de lien : attend le premier contact avec le serveur ; ?open= (raccourcis de la PWA) ─ */
+{
+  // la coque rend l'événement gardé dès que la page écoute (comme Capacitor) ; le serveur répond 1,5 s plus tard
+  const cold = ev => shell().replace("addListener: (ev, cb) => { window.__mo.ls[ev] = cb;", `addListener: (ev, cb) => { window.__mo.ls[ev] = cb; if (ev === 'open') setTimeout(() => cb(${JSON.stringify(ev)}), 0);`);
+  const { p, errs } = await newPage(browser, world, { goto: false }); errsAll.push(errs);
+  let pinged = 0; await p.route('**/__ping', async r => { await new Promise(res => setTimeout(res, 1500)); pinged = Date.now(); await r.continue(); });
+  await p.addInitScript(seed() + cold({ view: 'share', text: 'https://archidekt.com/decks/123/edgar', title: 'Edgar' })); await p.goto(world.url);
+  await p.waitForFunction(() => /Edgar partagé · 4 cartes reçues/.test(document.querySelector('#toast').textContent), null, { timeout: 8000 });
+  assert.ok(pinged > 0, 'serveur joint avant la lecture du lien');
+  assert.equal(await p.evaluate(() => S.view), 'input');
+  await p.context().close();
+  ok('lancement à froid par un lien partagé : lu une fois le serveur joint (pas de « Le lien ne peut être lu… »)');
+  // PWA : ?open=trade | paste | quick ; cible inconnue : rien ; adresse nettoyée
+  for (const [v, sel, check] of [['trade', '.coll.on', () => COLL.tab === 'trade'], ['paste', '#viewInput:not([hidden])', () => S.view === 'input' && document.activeElement.id === 'deckText'], ['quick', '.scan.on', () => SC.pm === true]]) {
+    const w = await newPage(browser, world, { init: seed(), path: '?open=' + v }); errsAll.push(w.errs);
+    await w.p.waitForSelector(sel, { timeout: 4000 }); assert.equal(await w.p.evaluate(check), true, v);
+    assert.equal(await w.p.evaluate(() => location.search), '', 'paramètre retiré de l\'adresse');
+    await w.p.context().close();
+  }
+  const x = await newPage(browser, world, { init: seed(), path: '?open=toString' }); errsAll.push(x.errs);
+  await x.p.waitForTimeout(1200); assert.deepEqual(await x.p.evaluate(() => [!!COLL.el, !!SC.el, S.view]), [false, false, 'home']);
+  await x.p.context().close();
+  ok('PWA : ?open=trade → Échange, ?open=paste → Nouveau panier, ?open=quick → prix rapide ; cible inconnue : rien');
 }
 
 // ouverture sans geste de l'utilisateur (?collection) : Chrome refuse la vibration de openCollection, sans conséquence

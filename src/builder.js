@@ -51,7 +51,7 @@ const bdData = () => ({ fmt: BD.fmt, main: [...BD.main.values()], side: [...BD.s
 const bdTot = k => ((BD.main.get(k) || {}).qty || 0) + ((BD.side.get(k) || {}).qty || 0);
 /** Nom affiché : français si la carte est possédée en français (même règle que la collection), sinon anglais. */
 function bdLabel(k, name) { const x = COLL.map[k]; return (x && x.l && frName(k, x.l)) || name; }
-const bdCmp = (a, b) => bdLabel(a.key, a.name).localeCompare(bdLabel(b.key, b.name), 'fr', { sensitivity: 'base' });
+const bdCmp = (a, b) => NAME_CMP(bdLabel(a.key, a.name), bdLabel(b.key, b.name));
 const bdFmtName = f => (DK_FORMATS[f] || DK_FORMATS.standard).label;
 
 /* ── Nouveau deck : nom + format ──────────────────────────────────────────────────────────────── */
@@ -220,7 +220,7 @@ function bdDeckHtml() {
 function bdIndex() {
   if (BD.idx) return BD.idx;
   return (BD.idx = Object.entries(COLL.map).map(([k, x]) => { const dn = (x.l && frName(k, x.l)) || ''; return { k, n: x.n, dn, s: normPart(x.n + ' ' + dn + ' ' + frOf(k)) }; })
-    .sort((a, b) => (a.dn || a.n).localeCompare(b.dn || b.n, 'fr', { sensitivity: 'base' })));
+    .sort((a, b) => NAME_CMP(a.dn || a.n, b.dn || b.n)));
 }
 function bdAddRow(k, name, label) {
   const tgt = BD.tgt, q = tgt === 'cmdr' ? (BD.cmdr.some(c => c.key === k) ? 1 : 0) : ((BD[tgt].get(k) || {}).qty || 0);

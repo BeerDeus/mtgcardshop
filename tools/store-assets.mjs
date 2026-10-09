@@ -250,10 +250,12 @@ const NOT_MAGIC = /\b(Ring|Halfling|Bowmasters|Mithril|Lotho|Gandalf|Frodo|Samwi
 const LANDS = [['Plains', 36], ['Island', 24], ['Swamp', 41], ['Mountain', 33], ['Forest', 27]];
 const priced = [...OWN.values()].map(o => ({ ...o, c: card(o.name) })).filter(o => o.c.eur > 0);
 const VALUE = priced.reduce((a, o) => a + o.c.eur * o.q, 0), COPIES = [...OWN.values()].reduce((a, o) => a + o.q, 0) + LANDS.reduce((a, l) => a + l[1], 0);
-/** Texte de la collection : FR → une bonne part des cartes en français (nom imprimé connu), EN → exemplaires anglais. */
+/** Quelques exemplaires dans d'autres langues parmi les cartes les plus chères (en tête de la liste triée par prix) : capture « Chaque carte, sa langue ». */
+const LANG_FIX = { fr: { 'chrome mox': 'JA', 'mox amber': 'EN', 'the great henge': 'DE' }, en: { 'chrome mox': 'JA', 'deflecting swat': 'FR', 'the great henge': 'DE' } };
+/** Texte de la collection : FR → une bonne part des cartes en français (nom imprimé connu), EN → exemplaires anglais ; LANG_FIX par-dessus (même tirage pour les autres). */
 function collText(lang) {
-  const r = rnd('langs'), lines = [];
-  for (const o of OWN.values()) { const c = card(o.name), l = lang === 'fr' && c.fr && r() < 0.62 && c.fr.length <= 20 && !c.fr.includes(',') ? 'FR' : 'EN'; lines.push(`${o.q} ${o.name} *${l}*`); }
+  const r = rnd('langs'), lines = [], fix = LANG_FIX[lang] || {};
+  for (const o of OWN.values()) { const c = card(o.name), auto = lang === 'fr' && c.fr && r() < 0.62 && c.fr.length <= 20 && !c.fr.includes(',') ? 'FR' : 'EN'; lines.push(`${o.q} ${o.name} *${fix[front(o.name)] || auto}*`); }
   for (const [n, q] of LANDS) lines.push(`${q} ${n}`);
   return lines.join('\n');
 }
@@ -432,12 +434,6 @@ async function openApp(lang) {
   await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; collEnrich(); });      // infos des cartes (sur un vrai téléphone, déjà en cache)
   await p.waitForFunction(() => !collMissing().length && !COLL.enrich, null, { timeout: 60000 });
   await p.addStyleTag({ content: '.coll-sync{display:none!important}' });      // « compte indisponible » : Firebase est coupé ici, pas chez l'utilisateur
-  // prix réels CardTrader (bouton € de la collection) déjà lus pour les cartes de plus de 1,50 € : un peu sous la tendance Cardmarket, comme souvent
-  await p.evaluate(() => {
-    const now = Date.now();
-    for (const k in COLL.map) { const m = COLL.meta[k], x = COLL.map[k]; if (!m || !(m.eu >= 150)) continue; let h = 7; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; COLL.px[k] = { p: Math.round(m.eu * (0.8 + (h % 19) / 100)), t: now - 5 * 3600e3, s: pxSig(pxLangOf(x), S.opts), c: 'EUR' }; }
-    pxSave();
-  });
   await p.waitForFunction(() => EDH.data && HM.best, null, { timeout: 60000 });
   return c;
 }
@@ -453,26 +449,10 @@ const scrollIn = (p, scroller, target) => p.evaluate(([s, t]) => {
   sc.scrollTop += b + 1 - sc.getBoundingClientRect().top;
 }, [scroller, target]);
 
-/** Les captures : légende (FR, EN ; *mot* en dégradé foil) et mise en état de l'appli. */
+/** Les captures, dans l'ordre de la fiche (le scan d'abord, comme chez tous les concurrents) : légende (FR, EN ; *mot* en dégradé foil) et mise en état de l'appli.
+ *  Aucune promesse que l'utilisateur sans token ne verrait pas : prix tendance Cardmarket seulement, pas d'offres CardTrader. */
 const SHOTS = [
-  { id: '01-accueil', en: '01-home', cap: { fr: ['Ta collection, sa *valeur*', 'Mise à jour chaque jour au prix Cardmarket'], en: ['Your collection, *valued*', 'Updated every day with Cardmarket prices'] },
-    async go(p) { await p.waitForFunction(() => HM.v != null && HM.v === homeValue() && [...document.querySelectorAll('#hmFan img')].length === 3, null, { timeout: 20000 }); await imgsReady(p); await p.waitForTimeout(2600); } },
-  { id: '02-collection', en: '02-collection', cap: { fr: ['Chaque carte a son *prix*', 'Tendance Cardmarket et meilleure offre CardTrader'], en: ['Every card, *priced*', 'Cardmarket trend and best CardTrader offer'] },
-    async go(p) { await p.evaluate(() => openCollection('list')); await p.waitForSelector('.coll.on'); await p.selectOption('#collSort', 'price'); await p.waitForTimeout(900); await imgsReady(p); await p.waitForTimeout(600); } },
-  { id: '03-valeur', en: '03-value', cap: { fr: ['Suis sa valeur *jour après jour*', 'Courbe, variations à 7 et 30 jours, alertes de prix'], en: ['Watch its value *grow*', 'Daily chart, 7- and 30-day changes, price alerts'] },
-    async go(p) { await p.evaluate(() => openCollection('stats')); await p.waitForSelector('.coll.on .vl-box'); await p.waitForTimeout(1500); } },
-  { id: '04-decks-a-monter', en: '04-decks-to-build', cap: { fr: ['Les decks que tu peux *monter*', 'Decks EDHREC comparés à ta collection'], en: ['Decks you can *build*', 'EDHREC decks matched against your collection'] },
-    async go(p) { await p.evaluate(() => openCollection('decks')); await p.waitForSelector('.dk-res .crow, .dk-res [role="button"]', { timeout: 30000 }); await p.waitForTimeout(1500); await scrollIn(p, '.coll.on .dv-scroll', '.dk-res .coll-list'); await imgsReady(p); await p.waitForTimeout(800); } },
-  { id: '05-deck', en: '05-deck', cap: { fr: ['Chaque deck *en un coup d\'œil*', 'Valeur, courbe de mana, cartes qui manquent'], en: ['Every deck *at a glance*', 'Value, mana curve, the cards you still need'] },
-    async go(p) { await p.evaluate(() => { const r = HM.best.r; openDeckViewer({ text: edhDeckText(r.deck), name: r.cmd.names.join(' + ') }); }); await p.waitForSelector('.dv.on'); await p.waitForTimeout(2500); await imgsReady(p); await p.waitForTimeout(500); } },
-  { id: '06-recherche', en: '06-search', cap: { fr: ['Colle une liste, vois le *prix*', 'Total Cardmarket, sans les cartes que tu as déjà'], en: ['Paste a list, see the *price*', 'Cardmarket total, minus the cards you already own'] },
-    async go(p) {
-      await p.evaluate(t => { showView('input'); const ta = document.querySelector('#deckText'); ta.value = t; ta.dispatchEvent(new Event('input', { bubbles: true })); }, deckText(EDGAR));
-      await p.waitForTimeout(500); await p.click('#btnRun');
-      await p.waitForFunction(() => S.run && S.run.status !== 'running' && !document.querySelector('#viewResults').hidden, null, { timeout: 60000 }); await p.waitForTimeout(1800);
-      await p.selectOption('#optSort', 'price-desc'); await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(900);
-    } },
-  { id: '07-scan', en: '07-scan', cap: { fr: ['Scanne tes cartes *VF ou VO*', 'Le nom est lu, la carte retrouvée, la langue notée'], en: ['*Scan* your cards', 'Name read, card found, language noted'] },
+  { id: '01-scan', en: '01-scan', cap: { fr: ['Scanne tes cartes *VF ou VO*', 'Lues sur ton téléphone, la photo n\'est jamais envoyée'], en: ['*Scan* cards in any language', 'Read on your phone, photos never leave it'] },
     async go(p, lang) {
       await p.evaluate(() => openScan()); await p.waitForSelector('.scan .sc-stage[data-cam="on"]', { timeout: 15000 });
       await p.evaluate(lang => {
@@ -482,6 +462,23 @@ const SHOTS = [
       }, lang);
       await p.waitForTimeout(1200); await imgsReady(p); await p.waitForTimeout(400);
     } },
+  { id: '02-accueil', en: '02-home', cap: { fr: ['La *cote* de ta collection', 'Au prix tendance Cardmarket, mise à jour chaque jour'], en: ['Your collection, *valued*', 'Cardmarket trend prices, updated daily'] },
+    async go(p) { await p.waitForFunction(() => HM.v != null && HM.v === homeValue() && [...document.querySelectorAll('#hmFan img')].length === 3, null, { timeout: 20000 }); await imgsReady(p); await p.waitForTimeout(2600); } },
+  { id: '03-decks-a-monter', en: '03-decks-to-build', cap: { fr: ['Les decks que tu peux *monter*', 'Decks Commander comparés à ta collection'], en: ['Decks you can *build*', 'Commander decks matched to your cards'] },
+    async go(p) { await p.evaluate(() => openCollection('decks')); await p.waitForSelector('.dk-res .crow, .dk-res [role="button"]', { timeout: 30000 }); await p.waitForTimeout(1500); await scrollIn(p, '.coll.on .dv-scroll', '.dk-res .coll-list'); await imgsReady(p); await p.waitForTimeout(800); } },
+  { id: '04-valeur', en: '04-value', cap: { fr: ['Suis sa valeur *jour après jour*', 'Courbe, variations à 7 et 30 jours, alertes de prix'], en: ['Watch its value *grow*', 'Daily chart, 7- and 30-day changes, price alerts'] },
+    async go(p) { await p.evaluate(() => openCollection('stats')); await p.waitForSelector('.coll.on .vl-box'); await p.waitForTimeout(1500); } },
+  { id: '05-collection', en: '05-collection', cap: { fr: ['Chaque carte, *sa langue*', 'VF, VO, japonais… et son prix Cardmarket'], en: ['Every copy, *its language*', 'English, French, Japanese… and its Cardmarket price'] },
+    async go(p) { await p.evaluate(() => openCollection('list')); await p.waitForSelector('.coll.on'); await p.selectOption('#collSort', 'price'); await p.waitForTimeout(900); await imgsReady(p); await p.waitForTimeout(600); } },
+  { id: '06-recherche', en: '06-search', cap: { fr: ['Colle une liste, vois le *prix*', 'Sans les cartes que tu as déjà, prête pour Cardmarket'], en: ['Paste a list, see the *price*', 'Minus the cards you own, ready for Cardmarket'] },
+    async go(p) {
+      await p.evaluate(t => { showView('input'); const ta = document.querySelector('#deckText'); ta.value = t; ta.dispatchEvent(new Event('input', { bubbles: true })); }, deckText(EDGAR));
+      await p.waitForTimeout(500); await p.click('#btnRun');
+      await p.waitForFunction(() => S.run && S.run.status !== 'running' && !document.querySelector('#viewResults').hidden, null, { timeout: 60000 }); await p.waitForTimeout(1800);
+      await p.selectOption('#optSort', 'price-desc'); await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(900);
+    } },
+  { id: '07-deck', en: '07-deck', cap: { fr: ['Chaque deck *en un coup d\'œil*', 'Valeur, courbe de mana, main de départ'], en: ['Every deck *at a glance*', 'Value, mana curve, opening hand'] },
+    async go(p) { await p.evaluate(() => { const r = HM.best.r; openDeckViewer({ text: edhDeckText(r.deck), name: r.cmd.names.join(' + ') }); }); await p.waitForSelector('.dv.on'); await p.waitForTimeout(2500); await imgsReady(p); await p.waitForTimeout(500); } },
   { id: '08-echange', en: '08-trade', cap: { fr: ['Tes échanges *en un lien*', 'Doublons et cartes recherchées, toujours à jour'], en: ['Trade with *one link*', 'Your spares and wants, always up to date'] },
     async go(p) {
       await p.evaluate(() => openCollection('trade')); await p.waitForSelector('.coll.on .tr-box'); await p.waitForTimeout(1000);
@@ -604,7 +601,7 @@ function featurePage(lang) {
 }
 
 
-world = await startWorld({ port: PORT });
+world = await startWorld({ port: PORT, env: { ALLOWED_UIDS: 'store-owner' } });      // comme en production : token CardTrader du serveur réservé au compte du propriétaire, le visiteur n'a que Cardmarket
 browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium', args: ['--no-sandbox', '--font-render-hinting=none'] });
 try {
   if (what === 'all' || what === 'feature') for (const l of LANGS) { const f = await render(featurePage(l), 1024, 500, OUT + (l === 'fr' ? 'feature-graphic' : 'feature-graphic-en')); console.log(`  ${f}  ${(statSync(f).size / 1024).toFixed(0)} Ko`); }

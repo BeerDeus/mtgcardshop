@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône du raccourci « Prix rapide » (Android 7.1 ; icône adaptative dans drawable-v26) : pastille ronde de nuit, glyphe blanc. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/shortcut_dot" />
+    <item android:drawable="@drawable/shortcut_fg_quick" />
+</layer-list>
