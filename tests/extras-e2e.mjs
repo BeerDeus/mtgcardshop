@@ -113,12 +113,13 @@ const errsOf = [];
   assert.equal(sent[0], 'u1'); assert.deepEqual(Object.keys(sent[2].decks).sort(), ['deckA', 'deckZ']); assert.ok(typeof sent[2].updatedAt === 'number');
   // historique : fusion par jour, renvoyé s'il manquait au compte
   const day = 86400000, t0 = Date.now() - 3 * day;
-  await p.evaluate(([a, b, dd]) => { VAL.hist = [{ t: a, v: 1000, n: 2, q: 2 }]; window.__w.history({ pts: [[b, 1200, 2, 2], [b + dd, 1300, 2, 2]], updatedAt: 1 }, false, false); }, [t0, t0 + day, day]);
+  await p.evaluate(([a, b, dd]) => { VAL.hist = [{ t: a, v: 1000, n: 2, q: 2 }]; window.__w.history({ pts: [[b, 1200, 2, 2], { t: b + dd, v: 1300, n: 2, q: 2 }], updatedAt: 1 }, false, false); }, [t0, t0 + day, day]);      // ancien format (tableau) et nouveau (objet) lus tous deux
   assert.deepEqual(await p.evaluate(() => VAL.hist.map(h => h.v)), [1000, 1200, 1300], 'relevés des deux appareils réunis');
   assert.deepEqual(await p.evaluate(() => JSON.parse(localStorage.getItem('deckdeal:coll:hist')).map(h => h.v)), [1000, 1200, 1300], 'gardés localement');
   await p.waitForTimeout(1300);
   const hs = await p.evaluate(() => window.__saved.filter(s => s[1] === 'history').pop());
-  assert.deepEqual(hs[2].pts.map(x => x[1]), [1000, 1200, 1300], 'l\'historique complet repart dans le compte (le compte n\'avait pas le plus ancien)');
+  assert.deepEqual(hs[2].pts.map(x => x.v), [1000, 1200, 1300], 'l\'historique complet repart dans le compte (le compte n\'avait pas le plus ancien)');
+  assert.ok(hs[2].pts.every(x => !Array.isArray(x) && Object.keys(x).join() === 't,v,n,q'), 'relevés envoyés en objets : Firestore refuse les tableaux imbriqués');
   // règles refusées : message une seule fois, rien ne casse
   await p.evaluate(() => { D.cloud.saveMeta = async () => { throw Object.assign(new Error('denied'), { code: 'permission-denied' }); }; engSet('deckA', 'Deck A', '1 Sol Ring'); });
   await p.waitForTimeout(1300); assert.match(await txt(p, '#toast'), /Règles Firestore à publier/);

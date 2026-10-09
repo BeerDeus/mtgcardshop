@@ -57,7 +57,7 @@ service cloud.firestore {
     // Deck Deal : données annexes du compte, un document chacune
     //  · collection : cartes possédées (liste « 3 Sol Ring » une carte par ligne)
     //  · engaged    : cartes réservées par des decks « montés » ({ decks: { idDeck: { n, at, q: { carte: exemplaires } } } })
-    //  · history    : valeur de la collection dans le temps ({ pts: [[t, centimes, cartes, exemplaires], …] }, un par jour, 420 au plus)
+    //  · history    : valeur de la collection dans le temps ({ pts: [{ t, v: centimes, n: cartes, q: exemplaires }, …] }, un par jour, 420 au plus ; pas de tableaux imbriqués dans Firestore)
     //  · trade      : liste d'échange ({ keep: réserve, kept: [cartes gardées], wish: { carte: { n, q } }, share: id du lien, dsh: { deck: id du lien } })
     //  · profile    : pseudo (30 caractères) et photo (data:image, ≤ 40 Ko), affichés sur les liens partagés
     match /users/{uid}/meta/{docId} {
