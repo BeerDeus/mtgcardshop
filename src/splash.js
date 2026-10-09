@@ -45,7 +45,7 @@ function splashRemove() {
 /** Vol vers l'accueil préparé d'avance, avant le temps minimal (aucune mise en page forcée au départ du vol) : entrées de chaque cible et de ses parents finies
  *  (orbe qui grossit, écran qui glisse), puis [élément, cible, départ, arrivée]. null : une cible manque ou sort de l'écran (fondu). */
 function splashPrep() {
-  const el = SPL.el; if (!el || SPL.prep !== undefined || SPL.short || SPL.rm || !Element.prototype.animate) return;
+  const el = SPL.el; if (!el || SPL.prep !== undefined || SPL.short || SPL.rm || !Element.prototype.animate || !Element.prototype.getAnimations) return;
   const out = [], fin = a => { if (a.animationName && a.effect.getTiming().iterations !== Infinity) a.finish(); };
   for (const s of el.querySelectorAll('[data-sp-to]')) {
     const d = document.querySelector('#app ' + s.dataset.spTo); if (!d) return (SPL.prep = null);
