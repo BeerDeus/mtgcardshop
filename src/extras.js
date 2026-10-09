@@ -149,16 +149,17 @@ function xsRemote(id, uid, data, pending, fromCache) {
     if (!engSame(merged, XS.eng)) { XS.eng = merged; engWrite(); engApplied(); }
     if (!engSame(merged, remote)) xsPushSoon('engaged');
   } else {
-    const remote = data && Array.isArray(data.pts) ? data.pts.map(p => (Array.isArray(p) ? { t: p[0], v: p[1], n: p[2], q: p[3] } : null)).filter(Boolean) : [], merged = histMerge(VAL.hist, remote);
+    const remote = data && Array.isArray(data.pts) ? data.pts.map(p => (Array.isArray(p) ? { t: p[0], v: p[1], n: p[2], q: p[3] } : p && typeof p === 'object' ? { t: p.t, v: p.v, n: p.n, q: p.q } : null)).filter(Boolean) : [], merged = histMerge(VAL.hist, remote);
     if (!histSame(merged, VAL.hist)) { VAL.hist = merged; VAL.memo = null; valSave(false); paintCollSection(); if (COLL.el) collPaintBody(true); }
     if (!histSame(merged, remote)) xsPushSoon('history');
   }
 }
 function xsPushSoon(id) { const d = XS.docs[id]; if (!d || !d.uid) return; clearTimeout(d.pushT); d.pushT = setTimeout(() => xsPush(id), 900); }
+/** Relevés de valeur envoyés en objets { t, v, n, q } : Firestore refuse les tableaux de tableaux (l'ancien format [[t, v, n, q]] échouait sans bruit) ; la lecture accepte les deux. */
 async function xsPush(id) {
   const d = XS.docs[id]; if (!d || !d.uid || acctHeld(d.uid) || !cloudOn() || !D.cloud.saveMeta) return;      // autre compte, ou compte en cours de suppression
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-  const doc = id === 'engaged' ? { decks: XS.eng, updatedAt: Date.now() } : { pts: VAL.hist.map(h => [h.t, h.v, h.n | 0, h.q | 0]), updatedAt: Date.now() };
+  const doc = id === 'engaged' ? { decks: XS.eng, updatedAt: Date.now() } : { pts: VAL.hist.map(h => ({ t: h.t, v: h.v, n: h.n | 0, q: h.q | 0 })), updatedAt: Date.now() };
   try { await D.cloud.saveMeta(d.uid, id, doc); d.state = 'ok'; acctSaw(id, d.uid); } catch (err) { xsFail(id, err); }
 }
 
