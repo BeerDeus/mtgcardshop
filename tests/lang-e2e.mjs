@@ -1,5 +1,5 @@
 // E2E : cartes possédées → images dans la langue de l'exemplaire (viewer, réserve, image du deck), cartes non possédées inchangées ;
-// étiquette « complet » + date sur sa propre ligne dans la liste des decks.
+// étiquette « monté » + date sur sa propre ligne dans la liste des decks.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
@@ -16,16 +16,16 @@ const { p, errs } = await newPage(browser, world, { init: seed });
 await p.waitForTimeout(600);
 const src = sel => p.$eval(sel, e => e.getAttribute('src')).catch(() => '');
 
-/* ── 1) liste : « complet » + date sur sa propre ligne ───────────────────────────────────── */
+/* ── 1) liste : « monté » + date sur sa propre ligne ─────────────────────────────────────── */
 await toHome(p); await p.click('#btnDecks'); await p.waitForSelector('.dks.on .deck');
 const lines = await p.$$eval('.deck[data-id="d1"] .deck-meta > span', s => s.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
-assert.equal(lines.length, 2, 'prix / complet, puis la date');
-assert.match(lines[0], /^\d+ cartes?( · .*)? · complet$|^\d+ cartes? · complet$/); assert.match(lines[1], /^il y a 3 heures$/);
-assert.equal(await p.$('.deck[data-id="d2"] .mounted'), null, 'pas d\'étiquette sur un deck non complet');
+assert.equal(lines.length, 2, 'prix / monté, puis la date');
+assert.match(lines[0], /^\d+ cartes?( · .*)? · monté$/); assert.match(lines[1], /^il y a 3 heures$/);
+assert.equal(await p.$('.deck[data-id="d2"] .mounted'), null, 'pas d\'étiquette sur un deck non monté');
 assert.match(await txt(p, '.deck[data-id="d2"] .deck-ago'), /^avant-hier$|^il y a 2 jours$/);
 assert.equal(await p.$eval('.deck-meta', e => getComputedStyle(e).flexDirection), 'column', 'la date est sous la ligne');
 assert.match(await txt(p, '#decksSub').catch(() => ''), /./);
-ok('liste : « complet » à la place de « monté », date sous la ligne prix + complet');
+ok('liste : « monté » (comme la tuile « Deck à monter »), date sous la ligne prix + monté');
 
 /* ── 2) images dans la langue des cartes possédées ──────────────────────────────────────── */
 await p.click('.deck[data-id="d1"] [data-act="open"]'); await p.waitForSelector('.dv.on[aria-label^="Deck viewer"] .dvc');

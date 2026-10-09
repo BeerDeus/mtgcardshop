@@ -1,0 +1,21 @@
+/* ── decks2.css : tuile « Deck à monter » (commandant, coût pour finir) et actions de la feuille d'un deck EDHREC ──
+   Tuile : le nom tient sur deux lignes au plus, le coût sur sa propre ligne, plus appuyé (c'est la décision : combien dépenser).
+   Actions : une liste groupée (enregistrer, Je recherche, surveiller) ; une action déjà faite reste visible, cochée et inactive. */
+#hmBuildSub .hm-bn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#hmBuildSub .hm-bc{display:block;margin-top:2px;color:var(--ink-2);font-weight:650;font-variant-numeric:tabular-nums}
+
+.dk-acts2{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);background:var(--glass,var(--surface));overflow:hidden}
+.dk-acts2:empty{display:none}
+.dk-act{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:52px;padding:9px 14px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;font:inherit;transition:background .15s}
+.dk-act:first-child{border-top:0}
+.dk-act>svg.i:first-child{width:20px;height:20px;color:var(--accent)}
+.dk-act:not(:disabled):active{background:var(--accent-soft)}
+@media (hover:hover){.dk-act:not(:disabled):hover{background:var(--accent-soft)}}
+.dk-act-t{display:flex;flex-direction:column;gap:1px;min-width:0}
+.dk-act-t b{font-size:14.5px;font-weight:650;line-height:1.25;text-wrap:balance}
+.dk-act-t small{font-size:12.5px;line-height:1.3;color:var(--ink-3);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.dk-act.done{cursor:default}
+.dk-act.done>svg.i:first-child{color:var(--ink-3)}
+.dk-act.done .dk-act-t b{color:var(--ink-2)}
+.dk-act-ok{width:18px;height:18px;color:var(--good);stroke-width:2.4}
+.dk-act:disabled:not(.done){opacity:.6}
