@@ -22,7 +22,7 @@ for (const f of (existsSync(I18N_DIR) ? readdirSync(I18N_DIR) : []).sort((a, b) 
   const m = /^([a-z]{2}(?:-[A-Z]{2})?)(?:\.[a-z0-9-]+)?\.json$/.exec(f); if (!m) continue;
   Object.assign(i18nAll[m[1]] = i18nAll[m[1]] || {}, JSON.parse(readFileSync(join(I18N_DIR, f), 'utf8')));
 }
-const js = 'const I18N_ALL = ' + JSON.stringify(i18nAll) + ';\n\n' + ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'native.js', 'ads.js', 'widget.js', 'qr.js', 'sets.js', 'help.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
+const js = 'const I18N_ALL = ' + JSON.stringify(i18nAll) + ';\n\n' + ['core.js', 'edhbin.js', 'cloud.js', 'data.js', 'tasks.js', 'app.js', 'motion.js', 'filters.js', 'decks.js', 'dklist.js', 'viewer.js', 'zoom.js', 'collection.js', 'edh.js', 'value.js', 'extras.js', 'alerts.js', 'scan.js', 'builder.js', 'share.js', 'home.js', 'onboard.js', 'native.js', 'ads.js', 'widget.js', 'qr.js', 'sets.js', 'help.js', 'back.js', 'pwa.js', 'push.js', 'main.js'].map(rd).join('\n\n').replace(/<\/script/gi, '<\\/script').trim();
 
 const BUILD = createHash('sha1').update(css + body + js).digest('hex').slice(0, 8);      // version affichée dans Réglages : quel code le téléphone exécute
 const TITLE = 'Mana Orbit';

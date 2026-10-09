@@ -95,6 +95,8 @@ function openCardViewer(items, index) {
   const wishB = $('.imgv-wish', wrap), artB = $('.imgv-art', wrap), varsEl = $('.imgv-vars', wrap), varsH = $('.imgv-vh', wrap), varsL = $('.imgv-vl', wrap);
   const prevFocus = document.activeElement, from = pressOrigin(), fromEl = from ? MO.press : null, idx0 = Math.max(0, Math.min(items.length - 1, index | 0));
   const lk = l => ({ ja: 'jp', ko: 'kr', zhs: 'zh-CN', zht: 'zh-TW' }[l] || l);
+  /** Note « version anglaise » dans la langue voulue l (texte français inchangé ; allemand, espagnol… nommés) ; miss : Scryfall n'a pas cette langue (sinon : image en échec). */
+  const noImg = (l, miss) => { const c = lk(l); return c === 'fr' || !c ? T(miss ? 'Pas d\'image française sur Scryfall : version anglaise' : 'Image française indisponible : version anglaise') : T(miss ? 'Pas d\'image en {lang} sur Scryfall : version anglaise' : 'Image en {lang} indisponible : version anglaise', { lang: LANGS[c] ? T(LANGS[c]) : c }); };
   let vl = 'en', idx = Math.max(0, Math.min(items.length - 1, index | 0)), ctrl = null, urls = [], face = 0, it = null, lang = 'en', enBig = '', where = '', shown = 'en', vars = [], canSave = false, wantOpen = false, varT = 0, pickAt = -1;
   const wl0 = items.find(x => x.wl && x.plain && (x.lang || 'en') === 'en');
   if (wl0) { const ord = [...items.slice(idx), ...items.slice(0, idx)].filter(x => x.wl === wl0.wl && x.plain && (x.lang || 'en') === 'en'); langvLoad().then(() => langvPrefetch(ord.map(x => x.ln || x.name), wl0.wl)); }      // les suivantes sont déjà là quand on glisse
@@ -130,7 +132,7 @@ function openCardViewer(items, index) {
   const show = i => {                                            // charge l'image en arrière-plan puis fondu : jamais de carte à moitié dessinée
     face = i; wishPaint(); const probe = new Image(), mine = it;
     probe.onload = () => { if (imgView !== api || it !== mine) return; img.src = probe.src; img.hidden = false; requestAnimationFrame(() => img.classList.add('ok')); card.dataset.busy = '0'; };
-    probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : T('Image française indisponible : version anglaise')); show(0); flipB.hidden = true; } };
+    probe.onerror = () => { if (imgView !== api || it !== mine) return; card.dataset.busy = '0'; if (urls[i] !== enBig) { urls = [enBig]; caption('en', lang === 'en' ? '' : noImg(lang)); show(0); flipB.hidden = true; } };
     img.classList.remove('ok'); card.dataset.busy = '1'; probe.src = urls[i];
   };
   const go = n => {
@@ -152,10 +154,10 @@ function openCardViewer(items, index) {
       if (it.wl && ((it.plain && lang === 'en') || (r && r.missing && r.urls.length < 2))) { wu = await langvGet(it.ln || it.name, it.wl); if (imgView !== api || it !== mine) return; }
       if (wu) { urls = [wu.replace('/small/', '/large/')]; lang = it.wl; caption(lang, ''); flipB.hidden = true; }
       else if (r && r.urls.length) {
-        urls = r.urls; caption(r.lang || lang, r.missing ? T('Pas d\'image française sur Scryfall : version anglaise') : '');
+        urls = r.urls; caption(r.lang || lang, r.missing ? noImg(lang, true) : '');
         flipB.hidden = urls.length < 2; flipB.textContent = T('Retourner la carte');
-      } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? T('Pas d\'image française sur Scryfall : version anglaise') : ''); }                                // image seule : la langue est celle de l'image fournie
-      else { urls = [enBig]; caption('en', lang === 'en' ? '' : T('Image française indisponible : version anglaise')); }
+      } else if (it.plain) { urls = [enBig]; caption(lang, wu === '' ? noImg(it.wl, true) : ''); }                                // image seule : la langue est celle de l'image fournie
+      else { urls = [enBig]; caption('en', lang === 'en' ? '' : noImg(lang)); }
       canSave = !!(it.plain || wu);      // l'aperçu d'une offre garde l'impression de l'offre : on peut feuilleter les illustrations, pas les retenir
       vl = shown;      // langue de la vue : les illustrations retenues lui sont rattachées, même une impression anglaise (promo…)
       const pf = canSave ? artGet(vl, it.ln || it.name) : null;      // illustration choisie plus tôt pour cette carte (dans cette langue)
@@ -481,7 +483,7 @@ function dvRender() {
   close.hidden = !DV.live && !DV.adhoc;
 }
 function dvItemFor(it) {
-  if (it.s === 'nf' || !it.im) return null;
+  if (it.s === 'nf') return null;
   const dl = DV.dl && DV.dl.get(it.k), mv = dl && dvMoved(dl) ? ' · ' + T('{delta} par exemplaire', { delta: (dl.diff < 0 ? '▼ −' : '▲ +') + fmt(Math.abs(dl.diff)) }) : '';
   const ref = it.rf ? ' · ' + T('réf. Cardmarket {price}', { price: fmt(it.rf) }) : '';
   const own = it.ow ? (it.ow >= it.q ? T('dans ta collection') : TN(it.ow, '{n} possédée sur {total}', '{n} possédées sur {total}', { total: it.q })) : '';
@@ -489,7 +491,8 @@ function dvItemFor(it) {
   const extra = it.s === 'basic' ? T('Terrain de base') : rf2 ? [it.sb ? T('Réserve') : '', it.s === 'ok' ? fmt(it.c) + (it.q > 1 ? ' ' + T('pour {n}', { n: it.q }) : '') + ' · ' + T('prix tendance Cardmarket') : T('Prix inconnu'), own].filter(Boolean).join(' · ') : it.s === 'ok' ? [fmt(it.c) + (it.q > 1 ? ' ' + T('pour {n}', { n: it.q - (it.ow || 0) }) : ''), it.d, it.sl].filter(Boolean).join(' · ') + (it.sh ? ' · ' + TN(it.sh, '{n} manquante', '{n} manquantes') : '') + (it.ow ? ' · ' + TN(it.ow, '{n} possédée', '{n} possédées') : '') + ref + mv
     : it.s === 'own' ? T('Dans ta collection') : T('Aucune offre avec tes critères');
   const ol = !!it.ol;      // image de ta propre carte (sa langue) : pas la version de l'offre, donc ni extension ni numéro à relire sur Scryfall
-  return { key: it.k, name: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: it.im, lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
+  const nm = it.im ? null : zoomNamed(it.k, it.n, it.n, '');      // fiche pas encore lue (terrain de base, deck jamais cherché) : la carte par son nom
+  return { key: it.k, name: it.n, wl: ol ? '' : viewLang(String(it.k).replace(/^sb:/, ''), it.ow > 0 || it.s === 'own'), small: nm ? nm.small : it.im, ...(nm && nm.big ? { big: nm.big } : {}), lang: it.ol || it.l || 'en', set: ol ? '' : it.st, num: ol ? '' : it.nu, setName: ol ? '' : it.sn, extra, plain: ol || ((it.s === 'own' || it.s === 'basic' || rf2) && !it.st) };
 }
 function dvOpenCard(i) {
   const list = [], at = new Map();

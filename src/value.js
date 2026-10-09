@@ -102,7 +102,7 @@ const valDeltaHtml = (lab, d) => `<div class="vl-d"><span>${lab}</span>${d ? `<b
 /** Rangée d'une carte qui a bougé (Stats). */
 function valMoveRow(m) {
   const meta = COLL.meta[m.k] || {}, im = collImage(m.k, (COLL.map[m.k] || {}).l, meta.im).src;
-  return `<div class="crow ro" data-k="${esc(m.k)}"><span class="thumb" style="--h:${hash32(m.k) % 360}">${esc((m.n.trim()[0] || '?').toUpperCase())}${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span>
+  return `<div class="crow ro" data-k="${esc(m.k)}"><span class="thumb" style="--h:${hash32(m.k) % 360}"${zoomAt('coll', m.n)}>${esc((m.n.trim()[0] || '?').toUpperCase())}${im ? `<img alt="" loading="lazy" decoding="async" src="${esc(im)}">` : ''}</span>
     <span class="row-main"><span class="row-name">${esc(m.n)}</span><span class="row-meta">${m.q > 1 ? `<span class="tag accent">× ${nf0(m.q)}</span>` : ''}${valTag(m)}</span></span>
     <span class="row-price vl-mp"><b class="${valCls(m.lot)}">${valEur(m.lot)}</b><small>${esc(fmt(m.u0, 'EUR'))} → ${esc(fmt(m.u1, 'EUR'))}${m.q > 1 ? ' × ' + nf0(m.q) : ''}</small></span></div>`;
 }
