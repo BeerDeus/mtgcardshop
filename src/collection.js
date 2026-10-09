@@ -771,7 +771,7 @@ function collViewItem(k, ln) {
 
 /* ── Noms inconnus de Scryfall (faute de frappe, ligne d'en-tête, nom français de plusieurs cartes) : signalés, noms proches proposés ── */
 /** Cartes que Scryfall n'a pas trouvées (infos lues : null). */
-const collUnknown = () => Object.keys(COLL.map).filter(k => COLL.meta[k] === null);
+const collUnknown = () => Object.keys(COLL.map).filter(k => COLL.meta[k] === null && !BASIC_NAMES.has(k));      // terrains de base : toujours de vraies cartes
 /** Remplace une carte par une autre (nom anglais) : ses exemplaires rejoignent ceux de la nouvelle, langue par langue ; fr : nom français choisi → exemplaires sans langue en français.
  *  Retourne l'annulation (remet les deux entrées comme avant). */
 function collRename(k, en, fr) {
