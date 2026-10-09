@@ -12,7 +12,9 @@ writeFileSync(join(root, 'edhbin.cjs'), rd('edhbin.js'));      // copie pour le 
 // Feuille principale + feuilles par fonction (src/css/*.css, ordre alphabétique) : une seule <style>.
 const CSS_DIR = join(root, 'src', 'css');
 const css = [rd('style.css'), ...(existsSync(CSS_DIR) ? readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort().map(f => readFileSync(join(CSS_DIR, f), 'utf8')) : [])].join('\n').trim();
-const body = rd('body.html').trim();
+// Écran de lancement : son script part juste après #splash, avant le gros script (premier rendu : thème, mode, chorégraphie déjà lancée).
+const splashJs = rd('splash.js').replace(/<\/script/gi, '<\\/script').trim();
+const body = rd('body.html').trim().replace('<!--splash.js-->', () => `<script>\n${splashJs}\n</script>`);
 // Dictionnaires des langues (src/i18n/<code>.json : { « texte français » : « traduction » }) : un bloc JSON inerte par langue, placé avant le code.
 const I18N_DIR = join(root, 'src', 'i18n');
 // Une langue peut être répartie en plusieurs fichiers (en.json, en.app.json…) : ils sont fusionnés.
