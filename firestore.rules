@@ -89,6 +89,7 @@ service cloud.firestore {
             && request.resource.data.dsh is map && request.resource.data.dsh.size() <= 200)
           || (docId == 'profile'
             && request.resource.data.keys().hasOnly(['name', 'photo', 'updatedAt'])
+            && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is number)
             && (!('name' in request.resource.data)
                 || (request.resource.data.name is string && request.resource.data.name.size() <= 30))
             && (!('photo' in request.resource.data)
