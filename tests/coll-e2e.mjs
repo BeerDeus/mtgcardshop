@@ -260,5 +260,39 @@ assert.deepEqual(Object.fromEntries(['import', 'alerts', 'alerts/check', 'info',
 ok('token CardTrader : envoyé aux relais et recherches CardTrader, jamais à l\'import ni aux alertes');
 await sh.ctx.close();
 
+/* ── 11) grosse collection : « Afficher plus » ajoute sans tout repeindre, repaints de fond espacés ───── */
+const bg = await newPage(browser, world), q = bg.p;
+const shownKeys = () => q.$$eval('.coll-list .crow', r => r.map(x => x.dataset.k + '|' + x.dataset.ln));
+const freshKeys = n => q.evaluate(n => collSorted(filterItems(collItems(), COLL.f)).slice(0, n).flatMap(collRowItems).map(it => it.k + '|' + it.l), n);      // ce qu'un repaint complet afficherait
+const quiet = () => q.waitForFunction(() => (FRN.map || FRN.fail) && !FRN.p && !COLL.enrich && !VAL.run && !EDH.p, null, { timeout: 8000 });      // rien ne repeint en tâche de fond
+await q.evaluate(() => {
+  const W = ['Élan', 'elan', 'Écume', 'Zéphyr', 'zèle', 'Æther', 'Œil'];
+  for (let i = 0; i < 300; i++) { const n = W[i % W.length] + ' ' + String((i * 37) % 300).padStart(3, '0'), k = ownKey(n); COLL.map[k] = { n, q: i % 5 ? 2 : 1, ...(i % 4 ? {} : { l: 'en' }) }; COLL.meta[k] = { cm: i % 6, tl: 'Artifact', cl: '', ci: '', cd: 0, im: '', eu: 100 + i }; }
+  VAL.at = Date.now(); collChanged({ push: false }); openCollection('list');
+});
+await q.waitForFunction(() => document.querySelectorAll('.coll-list .crow').length === 120); await quiet();
+await q.$eval('.coll-list .crow', r => { r.__first = 1; });
+await q.click('.coll-more[data-act="more"]'); await q.waitForFunction(() => document.querySelectorAll('.coll-list .crow').length === 240);
+assert.equal(await q.$eval('.coll-list .crow', r => r.__first), 1, 'lignes déjà là gardées : la tranche suivante est ajoutée, pas de repaint complet');
+assert.match(await txt(q, '.coll-more[data-act="more"]'), /^Afficher 60 de plus · 60 restantes$/); assert.deepEqual(await shownKeys(), await freshKeys(240), 'même ordre, mêmes lignes qu\'un repaint complet');
+// une ligne retirée entre-temps : repli sur le repaint complet (aucune carte sautée)
+const one = await q.$$eval('.coll-list .crow', r => r.find(x => x.querySelector('.qstep b').textContent === '1').dataset.k);
+await q.click(`.crow[data-k="${one}"] [data-d="-1"]`); await q.waitForSelector('.sheet [data-ok]'); await q.click('.sheet [data-ok]'); await q.waitForFunction(k => !document.querySelector(`.crow[data-k="${k}"]`), one);
+await q.click('.coll-more[data-act="more"]'); await q.waitForFunction(() => !document.querySelector('.coll-more[data-act="more"]'));
+assert.deepEqual(await shownKeys(), await freshKeys(360), 'après un retrait : tout affiché, rien de sauté'); assert.equal((await shownKeys()).length, 299);
+ok('« Afficher plus » : tranche ajoutée au bas de la liste (lignes gardées), même ordre qu\'un repaint ; repaint complet si la liste a changé');
+await quiet();
+const paints = await q.evaluate(async () => {
+  const orig = collPaintBody, at = []; collPaintBody = k => { at.push(performance.now()); return orig(k); };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  await wait(2100); const t0 = performance.now(); for (let i = 0; i < 20; i++) collPaintSoon();      // dernier repaint il y a plus de 2 s : un seul, tout de suite
+  await wait(150); for (let i = 0; i < 20; i++) collPaintSoon();                                     // nouvelle rafale juste après : un seul repaint, 2 s après le précédent
+  await wait(2600); collPaintBody = orig;
+  return { n: at.length, first: Math.round(at[0] - t0), gap: Math.round(at[1] - at[0]) };
+});
+assert.equal(paints.n, 2, 'deux rafales de 20 : deux repaints'); assert.ok(paints.first < 600, 'premier repaint aussitôt (' + paints.first + ' ms)'); assert.ok(paints.gap >= 1990, 'second repaint 2 s après le premier (' + paints.gap + ' ms)');
+ok('lecture de fond : repaints de la liste espacés (au plus un toutes les 2 s)');
+assert.deepEqual(bg.errs, []); await bg.ctx.close();
+
 console.log('erreurs page :', errs.length ? errs : 'aucune'); assert.deepEqual(errs, []);
 await browser.close(); world.stop(); console.log('\nCOLL E2E OK'); process.exit(0);

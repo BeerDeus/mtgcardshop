@@ -4,7 +4,7 @@
 const COLL_KEY = 'deckdeal:coll:v1', COLL_SRC_KEY = 'deckdeal:coll:src', COLL_META_KEY = 'coll:meta', COLL_LI_KEY = 'coll:li', COLL_PAGE = 120;
 const COLL_RETRY = { off: 15000, err: 20000, live: 12000 };       // délais (ms) : nouvel essai hors ligne / en erreur, attente du serveur au démarrage
 const PX_KEY = 'deckdeal:px:v1', PX_TTL = 2 * DAY, PX_CHUNK = 40;
-const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'cm', topN: 10, topBy: 'lot', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', fb: null, cmdrSeen: '', freshAt: 0, names: null, namesP: null, pushT: 0, runId: 0 };
+const COLL = { px: {}, pxRun: null, pxMsg: null, map: {}, meta: {}, li: {}, u: 0, s: '', base: null, ru: 0, live: false, pushing: 0, again: false, deferred: null, retryT: 0, liveT: 0, cloud: 'off', err: '', unsub: null, el: null, tab: 'list', src: 'cm', topN: 10, topBy: 'lot', f: newFilter(), sort: 'name', shown: COLL_PAGE, enrich: null, enrichErr: '', fb: null, cmdrSeen: '', freshAt: 0, names: null, namesP: null, pushT: 0, runId: 0, seq: 0, view: null, painted: null, paintT: 0, paintAt: 0 };
 try { if (localStorage.getItem(COLL_SRC_KEY) === 'ct') COLL.src = 'ct'; } catch (e) { /* stockage indisponible */ }
 const collCount = () => Object.keys(COLL.map).length;
 const collCopies = () => { let n = 0; for (const k in COLL.map) n += COLL.map[k].q; return n; };
@@ -50,7 +50,7 @@ const collLangMissingCount = () => Object.values(collLangMissing()).reduce((a, x
 /** Cherche l'image d'une carte dans une langue (carte du scan, pas encore dans la collection), puis repeint. */
 async function langImgFor(k, name, l) {
   if (!l || l === 'en' || !SCRY_LANG[l] || (liKey(l, k) in COLL.li)) return;
-  try { const got = await scryLangImages([name], l); COLL.li[liKey(l, k)] = got.get(k) || ''; collMetaSave(); scanPaintList(); if (COLL.el) collPaintBody(true); } catch (e) { /* pas d'image dans cette langue pour l'instant : on garde l'anglaise */ }
+  try { const got = await scryLangImages([name], l); COLL.li[liKey(l, k)] = got.get(k) || ''; collMetaSave(); scanPaintList(); collPaintSoon(); } catch (e) { /* pas d'image dans cette langue pour l'instant : on garde l'anglaise */ }
 }
 /** Change la langue d'une ligne de la collection ('' = non précisée). from : la ligne concernée (sans lui : la langue la plus fournie). Si la carte a déjà une ligne dans la nouvelle langue, les exemplaires s'y ajoutent. */
 function collSetLang(k, l, from) {
@@ -65,7 +65,7 @@ function collSetLang(k, l, from) {
 
 /** Toute modification passe par ici : enregistre, envoie au compte, met à jour la page de saisie et la recherche en cours. */
 function collChanged(o = {}) {
-  COLL.u = Date.now(); collWrite();
+  COLL.u = Date.now(); COLL.seq++; collWrite();
   if (o.push !== false) collPushSoon();
   if (o.paint !== false) collPaint(); else collPaintHead();
   paintCollSection(); refreshDeck(); alSoon(); trSoon();
@@ -261,7 +261,7 @@ async function pxRun(targets, o = {}) {
           const o = p.notFound ? null : cheapestOffer(p.offers, opts);
           COLL.px[key] = { p: o ? o.price : null, t: Date.now(), s: sig, c: o ? o.cur : '' };
           if (o) st.real++; else st.none++;
-          pxSave(); if (COLL.el) collPaintBody(true); collPaintHead();
+          pxSave(); collPaintSoon(); collPaintHead();
         },
       };
       await runLive(chunk.map(t => ({ key: t.key, name: t.name, qty: 1 })), opts, hooks, st.ctrl.signal);
@@ -329,7 +329,7 @@ async function collEnrich() {
       for (let i = 0; i < miss.length; i += 75) {
         const chunk = miss.slice(i, i + 75), got = await scryCollection(chunk.map(k => COLL.map[k] ? COLL.map[k].n : k), st.ctrl.signal);
         for (const k of chunk) { const g = got.get(k), old = COLL.meta[k]; COLL.meta[k] = g || (old ? { ...old, ci: old.ci ?? '' } : null); }
-        st.done = Math.min(miss.length, i + 75); collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true);
+        st.done = Math.min(miss.length, i + 75); collMetaSave(); collPaintHead(); collPaintSoon();
       }
       if (full) COLL.freshAt = Date.now();
       st.ph = 'img';
@@ -337,7 +337,7 @@ async function collEnrich() {
         const base = st.done;
         const got = await scryLangImages(keys.map(k => COLL.map[k] ? COLL.map[k].n : k), l, st.ctrl.signal, n => { st.done = base + n; collPaintHead(); });
         for (const k of keys) COLL.li[liKey(l, k)] = got.get(k) || '';
-        st.done = base + keys.length; collMetaSave(); collPaintHead(); if (COLL.el) collPaintBody(true); scanPaintList();
+        st.done = base + keys.length; collMetaSave(); collPaintHead(); collPaintSoon(); scanPaintList();
       }
     } catch (e) { if (e.name !== 'AbortError') COLL.enrichErr = e.code === 'rate' ? T('Scryfall limite les requêtes : réessaie dans une minute') : T('Scryfall injoignable : réessaie plus tard'); }
     finally {
@@ -406,6 +406,18 @@ function collFrLoad() {
 }
 const SORT_OPTS = [['name', T('Nom')], ['qty', T('Quantité')], ['price', T('Prix')], ['cmc', T('Coût')], ['decks', T('Decks EDHREC')], ['new', T('Ajout : récentes en haut')], ['old', T('Ajout : anciennes en haut')]];
 const isDateSort = () => COLL.sort === 'new' || COLL.sort === 'old';
+/** Cartes de l'écran, gardées tant que rien ne change (5 000 cartes : liste, filtre et tri coûtent ~0,3 s sur un téléphone moyen). Clé : COLL.seq, monté à chaque changement des cartes, des infos ou des prix (collChanged, collPaint, collPaintSoon), et les objets remplacés ailleurs (compte, noms français, EDHREC). */
+function collAll() {
+  const v = COLL.view, frc = typeof FRC !== 'undefined' ? FRC.cat : null;
+  if (v && v.seq === COLL.seq && v.map === COLL.map && v.meta === COLL.meta && v.px === COLL.px && v.edh === EDH.data && v.frn === FRN.map && v.frc === frc) return v;
+  return (COLL.view = { seq: COLL.seq, map: COLL.map, meta: COLL.meta, px: COLL.px, edh: EDH.data, frn: FRN.map, frc, all: collItems(), sk: null, filtered: null, sorted: null });
+}
+/** …filtrées puis triées, gardées pour un même tri, une même source de prix et un même filtre. */
+function collListOf(v) {
+  const f = COLL.f, sk = [COLL.sort, COLL.src, f.q, [...f.colors].sort().join(''), f.type, f.cmc, f.cmdr].join('\u0001');
+  if (v.sk !== sk) { v.filtered = filterItems(v.all, f); v.sorted = collSorted(v.filtered); v.sk = sk; }
+  return v;
+}
 function collItems() {
   return Object.entries(COLL.map).map(([k, x]) => {
     const px = COLL.px[k], dn = frName(k, x.l), fn = frOf(k), it = { k, n: x.n, ...(dn ? { dn } : {}), ...(fn && fn !== dn ? { fn } : {}), q: x.q, l: x.l || '', d: x.d || 0, ...(COLL.meta[k] || {}), ...(px ? { rp: px.p, rt: px.t, rc: px.c || 'EUR' } : {}) };
@@ -509,7 +521,14 @@ function collPaintHead() {
   else stt.hidden = true;
   valPaintAlert();
 }
-function collPaint() { collPaintHead(); if (COLL.el) collPaintBody(true); }
+function collPaint() { COLL.seq++; collPaintHead(); if (COLL.el) collPaintBody(true); }
+/** Repaint de la liste pendant une lecture de fond (infos Scryfall, prix réels) : au plus un toutes les 2 s. Avec 5 000 cartes, chaque repaint coûte ~1 s sur un téléphone moyen : à chaque lot, l'écran figeait et la lecture elle-même ralentissait. */
+const COLL_PAINT_GAP = 2000;
+function collPaintSoon() {
+  COLL.seq++;
+  if (!COLL.el || COLL.paintT) return;
+  COLL.paintT = setTimeout(() => { COLL.paintT = 0; if (COLL.el) collPaintBody(true); }, Math.max(0, COLL.paintAt + COLL_PAINT_GAP - Date.now()));
+}
 
 /** Barres horizontales (couleurs, familles) : rows = [[libellé html, valeur, classe]]. */
 function barsHtml(rows) {
@@ -545,8 +564,11 @@ function collEmptyHtml() {
 /** Remplit la liste ou les stats selon l'onglet. keep : garder la position de défilement. */
 function collPaintBody(keep) {
   const el = COLL.el; if (!el) return;
-  const sc = $('.dv-scroll', el), pos = keep && sc ? sc.scrollTop : 0, host = $('.coll-main', el), all = collItems();
+  clearTimeout(COLL.paintT); COLL.paintT = 0; COLL.paintAt = Date.now(); COLL.painted = null;
+  if (!keep) COLL.seq++;      // affichage neuf (onglet, tri) : liste relue, jamais celle gardée
+  const sc = $('.dv-scroll', el), pos = keep && sc ? sc.scrollTop : 0, host = $('.coll-main', el);
   if (keep && document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && host.contains(document.activeElement)) { COLL.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas
+  const v = collAll(), all = v.all;
   $('.coll-controls', el).hidden = !all.length;
   if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
   $('.coll-fwrap', el).hidden = COLL.tab !== 'list' && COLL.tab !== 'trade'; $('#collSort', el).closest('.coll-sort').hidden = COLL.tab === 'trade'; valPaintAlert();
@@ -555,23 +577,34 @@ function collPaintBody(keep) {
   else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) { res.innerHTML = edhResHtml(); edhThemesSync(); } else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
   else if (COLL.f.cmdr === 'played' && !EDH.data) { host.innerHTML = edhWaitHtml(); edhEnsure(); }
   else {
-    const filtered = filterItems(all, COLL.f), sorted = collSorted(filtered), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
+    const { filtered, sorted } = collListOf(v), shown = sorted.slice(0, COLL.shown), act = filterActive(COLL.f);
     const known = all.filter(i => i.tl != null || i.cm != null).length, hid = (COLL.f.colors.size || COLL.f.type || COLL.f.cmc !== '' || COLL.f.cmdr) && known < all.length;
     const undated = isDateSort() ? all.filter(i => !i.d).length : 0;
     host.innerHTML = `${undated ? `<p class="hint coll-count">${TN(undated, '{n} carte sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', '{n} cartes sans date d\'ajout (déjà là avant le suivi des dates) : {pos}, par nom.', { pos: COLL.sort === 'new' ? T('en bas') : T('en haut') })}</p>` : ''}${act ? `<p class="hint coll-count">${TN(filtered.length, '{n} carte sur {total}', '{n} cartes sur {total}', { total: nf0(all.length) })}${hid ? ' · ' + T('les cartes sans infos sont masquées par ces filtres') : ''}</p>` : ''}
       ${shown.length ? `<div class="coll-list">${shown.flatMap(collRowItems).map(crowHtml).join('')}</div>` : '<p class="hint listempty">' + T('Aucune carte ne correspond.') + '</p>'}
       ${sorted.length > shown.length ? `<button class="btn ghost block coll-more" type="button" data-act="more">${T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(COLL_PAGE, sorted.length - shown.length)), b: nf0(sorted.length - shown.length) })}</button>` : ''}`;
+    COLL.painted = sorted;
   }
   if (sc) sc.scrollTop = pos;
   if (!keep) stagger($$('.coll-list, .cs-tiles, .dk-res', host));
 }
 
+/** « Afficher plus » : seule la tranche suivante est ajoutée au bas de la liste (tout repeindre prenait ~2 s à 1 300 lignes sur un téléphone moyen). Liste changée depuis le dernier repaint (version, tri, filtre) : repaint complet, comme avant. */
+function collMore() {
+  const host = $('.coll-main', COLL.el), list = host && $('.coll-list', host), btn = host && $('.coll-more[data-act="more"]', host), from = COLL.shown;
+  COLL.shown += COLL_PAGE;
+  const sorted = list && btn && COLL.tab === 'list' && COLL.painted ? collListOf(collAll()).sorted : null;
+  if (!sorted || sorted !== COLL.painted) { collPaintBody(true); return; }
+  list.insertAdjacentHTML('beforeend', sorted.slice(from, COLL.shown).flatMap(collRowItems).map(crowHtml).join(''));
+  const left = sorted.length - COLL.shown;
+  if (left > 0) btn.textContent = T('Afficher {a} de plus · {b} restantes', { a: nf0(Math.min(COLL_PAGE, left)), b: nf0(left) }); else btn.remove();
+}
 function closeCollection() { if (COLL.el) COLL.el.__close(); }
 /** Ouvre l'écran de la collection (tab : 'list' | 'stats'). */
 function openCollection(tab) {
   closeCollection();
   if (tab) COLL.tab = tab;
-  COLL.shown = COLL_PAGE; collFrLoad();
+  COLL.shown = COLL_PAGE; COLL.view = null; collFrLoad();
   const wrap = document.createElement('div'); wrap.className = 'dv coll'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', T('Ma collection'));
   wrap.innerHTML = `<header class="dv-head"><button class="icon-btn dv-back" type="button" data-act="close" aria-label="${T('Fermer la collection')}"><svg class="i"><use href="#i-back"/></svg></button>
       <div class="dv-title"><b>${T('Ma collection')}</b><span></span></div>
@@ -636,7 +669,7 @@ function openCollection(tab) {
       else if (act === 'resync') collSyncNow();
       else if (act === 'pxstop') { if (COLL.pxRun) COLL.pxRun.ctrl.abort(); }
       else if (act === 'pxok') { COLL.pxMsg = null; collPaintHead(); }
-      else if (act === 'more') { COLL.shown += COLL_PAGE; collPaintBody(true); }
+      else if (act === 'more') collMore();
       else if (act === 'dcan') { COLL.f.cmdr = 'can'; COLL.cmdrSeen = 'can'; if (COLL.fb) COLL.fb.paint(); collPaintBody(true); }
       else if (act === 'topmore') { COLL.topN += 10; collPaintBody(true); }
       else if (act === 'topby') { if (COLL.topBy !== b.dataset.v) { COLL.topBy = b.dataset.v === 'one' ? 'one' : 'lot'; COLL.topN = 10; haptic('tap'); collPaintBody(true); } }
