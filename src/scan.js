@@ -120,7 +120,7 @@ function scanPaintList() {
   const th = u => (u ? `<img class="sc-th" alt="" src="${esc(u)}">` : '<span class="sc-th"></span>');
   const pend = SC.pend.map((p, k) => `<div class="sc-item pend" data-p="${p.id}">${th(p.thumb)}<span class="sc-n"><b>${T('Lecture…')}</b><small>${esc(p.label)}${k ? ' · ' + T('{n} avant', { n: k }) : ''}</small></span><span class="sc-spin" aria-hidden="true"></span></div>`).join('');
   const pic = u => (u ? `<span class="sc-pic"><img alt="${T('Ta photo')}" src="${esc(u)}"><i>${T('Ta photo')}</i></span>` : '');
-  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${pic(m.shot)}${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>${T('Nom non reconnu')}</small></span><button type="button" class="btn ghost small" data-a="type">${T('Saisir')}</button><button type="button" class="sc-x" data-a="rm" aria-label="${T('Ignorer {name}', { name: esc(m.label) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
+  const miss = SC.miss.map(m => `<div class="sc-item miss" data-m="${m.id}">${pic(m.shot)}${th(m.thumb)}<span class="sc-n"><b>${esc(m.label)}</b><small>${T('Nom non reconnu')}${m.raw ? ' · ' + T('lu « {raw} »', { raw: esc(m.raw) }) : ''}</small></span><button type="button" class="btn ghost small" data-a="type">${T('Saisir')}</button><button type="button" class="sc-x" data-a="rm" aria-label="${T('Ignorer {name}', { name: esc(m.label) })}"><svg class="i"><use href="#i-close"/></svg></button></div>`).join('');
   if (SC.pm) {      // prix rapide : la liste montre des prix, rien à ajouter
     list.innerHTML = pend + miss + (SC.pq.length ? SC.pq.map(scanPriceRow).join('') : pend || miss ? '' : '<p class="hint sc-empty">' + T('Prix rapide : cadre une carte et appuie sur le cercle. Tu vois sa tendance Cardmarket et l\'offre CardTrader la moins chère ; rien n\'est ajouté à ta collection (le bouton + le fait si tu la gardes).') + '</p>');
     const go = $('.dv-foot [data-act="done"]', el); go.hidden = true; $('.dv-foot [data-act="close"]', el).textContent = T('Fermer');
@@ -345,7 +345,7 @@ async function scanMatch(lines, cat, lang) {
 /* ── Autres langues : nom ni dans le catalogue de la langue des noms ni en anglais (carte italienne lue avec l'appli en français) ──────────────
    Les lignes lues partent au serveur, qui les cherche dans les catalogues des autres langues (proxy.mjs › /api/names/find, une requête) : la carte trouvée
    garde sa langue (drapeau, image, exemplaire de la collection). Seulement quand rien n'est sûr : une carte de la langue de l'appli ou anglaise n'en déclenche pas. */
-const OTH = { off: false, memo: new Map() };
+const OTH = { off: 0, memo: new Map() };      // off : heure jusqu'à laquelle le serveur n'est plus redemandé (route absente : serveur pas encore redémarré après une mise en ligne)
 /** Petits mots de liaison des langues latines (di, del, de, der, el, do…). */
 const LINK_WORDS = new Set(['di', 'del', 'della', 'delle', 'dello', 'dei', 'degli', 'dal', 'dalla', 'il', 'lo', 'gli', 'nel', 'nella', 'da', 'de', 'des', 'du', 'la', 'le', 'les', 'el', 'los', 'las', 'do', 'dos', 'das', 'der', 'die', 'den', 'dem', 'und', 'von', 'zu', 'zum', 'zur', 'al', 'en', 'em', 'com', 'con', 'per', 'sur', 'aux', 'au', 'ein', 'eine']);
 /** Texte lu qui n'a pas l'air écrit dans la langue du nom reconnu (ref) : accents ou élision (l', dell'…) que ref n'a pas, ou un mot absent de ref qui est un mot de liaison
@@ -359,7 +359,7 @@ function looksForeign(raw, ref) {
 const scanDoubt = m => !!m && m.score < 0.92 && looksForeign(m.raw, m.card === 'en' ? m.name : frName(m.key, m.card) || m.name);
 /** Lignes lues → carte trouvée dans une autre langue (serveur) : { name, key, score, raw, card, img, via } ou null. st : budget de la carte (2 requêtes au plus). */
 async function scanOther(lines, st) {
-  if (OTH.off || !CTX.proxy || !(st.n < 2)) return null;
+  if (Date.now() < OTH.off || !CTX.proxy || !(st.n < 2)) return null;
   const qs = [...new Set(lines.map(l => String(l.text || '').trim()).filter(t => t.length >= 3 && t.length <= 60 && (t.match(/[A-Za-zÀ-ÿ]/g) || []).length >= t.length * 0.6))].slice(0, 4);      // mêmes lignes que core.js › ocrMatches
   if (!qs.length) return null;
   const skip = FRC.cat ? FRC.cat.l || FRX.l : '', k = skip + '\n' + qs.join('\n');      // langue des noms déjà comparée sur l'appareil ; catalogue pas encore là : le serveur la cherche aussi
@@ -367,7 +367,7 @@ async function scanOther(lines, st) {
   st.n++; let hit = null;
   try {
     const r = await fetch('api/names/find?' + new URLSearchParams([...qs.map(q => ['q', q]), ['skip', skip]]), { headers: { Accept: 'application/json' } });
-    if (!r.ok && !r.headers.get('retry-after') && r.status !== 400) { OTH.off = true; return null; }      // serveur sans cette recherche (ancienne version, coupée) : plus demandé de la session ; 429 / occupé : la carte suivante redemande
+    if (!r.ok && !r.headers.get('retry-after') && r.status !== 400) { OTH.off = Date.now() + 5 * 60e3; return null; }      // serveur sans cette recherche (ancienne version, coupée) : redemandé 5 min plus tard ; 429 / occupé : la carte suivante redemande
     if (!r.ok) return null;
     const h = (await r.json()).hit;
     if (h && typeof h.name === 'string' && h.name && NAMES_LANGS.includes(h.lang) && h.score >= 0.72 && h.score <= 1) {
@@ -391,6 +391,7 @@ async function readNameAuto(src, box, outW, psm, cat, retry, st) {
       for (const lang of langs) {
         if (!SC.el) return best;
         const lines = await ocrLines(c, lang, psm); read.push(...lines);
+        if (!SC.raw) { const l = lines.find(x => String(x.text || '').replace(/[^\p{L}]/gu, '').length >= 3); if (l) SC.raw = String(l.text).trim().slice(0, 60); }      // premier texte lu de la carte : montré si le nom n'est pas reconnu
         const m = await scanMatch(lines, cat, lang);
         if (m && (!best || m.score > best.score)) { best = m; best.lang = lang; }
         if (best && best.score >= 0.84 && !scanDoubt(best)) return best;
@@ -406,7 +407,7 @@ const thirdBox = src => ({ x: 0, y: 0, w: src.naturalWidth || src.width, h: Math
 /** Une capture → meilleure lecture. Aperçu de l'app : la capture EST la bande « nom + mana » (lue entière, les symboles de mana sont ignorés), puis en texte épars si rien de sûr.
  *  Photo d'une carte entière (« Appareil », galerie) : bande du titre en haut, puis le tiers haut si rien de sûr ; le reste de l'image n'est jamais lu. */
 async function readCard(src, cat, strip) {
-  const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, st = { n: 0 };      // st : requêtes « autres langues » de cette carte (2 au plus)
+  const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height, st = { n: 0 }; SC.raw = '';      // st : requêtes « autres langues » de cette carte (2 au plus)
   if (strip) {
     let m = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1400, '6', cat, true, st);
     if ((!m || m.score < 0.84) && SC.el) { const all = await readNameAuto(src, { x: 0, y: 0, w: W, h: H }, 1600, '11', cat, false, st); if (all && (!m || all.score > m.score)) m = all; }
@@ -465,7 +466,7 @@ async function scanWork() {
       if (!SC.el || job.s !== SC.session) continue;
       SC.ms = performance.now() - t0; SC.pend = SC.pend.filter(p => p.id !== job.id);
       if (m && m.score >= 0.72) { if (SC.pm) scanPriceAdd(m); else scanAdd(m, 1, m.score < 0.84, job.shot); haptic('ok'); scanHint(m.score >= 0.84 ? '✓ ' + m.name : T('À vérifier : {name}', { name: m.name }), m.score >= 0.84 ? 'ok' : 'busy'); }
-      else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '', shot: job.shot || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
+      else { SC.miss.push({ id: job.id, label: job.label, thumb: job.thumb || '', shot: job.shot || '', raw: (m && m.raw) || SC.raw || '' }); if (fail) scanHint(fail, 'bad'); scanPaintList(); }
     }
   } finally { SC.working = false; SC.workEnd = performance.now(); }
 }
