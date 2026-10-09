@@ -2,11 +2,12 @@
 // filtres, feuille d'un deck), chargement du deck dans la page de saisie, cache, fichier absent. Faux edh.tsv servi par une route Playwright.
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
-import { chromium, startWorld, newPage, txt, ok, toInput, toHome } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome, signInFake } from './e2e-world.mjs';
 
 const world = await startWorld({ port: 18930 });
 const browser = await chromium.launch({ executablePath: (process.env.CHROMIUM || '/opt/pw-browsers/chromium'), args: ['--no-sandbox'] });
 const { p, errs } = await newPage(browser, world);
+await signInFake(p);      // onglet « Decks » : réservé aux comptes vérifiés (gate-e2e)
 
 /* fichier : Edgar Markov (WBR, 12 345 decks) · paire Tymna + Thrasios (WUBG) · Craterhoof (G, 100 decks) — decks de ≥ 20 cartes */
 const filler = (n, from = 0) => Array.from({ length: n }, (_, i) => `K\t1\tFiller ${from + i}`);
@@ -168,6 +169,7 @@ await p.click('#toast .toast-act'); assert.deepEqual(Object.keys(await p.evaluat
 await p.click('.dk-act[data-act="dkwish"]'); await p.click('.dk-act[data-act="dksave"]'); assert.equal(await txt(p, '#toast'), '« Edgar Markov » ajouté à Mes decks Voir');
 const saved = await p.evaluate(() => allDecks().map(d => ({ name: d.name, text: d.text, n: dkCountText(d.text), eng: engIsOn(d.id) })));
 assert.equal(saved.length, 1); assert.equal(saved[0].name, 'Edgar Markov'); assert.match(saved[0].text, /^Commander\n1 Edgar Markov\n\n1 Sol Ring\n/); assert.equal(saved[0].n, '34/100 cartes'); assert.equal(saved[0].eng, false, 'pas monté : ses cartes ne sont pas réservées');
+await p.waitForFunction(() => document.querySelector('.dk-act[data-act="dkwish"]').disabled, null, { timeout: 3000 });      // compte : le deck arrive dans « Mes decks » au retour de la synchro, la feuille se repeint alors
 assert.deepEqual(await acts(), [['dksave', 'Dans mes decks', 'Enregistré sous « Edgar Markov »', true], ['dkwish', 'Manquantes dans Je recherche', 'Ta liste d\'échange les recherche déjà', true]]);
 assert.deepEqual(Object.keys(await p.evaluate(() => TR.wish)).sort(), ['mana crypt', 'swords to plowshares'], 'souhaits ajoutés ici retirés');
 assert.equal(await p.evaluate(() => trState().want.find(x => x.k === 'command tower').q), 1, 'Command Tower recherchée une fois, pas deux');
@@ -217,7 +219,7 @@ ok('feuille : 23 cartes à acheter (la plus chère d\'abord), lien EDHREC sûr ;
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk'); assert.equal(hits, 1, 'copie locale (moins de 6 jours)');
 await p.close();
 mode = 'absent';
-const b = await newPage(browser, world); await b.p.route('**/edh.tsv', r => { hits++; return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"asset_missing"}' }); });
+const b = await newPage(browser, world); await signInFake(b.p); await b.p.route('**/edh.tsv', r => { hits++; return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"asset_missing"}' }); });
 await toHome(b.p); await b.p.click('#btnColl'); await b.p.waitForSelector('.coll.on'); await b.p.click('.coll-tools [data-act="import"]'); await b.p.waitForSelector('#ciText'); await b.p.fill('#ciText', '1 Edgar Markov\n1 Sol Ring'); await b.p.waitForTimeout(150); await b.p.click('#ciGo');
 await b.p.waitForFunction(() => document.querySelectorAll('.crow').length === 2); await b.p.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 2, null, { timeout: 8000 });
 await b.p.click('#collSeg [data-v="decks"]'); await b.p.waitForSelector('.coll-main .dv-empty'); assert.match(await txt(b.p, '.coll-main .dv-empty'), /Decks indisponibles.*edh\.bin\.gz/);
@@ -232,7 +234,7 @@ await b.ctx.close();
 import { createRequire } from 'node:module'; import { gzipSync } from 'node:zlib';
 const req = createRequire(import.meta.url), CORE = req('../src/core.js'), BIN = gzipSync(Buffer.from(req('../src/edhbin.js').edhPack(CORE.edhModelFromTsv(FILE), CORE.ownKey)));
 const openDecks = async pg => {
-  await toHome(pg); await pg.click('#btnColl'); await pg.waitForSelector('.coll.on'); await pg.click('.coll-tools [data-act="import"]'); await pg.waitForSelector('#ciText');
+  await signInFake(pg); await toHome(pg); await pg.click('#btnColl'); await pg.waitForSelector('.coll.on'); await pg.click('.coll-tools [data-act="import"]'); await pg.waitForSelector('#ciText');
   await pg.fill('#ciText', '1 Edgar Markov\n2 Sol Ring\n1 Arcane Signet\n1 Llanowar Elves\n1 Craterhoof Behemoth\n3 Plains'); await pg.waitForTimeout(150); await pg.click('#ciGo');
   await pg.waitForFunction(() => document.querySelectorAll('.crow:not(.dk)').length === 6); await pg.waitForFunction(() => document.querySelectorAll('.crow .px.cm').length >= 5, null, { timeout: 8000 });
   await pg.click('#collSeg [data-v="decks"]'); await pg.waitForSelector('.crow.dk', { timeout: 8000 });
@@ -249,7 +251,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   await c.p.fill('#dkQ', 'tymna'); await c.p.waitForTimeout(260); assert.equal((await names(c.p)).length, 1, 'recherche sur l\'index binaire');
   if (mode === 'gzip brut') {      // copie gardée : après rechargement, affichée tout de suite ; le texte n'est pas redemandé, le binaire n'est qu'une lecture de contrôle
     await c.p.unroute('**/edh.bin.gz'); await c.p.unroute('**/edh.tsv'); let again = 0; await c.p.route('**/edh.bin.gz', r => { again++; return r.fulfill({ status: 404, body: '{}' }); }); await c.p.route('**/edh.tsv', r => { again++; return r.fulfill({ status: 404, body: '{}' }); });
-    await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(500); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 });
+    await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(500); await signInFake(c.p); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 });
     assert.equal((await names(c.p)).length, 4, 'decks lus depuis la copie binaire de l\'appareil'); await c.p.waitForTimeout(300); assert.equal(again, 1, 'une seule lecture de contrôle en arrière-plan (404 ici, ignorée) : la copie de l\'appareil reste');
   }
   ok('fichier binaire (' + mode + ') : 4 decks identiques, 1 requête, texte non demandé, feuille et recherche fonctionnent' + (mode === 'gzip brut' ? ', copie gardée hors ligne' : ''));
@@ -266,7 +268,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   await openDecks(c.p); const n0 = (await names(c.p)).length; assert.ok(n0 < 4, 'ancienne version : ' + n0 + ' deck(s)');
   // le site publie une version plus récente (autre ETag) ; au rechargement la copie s'affiche, puis est remplacée sans rien toucher
   cur = { body: NEW, etag: '"new"' };
-  const reopen = async () => { await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(400); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 }); };
+  const reopen = async () => { await c.p.reload(); await c.p.waitForSelector('#btnColl'); await c.p.waitForTimeout(400); await signInFake(c.p); await toHome(c.p); await c.p.click('#btnColl'); await c.p.waitForSelector('.coll.on'); await c.p.click('#collSeg [data-v="decks"]'); await c.p.waitForSelector('.crow.dk', { timeout: 8000 }); };
   await reopen(); await c.p.waitForFunction(() => document.querySelectorAll('.crow.dk').length === 4, null, { timeout: 8000 });
   assert.deepEqual((await names(c.p)).length, 4, 'version récente affichée en arrière-plan');
   // ETag inchangé : rien n'est relu, les données restent
@@ -370,7 +372,7 @@ for (const [mode, headers] of [['gzip transparent', { 'content-encoding': 'gzip'
   const own = ['1 Edgar Markov', '1 Craterhoof Behemoth', ...Array.from({ length: 39 }, (_, i) => `1 Filler ${i}`), ...Array.from({ length: 53 }, (_, i) => `1 Filler ${100 + i}`), '1 Filler 200', '1 Filler 201', '1 Filler 202'].join('\n');
   const h = await newPage(browser, world, { goto: false, init: `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: ${JSON.stringify(own)}, u: 1, s: '', b: null })); } catch (e) {}` });
   await h.p.route('**/edh.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: FILE60 }));
-  await h.p.goto(world.url); await h.p.waitForTimeout(500); await toHome(h.p);
+  await h.p.goto(world.url); await h.p.waitForTimeout(500); await signInFake(h.p); await toHome(h.p); await h.p.waitForFunction(() => document.querySelector('#btnBuild').dataset.lock === '0');      // accueil repeint après la connexion
   assert.equal(await txt(h.p, '#hmBuildSub'), 'Decks EDHREC comparés à ta collection', 'avant le fichier (lu 2,5 s après l\'accueil) : la phrase d\'attente');
   await h.p.waitForFunction(() => HM.best, null, { timeout: 12000 }); await h.p.waitForTimeout(200);
   assert.equal(await txt(h.p, '#hmBuildPct'), '66 %'); assert.equal(await h.p.$eval('#hmBuildSub .hm-bn', e => e.textContent), 'Edgar Markov'); assert.equal((await h.p.$eval('#hmBuildSub .hm-bc', e => e.textContent)).replace(/\s/g, ' '), '≈ 100 € pour finir');

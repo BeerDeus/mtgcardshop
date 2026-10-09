@@ -56,7 +56,7 @@ ok('vues : sens des transitions (fwd / back) et reflet du total');
 
 /* collection vide : illustration + fondu des onglets */
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on');
-assert.equal(await p.$$eval('.empty-art i', e => e.length), 3, 'collection vide : trois cartes en éventail'); assert.match(await txt(p, '.dv-empty'), /Ta collection est vide/);
+assert.equal(await p.$$eval('.empty-art i', e => e.length), 3, 'collection vide : trois cartes en éventail'); assert.match(await txt(p, '.dv-empty'), /Pas encore de cartes pour l'instant/);
 ok('collection vide : illustration');
 await p.click('.coll-tools [data-act="import"]'); await p.waitForSelector('#ciText');
 await p.fill('#ciText', '1 Sol Ring\n1 Llanowar Elves'); await p.waitForTimeout(150); await p.click('#ciGo');

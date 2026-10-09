@@ -344,6 +344,9 @@ function edhDeckActs(api, r, name) {
         added.clear(); trChanged();
       }
       paint();
+      // dans le compte (toujours, les decks EDHREC étant réservés aux comptes), le deck n'arrive dans « Mes decks » qu'au retour de la synchro locale :
+      // la feuille se repeint dès qu'il y est (ses manquantes passent alors dans « Je recherche »)
+      if (cloudOn()) { const until = Date.now() + 5000, again = () => { if (!api.wrap.isConnected) return; if (edhSavedDeck(text)) paint(); else if (Date.now() < until) setTimeout(again, 80); }; setTimeout(again, 0); }
       const msg = T('« {name} » ajouté à Mes decks', { name: nm }), al = alSaveOffer(text, id);      // alertes possibles mais coupées : proposées ici aussi (alerts.js)
       toast(al ? msg + ' · ' + T('Me prévenir des baisses ?') : msg, al || { label: T('Voir'), fn: () => { api.close(); closeCollection(); setTimeout(openDecks, 260); } });
     } else if (act === 'dkwish') {
@@ -430,6 +433,10 @@ function edhClick(e) {
   else if (act === 'dqx') { EDH.q = ''; EDH.shown = 30; collPaintBody(true); const i = $('#dkQ', COLL.el); if (i) i.focus({ preventScroll: true }); }
   else if (act === 'dmore') { EDH.shown += 30; collPaintBody(true); }
   else if (act === 'dretry') edhRetry();
+  else if (act === 'ggoogle') edhGateGoogle(b);
+  else if (act === 'gmail') { haptic('tap'); openAccount(); }
+  else if (act === 'gsend') edhGateSend(b);
+  else if (act === 'gcheck') edhGateCheck(b);
   else return false;
   return true;
 }
@@ -446,3 +453,67 @@ function edhWaitHtml() {
   return EDH.err ? `<div class="dv-empty"><b>${T('Commandants EDHREC indisponibles')}</b><p>${esc(EDH.err)}</p><div class="coll-cta"><button class="btn ghost" type="button" data-act="dretry">${T('Réessayer')}</button><button class="btn ghost" type="button" data-act="dcan">${T('Voir ceux qui peuvent l\'être')}</button></div></div>`
     : `<p class="hint listempty">${T('Chargement des commandants EDHREC…')}</p>`;
 }
+
+/* ── Decks EDHREC réservés aux comptes : onglet « Decks », tuile « Deck à monter », coup d'œil après un import ────────────────────────
+   Compte Google, ou compte e-mail dont l'adresse est vérifiée (acctVerified, decks.js). Garde de l'appli seulement : le fichier edh.bin.gz reste
+   public (le site le sert à tous) ; « Mes decks » et le filtre « Joués en commandant » restent ouverts sans compte. */
+/** 'ok' · 'out' (sans compte) · 'verify' (adresse e-mail pas encore vérifiée) · 'wait' (session enregistrée pas encore restaurée : pas d'écran « connecte-toi » qui clignote). */
+function edhGate() {
+  const u = D.user;
+  if (!u) return D.hint && !D.authReady ? 'wait' : 'out';
+  return acctVerified(u) ? 'ok' : 'verify';
+}
+const EDH_LOCK = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.4"/><path d="M8.5 10.5V7.6a3.5 3.5 0 0 1 7 0v2.9M12 14.6v2"/></svg>';
+const EDH_MAIL = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.4"/><path d="M4.5 7.5l7.5 5.6 7.5-5.6"/></svg>';
+function edhGateHtml() {
+  const g = edhGate();
+  if (g === 'wait') return `<p class="hint listempty">${T('Connexion au compte…')}</p>`;
+  if (g === 'verify') {
+    const u = D.user, sent = vfAt(u.uid) > 0, mail = `<span class="gate-mail">${esc(u.email || '')}</span>`;
+    const send = `<button class="btn${sent ? ' ghost' : ''}" type="button" data-act="gsend" data-vf="long">${esc(vfLabel(u.uid, false))}</button>`, check = `<button class="btn${sent ? '' : ' ghost'}" type="button" data-act="gcheck">${T('J\'ai cliqué sur le lien')}</button>`;
+    return `<div class="dv-empty gate" data-gate="verify" data-sent="${sent ? 1 : 0}"><span class="gate-ic" aria-hidden="true">${EDH_MAIL}</span><b>${T('Vérifie ton adresse e-mail')}</b>
+      <p>${sent ? T('Un lien t\'a été envoyé à {email}. Touche-le, puis reviens ici.', { email: mail }) : T('Les decks EDHREC demandent une adresse vérifiée : reçois un lien à {email}, touche-le, puis reviens ici.', { email: mail })}</p>
+      <div class="coll-cta">${sent ? check + send : send + check}</div>
+      <div class="auth-msg" id="gateMsg" role="status" hidden></div>
+      <p class="hint">${T('Rien reçu ? Regarde dans les courriers indésirables.')}</p></div>`;
+  }
+  return `<div class="dv-empty gate" data-gate="out"><span class="gate-ic" aria-hidden="true">${EDH_LOCK}</span><b>${T('Les decks EDHREC sont réservés aux comptes')}</b>
+    <p>${T('Connecte-toi pour comparer ta collection aux decks des commandants les plus joués. Le compte est gratuit et sert aussi à :')}</p>
+    <ul class="gate-why"><li>${T('sauvegarder ta collection et tes decks, synchronisés sur tous tes appareils')}</li><li>${T('suivre les prix des cartes qui te manquent (alertes)')}</li><li>${T('partager ta liste d\'échange et tes decks par un lien')}</li></ul>
+    <div class="coll-cta"><button class="btn" type="button" data-act="ggoogle">${T('Continuer avec Google')}</button><button class="btn ghost" type="button" data-act="gmail">${T('Se connecter par e-mail')}</button></div>
+    <p class="hint">${T('« Mes decks » reste ouvert à tous, sans compte.')}</p></div>`;
+}
+const edhGateMsg = (t, ok) => { const m = COLL.el && $('#gateMsg', COLL.el); if (!m) return; m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
+/** « Continuer avec Google » : la connexion de la feuille Compte (fenêtre Google, ou compte du téléphone dans l'appli) ; SDK indisponible → la feuille explique et propose « Réessayer ». */
+async function edhGateGoogle(b) {
+  haptic('tap');
+  if (!D.cloud || D.state !== 'ready') { openAccount(); return; }
+  b.disabled = true;
+  try { await D.cloud.google(); toast(T('Connecté')); }
+  catch (e) { const t = authMessage(e); if (t) toast(t); }
+  finally { b.disabled = false; }
+}
+async function edhGateSend(b) {
+  haptic('tap'); edhGateMsg('');
+  const err = await vfSend();
+  edhGateMsg(err || (b.isConnected ? T('E-mail envoyé. Pense à regarder dans les courriers indésirables.') : ''), !err);      // premier envoi : l'écran a été repeint (edhGateSent), son texte le dit déjà
+}
+/** Lien envoyé (ou envoi raté) : l'écran de vérification suit (« Un lien t'a été envoyé à… », « J'ai cliqué sur le lien » devant). Aussi après une inscription, si onUser l'a peint avant l'envoi. */
+function edhGateSent() {
+  const el = COLL.el && $('.gate[data-gate="verify"]', COLL.el);
+  if (el && D.user && el.dataset.sent !== (vfAt(D.user.uid) > 0 ? '1' : '0')) collPaintBody(true);
+}
+async function edhGateCheck(b) {
+  haptic('tap'); b.disabled = true; edhGateMsg('');
+  const err = await vfCheck(false);
+  if (b.isConnected) { b.disabled = false; if (err) edhGateMsg(err); }
+}
+/** Le compte a changé (connexion, déconnexion, adresse vérifiée) : ce que la garde décide est repeint, une fois par changement réel. */
+function edhGateSync() {
+  const g = edhGate(); if (g === EDH.gate) return; EDH.gate = g;
+  if (COLL.el && COLL.tab === 'decks') collPaintBody(false);
+  if (GLANCE.api) paintGlance();
+  homeSoon();
+}
+// retour dans l'appli (après avoir touché le lien de l'e-mail) : l'adresse est relue en silence si l'écran de vérification est affiché
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && COLL.el && COLL.tab === 'decks' && edhGate() === 'verify' && Date.now() - (EDH.vfSeen || 0) > 5000) { EDH.vfSeen = Date.now(); vfCheck(true); } });

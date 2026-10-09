@@ -4,7 +4,7 @@
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdirSync } from 'node:fs';
-import { chromium, startWorld, newPage, txt, ok, toInput, toHome, slug } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, toInput, toHome, slug, signInFake } from './e2e-world.mjs';
 
 const SHOTS = process.env.FR_SHOTS || 'shots';
 mkdirSync(SHOTS, { recursive: true });
@@ -30,6 +30,7 @@ let frHits = 0;
 await ctx.route('**/fr-names.tsv', r => { frHits++; r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: '# fr-names\n' + ROWS.join('\n') + '\n' }); });
 await ctx.route('**/edh.tsv', r => r.fulfill({ status: 200, contentType: 'text/tab-separated-values; charset=utf-8', body: EDH }));
 await p.goto(world.url); await p.waitForTimeout(700); await p.evaluate(() => { BACKOFF.scry = [60, 60, 60]; BACKOFF.cool429 = 100; });
+await signInFake(p);      // coup d'œil : la ligne « decks EDHREC à finir » est réservée aux comptes vérifiés (gate-e2e)
 const settle = () => p.waitForFunction(() => S.run && S.run.status !== 'running', null, { timeout: 30000 });
 const sheetGone = () => p.waitForFunction(() => !document.querySelector('.sheet-wrap'), null, { timeout: 4000 });
 

@@ -139,3 +139,27 @@ export const ok = m => console.log('✓', m);
 /** Accueil → écran « Nouveau panier » (saisie), ou retour à l'accueil. */
 export const toInput = p => p.evaluate(() => { if (S.view !== 'input') showView('input'); });
 export const toHome = p => p.evaluate(() => { if (S.view !== 'home') showView('home'); });
+/** Compte connecté factice, adresse vérifiée (les decks EDHREC de la collection sont réservés aux comptes, voir gate-e2e) : faux cloud en mémoire
+ *  (decks, collection, documents annexes, partages ; decks de l'appareil déjà dedans), puis onUser. À rappeler après chaque rechargement. user : champs à remplacer (emailVerified, providerData…). */
+export async function signInFake(p, user = {}) {
+  await p.waitForFunction(() => D.authReady, null, { timeout: 15000 });
+  await p.evaluate(u => {
+    const decks = new Map(), meta = {}, subs = new Set(); let coll = null, n = 0;
+    const docs = () => [...decks].map(([id, data]) => ({ id, data })).sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
+    const emit = () => queueMicrotask(() => subs.forEach(cb => cb(docs(), false))), copy = o => JSON.parse(JSON.stringify(o));      // comme Firestore : l'écriture locale est vue tout de suite (avant la réponse du serveur)
+    D.cloud = {
+      onUser() {}, signOut: async () => { onUser(null); }, verify: async () => {}, reload: async () => {},
+      watch(uid, cb) { subs.add(cb); setTimeout(() => cb(docs(), false), 0); return () => subs.delete(cb); },
+      newId: () => 'fk' + (++n), save: async (uid, id, data) => { decks.set(id, copy(data)); emit(); }, remove: async (uid, id) => { decks.delete(id); emit(); },
+      saveMany: async (uid, items) => { items.forEach(x => decks.set(x.id, copy(x.data))); emit(); },
+      watchColl(uid, cb) { setTimeout(() => cb(coll, false, false), 0); return () => {}; }, txColl: async (uid, fn) => { const out = fn(coll); if (out) coll = copy(out); return out; },
+      pullColl: async () => ({ data: coll }), saveColl: async (uid, d) => { coll = copy(d); },
+      watchMeta(uid, id, cb) { setTimeout(() => cb(meta[id] || null, false, false), 0); return () => {}; }, saveMeta: async (uid, id, d) => { meta[id] = copy(d); }, pullMeta: async (uid, id) => ({ data: meta[id] || null }),
+      shareId: () => 'Fake' + Date.now().toString(36) + (++n), saveShare: async () => {}, dropShare: async () => {},
+    };
+    for (const d of D.localList) decks.set(d.id, copy(stripDeck(d)));      // le compte a déjà les decks de cet appareil : rien ne disparaît de « Mes decks » à la connexion
+    D.state = 'ready'; D.err = '';
+    // identifiant neuf à chaque appel : cet appareil n'a encore rien « vu » de ce compte (sinon un compte vide passerait pour supprimé ailleurs)
+    onUser({ uid: 'u-test-' + Math.random().toString(36).slice(2, 8), email: 'test@example.com', displayName: 'Test', emailVerified: true, providerData: [{ providerId: 'password' }], reload: async () => {}, getIdToken: async () => '', ...u });
+  }, user);
+}

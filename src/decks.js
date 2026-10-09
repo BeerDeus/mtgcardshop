@@ -463,7 +463,7 @@ function paintAuthForm(api) {
   const msg = (t, ok) => { const m = $('#acMsg', b); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !!ok); };
   const busy = (on, label) => { $('#acGo', b).disabled = on; $('#acGoogle', b).disabled = on; if (label) $('#acGo', b).textContent = on ? label : (up ? T('Créer mon compte') : T('Me connecter')); };
   // lien « supprimer mon compte » (?delete-account) : la feuille reste ouverte et passe à l'écran de suppression (onUser la repeint s'il n'est pas encore passé)
-  const done = () => { if (!st.del) { api.close(); toast(T('Connecté')); return; } toast(T('Connecté')); if (D.user) paintAccount(); };
+  const done = (t = T('Connecté')) => { if (!st.del) { api.close(); toast(t); return; } toast(t); if (D.user) paintAccount(); };
   const fail = e => { busy(false, true); msg(authMessage(e)); };
   $('#acForm', b).onsubmit = async e => {
     e.preventDefault(); msg('');
@@ -471,7 +471,12 @@ function paintAuthForm(api) {
     if (!email) return msg(T('Saisis ton adresse email.')); if (!pw) return msg(T('Saisis ton mot de passe.'));
     if (up && pw.length < 6) return msg(T('Mot de passe trop court : 6 caractères minimum.'));
     busy(true, up ? T('Création…') : T('Connexion…'));
-    try { await (up ? D.cloud.signUp(email, pw) : D.cloud.signIn(email, pw)); done(); } catch (err) { fail(err); }
+    try {
+      if (!up) { await D.cloud.signIn(email, pw); done(); return; }
+      const cr = await D.cloud.signUp(email, pw);
+      vfSend(cr && cr.user).then(err => { if (err) toast(err); });      // lien de vérification envoyé tout de suite : les decks EDHREC demandent une adresse vérifiée
+      done(T('Compte créé · lien de vérification envoyé à {email}', { email }));
+    } catch (err) { fail(err); }
   };
   $('#acGoogle', b).onclick = async () => { msg(''); busy(true); try { await D.cloud.google(); done(); } catch (err) { fail(err); } };
   const fg = $('#acForgot', b);
@@ -485,7 +490,7 @@ function paintAccountIn(api) {
   const u = D.user, b = api.body, local = importable().length;
   const n = D.list.length;
   const state = D.listErr ? D.listErr : D.pending ? T('Synchronisation…') : TN(n, 'Synchronisé · {n} deck', 'Synchronisé · {n} decks');
-  b.innerHTML = `<div class="who"><span class="who-av" id="acAv">${esc(((PROF.name || u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(PROF.name || u.email || u.displayName || T('Compte'))}</b>${PROF.name && u.email ? `<span class="who-mail">${esc(u.email)}</span>` : ''}<span id="acState">${esc(state)}</span></div></div>
+  b.innerHTML = `<div class="who"><span class="who-av" id="acAv">${esc(((PROF.name || u.displayName || u.email || '?').trim()[0] || '?').toUpperCase())}</span><div class="who-t"><b>${esc(PROF.name || u.email || u.displayName || T('Compte'))}</b>${PROF.name && u.email ? `<span class="who-mail">${esc(u.email)}</span>` : ''}<span id="acState">${esc(state)}</span>${acctVerified(u) ? '' : `<span class="who-vf">${T('Adresse non vérifiée')} · <button class="link-btn" type="button" id="acVf" data-vf="short">${esc(vfLabel(u.uid, true))}</button></span>`}</div></div>
     <button class="btn ghost small" type="button" id="acProfile" style="align-self:flex-start">${T('Modifier le profil')}</button>
     ${local ? `<div class="import-row"><span>${TN(local, '{n} deck sur cet appareil', '{n} decks sur cet appareil')}</span><button class="btn" type="button" id="acImport">${T('Importer')}</button></div>` : ''}
     <p class="hint">${T('Ta collection, tes decks, l\'historique de valeur et ta liste d\'échange sont sauvegardés sur ton compte et synchronisés sur tous tes appareils connectés. Ton token CardTrader reste sur cet appareil.')}</p>`;      // identifiant du compte pour ALLOWED_UIDS : se lit dans la console Firebase (Authentication › Users), plus dans l'appli
@@ -495,6 +500,54 @@ function paintAccountIn(api) {
   api.setFoot('<button class="btn ghost-danger" type="button" id="acOut">' + T('Se déconnecter') + '</button>');
   $('#acOut', api.foot).onclick = async e => { e.target.disabled = true; try { await D.cloud.signOut(); api.close(); toast(T('Déconnecté')); } catch (err) { e.target.disabled = false; toast(T('Déconnexion impossible')); } };
   const im = $('#acImport', b); if (im) im.onclick = e => { e.target.disabled = true; importLocal(); };
+  const vf = $('#acVf', b); if (vf) { vf.onclick = async () => { const err = await vfSend(); toast(err || T('E-mail envoyé à {email}', { email: u.email || '' })); }; vfTick(); }
+}
+
+/* ── Adresse e-mail vérifiée : exigée pour les decks EDHREC (edhGate, edh.js) ─────────────────────────────────────────────────────
+   Un compte Google l'est toujours (Google a vérifié l'adresse ; emailVerified vaut true, providerData contient google.com, appli Android comprise). */
+const acctGoogle = u => !!(u && Array.isArray(u.providerData) && u.providerData.some(p => p && p.providerId === 'google.com'));
+const acctVerified = u => !!(u && (u.emailVerified === true || acctGoogle(u)));
+/** Dernier envoi du lien de vérification, par compte (cet appareil) : « un lien t'a été envoyé » n'est dit que s'il l'a été, « Renvoyer » attend une minute. */
+const VF_KEY = 'deckdeal:vf:v1', VF_GAP = 60000;
+const vfAll = () => { try { const o = JSON.parse(localStorage.getItem(VF_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
+const vfAt = uid => Number(vfAll()[uid]) || 0;
+function vfMark(uid, t) { const o = vfAll(); if (t) o[uid] = t; else delete o[uid]; try { localStorage.setItem(VF_KEY, JSON.stringify(o)); } catch (e) { /* stockage indisponible : l'attente ne vaut que pour cet écran */ } }
+const vfWait = uid => Math.max(0, vfAt(uid) + VF_GAP - Date.now());
+const vfLabel = (uid, short) => { const w = vfWait(uid), sent = vfAt(uid) > 0; return w ? T(short ? 'Renvoyer · {n} s' : 'Renvoyer l\'e-mail · {n} s', { n: Math.ceil(w / 1000) }) : short ? T('Renvoyer') : sent ? T('Renvoyer l\'e-mail') : T('Recevoir le lien'); };
+/** Boutons « Renvoyer » affichés (data-vf : feuille Compte, onglet Decks) : grisés avec le compte à rebours pendant la minute qui suit un envoi. */
+let vfT = 0;
+function vfTick() {
+  clearTimeout(vfT);
+  const u = D.user, els = $$('[data-vf]'); if (!u || !els.length) return;
+  const w = vfWait(u.uid);
+  for (const b of els) { b.disabled = w > 0; b.textContent = vfLabel(u.uid, b.dataset.vf === 'short'); }
+  if (w > 0) vfT = setTimeout(vfTick, Math.min(1000, w));
+}
+/** Envoie le lien de vérification (dans la langue de l'appli). user : celui qui vient d'être créé (onUser peut ne pas être encore passé). '' si envoyé, sinon le message à afficher. */
+async function vfSend(user = D.user) {
+  const uid = user && user.uid; if (!uid || !D.cloud || !D.cloud.verify) return T('Envoi impossible pour l\'instant. Réessaie dans un moment.');
+  if (vfWait(uid) > 0) return '';
+  const prev = vfAt(uid); vfMark(uid, Date.now()); vfTick(); edhGateSent();      // noté avant l'envoi : deux touches rapides ne font partir qu'un e-mail
+  try { await D.cloud.verify(); return ''; }
+  catch (e) {
+    if (!e || e.code !== 'auth/too-many-requests') vfMark(uid, prev);      // Firebase refuse pour l'instant : on attend quand même la minute
+    vfTick(); edhGateSent(); return authMessage(e) || T('Envoi impossible pour l\'instant. Réessaie dans un moment.');
+  }
+}
+/** « J'ai cliqué sur le lien » : le compte est relu sur le serveur (Firebase met l'objet à jour sur place, sans prévenir onUser) ; vérifiée → nouveau jeton
+ *  (il porte email_verified), puis tout ce qui en dépend est repeint. quiet : retour dans l'appli, rien n'est dit si rien n'a changé. '' ou le message à afficher. */
+async function vfCheck(quiet) {
+  const u = D.user; if (!u) return '';
+  if (!acctVerified(u)) {
+    try { await (D.cloud && D.cloud.reload ? D.cloud.reload() : u.reload()); }
+    catch (e) { return quiet ? '' : authMessage(e) || T('Vérification impossible pour l\'instant (connexion ?). Réessaie.'); }
+    if (D.user !== u) return '';
+    if (!acctVerified(u)) return quiet ? '' : T('Adresse pas encore vérifiée : touche le lien reçu par e-mail, puis réessaie.');
+    try { await u.getIdToken(true); } catch (e) { /* hors ligne : le prochain jeton le portera */ }
+    toast(T('Adresse vérifiée'));
+  }
+  paintAccount(); edhGateSync();
+  return '';
 }
 
 /** Suppression définitive du compte (exigée par Google Play) : reconnexion, effacement des données en ligne, puis du compte. */
@@ -628,7 +681,7 @@ function onUser(user) {
       toast(deckErr(err));
     });
   }
-  renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck();
+  renderAccountBtn(); renderDecks(); paintAccount(); refreshDeck(); edhGateSync();      // decks EDHREC : réservés aux comptes vérifiés
   collUser(user); xsUser(user); trUser(user); if (prev !== D.uid) profUser(user);
   if (prev !== D.uid && typeof checkServer === 'function') { CTX.serverOk = null; checkServer(); }      // autre compte : a-t-il droit au token du serveur ?
   if (!user && prev) updateHeroDelta();
@@ -639,7 +692,7 @@ async function connectCloud() {
   catch (e) {
     D.state = 'unavailable';
     D.err = e && e.code === 'env' ? e.message : T('Connexion indisponible depuis ici : SDK Firebase bloqué ou hors ligne. Ta collection et tes decks restent sur cet appareil.');
-    D.authReady = true; renderAccountBtn(); renderDecks(); paintAccount(); paintSync(); collPaintHead();
+    D.authReady = true; renderAccountBtn(); renderDecks(); paintAccount(); paintSync(); collPaintHead(); edhGateSync();
     return;
   }
   D.state = 'ready';

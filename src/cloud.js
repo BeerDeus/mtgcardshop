@@ -10,6 +10,8 @@ const FIREBASE_CONFIG = {
 };
 const FB_BASE = 'https://www.gstatic.com/firebasejs/12.19.0/';
 
+/** Langue des e-mails Firebase (vérification, mot de passe oublié) et de la fenêtre Google : celle de l'appli (I18N vient de core.js ; absent sous Node). */
+const fbLang = () => (typeof I18N !== 'undefined' && I18N && I18N.lang) || 'fr';
 /** Traduction (T vient de core.js ; absent quand ce fichier est chargé seul sous Node, pour les tests). */
 const tcl = (s, v) => (typeof T === 'function' ? T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (v[k] != null ? v[k] : m)) : s);
 /** Code d'erreur Firebase → message lisible. null = silence (l'utilisateur a juste fermé la fenêtre). */
@@ -68,6 +70,7 @@ async function natGoogleCred(m) {
 function makeCloud(m) {
   const app = m.app.getApps().length ? m.app.getApp() : m.app.initializeApp(FIREBASE_CONFIG);
   const auth = m.auth.getAuth(app);
+  auth.languageCode = fbLang();
   let db;
   try { db = m.fs.initializeFirestore(app, { localCache: m.fs.persistentLocalCache({ tabManager: m.fs.persistentMultipleTabManager() }) }); }
   catch (e) { db = m.fs.getFirestore(app); }
@@ -81,7 +84,21 @@ function makeCloud(m) {
       if (natGoogleMissing()) throw natMissingErr();
       const p = new m.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return m.auth.signInWithPopup(auth, p).catch(googleErr);
     },
-    reset: email => m.auth.sendPasswordResetEmail(auth, email),
+    reset: email => { auth.languageCode = fbLang(); return m.auth.sendPasswordResetEmail(auth, email); },
+    /** Lien de vérification de l'adresse (compte e-mail), dans la langue de l'appli. Retour vers l'appli après le clic (page https d'où il est demandé) ;
+     *  adresse de retour refusée par Firebase (domaine absent des domaines autorisés) : lien par défaut, sans retour. */
+    async verify() {
+      const u = auth.currentUser; if (!u) throw Object.assign(new Error('déconnecté'), { code: 'auth/no-current-user' });
+      auth.languageCode = fbLang();
+      const back = typeof location !== 'undefined' && location.protocol === 'https:' ? location.origin + location.pathname : '';
+      if (back) {
+        try { return await m.auth.sendEmailVerification(u, { url: back }); }
+        catch (e) { if (!/continue-uri|unauthorized-domain/.test((e && e.code) || '')) throw e; }
+      }
+      return m.auth.sendEmailVerification(u);
+    },
+    /** Relit le compte sur le serveur (adresse vérifiée entre-temps ?) : Firebase met à jour l'objet utilisateur sur place, sans rappeler onUser. */
+    reload: () => (auth.currentUser ? m.auth.reload(auth.currentUser) : Promise.resolve()),
     signOut: () => { const g = natGoogle(); if (g) Promise.resolve(g.signOut()).catch(() => {}); return m.auth.signOut(auth); },      // appli : oublie aussi le compte Google choisi (le sélecteur réapparaît)
     /** Écoute temps réel des decks de l'utilisateur, du plus récent au plus ancien. */
     watch(uid, onData, onErr) {

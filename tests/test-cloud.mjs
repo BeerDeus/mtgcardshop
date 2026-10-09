@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 
 const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = (uid, email) => { const n = Math.floor(Date.now() / 1000); return [b64({ alg: 'RS256', typ: 'JWT', kid: 'x' }), b64({ iss: 'https://securetoken.google.com/m2s-mtg', aud: 'm2s-mtg', auth_time: n, user_id: uid, sub: uid, iat: n, exp: n + 3600, email, email_verified: false, firebase: { identities: { email: [email] }, sign_in_provider: 'password' } }), 'sig'].join('.'); };
-const users = new Map(); const calls = [];
+const users = new Map(); const calls = []; const oobs = []; const verified = new Set();
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
@@ -27,9 +27,9 @@ globalThis.fetch = async (url, init = {}) => {
     if (/accounts:lookup/.test(u)) {
       const em = [...users.entries()].find(([, v]) => true)?.[0];
       const entry = [...users.entries()].pop();
-      return j({ users: [{ localId: entry[1].uid, email: entry[0], emailVerified: false, providerUserInfo: [{ providerId: 'password', email: entry[0], federatedId: entry[0], rawId: entry[0] }], lastLoginAt: String(Date.now()), createdAt: String(Date.now()) }] });
+      return j({ users: [{ localId: entry[1].uid, email: entry[0], emailVerified: verified.has(entry[0]), providerUserInfo: [{ providerId: 'password', email: entry[0], federatedId: entry[0], rawId: entry[0] }], lastLoginAt: String(Date.now()), createdAt: String(Date.now()) }] });
     }
-    if (/accounts:sendOobCode/.test(u)) return j({ email: body.email });
+    if (/accounts:sendOobCode/.test(u)) { const h = new Headers(init.headers || {}); oobs.push({ type: body.requestType, url: body.continueUrl || '', lang: h.get('X-Firebase-Locale') || '' }); return j({ email: body.email }); }
     return err('UNHANDLED ' + u);
   }
   return realFetch(url, init);
@@ -54,6 +54,10 @@ await cloud.signOut(); await new Promise(r => setTimeout(r, 100)); assert.equal(
 await assert.rejects(cloud.signIn('beer@example.com', 'nope'), e => e.code === 'auth/invalid-credential'); console.log('✓ mauvais mot de passe → auth/invalid-credential');
 const c2 = await cloud.signIn('beer@example.com', 'secret1'); const uid = c2.user.uid; assert.ok(uid); console.log('✓ signIn', uid);
 await cloud.reset('beer@example.com'); assert.ok(calls.includes('accounts:sendOobCode')); console.log('✓ reset (sendOobCode)');
+// adresse e-mail : lien de vérification (langue de l'appli, sans adresse de retour hors https), puis relecture du compte une fois le lien touché
+await cloud.verify(); assert.deepEqual(oobs.at(-1), { type: 'VERIFY_EMAIL', url: '', lang: 'fr' }); assert.equal(c2.user.emailVerified, false);
+verified.add('beer@example.com'); await cloud.reload(); assert.equal(c2.user.emailVerified, true, 'reload : objet utilisateur mis à jour sur place');
+console.log('✓ verify (sendOobCode VERIFY_EMAIL, langue fr) + reload (emailVerified relu)');
 
 // Firestore hors ligne : listeners + écritures locales
 const db = fs.getFirestore(app.getApp()); await fs.disableNetwork(db);

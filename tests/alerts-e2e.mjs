@@ -8,7 +8,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createECDH, randomBytes, hkdfSync, createDecipheriv, generateKeyPairSync } from 'node:crypto';
-import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome } from './e2e-world.mjs';
+import { chromium, startWorld, newPage, txt, ok, done, toInput, toHome, signInFake } from './e2e-world.mjs';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const price = new Map([['sol ring', '3.00'], ['swords to plowshares', '1.20'], ['wrath of god', '2.50'], ['arcane signet', '1.00'], ['craterhoof behemoth', '9.00']]);
@@ -158,6 +158,7 @@ const EDHF = ['#edh\t1\t2026-10-03T04:00:00Z', 'C\tedgar-markov\t12345\tWBR\tEdg
   'K\t1\tSol Ring', 'K\t1\tWrath of God', 'K\t1\tCraterhoof Behemoth', 'K\t1\tArcane Signet', ...Array.from({ length: 20 }, (_, i) => `K\t1\tFiller ${i}`),
   'P\t500\tEdgar Markov', 'P\t300\tSol Ring', 'P\t250\tWrath of God', 'P\t900\tCraterhoof Behemoth', 'P\t100\tArcane Signet', ...Array.from({ length: 20 }, (_, i) => `P\t40\tFiller ${i}`)].join('\n') + '\n';
 await p.evaluate(t => { EDH.data = parseEdh(t); EDH.at = Date.now(); EDH.memo = null; }, EDHF);      // fichier EDHREC posé directement (le service worker est actif dans ce test)
+await signInFake(p);      // onglet « Decks » : réservé aux comptes vérifiés (gate-e2e)
 await toHome(p); await p.click('#btnColl'); await p.waitForSelector('.coll.on'); await p.click('#collSeg [data-v="decks"]'); await p.waitForSelector('.crow.dk', { timeout: 8000 });
 await p.click('.crow.dk'); await p.waitForSelector('.dk-act[data-act="dkwatch"]');
 const watchRow = () => p.$eval('.dk-act[data-act="dkwatch"]', x => [x.querySelector('b').textContent, x.querySelector('small').textContent, x.disabled]);

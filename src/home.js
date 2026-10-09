@@ -122,9 +122,16 @@ function homeCostText(r) {
 }
 /** Tuile « Deck à monter » (fichier EDHREC chargé en différé, seulement s'il y a une collection) : pourcentage en haut, commandant puis coût pour finir. */
 function homeBuild() {
-  const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), btn = $('#btnBuild'), n = collCount();
+  const pct = $('#hmBuildPct'), sub = $('#hmBuildSub'), btn = $('#btnBuild'), n = collCount(), g = edhGate();
   const idle = () => { pct.textContent = ''; sub.textContent = T('Decks EDHREC comparés à ta collection'); btn.removeAttribute('aria-label'); };
-  if (!n) { idle(); HM.best = null; return; }
+  btn.dataset.lock = g === 'out' || g === 'verify' ? '1' : '0';
+  // decks EDHREC réservés aux comptes (edhGate, edh.js) : ni chiffres ni téléchargement sans compte vérifié, la tuile mène à l'écran de connexion
+  if (g === 'out' || g === 'verify') {
+    HM.best = null; pct.innerHTML = EDH_LOCK; sub.textContent = g === 'out' ? T('Decks EDHREC · Connecte-toi') : T('Decks EDHREC · Vérifie ton e-mail');
+    btn.setAttribute('aria-label', g === 'out' ? T('Deck à monter : decks EDHREC réservés aux comptes, connecte-toi') : T('Deck à monter : vérifie ton adresse e-mail pour voir les decks EDHREC'));
+    return;
+  }
+  if (!n || g !== 'ok') { idle(); HM.best = null; return; }
   if (!EDH.data) {
     if (!EDH.p && !EDH.err && !HM.edhAsk) HM.edhAsk = setTimeout(() => { edhLoad().then(homeSoon, () => {}); }, 2500);
     idle(); return;
@@ -142,7 +149,7 @@ function homeBuild() {
 function homeInit() {
   $('#btnBuild').onclick = () => {
     haptic('tap'); openCollection('decks');
-    const b = HM.best; if (b) setTimeout(() => openEdhDeck(b.r), 260);
+    const b = HM.best; if (b && edhGate() === 'ok') setTimeout(() => openEdhDeck(b.r), 260);
   };
   $('#btnTrade').onclick = () => { haptic('tap'); openCollection('trade'); };
   const draft = () => !S.isSample && S.deck && S.deck.cards.length;

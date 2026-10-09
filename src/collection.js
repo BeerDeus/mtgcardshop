@@ -639,11 +639,15 @@ function collStatsHtml(items) {
     <h3 class="cs-h">${T('Couleurs')} <small>${T('sorts')}</small></h3>${barsHtml(colorRows)}
     <h3 class="cs-h">${T('Familles')} <small>${T('exemplaires')}</small></h3>${barsHtml(typeRows)}${top}`;
 }
+/** Onglet « Cartes » sans aucune carte : le scan d'abord (le plus rapide pour débuter), import et saisie à côté. */
 function collEmptyHtml() {
-  return `<div class="dv-empty"><div class="empty-art" aria-hidden="true"><i></i><i></i><i></i></div><b>${T('Ta collection est vide')}</b><p>${T('Ajoute les cartes que tu possèdes : elles ne seront plus cherchées ni comptées dans tes paniers.')}</p>
-    <div class="coll-cta"><button class="btn" type="button" data-act="import">${T('Importer un fichier')}</button><button class="btn ghost" type="button" data-act="scan">${T('Scanner des cartes')}</button><button class="btn ghost" type="button" data-act="add">${T('Ajouter à la main')}</button></div>
+  return `<div class="dv-empty coll-empty"><div class="empty-art" aria-hidden="true"><i></i><i></i><i></i></div><b>${T('Pas encore de cartes pour l\'instant')}</b><p>${T('Scanne tes cartes pour débuter.')}</p>
+    <div class="coll-cta"><button class="btn" type="button" data-act="scan"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg>${T('Scanner')}</button><div class="coll-cta2"><button class="btn ghost" type="button" data-act="import">${T('Importer')}</button><button class="btn ghost" type="button" data-act="add">${T('Ajouter à la main')}</button></div></div>
     <p class="hint">${T('Pour 1 000 cartes ou plus : exporte-les en CSV depuis ManaBox, Moxfield, Archidekt, Deckbox ou Dragon Shield, puis importe le fichier.')}</p></div>`;
 }
+/** Onglet « Stats » sans aucune carte. */
+const collStatsEmptyHtml = () => `<div class="dv-empty coll-empty"><b>${T('Pas encore de stats')}</b><p>${T('Valeur, courbe de mana et couleurs apparaissent dès tes premières cartes.')}</p>
+    <div class="coll-cta"><button class="btn ghost" type="button" data-act="scan"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg>${T('Scanner des cartes')}</button></div></div>`;
 /** Remplit la liste ou les stats selon l'onglet. keep : garder la position de défilement. */
 function collPaintBody(keep) {
   const el = COLL.el; if (!el) return;
@@ -651,11 +655,15 @@ function collPaintBody(keep) {
   if (!keep) COLL.seq++;      // affichage neuf (onglet, tri) : liste relue, jamais celle gardée
   const sc = $('.dv-scroll', el), pos = keep && sc ? sc.scrollTop : 0, host = $('.coll-main', el);
   if (keep && document.activeElement && document.activeElement.matches && document.activeElement.matches('.lchip select') && host.contains(document.activeElement)) { COLL.dirty = true; return; }      // un choix de langue est ouvert : on ne le ferme pas
-  const v = collAll(), all = v.all;
-  $('.coll-controls', el).hidden = !all.length;
-  if (!all.length) { host.innerHTML = collEmptyHtml(); return; }
-  $('.coll-fwrap', el).hidden = COLL.tab !== 'list' && COLL.tab !== 'trade'; $('#collSort', el).closest('.coll-sort').hidden = COLL.tab === 'trade'; valPaintAlert();
-  if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
+  const v = collAll(), all = v.all, none = !all.length;
+  // collection vide : les onglets restent (Decks et Échange marchent sans carte) ; recherche, filtres, tri et prix réels n'auraient rien à montrer
+  if (none && filterActive(COLL.f) && COLL.fb) COLL.fb.reset();      // un filtre resté actif, caché, viderait encore la liste « Je recherche »
+  $('.coll-px', el).hidden = none;
+  $('.coll-fwrap', el).hidden = none || (COLL.tab !== 'list' && COLL.tab !== 'trade'); $('#collSort', el).closest('.coll-sort').hidden = COLL.tab === 'trade'; valPaintAlert();
+  if (none && COLL.tab === 'list') host.innerHTML = collEmptyHtml();
+  else if (none && COLL.tab === 'stats') host.innerHTML = collStatsEmptyHtml();
+  else if (COLL.tab === 'decks' && edhGate() !== 'ok') { host.innerHTML = edhGateHtml(); vfTick(); }      // decks EDHREC réservés aux comptes (edh.js) ; vfTick : « Renvoyer » grisé pendant la minute qui suit un envoi
+  else if (COLL.tab === 'stats') { host.innerHTML = collStatsHtml(all); }
   else if (COLL.tab === 'trade') { host.innerHTML = trPanelHtml(); trMount(host); }
   else if (COLL.tab === 'decks') { const res = keep && EDH.data && document.activeElement && document.activeElement.id === 'dkQ' ? $('.dk-res', host) : null; if (res) { res.innerHTML = edhResHtml(); edhThemesSync(); } else { host.innerHTML = edhPanelHtml(); edhEnsure(); } }      // en pleine frappe : seuls les résultats se repeignent, le champ garde le focus
   else if (COLL.f.cmdr === 'played' && !EDH.data) { host.innerHTML = edhWaitHtml(); edhEnsure(); }
@@ -980,7 +988,7 @@ const GLANCE = { api: null, n: 0, m: 'add', undo: null, edh: null };
 const GLANCE_BUDGET = 6000;      // decks à finir pour moins de 60 € (un palier du filtre « Budget » de l'onglet Decks)
 function openCollGlance(n, m, undo) {
   if (sheets.length || !collCount()) return;      // une autre feuille est ouverte entre-temps : on ne s'impose pas
-  edhEnsure(); if (EDH.p) EDH.p.then(paintGlance, () => {});
+  if (edhGate() === 'ok') { edhEnsure(); if (EDH.p) EDH.p.then(paintGlance, () => {}); }      // decks EDHREC réservés aux comptes : sans compte, ni calcul ni téléchargement
   Object.assign(GLANCE, { n, m, undo, edh: null });
   openSheet(T('Ta collection en un coup d\'œil'), m === 'replace' ? TN(n, '{n} carte importée', '{n} cartes importées') : TN(n, '{n} carte ajoutée', '{n} cartes ajoutées'), api => {
     GLANCE.api = api;
@@ -991,7 +999,7 @@ function openCollGlance(n, m, undo) {
       const g = b.dataset.g; api.close();
       if (g === 'undo') { if (GLANCE.undo) GLANCE.undo(); toast(T('Import annulé')); }
       else if (g === 'stats' || g === 'decks') {
-        if (g === 'decks') { EDH.budget = GLANCE_BUDGET; EDH.sort = 'have'; EDH.then = 'cost'; EDH.shown = 30; EDH.memo = null; }
+        if (g === 'decks' && edhGate() === 'ok') { EDH.budget = GLANCE_BUDGET; EDH.sort = 'have'; EDH.then = 'cost'; EDH.shown = 30; EDH.memo = null; }
         if (COLL.el) { COLL.tab = g; const s = $('#collSeg', COLL.el), sc = $('.dv-scroll', COLL.el); if (s && s.setValue) s.setValue(g); collPaintBody(false); if (sc) sc.scrollTop = 0; } else openCollection(g);
       }
     });
@@ -1007,7 +1015,8 @@ function paintGlance() {
   const prog = reading ? `<p class="hint gl-prog">${T('Lecture des cartes sur Scryfall · {a} / {b}', { a: nf0(e.done), b: nf0(e.total) })}</p>` : '';
   const best = top ? `<h3 class="cs-h">${T('La plus chère')}</h3><div class="crow ro gl-top"><span class="thumb" style="--h:${hash32(top.k) % 360}">${esc(((top.dn || top.n).trim()[0] || '?').toUpperCase())}${top.im ? `<img alt="" decoding="async" src="${esc(collImage(top.k, top.l, top.im).src)}">` : ''}</span><span class="row-main"><span class="row-name">${esc(top.dn || top.n)}</span>${top.q > 1 ? `<span class="row-meta"><span class="tag accent">× ${nf0(top.q)}</span></span>` : ''}</span><span class="row-price"><b>${esc(fmt(top.up, 'EUR'))}</b></span></div>` : '';
   let dk = '';
-  if (EDH.data && !reading) {
+  if (edhGate() !== 'ok') dk = `<div class="gl-edh"><span>${T('<b>Decks EDHREC</b> à finir avec tes cartes : réservés aux comptes')}</span><button class="btn ghost small" type="button" data-g="decks">${T('Voir')}</button></div>`;
+  else if (EDH.data && !reading) {
     const sig = COLL.seq + '|' + EDH.at;
     if (!GLANCE.edh || GLANCE.edh.sig !== sig) GLANCE.edh = { sig, n: edhRank(EDH.data, collQty, { budget: GLANCE_BUDGET, sort: 'have' }).filter(r => r.have >= r.total * 0.3).length };      // au moins 30 % du deck déjà là : un vrai deck « à finir »
     const nd = GLANCE.edh.n;
