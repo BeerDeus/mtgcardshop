@@ -1,5 +1,6 @@
 package app.manaorbit;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -21,6 +22,8 @@ import org.json.JSONObject;
  *   de l'APK, nombre de widgets posés, estimation appli fermée possible (ValueRefreshJob.ENABLED).
  * - setWidget({ data, coll? }) : chiffres du widget d'écran d'accueil (JSON, voir src/widget.js), gardés pour quand l'appli est fermée ;
  *   coll : cartes et prix de référence pour l'estimation appli fermée (absent : plus d'estimation jusqu'au prochain envoi).
+ * - share({ title, text, url, chooser }) → { ok: true } : menu « Partager » d'Android pour un lien (liste d'échange, deck) ; une APK plus ancienne
+ *   n'a pas la méthode et le site copie le lien.
  * - événement « open », gardé jusqu'à ce que la page l'écoute (lancement à froid) : { view: 'collection' | 'scan' | 'quick' } le widget ou son bouton a été
  *   touché ; { view: 'scan' | 'quick' | 'trade' | 'paste' } un raccourci de l'icône (ShortcutActivity) ; { view: 'share', text, title } du texte partagé
  *   par une autre appli (menu « Partager » : decklist, lien EDHREC, Archidekt, Moxfield…).
@@ -70,6 +73,41 @@ public class ManaOrbitPlugin extends Plugin {
         ValueWidget.refreshAll(ctx);
         ValueRefreshJob.sync(ctx);
         call.resolve();
+    }
+
+    /**
+     * Menu « Partager » d'Android (WhatsApp, Messages, Messenger…) : la WebView n'a pas navigator.share. EXTRA_TEXT « message lien » sur une ligne
+     * (la conversation montre le message puis l'aperçu du lien), EXTRA_SUBJECT pour un e-mail, EXTRA_TITLE en tête du menu (Android 10 et plus).
+     * Mana Orbit retiré de la liste : il reçoit lui-même les partages text/plain (manifeste). Résolu dès le menu ouvert : Android ne dit ni l'appli choisie, ni l'abandon.
+     */
+    @PluginMethod
+    public void share(PluginCall call) {
+        String title = call.getString("title", "");
+        String text = call.getString("text", "");
+        String url = call.getString("url", "");
+        String body = text.isEmpty() ? url : url.isEmpty() ? text : text + " " + url;
+        if (body.isEmpty()) {
+            call.reject("share : rien à partager");
+            return;
+        }
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_TEXT, body);
+        if (!title.isEmpty()) {
+            send.putExtra(Intent.EXTRA_SUBJECT, title);
+            send.putExtra(Intent.EXTRA_TITLE, title);
+        }
+        Intent chooser = Intent.createChooser(send, call.getString("chooser", "Partager"));
+        chooser.putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, new ComponentName[] {new ComponentName(getContext(), MainActivity.class)});
+        try {
+            getActivity().startActivity(chooser); // depuis l'activité du pont : même tâche, FLAG_ACTIVITY_NEW_TASK inutile
+        } catch (RuntimeException e) {
+            call.reject("share : " + e.getMessage()); // le site copie le lien à la place
+            return;
+        }
+        JSObject ret = new JSObject();
+        ret.put("ok", true);
+        call.resolve(ret);
     }
 
     /** Texte partagé gardé au plus : une decklist de 250 lignes fait moins de 10 000 caractères ; au-delà, ce n'est pas une liste et le pont n'a pas à le porter. */
