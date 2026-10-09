@@ -223,7 +223,8 @@ await p.reload();
 assert.deepEqual(await load(U), [true, true, true], 'images vues = disponibles sans réseau');
 assert.deepEqual(await load([base + 'jamais-vue.jpg']), [false], 'image jamais vue : échec propre, sans exception');
 ok('hors ligne : images déjà vues toujours affichées, inconnue = échec propre');
-assert.equal(await p.evaluate(async () => (await (await caches.open((await caches.keys()).find(k => /-img$/.test(k)))).keys()).length), 3, 'rien de cassé n\'est mis en cache');
+const imgKeys = await p.evaluate(async b => (await (await caches.open((await caches.keys()).find(k => /-img$/.test(k)))).keys()).map(r => r.url).filter(u => u.startsWith(b)).sort(), base);      // images de ce test seulement : en CI (réseau ouvert) l'appli lit aussi de vraies images Scryfall
+assert.deepEqual(imgKeys, [...U].sort(), 'rien de cassé n\'est mis en cache (ni l\'image jamais vue, ni celle sans CORS)');
 
 // jamais intercepté : l'API Scryfall et le reste (pas de cache hors images de cartes)
 const keys = await p.evaluate(async () => { const out = []; for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(r.url); return out; });
