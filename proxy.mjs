@@ -1127,6 +1127,11 @@ async function fileEntry(f, compress) {
   }
   FILES.set(f, e); return e;
 }
+/** Version de la page servie (DD_BUILD de deck-deal.html), relue quand le fichier change : /__ping la donne à l'appli, qui se met à jour d'elle-même (pwa.js). */
+async function pageBuild() {
+  if (!PAGE) return '';
+  try { const e = await fileEntry(PAGE, true); if (e.build === undefined) { const m = /const DD_BUILD = '([\w-]+)'/.exec(e.raw.toString('utf8')); e.build = m ? m[1] : ''; } return e.build; } catch (err) { return ''; }
+}
 async function sendFile(req, res, f, headers, compress) {
   const e = await fileEntry(f, compress), hd = { ...SEC, ...headers };
   const ae = String(req.headers['accept-encoding'] || ''), wantBr = compress && /\bbr\b/i.test(ae), wantGz = compress && /\bgzip\b/i.test(ae);
@@ -1153,7 +1158,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(String(req.url).replace(/^\/+/, '/'), 'http://x'); // « // » ou « //hôte/chemin » ne doivent pas être lus comme une URL absolue
     if (url.pathname === '/__me') return json(res, 200, { server: await serverOk(req) });
     if (url.pathname === '/__prices') return json(res, 200, { source: PX_SRC ? 'GitHub' : '', ...PX_ST });
-    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '', adUnit: ADMOB_BANNER, fcm: FCM_ON, off: OFF });
+    if (url.pathname === '/__ping') return json(res, 200, { ok: true, app: 'deckdeal', userToken: true, prices: !!PX_LIVE, needsKey: !!APP_KEY, needsLogin: AUTH_FB, hasToken: !!TOKEN, jobs: JOBS_ON, alerts: ALERTS_ON, push: PUSH_ON ? VAPID_PUB : '', adUnit: ADMOB_BANNER, fcm: FCM_ON, off: OFF, build: await pageBuild() });
     if (url.pathname === '/__edh') return json(res, 200, { source: EDH_SRC ? 'GitHub' : '', ...EDH_ST });
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname === '/' || url.pathname === '/index.html') {

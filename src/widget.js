@@ -151,7 +151,7 @@ function wgtShare(e) {
  *  ne l'écoute pas (lancement à froid) ; appli mise en arrière-plan → ce qui attendait part tout de suite (la page peut être suspendue avant la fin du délai). */
 function widgetListen(pl) {
   if (WGT.on) return; WGT.on = true;
-  try { if (typeof pl.addListener === 'function') pl.addListener('open', e => { const go = e && Object.prototype.hasOwnProperty.call(WGT_OPEN, e.view) ? WGT_OPEN[e.view] : null; if (go) setTimeout(() => go(e), 500); }); } catch (e) { /* ancienne coque */ }
+  try { if (typeof pl.addListener === 'function') pl.addListener('open', e => { const go = e && Object.prototype.hasOwnProperty.call(WGT_OPEN, e.view) ? WGT_OPEN[e.view] : null; if (go) { UPD.launchAt = Date.now(); setTimeout(() => go(e), 500); } }); } catch (e) { /* ancienne coque */ }
   widgetCaps(pl);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (WGT.t) { clearTimeout(WGT.t); widgetPush(); } }

@@ -77,8 +77,20 @@ async function page(e) {
   try { const r = await Promise.race([net, wait]); if (r.ok || !cached) return r; } catch (_) { /* réseau absent ou trop lent */ }
   return cached || new Response('Mana Orbit est hors ligne et n\'a pas encore été ouvert avec du réseau.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
-/** La page demande quelle version est gardée (après la mise à jour en cours, 30 s au plus) : différente de la sienne → « Nouvelle version disponible ». */
+/** La page demande quelle version est gardée (après la mise à jour en cours, 30 s au plus) : différente de la sienne → mise à jour (pwa.js).
+ *  « dd-update » : le serveur annonce une version plus récente (/__ping) → la copie est relue tout de suite sur le réseau (cache HTTP contourné),
+ *  puis la réponse « dd-updated » (version gardée) part sur le port donné : la page peut alors se recharger sur la nouvelle version. */
 self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'dd-update' && e.ports && e.ports[0]) {
+    const port = e.ports[0];
+    e.waitUntil((async () => {
+      const cache = await caches.open(SHELL);
+      try { const p = fetch(new Request(ROOT, { cache: 'reload' })).then(r => keepShell(cache, r)); shellCheck = p.catch(() => {}); await p; } catch (_) { /* hors ligne : la copie reste */ }
+      const c = await cache.match(ROOT);
+      port.postMessage({ type: 'dd-updated', build: (c && c.headers.get('x-dd-build')) || '' });
+    })().catch(() => {}));
+    return;
+  }
   if (!e.data || e.data.type !== 'dd-shell?' || !e.source) return;
   e.waitUntil((async () => {
     await Promise.race([shellCheck, new Promise(r => setTimeout(r, 30000))]);

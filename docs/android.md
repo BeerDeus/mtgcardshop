@@ -175,7 +175,7 @@ Fond blanc même en thème sombre : un lecteur de QR code attend du foncé sur c
 
 ### 4.3. Mises à jour
 
-- **Le site** (la plupart des changements) : push sur `main`, puis **Redéployer** dans Hostinger (sauf si le déploiement automatique est activé). L'appli affiche la nouvelle version au lancement suivant.
+- **Le site** (la plupart des changements) : push sur `main`, puis **Redéployer** dans Hostinger (sauf si le déploiement automatique est activé). L'appli se met à jour d'elle-même : au lancement ou au retour sur l'appli (après plus d'une minute ailleurs), elle se recharge si tu es sur l'accueil sans rien en cours ; sinon un toast « Recharger » le propose.
 - **La partie native** (plugins, icônes, permissions) :
   1. Dans `android-app/android/app/build.gradle`, augmente `versionCode` de 1 (par exemple 1 → 2) et change `versionName` (par exemple "1.1").
   2. Dans le terminal, depuis `android-app` : `npm run setup`. À faire aussi après chaque `git pull` : il installe les plugins ajoutés entre-temps, sinon l'appli serait construite sans eux.

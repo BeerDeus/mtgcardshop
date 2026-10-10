@@ -86,17 +86,17 @@ ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans 
 {
   const fw = { delay: 0, build: '', down: false, swTail: '', hits: 0 };
   const relay = http.createServer((q, r) => {
-    const path = q.url.split('?')[0], pg = path === '/' || path === '/index.html', swjs = path === '/sw.js';
+    const path = q.url.split('?')[0], pg = path === '/' || path === '/index.html', swjs = path === '/sw.js', ping = path === '/__ping';
     if (pg && q.method === 'GET') fw.hits++;
-    if (pg && fw.down) return q.socket.destroy();                       // serveur injoignable
-    const h = { ...q.headers }; if (pg || swjs) { delete h['accept-encoding']; delete h['if-none-match']; }   // corps lisible, jamais de 304
+    if ((pg || ping) && fw.down) return q.socket.destroy();             // serveur injoignable (page et /__ping)
+    const h = { ...q.headers }; if (pg || swjs || ping) { delete h['accept-encoding']; delete h['if-none-match']; }   // corps lisible, jamais de 304
     const go = () => {
       const u = http.request({ host: '127.0.0.1', port: 18802, path: q.url, method: q.method, headers: h }, x => {
-        const edit = q.method === 'GET' && ((pg && fw.build) || (swjs && fw.swTail));
+        const edit = q.method === 'GET' && ((pg && fw.build) || (swjs && fw.swTail) || (ping && fw.build));
         if (!edit) { r.writeHead(x.statusCode, x.headers); return x.pipe(r); }
         const bufs = []; x.on('data', b => bufs.push(b)); x.on('end', () => {
           let body = Buffer.concat(bufs).toString('utf8');
-          body = pg ? body.replace(/const DD_BUILD = '[\w-]+'/, `const DD_BUILD = '${fw.build}'`) : body + fw.swTail;
+          body = pg ? body.replace(/const DD_BUILD = '[\w-]+'/, `const DD_BUILD = '${fw.build}'`) : ping ? body.replace(/"build":"[\w-]*"/, `"build":"${fw.build}"`) : body + fw.swTail;      // /__ping : la version que sert le serveur
           const hd = { ...x.headers }; delete hd.etag; hd['content-length'] = Buffer.byteLength(body);
           r.writeHead(x.statusCode, hd); r.end(body);
         });
@@ -140,16 +140,28 @@ ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans 
   assert.ok(dt < 2500, 'raccourci de l\'icône (?open=) : copie d\'emblée aussi (' + dt + ' ms)'); assert.equal(await replied(), B0); fw.delay = 0;
   ok('ouverture normale (et raccourci ?open=) : copie locale sans attendre le réseau, mise à jour en arrière-plan, pas de toast si rien n\'a changé');
 
-  // nouvelle version sur le serveur : la copie s'ouvre, la nouvelle est gardée, toast « Nouvelle version disponible · Recharger », un toucher la lance
+  // nouvelle version sur le serveur, rien en cours (accueil) : la copie s'ouvre, la nouvelle est gardée, puis la page se recharge d'elle-même (pwa.js, updCheck)
+  const until = async (fn, ms = 20000) => { for (const t = Date.now(); Date.now() - t < ms; await q.waitForTimeout(200)) { try { if (await fn()) return true; } catch (e) { /* page en cours de rechargement */ } } return false; };
   fw.build = 'b1e2e000'; await q.reload();
-  await q.waitForFunction(() => window.__toasts.some(t => /Nouvelle version disponible/.test(t)), null, { timeout: 15000 });
-  assert.equal(await build(), B0, 'la page ouverte est la copie (version précédente)');
-  assert.equal((await q.textContent('#toast .toast-act')).trim(), 'Recharger'); assert.equal((await shell()).build, 'b1e2e000', 'nouvelle version gardée');
+  assert.equal(await until(async () => (await build()) === 'b1e2e000'), true, 'accueil, rien en cours : la nouvelle version se charge toute seule');
+  assert.equal((await shell()).build, 'b1e2e000', 'nouvelle version gardée'); assert.equal(await toldNew(), false, 'rechargée sans toast');
+  await q.waitForTimeout(2500); assert.equal(await build(), 'b1e2e000', 'à jour : plus de rechargement');
+  ok('nouvelle version, rien en cours : copie ouverte, nouvelle gardée en arrière-plan, puis rechargement automatique (une fois)');
+  // nouvelle version pendant qu'une feuille est ouverte (réglages) : jamais de rechargement sous les doigts, toast « Recharger », un toucher la lance
+  fw.build = 'b1e3e000'; fw.delay = 2500; await q.reload({ waitUntil: 'domcontentloaded' });
+  await q.waitForSelector('#btnSettings'); await q.waitForTimeout(400); await q.click('#btnSettings'); await q.waitForSelector('.sheet');
+  await q.waitForFunction(() => window.__toasts.some(t => /Nouvelle version disponible/.test(t)), null, { timeout: 15000 }); fw.delay = 0;
+  assert.equal(await build(), 'b1e2e000', 'page ouverte inchangée');
+  assert.equal((await q.textContent('#toast .toast-act')).trim(), 'Recharger'); assert.equal((await shell()).build, 'b1e3e000', 'nouvelle version gardée');
   await q.screenshot({ path: 'shots/sw-nouvelle-version.png' });
   await Promise.all([q.waitForEvent('load'), q.click('#toast .toast-act')]);
-  assert.equal(await build(), 'b1e2e000', '« Recharger » : la nouvelle version tourne');
-  assert.equal(await replied(), 'b1e2e000'); assert.equal(await toldNew(), false, 'à jour : plus de toast');
-  ok('nouvelle version : copie ouverte, nouvelle gardée en arrière-plan, toast « Nouvelle version disponible · Recharger », un toucher la lance');
+  assert.equal(await until(async () => (await build()) === 'b1e3e000', 8000), true, '« Recharger » : la nouvelle version tourne');
+  assert.equal(await replied(), 'b1e3e000'); assert.equal(await toldNew(), false, 'à jour : plus de toast');
+  ok('nouvelle version, feuille ouverte : pas de rechargement automatique, toast « Nouvelle version disponible · Recharger », un toucher la lance');
+  // retour sur l'appli après plus d'une minute (appli Android en arrière-plan) : /__ping dit qu'une version plus récente est en ligne → copie relue, rechargement
+  fw.build = 'b1e4e000'; const B4 = await q.evaluate(() => { UPD.hid = Date.now() - 120e3; UPD.at = 0; updResume(); return true; });
+  assert.ok(B4); assert.equal(await until(async () => (await build()) === 'b1e4e000'), true, 'au retour : nouvelle version chargée');
+  ok('retour sur l\'appli : version demandée au serveur (/__ping), copie relue (« dd-update »), rechargement automatique');
 
   // pas de copie : la page vient du serveur (et elle est gardée) ; pas de copie et serveur coupé : message clair, pas de page blanche
   await dropShell(); fw.build = 'b2e2e000'; await q.reload();
@@ -167,6 +179,7 @@ ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans 
   }, [b, days]);
   fw.build = 'b3e2e000'; await age('vieille00', 8); await q.reload();
   assert.equal(await build(), 'b3e2e000', 'copie trop vieille : version du serveur');
+  await q.evaluate(() => sessionStorage.setItem('dd-upd', 'b3e2e000'));      // rechargement automatique déjà tenté pour cette version : les copies ci-dessous restent à l'écran
   await waitShell('b3e2e000'); await age('vieille00', 8); fw.down = true; await q.reload();
   assert.equal(await build(), 'vieille00', 'hors ligne : la vieille copie ouvre quand même l\'app'); fw.down = false;
   await age('recente0', 2); await q.reload();
@@ -213,9 +226,11 @@ ok('images Scryfall : mises en cache au premier affichage, ensuite servies sans 
 
   // stockage plein (écriture de la copie refusée) : les images cèdent la place ; toujours refusée → l'ancienne copie est retirée
   await w3.evaluate(() => { const put = Cache.prototype.put; self.__putFail = 1; Cache.prototype.put = function (k, r) { if (self.__putFail > 0 && String(k.url || k) === ROOT) { self.__putFail--; return Promise.reject(new DOMException('plein', 'QuotaExceededError')); } return put.call(this, k, r); }; });
-  await q.waitForTimeout(6500); fw.build = 'b6e2e000'; await q.reload();       // attente : la mise à jour du rechargement lent (6 s) ne doit pas consommer le refus
+  const noAuto = async b => { await q.waitForFunction(() => !UPD.busy, null, { timeout: 15000 }); await q.evaluate(b => sessionStorage.setItem('dd-upd', b), b); };      // rechargement automatique (pwa.js) déjà tenté pour cette version : le test recharge lui-même (vérification en cours finie d'abord)
+  await q.waitForTimeout(6500); fw.build = 'b6e2e000'; await noAuto('b6e2e000'); await q.reload();       // attente : la mise à jour du rechargement lent (6 s) ne doit pas consommer le refus
   assert.equal(await replied(), 'b6e2e000', 'refus une fois : nouvelle copie gardée après avoir retiré les images'); assert.deepEqual((await imgs()).out, [], 'images retirées');
-  await w3.evaluate(() => { self.__putFail = 2; }); fw.build = 'b7e2e000'; await q.reload();
+  await q.waitForFunction(() => !UPD.busy, null, { timeout: 15000 });      // relecture de la copie en cours (pwa.js) finie avant d'injecter les refus
+  await w3.evaluate(() => { self.__putFail = 2; }); fw.build = 'b7e2e000'; await noAuto('b7e2e000'); await q.reload();
   assert.equal(await build(), 'b6e2e000'); assert.equal(await replied(), '', 'refus répété : plus de copie, pas de toast'); assert.equal(await shell(), null);
   await q.reload(); assert.equal(await build(), 'b7e2e000', 'ouverture suivante : la version du serveur'); await waitShell('b7e2e000');
   ok('stockage plein : les images cèdent la place à la page ; sinon la vieille copie est retirée (ouverture suivante par le réseau)');

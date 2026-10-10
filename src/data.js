@@ -1,6 +1,6 @@
 /* ── data.js : réseau (Scryfall, CardTrader), cache, pipelines live et démo ─────────────────── */
 
-const CTX = { proxy: false, needsKey: false, needsLogin: false, jobs: false, alerts: false, vapid: "", token: '', appKey: '', idToken: null, off: [] };      // off : sources coupées par le serveur ('edhrec', 'archidekt')
+const CTX = { proxy: false, needsKey: false, needsLogin: false, jobs: false, alerts: false, vapid: "", token: '', appKey: '', idToken: null, off: [], build: '' };      // off : sources coupées par le serveur ('edhrec', 'archidekt') ; build : version de la page qu'il sert (pwa.js)
 
 const sleep = (ms, signal) => new Promise((res, rej) => {
   if (signal && signal.aborted) return rej(abortErr());

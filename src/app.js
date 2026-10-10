@@ -1150,7 +1150,7 @@ async function detectProxy(ms = 5000) {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), ms);
     const r = await fetch('__ping', { signal: ctrl.signal }); clearTimeout(t);
     if (!r.ok) return; const j = await r.json();
-    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.fcm = j.fcm === true; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; CTX.off = Array.isArray(j.off) ? j.off.filter(x => typeof x === 'string') : []; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); edhOffApply(); }
+    if (j && j.ok && j.app === 'deckdeal') { CTX.proxy = true; CTX.needsKey = !!j.needsKey; CTX.needsLogin = !!j.needsLogin; CTX.jobs = !!j.jobs; CTX.alerts = !!j.alerts; CTX.vapid = typeof j.push === 'string' ? j.push : ''; CTX.fcm = j.fcm === true; CTX.hasToken = j.hasToken !== false; CTX.prices = !!j.prices; CTX.off = Array.isArray(j.off) ? j.off.filter(x => typeof x === 'string') : []; S.proxy = true; if (S.demoPref == null) S.demo = false; checkServer(); edhOffApply(); CTX.build = typeof j.build === 'string' ? j.build : ''; updCheck(CTX.build); }
   } catch (e) { /* pas de proxy */ }
   modeLabel();
 }
@@ -1276,6 +1276,7 @@ function handleLaunch() {
   wgtLaunched();                                                                          // appli Android : liens partagés à froid, en attente du serveur (widget.js)
   let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
   if (![...q.keys()].length) return;
+  UPD.launchAt = Date.now();                                                              // lien, raccourci, partage : pas de rechargement automatique qui perdrait la cible (pwa.js)
   const resume = q.has('resume'), alerts = q.has('alerts'), shared = q.has('text') || q.has('url') || q.has('title'), del = q.has('delete-account');
   try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
   if (del) setTimeout(() => openAccount('delete'), 600);                                  // lien « supprimer mon compte » de la politique de confidentialité
