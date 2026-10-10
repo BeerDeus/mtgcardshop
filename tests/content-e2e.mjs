@@ -1,5 +1,7 @@
-// E2E contenus (sets.js, help.js) : « Prochaines extensions » de l'accueil (faux Scryfall /sets : tri, éditions numériques et hors sujet écartées,
-// produits rattachés à leur parent, cache 24 h relu au 2e lancement, carte cachée en erreur ou hors ligne) ; Réglages › Aide et avis (feuille d'aide,
+// E2E contenus (sets.js, setview.js, help.js) : « Prochaines extensions » de l'accueil (faux Scryfall /sets : tri, éditions numériques et hors sujet écartées,
+// produits rattachés à leur parent, cache 24 h relu au 2e lancement, carte cachée en erreur ou hors ligne) ; page d'une extension (faux /cards/search :
+// grille, noms et images dans la langue des cartes, recherche, rareté, versions spéciales, tri, pastilles, étoiles de la liste de souhaits, carte en grand,
+// extension sans carte révélée, copie gardée) ; Réglages › Aide et avis (feuille d'aide,
 // lien d'avis mailto encodé) ; demande de note neutre (coupée sans PLAY_URL, appli Android seulement, bons moments, fréquence, session sans erreur).
 import './setup-env.mjs';
 import assert from 'node:assert/strict';
@@ -35,7 +37,7 @@ async function page(o = {}) {
 }
 const rows = p => p.$$eval('#hmSetsList .hm-set', ls => ls.map(l => { const a = l.querySelector('.hm-set-a'), c = l.querySelector('.hm-set-cm');
   return { name: a.querySelector('b').textContent, sub: a.querySelector('.hm-set-t span').textContent, when: l.querySelector('em').textContent,
-    href: a.getAttribute('href'), target: a.target, rel: a.rel, icon: (a.querySelector('img') || {}).src || '',
+    set: a.dataset.set, tag: a.tagName, icon: (a.querySelector('img') || {}).src || '',
     cm: c && { href: c.getAttribute('href'), target: c.target, rel: c.rel, text: c.textContent, label: c.getAttribute('aria-label') } }; }));
 const CM = (site, name) => `https://www.cardmarket.com/${site}/Magic/Products/Search?searchString=${encodeURIComponent(name)}`;
 /** Géométrie des lignes : débordements, zone de toucher du lien Cardmarket, alignement des deux pastilles, liens jamais imbriqués,
@@ -43,7 +45,7 @@ const CM = (site, name) => `https://www.cardmarket.com/${site}/Magic/Products/Se
 const geo = p => p.$$eval('#hmSetsList .hm-set', ls => ls.map((l, i) => {
   if (!i) document.getElementById('hmSets').scrollIntoView({ block: 'center', behavior: 'instant' });      // elementFromPoint : la carte doit être à l'écran
   const c = l.querySelector('.hm-set-cm'), cb = c.getBoundingClientRect(), pill = c.querySelector('span').getBoundingClientRect(), em = l.querySelector('em').getBoundingClientRect(), lb = l.getBoundingClientRect();
-  const hit = r => { const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && e.closest('a') ? e.closest('a').className : ''; };
+  const hit = r => { const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), x = e && e.closest('a, button'); return x ? x.className : ''; };
   return { over: l.scrollWidth > l.clientWidth || cb.right > lb.right + 0.5 || cb.left < lb.left, w: cb.width, h: cb.height, align: Math.abs(pill.right - em.right) <= 1,
     nested: !!c.parentElement.closest('a') || !!c.querySelector('a') || !!l.querySelector('.hm-set-a .hm-set-cm'), hitCm: hit(pill), hitWhen: hit(em) };
 }));
@@ -78,15 +80,16 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   assert.match(r[3].sub, /^\d{1,2} [a-zéû]+( \d{4})?$/, 'date seule (année si ce n\'est pas l\'année en cours) : ' + r[3].sub);
   assert.match(r[2].sub, /^\d{1,2} [a-zéû]+( \d{4})? · decks Commander$/, 'decks Commander rattachés à leur extension : ' + r[2].sub);
   assert.equal(r.filter(x => /Commander|Tokens|Digital|Promo|Older|Old /.test(x.name)).length, 0, 'enfants, numériques, jetons, promos, anciennes : écartés');
-  assert.equal(r[2].href, 'https://scryfall.com/sets/aaa'); assert.equal(r[2].target, '_blank'); assert.match(r[2].rel, /noopener/);
+  assert.deepEqual([r[2].set, r[2].tag], ['aaa', 'BUTTON'], 'la ligne ouvre la page de l\'extension dans l\'appli');
   assert.match(r[2].icon, /^https:\/\/svgs\.scryfall\.io\/sets\/aaa\.svg/);
-  assert.equal(r[3].href, 'https://scryfall.com/sets/xss', 'adresse inattendue : remplacée par la page Scryfall de l\'édition'); assert.equal(r[3].icon, '', 'icône d\'une autre origine : écartée');
+  assert.equal(r[3].icon, '', 'icône d\'une autre origine : écartée');
+  assert.equal(await p.evaluate(() => setsPick(SETS.list).find(x => x.code === 'xss').url), 'https://scryfall.com/sets/xss', 'adresse inattendue : remplacée par la page Scryfall de l\'édition');
   assert.equal(await p.evaluate(() => window.__xss), undefined, 'nom échappé');
   assert.deepEqual(await p.$eval('#hmSetsSl', a => [a.href, a.target, a.rel, a.textContent.trim(), a.getBoundingClientRect().height >= 40]), ['https://secretlair.wizards.com/', '_blank', 'noopener', 'Secret Lair : drops en cours et à venir↗', true], 'lien Secret Lair sous la liste (les drops ne sont pas des éditions sur Scryfall)');
   assert.equal(hits.n, 1);
   assert.equal(await p.$eval('#hmSets', e => getComputedStyle(e.querySelector('.hm-set-ic img')).filter), 'invert(1) brightness(0.92)', 'icônes noires éclaircies en thème sombre');
   assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'pas de défilement horizontal à 390 px');
-  ok('accueil : extensions à venir triées, numériques / jetons / promos écartés, Commander rattaché, liens Scryfall, noms échappés');
+  ok('accueil : extensions à venir triées, numériques / jetons / promos écartés, Commander rattaché, page de l\'extension, noms échappés');
   // Cardmarket : « Précommander » sur les éditions à venir, « Acheter » sur la sortie récente ; recherche du nom encodé, site français
   assert.deepEqual(r.map(x => x.cm), [
     { href: CM('fr', 'Recent Expansion'), target: '_blank', rel: 'noopener', text: 'Acheter↗', label: 'Acheter Recent Expansion sur Cardmarket' },
@@ -103,7 +106,7 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
     for (const x of g) {
       assert.equal(x.over, false, w + ' px : rien ne déborde de la ligne'); assert.ok(x.h >= 40 && x.w >= 40, w + ' px : zone de toucher ≥ 40 px (' + x.w + '×' + x.h + ')');
       assert.equal(x.align, true, 'pastilles alignées à droite'); assert.equal(x.nested, false, 'liens séparés, jamais imbriqués');
-      assert.deepEqual([x.hitCm, x.hitWhen], ['hm-set-cm', 'hm-set-a'], w + ' px : la pastille Cardmarket au-dessus ; la date ouvre la page Scryfall');
+      assert.deepEqual([x.hitCm, x.hitWhen], ['hm-set-cm', 'hm-set-a'], w + ' px : la pastille Cardmarket au-dessus ; la date ouvre la page de l\'extension');
     }
   }
   assert.deepEqual(await p.$eval('#hmSetsList .hm-set:last-child b', b => [b.scrollWidth > b.clientWidth, getComputedStyle(b).textOverflow]), [true, 'ellipsis'], 'nom long coupé par « … »');
@@ -120,8 +123,9 @@ ok('« Coller une liste » : champ vidé avant le presse-papiers (refusé : vide
   };
   // sans force : Playwright vérifie que la pastille reçoit bien le toucher (rien posé dessus)
   assert.deepEqual(await tapTo('#hmSetsList .hm-set:nth-child(3) .hm-set-cm span'), [CM('fr', 'Alpha Future')], 'toucher « Précommander » : Cardmarket seul, pas la page Scryfall');
-  // force : la date est sous le lien Scryfall étiré, c'est lui qui reçoit le toucher
-  assert.deepEqual(await tapTo('#hmSetsList .hm-set:nth-child(3) em', { force: true }), ['https://scryfall.com/sets/aaa'], 'toucher la date : page Scryfall de l\'édition');
+  // force : la date est sous le bouton étiré de la ligne, c'est lui qui reçoit le toucher : la page de l'extension, aucun onglet
+  assert.deepEqual(await tapTo('#hmSetsList .hm-set:nth-child(3) em', { force: true }), [], 'toucher la date : pas d\'onglet');
+  await p.waitForSelector('.setv.on'); assert.equal(await txt(p, '.setv .dv-title b'), 'Alpha Future'); await p.evaluate(() => closeSetView()); await p.waitForFunction(() => !document.querySelector('.setv'));
   for (const pp of opened) await pp.close();
   ok('Cardmarket : « Précommander » (à venir) / « Acheter » (sortie récente), recherche du nom encodé sur le site français, onglet séparé, ≥ 40 px, sans débordement à 390 et 360 px');
   // capture : accueil sombre, carte visible
@@ -176,6 +180,90 @@ ok('Cardmarket en anglais : « Pre-order » / « Buy », site /en/ (même sur un
   await p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 }); assert.equal(hits.n, 1); await ctx.close();
 }
 ok('extensions : cachées en erreur (500, 404) et hors ligne, lues seulement quand l\'accueil est à l\'écran');
+/* ── 1 bis) page d'une extension (setview.js) : cartes révélées (faux /cards/search), langue des cartes, recherche, rareté, tri, souhaits ───── */
+{
+  const IMG = (n, l = 'en') => `https://cards.scryfall.io/normal/front/a/a/aaa-${n}${l === 'en' ? '' : '-' + l}.jpg`;
+  const card = (num, name, o = {}) => ({ object: 'card', id: 'id-' + num, name, collector_number: String(num), rarity: 'common', set: 'aaa', set_name: 'Alpha Future', lang: 'en', cmc: 2,
+    mana_cost: '{1}{G}', type_line: 'Creature — Elf', colors: ['G'], image_uris: { normal: IMG(num) }, prices: { eur: null }, border_color: 'black', frame_effects: [], ...o });
+  const AAA = [
+    card(1, 'Zap Bolt', { cmc: 1, mana_cost: '{R}', type_line: 'Instant', colors: ['R'], prices: { eur: '0.20' } }),
+    card(2, 'Elder Wurm', { rarity: 'mythic', cmc: 7, mana_cost: '{5}{G}{G}', type_line: 'Creature — Wurm', prices: { eur: '12.50' } }),
+    card(3, 'Sky Angel', { rarity: 'rare', cmc: 4, mana_cost: '{3}{W}', type_line: 'Creature — Angel', colors: ['W'] }),
+    card(4, 'Mind Thief', { rarity: 'uncommon', cmc: 3, mana_cost: '{2}{U}', type_line: 'Sorcery', colors: ['U'] }),
+    card(5, 'Twin Door // Twin Room', { rarity: 'uncommon', image_uris: undefined, colors: undefined, type_line: 'Enchantment — Room // Enchantment — Room',
+      card_faces: [{ name: 'Twin Door', mana_cost: '{1}{B}', colors: ['B'], image_uris: { normal: IMG(5) } }, { name: 'Twin Room', mana_cost: '{3}{B}', colors: ['B'], image_uris: { normal: IMG('5b') } }] }),
+    card(6, 'Elder Wurm', { rarity: 'mythic', cmc: 7, mana_cost: '{5}{G}{G}', type_line: 'Creature — Wurm', border_color: 'borderless' }),
+    card(7, 'Forest', { cmc: 0, mana_cost: '', type_line: 'Basic Land — Forest', colors: [] }),
+  ];
+  const FR = [{ ...AAA[0], lang: 'fr', printed_name: 'Éclair zap', image_uris: { normal: IMG(1, 'fr') } }];
+  const pg = await page({ sets: 'ok', init: `try { localStorage.setItem('deckdeal:coll:v1', JSON.stringify({ t: '3 Zap Bolt', u: 1, s: '', b: null })); } catch (e) {}` });
+  const { p, ctx } = pg, searches = [];
+  await p.route(/^https:\/\/api\.scryfall\.com\/cards\/search\?/, route => {
+    const u = new URL(route.request().url()), q = u.searchParams.get('q') || '', h = { 'access-control-allow-origin': '*' };
+    if (!/^e:/.test(q)) return route.fallback();
+    searches.push(q + (u.searchParams.get('page') ? ' p' + u.searchParams.get('page') : ''));
+    const data = q === 'e:aaa' ? AAA : q === 'e:aaa lang:fr' ? FR : [];
+    if (!data.length) return route.fulfill({ status: 404, headers: h, json: { object: 'error', code: 'not_found' } });
+    const page2 = u.searchParams.get('page') === '2', part = q === 'e:aaa' ? (page2 ? data.slice(4) : data.slice(0, 4)) : data;
+    route.fulfill({ status: 200, headers: h, json: { object: 'list', has_more: q === 'e:aaa' && !page2, ...(q === 'e:aaa' && !page2 ? { next_page: 'https://api.scryfall.com/cards/search?q=e%3Aaaa&unique=prints&order=set&page=2' } : {}), data: part } });
+  });
+  await p.waitForSelector('#hmSets:not([hidden]) .hm-set', { timeout: 9000 });
+  await p.click('#hmSetsList .hm-set-a[data-set="aaa"]'); await p.waitForSelector('.setv.on');
+  await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 7, null, { timeout: 8000 });
+  assert.deepEqual(searches, ['e:aaa', 'e:aaa p2', 'e:aaa lang:fr'], 'impressions de l\'extension (2 pages), puis les mêmes en français');
+  assert.equal(await txt(p, '.setv .dv-title b'), 'Alpha Future'); assert.match(await txt(p, '.setv .dv-title span'), /^Sortie le \d{1,2} [a-zéû]+( \d{4})? · dans 12 jours$/);
+  assert.equal(await txt(p, '.setv-n'), '7 cartes révélées');
+  const tiles = () => p.$$eval('.setv-c', l => l.map(c => [c.querySelector('.setv-open').getAttribute('aria-label'), (c.querySelector('.dvc-q') || {}).textContent || '', (c.querySelector('.dvc-p') || {}).textContent || '',
+    c.querySelector('.setv-star') ? c.querySelector('.setv-star').className.replace('setv-star', '').trim() || 'off' : '-', (c.querySelector('img') || {}).src || '']));
+  let t = await tiles();
+  assert.deepEqual(t.map(x => x[0]), ['Éclair zap', 'Elder Wurm', 'Sky Angel', 'Mind Thief', 'Twin Door // Twin Room', 'Elder Wurm', 'Forest'], 'ordre de l\'extension, nom français quand Scryfall l\'a');
+  assert.equal(t[0][4], IMG(1, 'fr'), 'image française'); assert.equal(t[4][4], IMG(5), 'carte à deux faces : la face avant');
+  assert.deepEqual([t[0][1], t[0][2].replace(/\s/g, ' '), t[1][2].replace(/\s/g, ' '), t[2][2]], ['× 3', '0,20 €', '12,50 €', ''], 'exemplaires de la collection, prix Cardmarket quand il est connu');
+  assert.deepEqual(t.map(x => x[3]), ['off', 'off', 'off', 'off', 'off', 'off', '-'], 'étoile sur chaque carte, sauf les terrains de base');
+  ok('page d\'une extension : cartes révélées dans l\'ordre, nom et image en français si Scryfall les a, possédées et prix');
+  // recherche (nom anglais ou français), rareté, versions spéciales, tri, filtre de couleur
+  const names = async () => (await tiles()).map(x => x[0]);
+  await p.fill('.setv .fsearch input', 'zap'); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 1); assert.deepEqual(await names(), ['Éclair zap']);
+  await p.fill('.setv .fsearch input', 'eclair'); await p.waitForTimeout(300); assert.deepEqual(await names(), ['Éclair zap'], 'nom français, sans accent');
+  assert.equal(await txt(p, '.setv-n'), '1 carte sur 7');
+  await p.fill('.setv .fsearch input', ''); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 7);
+  await p.click('.setv-rar[data-r="mythic"]'); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 2); assert.deepEqual(await names(), ['Elder Wurm', 'Elder Wurm']);
+  await p.click('.setv-sp'); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 1); assert.equal((await tiles())[0][4], IMG(2), 'sans la version sans bordure');
+  await p.click('.setv-sp'); await p.click('.setv-rar[data-r="mythic"]'); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 7);
+  await p.selectOption('.setv-sort', 'price'); await p.waitForTimeout(200); assert.deepEqual((await names()).slice(0, 2), ['Elder Wurm', 'Éclair zap'], 'tri par prix');
+  await p.selectOption('.setv-sort', 'name'); await p.waitForTimeout(200); assert.deepEqual(await names(), ['Éclair zap', 'Elder Wurm', 'Elder Wurm', 'Forest', 'Mind Thief', 'Sky Angel', 'Twin Door // Twin Room'], 'tri par nom affiché');
+  await p.selectOption('.setv-sort', 'num'); await p.evaluate(() => { SETV.f.colors.add('W'); setvPaint(); }); assert.deepEqual(await names(), ['Sky Angel'], 'filtre de couleur (filters.js)');
+  await p.evaluate(() => { SETV.f.colors.clear(); setvPaint(); });
+  ok('recherche (nom anglais ou français), rareté, versions spéciales, tri (prix, nom), couleur');
+  // étoiles : ajoute cette illustration, la remplace par une autre, la retire ; français : langue retenue
+  const star = i => p.click(`.setv-c[data-i="${i}"] .setv-star`), wish = k => p.evaluate(k => TR.wish[k] || null, k);
+  await star(1); assert.deepEqual(await wish('elder wurm'), { n: 'Elder Wurm', q: 1, i: IMG(2), w: 'Alpha Future · AAA 2' });
+  t = await tiles(); assert.deepEqual([t[1][3], t[5][3]], ['on', 'other'], 'cette illustration : étoile pleine ; l\'autre version : contour');
+  await star(5); assert.equal((await wish('elder wurm')).i, IMG(6), 'version sans bordure à la place'); assert.match(await txt(p, '#toast'), /Illustration mise à jour/);
+  await star(5); assert.equal(await wish('elder wurm'), null, 'retirée'); assert.match(await txt(p, '#toast'), /retirée de ta liste de souhaits/);
+  await star(0); assert.deepEqual(await wish('zap bolt'), { n: 'Zap Bolt', q: 1, i: IMG(1, 'fr'), w: 'Alpha Future · AAA 1', l: 'fr' }, 'carte française : image et langue retenues');
+  ok('étoiles : ajoute l\'illustration de la vignette, la remplace, la retire (Annuler dans le message) ; langue des cartes retenue');
+  // carte en grand : toute la liste affichée, « Liste de souhaits » ; l'étoile suit à la fermeture
+  await p.click('.setv-c[data-i="2"] .setv-open'); await p.waitForSelector('.imgv'); await p.waitForFunction(() => !document.querySelector('.imgv-wish').hidden, null, { timeout: 5000 });
+  assert.deepEqual(await p.evaluate(() => [document.querySelector('.imgv-cap b').textContent, document.querySelector('.imgv-count').textContent]), ['Sky Angel', '3 / 7']);
+  await p.click('.imgv-wish'); assert.equal((await wish('sky angel')).w, 'Alpha Future · AAA 3');
+  await p.evaluate(() => closeCardImage()); await p.waitForFunction(() => document.querySelector('.setv-c[data-i="2"] .setv-star.on'), null, { timeout: 3000 });
+  ok('carte en grand : précédente / suivante sur la liste affichée, « Liste de souhaits » ; étoile mise à jour');
+  // 360 px : rien ne déborde ; fermeture ; extension sans carte révélée ; copie gardée (aucune nouvelle requête)
+  await p.setViewportSize({ width: 360, height: 780 }); await p.waitForTimeout(300);
+  assert.equal(await p.evaluate(() => document.querySelector('.setv .dv-scroll').scrollWidth <= innerWidth), true, 'pas de défilement horizontal à 360 px');
+  await p.screenshot({ path: 'shots/content-1b-extension.png' });
+  await p.setViewportSize({ width: 390, height: 844 });
+  await p.click('.setv .dv-back'); await p.waitForFunction(() => !document.querySelector('.setv'));
+  await p.click('#hmSetsList .hm-set-a[data-set="bbb"]'); await p.waitForSelector('.setv .dv-empty');
+  assert.equal(await txt(p, '.setv .dv-empty b'), 'Aucune carte révélée pour l\'instant');
+  await p.evaluate(() => closeSetView()); await p.waitForFunction(() => !document.querySelector('.setv'));
+  const n = searches.length; await p.click('#hmSetsList .hm-set-a[data-set="aaa"]'); await p.waitForFunction(() => document.querySelectorAll('.setv-c').length === 7);
+  assert.equal(searches.length, n, 'rouverte : copie de l\'appareil, aucune requête');
+  assert.deepEqual(pg.errs, []); await ctx.close();
+  ok('extension sans carte révélée : message ; rouverte : copie gardée ; 360 px sans débordement');
+}
+
 
 /* ── 2) Réglages › Aide et avis ; feuille d'aide ; avis par e-mail ──────────────────────────────────────────────── */
 {

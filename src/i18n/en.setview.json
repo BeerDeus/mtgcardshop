@@ -1,0 +1,21 @@
+{
+  "Retirer {name} de ta liste de souhaits": "Remove {name} from your wishlist",
+  "Ajouter {name} à ta liste de souhaits": "Add {name} to your wishlist",
+  "Sortie le {date}": "Out {date}",
+  "Cartes indisponibles": "Cards unavailable",
+  "Chargement des cartes de l'extension…": "Loading the set's cards…",
+  "Aucune carte révélée pour l'instant": "No cards revealed yet",
+  "Les cartes apparaissent ici au fil des révélations (Scryfall).": "Cards show up here as they are revealed (Scryfall).",
+  "Scryfall injoignable : vérifie ta connexion, puis réessaie.": "Scryfall unreachable: check your connection, then try again.",
+  "Trier les cartes": "Sort the cards",
+  "Rareté": "Rarity",
+  "Sans les versions spéciales": "Without special versions",
+  "{nom} : voir les cartes": "{nom}: see the cards",
+  "{n} carte révélée": "{n} card revealed",
+  "{n} cartes révélées": "{n} cards revealed",
+  "Mythiques": "Mythics",
+  "Rares": "Rares",
+  "Peu communes": "Uncommons",
+  "Communes": "Commons",
+  "Numéro": "Number"
+}

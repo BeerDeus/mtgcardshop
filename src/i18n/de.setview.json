@@ -1,0 +1,21 @@
+{
+  "Retirer {name} de ta liste de souhaits": "{name} von deiner Wunschliste entfernen",
+  "Ajouter {name} à ta liste de souhaits": "{name} zu deiner Wunschliste hinzufügen",
+  "Sortie le {date}": "Erscheint am {date}",
+  "Cartes indisponibles": "Karten nicht verfügbar",
+  "Chargement des cartes de l'extension…": "Karten des Sets werden geladen…",
+  "Aucune carte révélée pour l'instant": "Noch keine Karten enthüllt",
+  "Les cartes apparaissent ici au fil des révélations (Scryfall).": "Die Karten erscheinen hier, sobald sie enthüllt werden (Scryfall).",
+  "Scryfall injoignable : vérifie ta connexion, puis réessaie.": "Scryfall nicht erreichbar: Prüfe deine Verbindung und versuch es erneut.",
+  "Trier les cartes": "Karten sortieren",
+  "Rareté": "Seltenheit",
+  "Sans les versions spéciales": "Ohne Sonderversionen",
+  "{nom} : voir les cartes": "{nom}: Karten ansehen",
+  "{n} carte révélée": "{n} Karte enthüllt",
+  "{n} cartes révélées": "{n} Karten enthüllt",
+  "Mythiques": "Sagenhaft seltene",
+  "Rares": "Seltene",
+  "Peu communes": "Nicht so häufige",
+  "Communes": "Häufige",
+  "Numéro": "Nummer"
+}

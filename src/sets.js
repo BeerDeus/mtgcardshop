@@ -5,7 +5,8 @@
      après le lancement : jamais pendant une recherche, un scan ou une feuille.
    · Gardée 24 h (Cache) sous une forme réduite : seules les éditions utiles (à venir ou récentes), le tri et les dates relatives sont refaits à l'affichage.
    · Hors ligne, en erreur ou sans rien à venir : la carte reste cachée, sans message ; nouvel essai au prochain lancement.
-   · Chaque ligne : la page Scryfall de l'édition, plus « Précommander » (à venir) ou « Acheter » (sortie récente) vers Cardmarket, deux liens séparés. */
+   · Chaque ligne : la page de l'extension dans l'appli (setview.js : cartes révélées, recherche, filtres, souhaits), plus « Précommander » (à venir)
+     ou « Acheter » (sortie récente) vers Cardmarket, lien séparé. */
 const SETS_KEY = 'sets:v1', SETS_TTL = DAY, SETS_RECENT = 14, SETS_MAX = 4;
 /** Produits papier « grand public » : les autres types (promo, jetons, funny, cartes numériques, boîtes…) n'intéressent pas l'accueil. */
 const SETS_TYPES = ['expansion', 'core', 'masters', 'draft_innovation', 'commander'];
@@ -102,12 +103,13 @@ function setsPaint() {
   if (sig === SETS.sig) return; SETS.sig = sig;
   box.hidden = !rows.length;
   if (!ul._err) { ul._err = true; ul.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true); }      // icône injoignable : la pastille reste, vide
-  // lien Scryfall étiré sur la ligne (CSS) ; le lien Cardmarket, frère et non enfant, passe au-dessus : jamais d'ancres imbriquées
+  if (!ul._click) { ul._click = true; ul.addEventListener('click', e => { const b = e.target.closest('.hm-set-a'); if (b) openSetView(b.dataset.set); }); }
+  // bouton de la page de l'extension étiré sur la ligne (CSS) ; le lien Cardmarket, frère et non enfant, passe au-dessus
   ul.innerHTML = rows.map(r => {
     const cm = setsCm(r.name), past = r.d < 0;
-    return `<li class="hm-set${past ? ' past' : ''}"><a class="hm-set-a" href="${esc(r.url)}" target="_blank" rel="noopener">
+    return `<li class="hm-set${past ? ' past' : ''}"><button class="hm-set-a" type="button" data-set="${esc(r.code)}" aria-label="${esc(T('{nom} : voir les cartes', { nom: r.name }))}">
     <span class="hm-set-ic" aria-hidden="true">${r.icon ? `<img alt="" decoding="async" src="${esc(r.icon)}">` : ''}</span>
-    <span class="hm-set-t"><b>${esc(r.name)}</b><span>${esc(setsDate(r))}${r.cmd ? ' · ' + esc(T('decks Commander')) : ''}</span></span></a>
+    <span class="hm-set-t"><b>${esc(r.name)}</b><span>${esc(setsDate(r))}${r.cmd ? ' · ' + esc(T('decks Commander')) : ''}</span></span></button>
     <span class="hm-set-side"><em class="hm-set-when${past ? ' past' : r.d <= 7 ? ' soon' : ''}">${esc(setsWhen(r.d))}</em>${cm ? `<a class="hm-set-cm" href="${esc(cm)}" target="_blank" rel="noopener"
       aria-label="${esc(past ? T('Acheter {nom} sur Cardmarket', { nom: r.name }) : T('Précommander {nom} sur Cardmarket', { nom: r.name }))}"><span>${esc(past ? T('Acheter') : T('Précommander'))}<i aria-hidden="true">↗</i></span></a>` : ''}</span></li>`;
   }).join('');

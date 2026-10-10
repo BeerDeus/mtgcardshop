@@ -42,7 +42,7 @@ Toujours committer `src/` **et** `deck-deal.html` ensemble.
 - `frnames-e2e.mjs` : noms français (decklist « 4 Foudre » au prix Cardmarket et ses vignettes, import en français, noms inconnus, coup d'œil après import, cartes sans langue, saisie « Anneau solaire », tuile de valeur sans CardTrader ; vraies lignes de `pwa/fr-names.tsv`).
 - `intl-e2e.mjs` (navigateur) et `test-intl.mjs` (Node) : langue des cartes selon l'utilisateur, liens Cardmarket / CardTrader dans sa langue, catalogues `names-<langue>.tsv` (générateur et routes du serveur).
 - `perf-e2e.mjs` : budget de performance d'une collection de 5 000 cartes, CPU ×4 (page en `file://`, faux Scryfall par routes Playwright, aucun port) ; marges ×3 pour la CI.
-- `content-e2e.mjs` : « Prochaines extensions » (faux Scryfall `/sets`), Réglages › Aide et avis, demande de note. `sw-e2e.mjs` couvre aussi la copie locale de la page, le toast « Recharger », la copie de plus de 7 jours et les liens toujours réseau d'abord.
+- `content-e2e.mjs` : « Prochaines extensions » (faux Scryfall `/sets`) et page d'une extension (faux `/cards/search`), Réglages › Aide et avis, demande de note. `sw-e2e.mjs` couvre aussi la copie locale de la page, le toast « Recharger », la copie de plus de 7 jours et les liens toujours réseau d'abord.
 - `zoom-e2e.mjs` : chaque vignette de carte s'ouvre en grand (nom, précédente / suivante, langue, clavier, zone de toucher ≥ 44 px) et le reste de la ligne garde son action. Nouvelle vignette : `zoomAt(kind, nom)` dans le gabarit et une entrée `ZOOM_LISTS[kind]` dans `src/zoom.js` (rangées affichées → items de `openCardViewer`).
 
 ## CI

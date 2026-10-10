@@ -1,0 +1,21 @@
+{
+  "Retirer {name} de ta liste de souhaits": "Remover {name} da sua lista de desejos",
+  "Ajouter {name} à ta liste de souhaits": "Adicionar {name} à sua lista de desejos",
+  "Sortie le {date}": "Sai em {date}",
+  "Cartes indisponibles": "Cards indisponíveis",
+  "Chargement des cartes de l'extension…": "Carregando os cards da expansão…",
+  "Aucune carte révélée pour l'instant": "Nenhum card revelado ainda",
+  "Les cartes apparaissent ici au fil des révélations (Scryfall).": "Os cards aparecem aqui conforme são revelados (Scryfall).",
+  "Scryfall injoignable : vérifie ta connexion, puis réessaie.": "Scryfall inacessível: verifique sua conexão e tente de novo.",
+  "Trier les cartes": "Ordenar os cards",
+  "Rareté": "Raridade",
+  "Sans les versions spéciales": "Sem versões especiais",
+  "{nom} : voir les cartes": "{nom}: ver os cards",
+  "{n} carte révélée": "{n} card revelado",
+  "{n} cartes révélées": "{n} cards revelados",
+  "Mythiques": "Míticas",
+  "Rares": "Raras",
+  "Peu communes": "Incomuns",
+  "Communes": "Comuns",
+  "Numéro": "Número"
+}

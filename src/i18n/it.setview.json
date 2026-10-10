@@ -1,0 +1,21 @@
+{
+  "Retirer {name} de ta liste de souhaits": "Rimuovi {name} dalla tua lista dei desideri",
+  "Ajouter {name} à ta liste de souhaits": "Aggiungi {name} alla tua lista dei desideri",
+  "Sortie le {date}": "Esce il {date}",
+  "Cartes indisponibles": "Carte non disponibili",
+  "Chargement des cartes de l'extension…": "Caricamento delle carte dell'espansione…",
+  "Aucune carte révélée pour l'instant": "Nessuna carta rivelata per ora",
+  "Les cartes apparaissent ici au fil des révélations (Scryfall).": "Le carte appaiono qui man mano che vengono rivelate (Scryfall).",
+  "Scryfall injoignable : vérifie ta connexion, puis réessaie.": "Scryfall non raggiungibile: controlla la connessione e riprova.",
+  "Trier les cartes": "Ordina le carte",
+  "Rareté": "Rarità",
+  "Sans les versions spéciales": "Senza versioni speciali",
+  "{nom} : voir les cartes": "{nom}: vedi le carte",
+  "{n} carte révélée": "{n} carta rivelata",
+  "{n} cartes révélées": "{n} carte rivelate",
+  "Mythiques": "Mitiche",
+  "Rares": "Rare",
+  "Peu communes": "Non comuni",
+  "Communes": "Comuni",
+  "Numéro": "Numero"
+}

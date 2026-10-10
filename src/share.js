@@ -41,7 +41,7 @@ const trOffline = () => typeof navigator !== 'undefined' && navigator.onLine ===
 function trNeedNet() { if (!trOffline()) return true; toast(T('Hors ligne : réessaie une fois connecté')); return false; }
 /** Un réglage a changé ici : enregistre, envoie au compte, met à jour les partages et l'écran. */
 function trChanged() { TR.u = Date.now(); trWrite(); trPushSoon(); trSoon(800); trRepaint(); }
-function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); pubSoon(); }
+function trRepaint() { if (COLL.el && COLL.tab === 'trade') collPaintBody(true); homeSoon(); pubSoon(); setvSoon(); }      // setvSoon : étoiles de la page d'une extension
 
 /* ── Réglages dans le compte ───────────────────────────────────────────────────────────────────────── */
 function trUser(user) {
